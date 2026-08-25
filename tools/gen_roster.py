@@ -28,6 +28,7 @@ DISPLAY_NAMES = {
     "cerbervt": "CerberVT",
     "cyyuvtuber": "CyyuVTuber",
     "el_xox": "El_XoX",
+    "froggyloch": "FroggyLoch",
     "heavenlyfather": "HeavenlyFather",
     "huntressspectre": "HuntressSpectre",
     "itsdeadlyboop": "ItsDeadlyBoop",
@@ -37,6 +38,7 @@ DISPLAY_NAMES = {
     "monikacinnyroll": "MonikaCinnyroll",
     "motherv3": "MotherV3",
     "rtgame": "RTGame",
+    "shylily": "ShyLily",
     "x3dustco": "x3dustco",
     "yuy_ix": "Yuy_ix",
 }
@@ -128,6 +130,12 @@ for _, entry in ipairs(ROSTER) do
         blueprint_compat = true,
         eternal_compat = true,
 
+        -- Placeholders are kept out of the shop and every booster pack until
+        -- they have a real effect. SMODS.add_to_pool calls this, and
+        -- get_current_pool gates the shop on it. They stay visible in the
+        -- Collection. Move a joker to jokers/implemented.lua to let it spawn.
+        in_pool = function(self, args) return false end,
+
         config = { extra = { mult = entry.mult } },
 
         loc_vars = function(self, info_queue, card)
@@ -207,7 +215,7 @@ LOC_TAIL = '''        },
                 name = "Founder's Deck",
                 text = {
                     "Start with an extra {C:money}$#1#{}",
-                    "and a {C:attention}Spark{}",
+                    "and an {C:attention}Arar{}",
                     "{C:red}-#2#{} Joker slot",
                 },
             },

@@ -40,7 +40,6 @@ local ROSTER = {
     { key = "fefe", rarity = 1, cost = 4, mult = 4 },
     { key = "fraiki", rarity = 1, cost = 4, mult = 4 },
     { key = "fream", rarity = 1, cost = 4, mult = 4 },
-    { key = "froggyloch", rarity = 1, cost = 4, mult = 4 },
     { key = "fufu", rarity = 1, cost = 4, mult = 4 },
     { key = "geega", rarity = 1, cost = 4, mult = 4 },
     { key = "giwi", rarity = 1, cost = 4, mult = 4 },
@@ -66,7 +65,6 @@ local ROSTER = {
     { key = "lucypyre", rarity = 1, cost = 4, mult = 4 },
     { key = "maplechicken", rarity = 1, cost = 4, mult = 4 },
     { key = "mariyume", rarity = 1, cost = 4, mult = 4 },
-    { key = "megalodon", rarity = 1, cost = 4, mult = 4 },
     { key = "meicha", rarity = 1, cost = 4, mult = 4 },
     { key = "mellowmabel", rarity = 1, cost = 4, mult = 4 },
     { key = "michi", rarity = 1, cost = 4, mult = 4 },
@@ -104,7 +102,6 @@ local ROSTER = {
     { key = "shiabun", rarity = 1, cost = 4, mult = 4 },
     { key = "shoomimi", rarity = 1, cost = 4, mult = 4 },
     { key = "shoto", rarity = 1, cost = 4, mult = 4 },
-    { key = "shylily", rarity = 1, cost = 4, mult = 4 },
     { key = "sinder", rarity = 1, cost = 4, mult = 4 },
     { key = "smugalana", rarity = 1, cost = 4, mult = 4 },
     { key = "snapscube", rarity = 1, cost = 4, mult = 4 },
@@ -118,7 +115,6 @@ local ROSTER = {
     { key = "yoclesh", rarity = 1, cost = 4, mult = 4 },
     { key = "yokasiri", rarity = 1, cost = 4, mult = 4 },
     { key = "yomiquinnely", rarity = 1, cost = 4, mult = 4 },
-    { key = "yuy_ix", rarity = 1, cost = 4, mult = 4 },
     { key = "yuzu", rarity = 1, cost = 4, mult = 4 },
 }
 
@@ -134,6 +130,12 @@ for _, entry in ipairs(ROSTER) do
         discovered = true,
         blueprint_compat = true,
         eternal_compat = true,
+
+        -- Placeholders are kept out of the shop and every booster pack until
+        -- they have a real effect. SMODS.add_to_pool calls this, and
+        -- get_current_pool gates the shop on it. They stay visible in the
+        -- Collection. Move a joker to jokers/implemented.lua to let it spawn.
+        in_pool = function(self, args) return false end,
 
         config = { extra = { mult = entry.mult } },
 

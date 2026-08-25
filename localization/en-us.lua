@@ -249,9 +249,11 @@ return {
                 },
             },
             j_celesta_froggyloch = {
-                name = "Froggyloch",
+                name = "FroggyLoch",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Scoring cards have a",
+                    "{C:green}#1# in #2#{} chance to retrigger",
+                    "{C:attention}#3#{} additional time",
                 },
             },
             j_celesta_fufu = {
@@ -442,7 +444,10 @@ return {
             j_celesta_megalodon = {
                 name = "Megalodon",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "This Joker gains {C:mult}+#1#{} Mult",
+                    "for each card in played hand",
+                    "{C:inactive}Resets at end of round{}",
+                    "{C:inactive}(Currently {C:mult}+#2#{C:inactive} Mult)",
                 },
             },
             j_celesta_meicha = {
@@ -668,9 +673,11 @@ return {
                 },
             },
             j_celesta_shylily = {
-                name = "Shylily",
+                name = "ShyLily",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Retriggers the {C:attention}last{}",
+                    "scoring card {C:attention}#1#{}",
+                    "additional times",
                 },
             },
             j_celesta_sinder = {
@@ -754,7 +761,9 @@ return {
             j_celesta_yuy_ix = {
                 name = "Yuy_ix",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "On the {C:attention}final hand{} of the round,",
+                    "each scoring card gives",
+                    "{X:mult,C:white}X#1#{} Mult",
                 },
             },
             j_celesta_yuzu = {
@@ -788,7 +797,7 @@ return {
                 name = "Founder's Deck",
                 text = {
                     "Start with an extra {C:money}$#1#{}",
-                    "and a {C:attention}Spark{}",
+                    "and an {C:attention}Arar{}",
                     "{C:red}-#2#{} Joker slot",
                 },
             },

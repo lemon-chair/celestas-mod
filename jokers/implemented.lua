@@ -386,3 +386,178 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- FroggyLoch [Uncommon]
+-- Scoring cards have a 1 in 2 chance to retrigger 1 additional time.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "froggyloch",
+    atlas = "froggyloch",
+    pos = { x = 0, y = 0 },
+
+    rarity = 2,
+    cost = 6,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    config = { extra = { odds = 2, repetitions = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        local numerator, denominator = SMODS.get_probability_vars(
+            card, 1, card.ability.extra.odds, "celesta_froggyloch")
+        return { vars = { numerator, denominator, card.ability.extra.repetitions } }
+    end,
+
+    calculate = function(self, card, context)
+        -- The repetition pass runs once per scoring card, so the roll is
+        -- independent for each one.
+        if context.repetition and context.cardarea == G.play then
+            if SMODS.pseudorandom_probability(
+                    card, "celesta_froggyloch", 1, card.ability.extra.odds) then
+                return {
+                    message = localize("k_again_ex"),
+                    repetitions = card.ability.extra.repetitions,
+                    card = card,
+                }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- ShyLily [Common]
+-- Retriggers the last scoring card 2 additional times.
+-- Hanging Chad, but anchored to the end of the scoring hand.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "shylily",
+    atlas = "shylily",
+    pos = { x = 0, y = 0 },
+
+    rarity = 1,
+    cost = 4,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    config = { extra = { repetitions = 2 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.repetitions } }
+    end,
+
+    calculate = function(self, card, context)
+        -- Hanging Chad tests context.other_card == context.scoring_hand[1];
+        -- this is the same test against the last entry instead.
+        if context.repetition and context.cardarea == G.play then
+            if context.other_card == context.scoring_hand[#context.scoring_hand] then
+                return {
+                    message = localize("k_again_ex"),
+                    repetitions = card.ability.extra.repetitions,
+                    card = card,
+                }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Yuy_ix [Rare]
+-- On the final hand of the round, each scoring card gives X1.5 Mult.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "yuy_ix",
+    atlas = "yuy_ix",
+    pos = { x = 0, y = 0 },
+
+    rarity = 3,
+    cost = 8,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    config = { extra = { x_mult = 1.5 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.x_mult } }
+    end,
+
+    calculate = function(self, card, context)
+        -- hands_left == 0 is how vanilla Dusk detects the final hand.
+        if context.individual and context.cardarea == G.play
+            and G.GAME.current_round.hands_left == 0 then
+            return {
+                x_mult = card.ability.extra.x_mult,
+                card = context.other_card,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Megalodon [Uncommon]
+-- Gains +5 Mult for each card in the played hand. Resets at end of round.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "megalodon",
+    atlas = "megalodon",
+    pos = { x = 0, y = 0 },
+
+    rarity = 2,
+    cost = 6,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    config = { extra = { mult = 0, mult_gain = 5 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.mult_gain, card.ability.extra.mult } }
+    end,
+
+    calculate = function(self, card, context)
+        -- context.before is where full_hand is populated (state_events.lua
+        -- passes full_hand = G.play.cards). That is every played card, not
+        -- just the scoring ones, and it lands before scoring so the Mult
+        -- gained counts for the hand that earned it.
+        if context.before and not context.blueprint then
+            SMODS.scale_card(card, {
+                ref_table = card.ability.extra,
+                ref_value = "mult",
+                scalar_value = "mult_gain",
+                message_key = "a_mult",
+                message_colour = G.C.MULT,
+                operation = function(ref_table, ref_value, initial, scaling)
+                    ref_table[ref_value] = initial + scaling * #context.full_hand
+                end
+            })
+        end
+
+        if context.joker_main and card.ability.extra.mult > 0 then
+            return { mult = card.ability.extra.mult }
+        end
+
+        -- context.main_eval is the once-per-round joker pass; without it this
+        -- also fires during the per-card and repetition passes.
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            if card.ability.extra.mult > 0 then
+                card.ability.extra.mult = 0
+                return {
+                    message = localize("k_reset"),
+                    colour = G.C.MULT,
+                    card = card,
+                }
+            end
+        end
+    end,
+}

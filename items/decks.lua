@@ -23,7 +23,9 @@ SMODS.Back {
     -- Runs once at the start of a run using this deck.
     apply = function(self, back)
         G.E_MANAGER:add_event(Event { func = function()
-            local joker = SMODS.add_card { key = 'j_celesta_spark' }
+            -- Was j_celesta_spark; that placeholder is disabled, so this now
+            -- hands out a real Joker instead.
+            local joker = SMODS.add_card { key = 'j_celesta_arar' }
             if joker then joker:start_materialize() end
             return true
         end })
