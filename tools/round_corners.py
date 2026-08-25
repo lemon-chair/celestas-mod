@@ -60,9 +60,13 @@ def derive_profile(reference):
 
 
 def targets(scale):
+    """Card art only. Skips the shared placeholder sheets and fx_* arena
+    sprite sheets, which are not card-sized and must not be masked."""
     d = os.path.join(ROOT, "assets", "%dx" % scale)
     for f in sorted(os.listdir(d)):
-        if f.lower().endswith(".png") and os.path.splitext(f)[0] not in SHARED:
+        if (f.lower().endswith(".png")
+                and not f.lower().startswith("fx_")
+                and os.path.splitext(f)[0] not in SHARED):
             yield os.path.join(d, f)
 
 

@@ -17,6 +17,16 @@ SMODS.Atlas { key = 'consumables', path = 'consumables.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'decks',       path = 'decks.png',       px = 71, py = 95 }
 SMODS.Atlas { key = 'modicon',     path = 'icon.png',        px = 32, py = 32 }
 
+-- Arena effect sprite sheets (generated from GIFs by tools/gen_fx.py).
+SMODS.Atlas { key = 'fx_downpour', path = 'fx_downpour.png',  px = 256, py = 256 }
+
+--------------------------------------------------------------------------------
+-- Arena effects — screen-wide, round-scoped weather. Loaded before jokers
+-- because Aquwa and friends call into CelestasMod.Arena.
+--------------------------------------------------------------------------------
+
+assert(SMODS.load_file('arena/arena.lua'))()
+
 --------------------------------------------------------------------------------
 -- Jokers — auto-loaded from jokers/.
 -- Sorted so atlases.lua always registers before vtubers.lua references it.

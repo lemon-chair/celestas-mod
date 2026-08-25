@@ -561,3 +561,42 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Aquwa [Rare]
+-- At the start of each round, starts a Downpour, which lasts until the end
+-- of the round. See arena/arena.lua for what a Downpour does.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "aquwa",
+    atlas = "aquwa",
+    pos = { x = 0, y = 0 },
+
+    rarity = 3,
+    cost = 8,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        -- setting_blind is the moment the blind is chosen, before any cards
+        -- are dealt, so the Downpour is already up for the whole round.
+        -- The Arena clears itself on the return to BLIND_SELECT.
+        if context.setting_blind and not context.blueprint then
+            if not CelestasMod.Arena.is_active("downpour") then
+                CelestasMod.Arena.start("downpour")
+                return {
+                    message = localize("celesta_downpour"),
+                    colour = G.C.BLUE,
+                    card = card,
+                }
+            end
+        end
+    end,
+}

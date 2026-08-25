@@ -51,9 +51,12 @@ def display_name(stem):
 
 
 def collect():
+    """Joker art only: the shared placeholder sheets and anything prefixed
+    fx_ (arena effect sprite sheets, see tools/gen_fx.py) are not jokers."""
     d = os.path.join(ROOT, "assets", "1x")
     stems = sorted(os.path.splitext(f)[0] for f in os.listdir(d)
-                   if f.lower().endswith(".png"))
+                   if f.lower().endswith(".png")
+                   and not f.lower().startswith("fx_"))
     missing = [s for s in stems
                if not os.path.exists(os.path.join(ROOT, "assets", "2x", s + ".png"))]
     if missing:
@@ -237,6 +240,7 @@ LOC_TAIL = '''        },
             -- Floating message text. Vanilla has no generic "+card" key
             -- (k_plus_stone is Marble Joker's own), so this mod supplies one.
             celesta_plus_seven = "+7 of Spades",
+            celesta_downpour = "Downpour!",
         },
     },
 }

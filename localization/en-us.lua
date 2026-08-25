@@ -47,7 +47,10 @@ return {
             j_celesta_aquwa = {
                 name = "Aquwa",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "At the start of each round,",
+                    "starts a {C:blue}Downpour{}",
+                    "{C:inactive}Consumables obtained during{}",
+                    "{C:inactive}a Downpour are {C:dark_edition}Negative",
                 },
             },
             j_celesta_arar = {
@@ -819,6 +822,7 @@ return {
             -- Floating message text. Vanilla has no generic "+card" key
             -- (k_plus_stone is Marble Joker's own), so this mod supplies one.
             celesta_plus_seven = "+7 of Spades",
+            celesta_downpour = "Downpour!",
         },
     },
 }
