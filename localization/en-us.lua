@@ -363,9 +363,11 @@ return {
                 },
             },
             j_celesta_kokonuts = {
-                name = "Kokonuts",
+                name = "KokoNuts",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "At the start of each round,",
+                    "add a {C:attention}Lucky{} {C:attention}7 of Spades{}",
+                    "to your deck",
                 },
             },
             j_celesta_kourra = {
@@ -423,6 +425,14 @@ return {
                 name = "Mariyume",
                 text = {
                     "{C:mult}+#1#{} Mult",
+                },
+            },
+            j_celesta_maya = {
+                name = "Maya",
+                text = {
+                    "{C:green}#1# in #2#{} chance to retrigger",
+                    "each {C:attention}Steel Card{} held in hand",
+                    "{C:attention}#3#{} extra times",
                 },
             },
             j_celesta_megalodon = {
@@ -752,7 +762,8 @@ return {
             j_celesta_zentreya = {
                 name = "Zentreya",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:attention}Steel Cards{} in played hand",
+                    "give {X:mult,C:white}X#1#{} Mult when scored",
                 },
             },
         },
@@ -792,6 +803,9 @@ return {
     misc = {
         dictionary = {
             celesta_cfg_verbose = "Verbose logging",
+            -- Floating message text. Vanilla has no generic "+card" key
+            -- (k_plus_stone is Marble Joker's own), so this mod supplies one.
+            celesta_plus_seven = "+7 of Spades",
         },
     },
 }

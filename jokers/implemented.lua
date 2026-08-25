@@ -179,3 +179,139 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Maya [Rare]
+-- 1 in 2 chance to retrigger Steel Cards held in hand 2 extra times.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "maya",
+    atlas = "maya",
+    pos = { x = 0, y = 0 },
+
+    rarity = 3,
+    cost = 8,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    config = { extra = { odds = 2, repetitions = 2 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_steel
+        local numerator, denominator = SMODS.get_probability_vars(
+            card, 1, card.ability.extra.odds, "celesta_maya")
+        return { vars = { numerator, denominator, card.ability.extra.repetitions } }
+    end,
+
+    calculate = function(self, card, context)
+        -- Held-in-hand repetition pass: cardarea is G.hand and other_card is
+        -- the card being considered for a retrigger.
+        if context.repetition and context.cardarea == G.hand then
+            if SMODS.has_enhancement(context.other_card, "m_steel")
+                and SMODS.pseudorandom_probability(
+                    card, "celesta_maya", 1, card.ability.extra.odds) then
+                return {
+                    message = localize("k_again_ex"),
+                    repetitions = card.ability.extra.repetitions,
+                    card = card,
+                }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Zentreya [Uncommon]
+-- Steel Cards in the played hand give X1.75 Mult when scored.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "zentreya",
+    atlas = "zentreya",
+    pos = { x = 0, y = 0 },
+
+    rarity = 2,
+    cost = 6,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    config = { extra = { x_mult = 1.75 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_steel
+        return { vars = { card.ability.extra.x_mult } }
+    end,
+
+    calculate = function(self, card, context)
+        -- context.individual + cardarea == G.play is the scoring-card pass;
+        -- unscored cards arrive with cardarea == 'unscored' instead.
+        if context.individual and context.cardarea == G.play then
+            if SMODS.has_enhancement(context.other_card, "m_steel") then
+                return {
+                    x_mult = card.ability.extra.x_mult,
+                    card = context.other_card,
+                }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- KokoNuts [Common]
+-- At the start of each round, add a Lucky 7 of Spades to the deck.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "kokonuts",
+    atlas = "kokonuts",
+    pos = { x = 0, y = 0 },
+
+    rarity = 1,
+    cost = 5,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_lucky
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        -- Same shape as vanilla Marble Joker: build the card in G.play so the
+        -- player sees it, then animate it into the deck. The getting_sliced
+        -- guard stops a Joker being destroyed this frame from still firing.
+        if context.setting_blind
+            and not (context.blueprint_card or card).getting_sliced then
+            G.E_MANAGER:add_event(Event {
+                func = function()
+                    local new_card = create_playing_card(
+                        { front = G.P_CARDS.S_7, center = G.P_CENTERS.m_lucky },
+                        G.play, nil, nil, { G.C.SECONDARY_SET.Enhanced })
+
+                    SMODS.calculate_effect({
+                        message = localize("celesta_plus_seven"),
+                        colour = G.C.SECONDARY_SET.Enhanced,
+                    }, context.blueprint_card or card)
+
+                    G.E_MANAGER:add_event(Event {
+                        func = function()
+                            draw_card(G.play, G.deck, 90, "up", nil)
+                            return true
+                        end
+                    })
+
+                    -- Lets other jokers react to a new playing card existing.
+                    playing_card_joker_effects({ new_card })
+                    return true
+                end
+            })
+        end
+    end,
+}

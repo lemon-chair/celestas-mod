@@ -59,7 +59,6 @@ local ROSTER = {
     { key = "kairyucrocodile", rarity = 1, cost = 4, mult = 4 },
     { key = "kirana", rarity = 1, cost = 4, mult = 4 },
     { key = "kiri", rarity = 1, cost = 4, mult = 4 },
-    { key = "kokonuts", rarity = 1, cost = 4, mult = 4 },
     { key = "kourra", rarity = 1, cost = 4, mult = 4 },
     { key = "kyaree", rarity = 1, cost = 4, mult = 4 },
     { key = "laynalazar", rarity = 1, cost = 4, mult = 4 },
@@ -122,7 +121,6 @@ local ROSTER = {
     { key = "yomiquinnely", rarity = 1, cost = 4, mult = 4 },
     { key = "yuy_ix", rarity = 1, cost = 4, mult = 4 },
     { key = "yuzu", rarity = 1, cost = 4, mult = 4 },
-    { key = "zentreya", rarity = 1, cost = 4, mult = 4 },
 }
 
 for _, entry in ipairs(ROSTER) do
