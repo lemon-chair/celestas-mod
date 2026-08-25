@@ -18,7 +18,7 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SHARED = {"jokers", "consumables", "decks", "icon"}   # not per-joker art
+SHARED = {"jokers", "consumables", "decks", "icon", "seals"}   # not per-joker art
 
 # Auto title-casing cannot know how a creator styles their own name.
 # Add corrections here; anything absent falls back to the mechanical rule.
@@ -213,6 +213,33 @@ LOC_TAIL = '''        },
             },
         },
 
+        Other = {
+            celesta_ectoplast_seal = {
+                name = "Ectoplast Seal",
+                text = {
+                    "{C:inactive}Effect not yet defined{}",
+                },
+            },
+            celesta_foppy_seal = {
+                name = "Foppy Seal",
+                text = {
+                    "{C:inactive}Effect not yet defined{}",
+                },
+            },
+            celesta_rose_seal = {
+                name = "Rose Seal",
+                text = {
+                    "{C:inactive}Effect not yet defined{}",
+                },
+            },
+            celesta_star_seal = {
+                name = "Star Seal",
+                text = {
+                    "{C:inactive}Effect not yet defined{}",
+                },
+            },
+        },
+
         Back = {
             b_celesta_founders = {
                 name = "Founder's Deck",
@@ -235,6 +262,12 @@ LOC_TAIL = '''        },
     },
 
     misc = {
+        labels = {
+            celesta_ectoplast_seal = "Ectoplast Seal",
+            celesta_foppy_seal = "Foppy Seal",
+            celesta_rose_seal = "Rose Seal",
+            celesta_star_seal = "Star Seal",
+        },
         dictionary = {
             celesta_cfg_animation = "Arena animation (off = tint only)",
             celesta_cfg_verbose = "Verbose logging",

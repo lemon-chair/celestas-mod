@@ -17,6 +17,9 @@ SMODS.Atlas { key = 'consumables', path = 'consumables.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'decks',       path = 'decks.png',       px = 71, py = 95 }
 SMODS.Atlas { key = 'modicon',     path = 'icon.png',        px = 32, py = 32 }
 
+-- Seal emblems, card-shaped cells (built by tools/gen_seals.py).
+SMODS.Atlas { key = 'seals',       path = 'seals.png',       px = 71, py = 95 }
+
 -- Arena effect sprite sheets (generated from GIFs by tools/gen_fx.py).
 SMODS.Atlas { key = 'fx_downpour', path = 'fx_downpour.png',  px = 256, py = 256 }
 
@@ -47,7 +50,7 @@ end
 -- 'items/consumables.lua' (the Reforge Tarot) is disabled while it still has
 -- placeholder art — add it back to this list to re-enable. Its code, atlas and
 -- localization are all still in place.
-for _, file in ipairs({ 'items/decks.lua' }) do
+for _, file in ipairs({ 'seals/seals.lua', 'items/decks.lua' }) do
     assert(SMODS.load_file(file))()
 end
 

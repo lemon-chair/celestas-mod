@@ -795,6 +795,33 @@ return {
             },
         },
 
+        Other = {
+            celesta_ectoplast_seal = {
+                name = "Ectoplast Seal",
+                text = {
+                    "{C:inactive}Effect not yet defined{}",
+                },
+            },
+            celesta_foppy_seal = {
+                name = "Foppy Seal",
+                text = {
+                    "{C:inactive}Effect not yet defined{}",
+                },
+            },
+            celesta_rose_seal = {
+                name = "Rose Seal",
+                text = {
+                    "{C:inactive}Effect not yet defined{}",
+                },
+            },
+            celesta_star_seal = {
+                name = "Star Seal",
+                text = {
+                    "{C:inactive}Effect not yet defined{}",
+                },
+            },
+        },
+
         Back = {
             b_celesta_founders = {
                 name = "Founder's Deck",
@@ -817,6 +844,12 @@ return {
     },
 
     misc = {
+        labels = {
+            celesta_ectoplast_seal = "Ectoplast Seal",
+            celesta_foppy_seal = "Foppy Seal",
+            celesta_rose_seal = "Rose Seal",
+            celesta_star_seal = "Star Seal",
+        },
         dictionary = {
             celesta_cfg_animation = "Arena animation (off = tint only)",
             celesta_cfg_verbose = "Verbose logging",
