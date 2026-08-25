@@ -38,8 +38,14 @@ SMODS.Joker {
         if context.first_hand_drawn then
             local candidates = {}
             for _, c in ipairs(G.hand.cards) do
-                -- c_base is the unenhanced playing-card center.
-                if c.config.center == G.P_CENTERS.c_base then
+                -- c_base is the unenhanced playing-card center. The flag
+                -- excludes a card already claimed this pass: set_ability is
+                -- deferred into an event, so a Blueprint/Brainstorm copy
+                -- evaluating in the same pass would still see it as
+                -- unenhanced and could waste the copy re-picking it.
+                -- Vanilla Vampire guards the same way with `vampired`.
+                if c.config.center == G.P_CENTERS.c_base
+                    and not c.celesta_arar_claimed then
                     candidates[#candidates + 1] = c
                 end
             end
@@ -55,10 +61,12 @@ SMODS.Joker {
             }
             if not enhancement then return end
 
+            target.celesta_arar_claimed = true
             G.E_MANAGER:add_event(Event {
                 func = function()
                     target:set_ability(G.P_CENTERS[enhancement], nil, true)
                     target:juice_up(0.3, 0.5)
+                    target.celesta_arar_claimed = nil
                     return true
                 end
             })
