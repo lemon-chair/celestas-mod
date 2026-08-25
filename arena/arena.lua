@@ -58,11 +58,11 @@ Arena.time = 0
 local quad_cache = {}
 
 --- Log a reason at most once per distinct message, so the draw hook can
---- explain itself without spamming the log 60 times a second. Only writes
---- when "Verbose logging" is on in the mod's Config tab.
+--- explain itself without spamming the log 60 times a second.
+--- Currently unconditional while the overlay is being brought up; gate it
+--- behind MOD.config.verbose_logging again once it is working.
 local last_trace
 function Arena.trace(msg)
-    if not (MOD.config and MOD.config.verbose_logging) then return end
     if msg == last_trace then return end
     last_trace = msg
     sendInfoMessage("[arena] " .. msg, "CelestasMod")
@@ -137,6 +137,14 @@ local game_draw_ref = Game.draw
 function Game:draw()
     game_draw_ref(self)
 
+    -- Proves the wrapper is actually on the call path, which separates
+    -- "never called" from "called but bailed" in the log. One-shot, and kept
+    -- off Arena.trace's dedupe so the two do not alternate every frame.
+    if not Arena.hook_logged then
+        Arena.hook_logged = true
+        sendInfoMessage("[arena] draw hook reached", "CelestasMod")
+    end
+
     local key = Arena.active()
     if not key then return Arena.trace("no arena active") end
     if not drawable_state() then
@@ -170,20 +178,24 @@ function Game:draw()
     local iw, ih = img:getDimensions()
     local frame = math.floor(Arena.time * def.fps) % def.frames
     local cache = quad_cache[key]
+    -- Balatro loads either the 1x or the 2x sheet depending on the graphics
+    -- setting, so a frame is iw/cols px - NOT necessarily def.tile. Quads must
+    -- be built from the real size or a 2x sheet yields a quarter of frame 0.
+    local sheet_tile = iw / def.cols
+
     if not cache or cache.iw ~= iw then
         cache = { iw = iw, quads = {} }
         for i = 0, def.frames - 1 do
             cache.quads[i] = love.graphics.newQuad(
-                (i % def.cols) * def.tile, math.floor(i / def.cols) * def.tile,
-                def.tile, def.tile, iw, ih)
+                (i % def.cols) * sheet_tile, math.floor(i / def.cols) * sheet_tile,
+                sheet_tile, sheet_tile, iw, ih)
         end
         quad_cache[key] = cache
+        Arena.trace(("sheet %dx%d, frame %dpx, %d quads")
+            :format(iw, ih, sheet_tile, def.frames))
     end
 
-    -- Whichever sheet the graphics setting loaded (1x or 2x), one frame is
-    -- iw/cols wide. Derive the draw scale from that so the on-screen tile size
-    -- is identical either way.
-    local sheet_tile = iw / def.cols
+    -- Draw at a constant on-screen tile size either way.
     local step = def.tile * def.scale
     local draw_scale = step / sheet_tile
 
