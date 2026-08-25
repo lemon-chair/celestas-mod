@@ -72,7 +72,14 @@ function Arena.active()
     -- Debug toggle in the mod's Config tab: forces the effect on without
     -- needing to actually draw Aquwa. Still only draws in-round.
     if MOD.config and MOD.config.debug_downpour then return "downpour" end
-    return G.GAME and G.GAME.celesta_arena or nil
+    if not G.GAME or not G.GAME.celesta_arena then return nil end
+    -- Safety net for save/load and any path that skips the shop: an effect
+    -- never outlives the round it was started in.
+    if G.GAME.celesta_arena_round and G.GAME.round
+        and G.GAME.round ~= G.GAME.celesta_arena_round then
+        return nil
+    end
+    return G.GAME.celesta_arena
 end
 
 function Arena.is_active(key)
@@ -86,12 +93,19 @@ function Arena.start(key)
     end
     if not G.GAME then return end
     G.GAME.celesta_arena = key
+    -- ease_round(1) runs in select_blind, before the setting_blind context, so
+    -- G.GAME.round is already this round's number by the time a joker starts one.
+    G.GAME.celesta_arena_round = G.GAME.round
     Arena.time = 0
-    sendInfoMessage("Arena started: " .. key, "CelestasMod")
+    sendInfoMessage("Arena started: " .. key .. " (round " ..
+        tostring(G.GAME.round) .. ")", "CelestasMod")
 end
 
 function Arena.stop()
-    if G.GAME then G.GAME.celesta_arena = nil end
+    if G.GAME then
+        G.GAME.celesta_arena = nil
+        G.GAME.celesta_arena_round = nil
+    end
     Arena.time = 0
 end
 
@@ -106,6 +120,8 @@ local function drawable_state()
         [G.STATES.DRAW_TO_HAND]   = true,
         [G.STATES.PLAY_TAROT]     = true,
         [G.STATES.NEW_ROUND]      = true,
+        -- Round evaluation is still the round: Blue Seals resolve here.
+        [G.STATES.ROUND_EVAL]     = true,
         [G.STATES.TAROT_PACK]     = true,
         [G.STATES.PLANET_PACK]    = true,
         [G.STATES.SPECTRAL_PACK]  = true,
@@ -124,8 +140,13 @@ local game_update_ref = Game.update
 function Game:update(dt)
     game_update_ref(self, dt)
 
-    -- Back at blind select means the previous round is fully settled.
-    if G.STATE == G.STATES.BLIND_SELECT and Arena.active() then
+    -- Entering the shop ends the round proper. Clearing here rather than at
+    -- BLIND_SELECT matters: setting_blind fires while G.STATE is still
+    -- BLIND_SELECT, so a blind-select clear wiped the effect on the very next
+    -- frame after a joker started it. The shop is also the correct cut-off for
+    -- the rule itself - round evaluation (Blue Seals) still counts, shop
+    -- purchases do not.
+    if G.STATE == G.STATES.SHOP and G.GAME and G.GAME.celesta_arena then
         Arena.stop()
     end
     if Arena.active() then
