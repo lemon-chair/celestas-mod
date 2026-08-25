@@ -1,0 +1,33 @@
+{
+    // Balatro runs LÖVE 11.x, which is LuaJIT (5.1 syntax).
+    "Lua.runtime.version": "LuaJIT",
+    "Lua.diagnostics.disable": ["lowercase-global", "undefined-global"],
+    "Lua.workspace.checkThirdParty": false,
+
+    // Globals the game and Steamodded inject. Listing them here silences
+    // "undefined global" warnings without turning diagnostics off wholesale.
+    "Lua.diagnostics.globals": [
+        "G", "SMODS", "Game", "Card", "CardArea", "Blind", "Tag", "Event",
+        "Sprite", "Moveable", "Node", "UIBox", "UIElement", "Particles",
+        "localize", "loc_colour", "play_sound", "delay", "ease_dollars",
+        "ease_ante", "card_eval_status_text", "juice_card", "create_toggle",
+        "create_option_cycle", "create_UIBox_generic_options", "number_format",
+        "pseudorandom", "pseudoseed", "pseudorandom_element", "copy_table",
+        "sendInfoMessage", "sendDebugMessage", "sendWarnMessage", "sendErrorMessage",
+        "inspect", "nativefs", "love"
+    ],
+
+    // Point this at extracted Balatro source (see README) for real
+    // autocomplete on G.GAME, Card methods, etc. Harmless if the path is empty.
+    "Lua.workspace.library": [
+        "${workspaceFolder}/.balatro-src"
+    ],
+
+    "files.exclude": {
+        "**/.balatro-src": true
+    },
+    "[lua]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true
+    }
+}

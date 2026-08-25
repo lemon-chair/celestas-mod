@@ -1,0 +1,21 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Launch Balatro",
+            "type": "shell",
+            "command": "& 'C:/Program Files (x86)/Steam/steamapps/common/Balatro/Balatro.exe'",
+            "options": { "shell": { "executable": "powershell.exe", "args": ["-NoProfile", "-Command"] } },
+            "problemMatcher": [],
+            "presentation": { "reveal": "silent", "panel": "dedicated" }
+        },
+        {
+            "label": "Tail Steamodded log",
+            "type": "shell",
+            "command": "Get-Content -Wait -Tail 50 \"$env:APPDATA/Balatro/Mods/lovely/log/*.log\"",
+            "options": { "shell": { "executable": "powershell.exe", "args": ["-NoProfile", "-Command"] } },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "dedicated" }
+        }
+    ]
+}

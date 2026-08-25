@@ -1,0 +1,6 @@
+{
+    "recommendations": [
+        "sumneko.lua",
+        "tamasfe.even-better-toml"
+    ]
+}

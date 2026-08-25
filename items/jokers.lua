@@ -1,0 +1,117 @@
+--- Jokers.
+--- Text for these lives in localization/en-us.lua under descriptions.Joker.
+--- Full context reference: https://github.com/Steamodded/smods/wiki/calculate-functions
+
+--------------------------------------------------------------------------------
+-- 1. Flat bonus — the simplest possible Joker.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = 'spark',
+    atlas = 'jokers',
+    pos = { x = 0, y = 0 },
+
+    rarity = 1,          -- 1 Common, 2 Uncommon, 3 Rare, 4 Legendary
+    cost = 4,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    config = { extra = { chips = 30 } },
+
+    -- Feeds #1#, #2#, ... in the localization text.
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.chips } }
+    end,
+
+    calculate = function(self, card, context)
+        -- joker_main fires once per scoring pass, after all cards are counted.
+        if context.joker_main then
+            return { chips = card.ability.extra.chips }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- 2. Scaling — grows permanently while you play.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = 'ledger',
+    atlas = 'jokers',
+    pos = { x = 1, y = 0 },
+
+    rarity = 2,
+    cost = 6,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    config = { extra = { mult = 0, mult_gain = 2 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.mult_gain, card.ability.extra.mult } }
+    end,
+
+    calculate = function(self, card, context)
+        -- `not context.blueprint` stops copies from double-triggering the growth.
+        if context.discard and context.other_card and not context.blueprint then
+            card.ability.extra.mult = card.ability.extra.mult + card.ability.extra.mult_gain
+            return {
+                message = localize('k_upgrade_ex'),
+                colour = G.C.MULT,
+                card = card,
+            }
+        end
+
+        if context.joker_main and card.ability.extra.mult > 0 then
+            return { mult = card.ability.extra.mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- 3. Per-card trigger + an economy payout at end of round.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = 'tollkeeper',
+    atlas = 'jokers',
+    pos = { x = 2, y = 0 },
+
+    rarity = 2,
+    cost = 7,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = false,   -- payout Jokers are usually not eternal-safe
+
+    config = { extra = { x_mult = 1.5, dollars = 3 } },
+
+    loc_vars = function(self, info_queue, card)
+        -- info_queue adds a linked tooltip below this Joker's description.
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_gold
+        return { vars = { card.ability.extra.x_mult, card.ability.extra.dollars } }
+    end,
+
+    calculate = function(self, card, context)
+        -- Fires once for each scoring card in the played hand.
+        if context.individual and context.cardarea == G.play then
+            if context.other_card:is_suit('Diamonds') then
+                return {
+                    x_mult = card.ability.extra.x_mult,
+                    card = card,
+                }
+            end
+        end
+
+        if context.end_of_round and context.game_over == false and not context.blueprint then
+            return {
+                dollars = card.ability.extra.dollars,
+                card = card,
+            }
+        end
+    end,
+}

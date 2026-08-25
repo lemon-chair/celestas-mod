@@ -1,0 +1,11 @@
+# Extracted Balatro source used only for editor autocomplete
+.balatro-src/
+
+# Lovely output
+lovely/dump/
+lovely/log/
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+*.swp
