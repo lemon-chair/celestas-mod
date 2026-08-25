@@ -33,6 +33,7 @@ DISPLAY_NAMES = {
     "itsdeadlyboop": "ItsDeadlyBoop",
     "jaxvtuber": "JaxVTuber",
     "kokonuts": "KokoNuts",
+    "laynalazar": "LaynaLazar",
     "monikacinnyroll": "MonikaCinnyroll",
     "motherv3": "MotherV3",
     "rtgame": "RTGame",

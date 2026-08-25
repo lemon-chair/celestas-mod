@@ -392,9 +392,13 @@ return {
                 },
             },
             j_celesta_laynalazar = {
-                name = "Laynalazar",
+                name = "LaynaLazar",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Removes {C:attention}Mult{} enhancements",
+                    "from scoring cards, this Joker",
+                    "gains {C:mult}+#1#{} Mult per",
+                    "enhancement removed",
+                    "{C:inactive}(Currently {C:mult}+#2#{C:inactive} Mult)",
                 },
             },
             j_celesta_liffeh = {

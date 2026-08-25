@@ -315,3 +315,74 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- LaynaLazar [Uncommon]
+-- Removes Mult enhancements from scoring cards; gains +4 permanent Mult
+-- for each one removed.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "laynalazar",
+    atlas = "laynalazar",
+    pos = { x = 0, y = 0 },
+
+    rarity = 2,
+    cost = 6,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    config = { extra = { mult = 0, mult_gain = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_mult
+        return { vars = { card.ability.extra.mult_gain, card.ability.extra.mult } }
+    end,
+
+    calculate = function(self, card, context)
+        -- Same shape as vanilla Vampire: context.before, so the enhancement is
+        -- stripped before the hand scores and those cards do not pay out their
+        -- Mult this hand. context.scoring_hand is only populated here.
+        if context.before and not context.blueprint then
+            local removed = {}
+            for _, played in ipairs(context.scoring_hand) do
+                if SMODS.has_enhancement(played, "m_mult")
+                    and not played.debuff
+                    and not played.celesta_stripped then
+                    removed[#removed + 1] = played
+                    played.celesta_stripped = true
+                    played:set_ability(G.P_CENTERS.c_base, nil, true)
+                    G.E_MANAGER:add_event(Event {
+                        func = function()
+                            played:juice_up()
+                            played.celesta_stripped = nil
+                            return true
+                        end
+                    })
+                end
+            end
+
+            if #removed > 0 then
+                -- scale_card rather than a raw add: it routes through SMODS'
+                -- scaling hooks and Talisman's big-number handling, and shows
+                -- the "+N Mult" popup itself.
+                SMODS.scale_card(card, {
+                    ref_table = card.ability.extra,
+                    ref_value = "mult",
+                    scalar_value = "mult_gain",
+                    message_key = "a_mult",
+                    message_colour = G.C.MULT,
+                    operation = function(ref_table, ref_value, initial, scaling)
+                        ref_table[ref_value] = initial + scaling * #removed
+                    end
+                })
+            end
+        end
+
+        if context.joker_main and card.ability.extra.mult > 0 then
+            return { mult = card.ability.extra.mult }
+        end
+    end,
+}

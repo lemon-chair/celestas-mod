@@ -61,7 +61,6 @@ local ROSTER = {
     { key = "kiri", rarity = 1, cost = 4, mult = 4 },
     { key = "kourra", rarity = 1, cost = 4, mult = 4 },
     { key = "kyaree", rarity = 1, cost = 4, mult = 4 },
-    { key = "laynalazar", rarity = 1, cost = 4, mult = 4 },
     { key = "liffeh", rarity = 1, cost = 4, mult = 4 },
     { key = "limealicious", rarity = 1, cost = 4, mult = 4 },
     { key = "lucypyre", rarity = 1, cost = 4, mult = 4 },
