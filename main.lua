@@ -65,6 +65,11 @@ SMODS.current_mod.config_tab = function()
                 ref_table = SMODS.current_mod.config,
                 ref_value = 'verbose_logging',
             },
+            create_toggle {
+                label = localize('celesta_cfg_downpour'),
+                ref_table = SMODS.current_mod.config,
+                ref_value = 'debug_downpour',
+            },
         },
     }
 end

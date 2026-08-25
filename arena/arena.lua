@@ -19,8 +19,9 @@ CelestasMod.Arena = CelestasMod.Arena or {}
 local Arena = CelestasMod.Arena
 
 -- SMODS.current_mod is only meaningful while the mod is loading, so resolve
--- the atlas prefix now rather than inside the draw hook.
-local ATLAS_PREFIX = SMODS.current_mod.prefix .. "_"
+-- the prefix and keep the mod table now rather than inside the draw hook.
+local MOD = SMODS.current_mod
+local ATLAS_PREFIX = MOD.prefix .. "_"
 
 --------------------------------------------------------------------------------
 -- Definitions
@@ -56,7 +57,21 @@ Arena.definitions = {
 Arena.time = 0
 local quad_cache = {}
 
+--- Log a reason at most once per distinct message, so the draw hook can
+--- explain itself without spamming the log 60 times a second. Only writes
+--- when "Verbose logging" is on in the mod's Config tab.
+local last_trace
+function Arena.trace(msg)
+    if not (MOD.config and MOD.config.verbose_logging) then return end
+    if msg == last_trace then return end
+    last_trace = msg
+    sendInfoMessage("[arena] " .. msg, "CelestasMod")
+end
+
 function Arena.active()
+    -- Debug toggle in the mod's Config tab: forces the effect on without
+    -- needing to actually draw Aquwa. Still only draws in-round.
+    if MOD.config and MOD.config.debug_downpour then return "downpour" end
     return G.GAME and G.GAME.celesta_arena or nil
 end
 
@@ -72,6 +87,7 @@ function Arena.start(key)
     if not G.GAME then return end
     G.GAME.celesta_arena = key
     Arena.time = 0
+    sendInfoMessage("Arena started: " .. key, "CelestasMod")
 end
 
 function Arena.stop()
@@ -122,10 +138,19 @@ function Game:draw()
     game_draw_ref(self)
 
     local key = Arena.active()
-    if not key or not drawable_state() then return end
+    if not key then return Arena.trace("no arena active") end
+    if not drawable_state() then
+        return Arena.trace("arena '" .. key .. "' active but state " ..
+            tostring(G.STATE) .. " is not drawable")
+    end
     local def = Arena.definitions[key]
-    local atlas = def and G.ASSET_ATLAS[ATLAS_PREFIX .. def.atlas]
-    if not atlas or not atlas.image then return end
+    if not def then return Arena.trace("no definition for '" .. key .. "'") end
+    local atlas = G.ASSET_ATLAS[ATLAS_PREFIX .. def.atlas]
+    if not atlas or not atlas.image then
+        return Arena.trace("atlas '" .. ATLAS_PREFIX .. def.atlas ..
+            "' missing from G.ASSET_ATLAS")
+    end
+    Arena.trace("drawing '" .. key .. "'")
 
     -- Game:draw has already flushed its canvas to the screen and cleared the
     -- shader, so this lands on top in raw window pixels.

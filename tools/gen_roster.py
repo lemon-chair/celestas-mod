@@ -237,6 +237,7 @@ LOC_TAIL = '''        },
     misc = {
         dictionary = {
             celesta_cfg_verbose = "Verbose logging",
+            celesta_cfg_downpour = "Force Downpour (debug)",
             -- Floating message text. Vanilla has no generic "+card" key
             -- (k_plus_stone is Marble Joker's own), so this mod supplies one.
             celesta_plus_seven = "+7 of Spades",

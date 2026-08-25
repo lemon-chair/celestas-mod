@@ -2,5 +2,9 @@
 --- the player makes to %APPDATA%/Balatro/config/CelestasMod.jkr.
 --- Read it anywhere with: SMODS.current_mod.config
 return {
+    -- Writes arena-effect diagnostics to Mods/lovely/log/.
     verbose_logging = false,
+    -- Forces a Downpour on without needing Aquwa in play. Still only visible
+    -- during a round, so start a blind to see it.
+    debug_downpour = false,
 }
