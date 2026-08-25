@@ -162,6 +162,11 @@ SMODS.Joker {
         -- part of the scoring hand, so this is already "scoring cards" only.
         if context.destroying_card and context.cardarea == G.play then
             if SMODS.has_enhancement(context.destroying_card, "m_gold") then
+                -- calculate_destroying_cards acts on `remove` without checking
+                -- eternal itself, so guard here or Kumi eats eternal cards.
+                -- No destruction means no payout, hence the early return.
+                if SMODS.is_eternal(context.destroying_card) then return end
+
                 -- `remove` and `dollars` are both in other_calculation_keys,
                 -- so one table can destroy the card and pay out at once.
                 local effect = { remove = true }
