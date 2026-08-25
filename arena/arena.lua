@@ -179,7 +179,11 @@ function Game:draw()
         return Arena.trace("atlas '" .. ATLAS_PREFIX .. def.atlas ..
             "' missing from G.ASSET_ATLAS")
     end
-    Arena.trace("drawing '" .. key .. "'")
+    -- Compared against false so a config predating this key still animates.
+    local animate = not (MOD.config and MOD.config.arena_animation == false)
+    -- One trace covering both modes; two alternating messages would defeat the
+    -- dedupe and log every frame.
+    Arena.trace("drawing '" .. key .. "'" .. (animate and "" or " (tint only)"))
 
     -- Game:draw has already flushed its canvas to the screen and cleared the
     -- shader, so this lands on top in raw window pixels.
@@ -193,6 +197,14 @@ function Game:draw()
     if def.tint then
         love.graphics.setColor(def.tint[1], def.tint[2], def.tint[3], def.tint[4])
         love.graphics.rectangle("fill", 0, 0, w, h)
+    end
+
+    -- "Arena animation" off in the mod config: keep the colour wash, skip the
+    -- moving texture entirely.
+    if not animate then
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.pop()
+        return
     end
 
     local img = atlas.image

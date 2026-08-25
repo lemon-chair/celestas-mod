@@ -236,6 +236,7 @@ LOC_TAIL = '''        },
 
     misc = {
         dictionary = {
+            celesta_cfg_animation = "Arena animation (off = tint only)",
             celesta_cfg_verbose = "Verbose logging",
             celesta_cfg_downpour = "Force Downpour (debug)",
             -- Floating message text. Vanilla has no generic "+card" key

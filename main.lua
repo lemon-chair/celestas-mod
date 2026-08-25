@@ -61,6 +61,11 @@ SMODS.current_mod.config_tab = function()
         config = { align = 'cm', padding = 0.05, colour = G.C.CLEAR },
         nodes = {
             create_toggle {
+                label = localize('celesta_cfg_animation'),
+                ref_table = SMODS.current_mod.config,
+                ref_value = 'arena_animation',
+            },
+            create_toggle {
                 label = localize('celesta_cfg_verbose'),
                 ref_table = SMODS.current_mod.config,
                 ref_value = 'verbose_logging',
