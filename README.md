@@ -1,32 +1,63 @@
 # Celesta's Mod
 
-A Balatro mod skeleton built on [Steamodded](https://github.com/Steamodded/smods).
-Ships with three example Jokers, a Tarot, and a Deck — enough of each object type
-to copy from.
+A Balatro mod built on [Steamodded](https://github.com/Steamodded/smods),
+structured after the Legends mod. 119 VTuber Jokers driven by a generated roster,
+plus three worked example Jokers, a Tarot, and a Deck to copy patterns from.
 
 ## Layout
 
 ```
 CelestasMod/
-├─ CelestasMod.json      Mod manifest — id, prefix, version, dependencies
-├─ main.lua              Entry point: registers atlases, loads items/
-├─ config.lua            Default mod config (editable in the Mods menu)
-├─ items/
-│  ├─ jokers.lua         Flat bonus, scaling, and per-card-trigger examples
-│  ├─ consumables.lua    Tarot with can_use / use
-│  └─ decks.lua          Back with starting params + apply()
-├─ localization/
-│  └─ en-us.lua          All player-facing text
-├─ assets/
-│  ├─ 1x/                Sprite sheets (71x95 per card)
-│  └─ 2x/                Same sheets at exactly double size
-├─ lovely/               Raw source patches (only if Steamodded can't reach it)
-└─ .vscode/              Lua LSP settings, extension recs, launch/log tasks
++- CelestasMod.json      Mod manifest - id, prefix, version, dependencies
++- main.lua              Entry point: globals, shared atlases, auto-loads jokers/
++- globals.lua           Custom colours + loc_colour hook (mirrors Legends)
++- config.lua            Default mod config (editable in the Mods menu)
++- jokers/               Every .lua here is auto-loaded, sorted by filename
+|  +- atlases.lua        GENERATED - one SMODS.Atlas per image in assets/1x
+|  +- examples.lua       Hand-written: flat, scaling, and per-card patterns
+|  +- vtubers.lua        GENERATED - the 119-joker roster
++- items/
+|  +- consumables.lua    Tarot with can_use / use
+|  +- decks.lua          Back with starting params + apply()
++- localization/
+|  +- en-us.lua          GENERATED - all player-facing text
++- assets/
+|  +- 1x/                One 71x95 image per joker + shared sheets
+|  +- 2x/                Same names at 142x190
++- tools/
+|  +- gen_roster.py      Rebuilds the three GENERATED files from assets/1x
++- lovely/               Raw source patches (only if Steamodded cannot reach it)
++- .vscode/              Lua LSP settings, extension recs, launch/log tasks
 ```
 
-The current sprites are generated placeholders — flat coloured cards with a
-stripe marking the top-left. Replace them in place; keep the 1x sheet at
-`71 x 95` per sprite and the 2x sheet at exactly double.
+## The roster
+
+119 Jokers, one per image, following the Legends mod's convention: each image is
+its own single-sprite atlas, referenced by the filename stem.
+
+```
+assets/1x/shylily.png  ->  SMODS.Atlas { key = "shylily" }  ->  j_celesta_shylily
+```
+
+Right now every one of them is a Common Joker with the same placeholder
+`+4 Mult`, so the full roster loads and is testable in-game. To give one a real
+effect, add a `calculate` to its row in `jokers/vtubers.lua`:
+
+```lua
+{ key = "neuro", rarity = 3, cost = 8, mult = 0,
+  calculate = function(self, card, context)
+      if context.joker_main then return { x_mult = 3 } end
+  end },
+```
+
+...then rewrite its text in `localization/en-us.lua`. `jokers/examples.lua` has
+worked examples of the three most common trigger shapes.
+
+**Regenerating:** `python tools/gen_roster.py` rebuilds `jokers/atlases.lua`,
+`jokers/vtubers.lua`, and `localization/en-us.lua` from whatever is in
+`assets/1x/`. It overwrites hand-written descriptions, so once you start writing
+real text, stop running it. Display names come from filenames; corrections go in
+the `DISPLAY_NAMES` map at the top of the script.
 
 ## Setup
 
@@ -44,10 +75,10 @@ The `prefix` in the manifest (`celesta`) is prepended to everything:
 
 | You write | Game sees |
 | --- | --- |
-| `SMODS.Joker { key = 'spark' }` | `j_celesta_spark` |
+| `SMODS.Joker { key = 'shylily' }` | `j_celesta_shylily` |
 | `SMODS.Consumable { key = 'reforge' }` | `c_celesta_reforge` |
 | `SMODS.Back { key = 'founders' }` | `b_celesta_founders` |
-| `SMODS.Atlas { key = 'jokers' }` | `celesta_jokers` |
+| `SMODS.Atlas { key = 'shylily' }` | `celesta_shylily` |
 
 Localization keys must use the **full prefixed** form. Cross-references between
 your own objects do too — see `decks.lua` spawning `j_celesta_spark`.

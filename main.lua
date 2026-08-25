@@ -1,80 +1,59 @@
 --- Celesta's Mod — entry point.
---- Steamodded runs this file once, after the manifest is parsed.
---- `SMODS.current_mod` is this mod's table; the key prefix ("celesta") is
---- prepended to every key you register below, so a Joker with key "spark"
---- becomes "j_celesta_spark" in the game.
+--- Structure follows the Legends mod: globals first, then every .lua file in
+--- jokers/ is auto-loaded, then the hand-maintained items/ files.
 
-local mod = SMODS.current_mod
+CelestasMod = {}
 
---------------------------------------------------------------------------------
--- Atlases (sprite sheets)
--- `path` is resolved against assets/1x/ and assets/2x/. px/py are the
--- dimensions of ONE sprite at 1x; the 2x sheet must be exactly double.
---------------------------------------------------------------------------------
-
-SMODS.Atlas {
-    key = 'jokers',
-    path = 'jokers.png',
-    px = 71,
-    py = 95,
-}
-
-SMODS.Atlas {
-    key = 'consumables',
-    path = 'consumables.png',
-    px = 71,
-    py = 95,
-}
-
-SMODS.Atlas {
-    key = 'decks',
-    path = 'decks.png',
-    px = 71,
-    py = 95,
-}
-
--- The little icon shown next to the mod in the Mods menu.
-SMODS.Atlas {
-    key = 'modicon',
-    path = 'icon.png',
-    px = 32,
-    py = 32,
-    atlas_table = 'ASSET_ATLAS',
-}
+-- Load globals (custom colours + loc_colour hook)
+assert(SMODS.load_file("globals.lua"))()
 
 --------------------------------------------------------------------------------
--- Content
--- Each file returns nothing; it just registers its objects. Split them up as
--- the mod grows — one file per category keeps main.lua readable.
+-- Shared atlases (the placeholder sheets + mod icon).
+-- Per-joker atlases live in jokers/atlases.lua, one per image.
 --------------------------------------------------------------------------------
 
-local files = {
-    'items/jokers.lua',
-    'items/consumables.lua',
-    'items/decks.lua',
-}
+SMODS.Atlas { key = 'jokers',      path = 'jokers.png',      px = 71, py = 95 }
+SMODS.Atlas { key = 'consumables', path = 'consumables.png', px = 71, py = 95 }
+SMODS.Atlas { key = 'decks',       path = 'decks.png',       px = 71, py = 95 }
+SMODS.Atlas { key = 'modicon',     path = 'icon.png',        px = 32, py = 32 }
 
-for _, file in ipairs(files) do
+--------------------------------------------------------------------------------
+-- Jokers — auto-loaded from jokers/.
+-- Sorted so atlases.lua always registers before vtubers.lua references it.
+--------------------------------------------------------------------------------
+
+local joker_src = NFS.getDirectoryItems(SMODS.current_mod.path .. "jokers")
+table.sort(joker_src)
+for _, file in ipairs(joker_src) do
+    if file:match("%.lua$") then
+        assert(SMODS.load_file("jokers/" .. file))()
+    end
+end
+
+--------------------------------------------------------------------------------
+-- Everything else — explicit list, order matters here.
+--------------------------------------------------------------------------------
+
+for _, file in ipairs({ 'items/consumables.lua', 'items/decks.lua' }) do
     assert(SMODS.load_file(file))()
 end
 
 --------------------------------------------------------------------------------
--- Mod config tab (optional)
--- Shows up as a "Config" button on the mod's page in the Mods menu.
+-- Mod config tab
 --------------------------------------------------------------------------------
 
-mod.config_tab = function()
+SMODS.current_mod.config_tab = function()
     return {
         n = G.UIT.ROOT,
         config = { align = 'cm', padding = 0.05, colour = G.C.CLEAR },
         nodes = {
             create_toggle {
                 label = localize('celesta_cfg_verbose'),
-                ref_table = mod.config,
+                ref_table = SMODS.current_mod.config,
                 ref_value = 'verbose_logging',
             },
         },
     }
 end
 
-sendInfoMessage('Loaded ' .. mod.name .. ' v' .. mod.version, 'CelestasMod')
+sendInfoMessage('Loaded ' .. SMODS.current_mod.name, 'CelestasMod')

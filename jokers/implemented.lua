@@ -1,0 +1,176 @@
+--- Hand-written Jokers with real effects.
+---
+--- Anything defined here is EXCLUDED from the generated roster in
+--- jokers/vtubers.lua, so move a joker into this file the moment it stops
+--- being a placeholder. tools/gen_roster.py finds them by matching
+--- `SMODS.Joker {` followed immediately by `key = "..."`, so keep `key` as the
+--- first field of every definition.
+---
+--- Their localization in localization/en-us.lua is preserved across
+--- regeneration too - the generator only ever appends missing entries.
+
+--------------------------------------------------------------------------------
+-- Arar [Common]
+-- At the start of each round, add a random enhancement to a random
+-- unenhanced card held in hand.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "arar",
+    atlas = "arar",
+    pos = { x = 0, y = 0 },
+
+    rarity = 1,
+    cost = 4,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        -- Fires once per round, right after the opening hand is dealt.
+        -- (Set by state_events.lua as
+        --  `not G.GAME.current_round.any_hand_drawn and G.GAME.facing_blind`.)
+        if context.first_hand_drawn then
+            local candidates = {}
+            for _, c in ipairs(G.hand.cards) do
+                -- c_base is the unenhanced playing-card center.
+                if c.config.center == G.P_CENTERS.c_base then
+                    candidates[#candidates + 1] = c
+                end
+            end
+            if #candidates == 0 then return end
+
+            local target = pseudorandom_element(candidates, pseudoseed("celesta_arar"))
+            -- poll_enhancement respects the run's current pool, so this never
+            -- rolls an enhancement the run has disabled, and it does pick up
+            -- enhancements added by other mods.
+            local enhancement = SMODS.poll_enhancement {
+                key = "celesta_arar_enh",
+                guaranteed = true,
+            }
+            if not enhancement then return end
+
+            G.E_MANAGER:add_event(Event {
+                func = function()
+                    target:set_ability(G.P_CENTERS[enhancement], nil, true)
+                    target:juice_up(0.3, 0.5)
+                    return true
+                end
+            })
+
+            return {
+                message = localize("k_upgrade_ex"),
+                colour = G.C.SECONDARY_SET.Enhanced,
+                card = card,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Crelly [Uncommon]
+-- At the end of the shop, consumes a random held consumable and gains
+-- X0.2 Mult for doing so. Base X1 Mult.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "crelly",
+    atlas = "crelly",
+    pos = { x = 0, y = 0 },
+
+    rarity = 2,
+    cost = 6,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    config = { extra = { x_mult = 1, x_mult_gain = 0.2 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.x_mult_gain, card.ability.extra.x_mult } }
+    end,
+
+    calculate = function(self, card, context)
+        -- Fires when the "Next Round" button leaves the shop.
+        -- `not context.blueprint` so a Blueprint copy cannot eat a second
+        -- consumable or double the growth - it still copies the X Mult below.
+        if context.ending_shop and not context.blueprint then
+            if #G.consumeables.cards > 0 then
+                local target = pseudorandom_element(G.consumeables.cards,
+                    pseudoseed("celesta_crelly"))
+
+                card.ability.extra.x_mult = card.ability.extra.x_mult
+                    + card.ability.extra.x_mult_gain
+
+                -- Respects eternal/undestroyable stickers and animates the eat.
+                SMODS.destroy_cards(target)
+
+                return {
+                    message = localize {
+                        type = "variable",
+                        key = "a_xmult",
+                        vars = { card.ability.extra.x_mult },
+                    },
+                    colour = G.C.MULT,
+                    card = card,
+                }
+            end
+        end
+
+        if context.joker_main and card.ability.extra.x_mult > 1 then
+            return { x_mult = card.ability.extra.x_mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Kumi [Rare]
+-- Destroys all scoring Gold cards in the played hand, with a 1 in 4 chance
+-- to give $20 for each Gold card destroyed.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "kumi",
+    atlas = "kumi",
+    pos = { x = 0, y = 0 },
+
+    rarity = 3,
+    cost = 8,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    config = { extra = { dollars = 20, odds = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_gold
+        -- Reads the live odds so the text tracks Oops! All 6s and friends.
+        local numerator, denominator = SMODS.get_probability_vars(
+            card, 1, card.ability.extra.odds, "celesta_kumi")
+        return { vars = { numerator, denominator, card.ability.extra.dollars } }
+    end,
+
+    calculate = function(self, card, context)
+        -- destroying_card is only set for cards that are both in G.play and
+        -- part of the scoring hand, so this is already "scoring cards" only.
+        if context.destroying_card and context.cardarea == G.play then
+            if SMODS.has_enhancement(context.destroying_card, "m_gold") then
+                -- `remove` and `dollars` are both in other_calculation_keys,
+                -- so one table can destroy the card and pay out at once.
+                local effect = { remove = true }
+                if SMODS.pseudorandom_probability(
+                        card, "celesta_kumi", 1, card.ability.extra.odds) then
+                    effect.dollars = card.ability.extra.dollars
+                end
+                return effect
+            end
+        end
+    end,
+}

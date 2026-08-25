@@ -2,15 +2,19 @@
     "id": "CelestasMod",
     "name": "Celesta's Mod",
     "display_name": "Celesta",
-    "author": ["Matt Lee"],
-    "description": "A starter mod: example Joker, Tarot, and Deck.",
+    "author": [
+        "Matt Lee"
+    ],
+    "description": "119 VTuber Jokers.",
     "prefix": "celesta",
     "main_file": "main.lua",
     "priority": 0,
     "badge_colour": "6C5CE7",
     "badge_text_colour": "FFFFFF",
     "version": "0.1.0",
-    "dependencies": ["Steamodded (>=1.0.0)"],
+    "dependencies": [
+        "Steamodded (>=1.0.0~)"
+    ],
     "conflicts": [],
     "provides": []
 }
