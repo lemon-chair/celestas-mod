@@ -86,28 +86,32 @@ end
 -- Mod config tab
 --------------------------------------------------------------------------------
 
-SMODS.current_mod.config_tab = function()
+-- Captured now: config_tab runs when the player opens the Config page, by
+-- which point SMODS.current_mod is no longer guaranteed to be set.
+local MOD = SMODS.current_mod
+
+MOD.config_tab = function()
     return {
         n = G.UIT.ROOT,
         config = { align = 'cm', padding = 0.05, colour = G.C.CLEAR },
         nodes = {
             create_toggle {
                 label = localize('celesta_cfg_animation'),
-                ref_table = SMODS.current_mod.config,
+                ref_table = MOD.config,
                 ref_value = 'arena_animation',
             },
             create_toggle {
                 label = localize('celesta_cfg_verbose'),
-                ref_table = SMODS.current_mod.config,
+                ref_table = MOD.config,
                 ref_value = 'verbose_logging',
             },
             create_toggle {
                 label = localize('celesta_cfg_downpour'),
-                ref_table = SMODS.current_mod.config,
+                ref_table = MOD.config,
                 ref_value = 'debug_downpour',
             },
         },
     }
 end
 
-sendInfoMessage('Loaded ' .. SMODS.current_mod.name, 'CelestasMod')
+sendInfoMessage('Loaded ' .. MOD.name, 'CelestasMod')

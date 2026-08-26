@@ -19,6 +19,10 @@ CelestasMod.ENHANCEMENT_KEYS = {
 
 -- Shared so Saruei can target this exact roll through fix_probability, and so
 -- the odds shown on the card can never drift from the odds rolled.
+-- Resolved at load: SMODS.current_mod is only valid while the mod is
+-- loading, and Exo's draw hook runs every frame long afterwards.
+local EXO_FRAME_ATLAS = SMODS.current_mod.prefix .. "_enh_exo_frame"
+
 CelestasMod.GASH_BREAK_ID = "celesta_gash_break"
 CelestasMod.GASH_ODDS = 4
 
@@ -48,7 +52,7 @@ SMODS.Enhancement {
     -- body; the frame is drawn here instead so it can be larger than the card,
     -- the same way a Legendary Joker's soul overlay is drawn.
     draw = function(self, card, layer)
-        local atlas = G.ASSET_ATLAS[SMODS.current_mod.prefix .. "_enh_exo_frame"]
+        local atlas = G.ASSET_ATLAS[EXO_FRAME_ATLAS]
         if not atlas then return end
         if not exo_frame_sprite then
             exo_frame_sprite = Sprite(0, 0, G.CARD_W, G.CARD_H, atlas, { x = 0, y = 0 })
