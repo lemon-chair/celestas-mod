@@ -29,6 +29,27 @@ SOURCES = {
 }
 
 
+BASE_CARD = os.path.join(ROOT, "tools", "base_card.png")
+
+
+def composite(overlay, w, h):
+    """Put the vanilla card body under an overlay-style enhancement.
+
+    This is the whole reason Gash rendered as an invisible card. A playing
+    card's white body comes from its CENTER sprite - vanilla c_base is 69x93
+    opaque - while children.front carries only the pips (4.4% opaque). An
+    enhancement replaces the center, so art that is mostly transparent removes
+    the body and leaves pips floating over nothing.
+
+    Baking c_base underneath makes these read as a normal card wearing the
+    overlay. The body is stretched to the cell, so Exo's larger cell still maps
+    exactly onto the card rect.
+    """
+    base = Image.open(BASE_CARD).convert("RGBA").resize((w, h), Image.NEAREST)
+    base.alpha_composite(overlay)
+    return base
+
+
 def main():
     for name, (src1, src2, (cw, ch)) in SOURCES.items():
         big = Image.open(os.path.join(DOWNLOADS, src2)).convert("RGBA")
@@ -44,9 +65,9 @@ def main():
             # halving of the 2x rather than a separately-authored crop.
             small = big.resize((cw, ch), Image.NEAREST)
 
-        for img, folder in ((small, "1x"), (big, "2x")):
+        for img, folder, scale in ((small, "1x", 1), (big, "2x", 2)):
             out = os.path.join(ROOT, "assets", folder, "enh_%s.png" % name)
-            img.save(out)
+            composite(img, cw * scale, ch * scale).save(out)
             print("wrote %-28s %s" % (os.path.relpath(out, ROOT), img.size))
 
     print("\natlas declarations for main.lua:")

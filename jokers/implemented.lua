@@ -876,6 +876,11 @@ SMODS.Joker {
             if other and not SMODS.has_enhancement(other, CelestasMod.ENHANCEMENT_KEYS.Gash)
                 and SMODS.pseudorandom_probability(card, "celesta_shoto", 1, card.ability.extra.odds) then
                 other:set_ability(G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Gash], nil, true)
+                -- Spare it from breaking on the hand it was gashed in; the
+                -- Gash enhancement consumes this flag on its next destroy
+                -- check. Without it a card could be gashed and destroyed in
+                -- the same scoring pass.
+                other.celesta_gash_fresh = true
                 other:juice_up(0.3, 0.4)
                 return { message = localize("celesta_gashed"), colour = G.C.RED, card = card }
             end

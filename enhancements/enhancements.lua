@@ -77,6 +77,16 @@ SMODS.Enhancement {
         -- the card asks to be removed, rather than a joker removing it.
         if context.destroy_card and context.destroy_card == card
             and context.cardarea == G.play then
+            -- A Gash applied by Shoto this very hand gets a pass, so a card
+            -- cannot be gashed and destroyed in the same scoring pass. The
+            -- flag is consumed here, so it is immune exactly once - and
+            -- because Shoto gashes during scoring, that "once" is always the
+            -- hand it was created in. Checked ahead of the roll, so Saruei's
+            -- 1-in-1 does not override the grace either.
+            if card.celesta_gash_fresh then
+                card.celesta_gash_fresh = nil
+                return
+            end
             if SMODS.pseudorandom_probability(card, CelestasMod.GASH_BREAK_ID,
                     1, CelestasMod.GASH_ODDS, CelestasMod.GASH_BREAK_ID) then
                 return { remove = true }
