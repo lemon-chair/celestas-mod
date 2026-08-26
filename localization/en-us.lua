@@ -138,7 +138,8 @@ return {
             j_celesta_bluto = {
                 name = "Bluto",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Retriggers {C:attention}Blueprint{} and",
+                    "{C:attention}Brainstorm{} {C:attention}#1#{} extra time each",
                 },
             },
             j_celesta_bricky = {
@@ -203,9 +204,12 @@ return {
                 },
             },
             j_celesta_cweamcat = {
-                name = "Cweamcat",
+                name = "CweamCat",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "This Joker gains {C:chips}+#1#{} Chips",
+                    "if played hand is a {C:attention}#2#{}",
+                    "{C:inactive}(hand changes after each hand played)",
+                    "{C:inactive}(Currently {C:chips}+#3#{C:inactive} Chips)",
                 },
             },
             j_celesta_cyyuvtuber = {
@@ -570,9 +574,11 @@ return {
                 },
             },
             j_celesta_onigiri = {
-                name = "Onigiri",
+                name = "OniGiri",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Copies the ability of",
+                    "a random {C:attention}Joker{}",
+                    "{C:inactive}(changes after each hand played)",
                 },
             },
             j_celesta_overezeggs = {
@@ -584,15 +590,19 @@ return {
                 },
             },
             j_celesta_pandabearlily = {
-                name = "Pandabearlily",
+                name = "PandaBearLily",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "If the {C:attention}first hand{} of a round",
+                    "is a single card, add {C:attention}#1#{} random",
+                    "cards of that suit to your deck",
                 },
             },
             j_celesta_papamutt = {
-                name = "Papamutt",
+                name = "Papa Mutt",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Creates a random {C:tarot}Tarot{} card",
+                    "if played hand is a {C:attention}#1#{}",
+                    "{C:inactive}(Must have room)",
                 },
             },
             j_celesta_pipi = {
@@ -652,7 +662,9 @@ return {
             j_celesta_rosedoodle = {
                 name = "Rosedoodle",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:attention}Mult{} cards have a {C:green}#1# in #2#{}",
+                    "chance to give {X:mult,C:white}X#3#{} Mult",
+                    "when scored",
                 },
             },
             j_celesta_rtgame = {

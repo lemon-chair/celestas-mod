@@ -1230,3 +1230,296 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- OniGiri [Uncommon] - copies a random Joker, re-picked after each hand.
+--------------------------------------------------------------------------------
+
+--- Choose a fresh Joker for OniGiri to copy, never itself.
+local function onigiri_repick(card)
+    if not G.jokers then return end
+    local options = {}
+    for i, other in ipairs(G.jokers.cards) do
+        if other ~= card and other.config.center.blueprint_compat then
+            options[#options + 1] = i
+        end
+    end
+    card.ability.extra.target = (#options > 0)
+        and pseudorandom_element(options, pseudoseed("celesta_onigiri"))
+        or nil
+end
+
+SMODS.Joker {
+    key = "onigiri",
+    atlas = "onigiri",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 7,
+    unlocked = true, discovered = true,
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { target = nil } },
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        onigiri_repick(card)
+    end,
+
+    calculate = function(self, card, context)
+        -- Re-pick once the hand is fully resolved, so the target that was
+        -- copied during scoring is the one shown for that hand.
+        if context.after and not context.blueprint then
+            onigiri_repick(card)
+            return
+        end
+
+        -- An index rather than a stored card: jokers get sold, moved and
+        -- destroyed between hands, and the index is refreshed every hand
+        -- anyway. Guarded so a stale index cannot copy itself or nothing.
+        local index = card.ability.extra.target
+        if not index or not G.jokers then return end
+        local target = G.jokers.cards[index]
+        if not target or target == card then return end
+
+        -- Same machinery Blueprint uses, so copy depth, blueprint_compat and
+        -- the recursion guard are all handled for us.
+        return SMODS.blueprint_effect(card, target, context)
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Papa Mutt [Common] - a Tarot when the hand is a Three of a Kind.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "papamutt",
+    atlas = "papamutt",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { localize("Three of a Kind", "poker_hands") } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.before and not context.blueprint
+            and context.scoring_name == "Three of a Kind" then
+            if #G.consumeables.cards + (G.GAME.consumeable_buffer or 0)
+                >= G.consumeables.config.card_limit then
+                return
+            end
+            G.GAME.consumeable_buffer = (G.GAME.consumeable_buffer or 0) + 1
+            G.E_MANAGER:add_event(Event {
+                trigger = "before",
+                delay = 0.0,
+                func = function()
+                    local made = SMODS.add_card { set = "Tarot", key_append = "celesta_papamutt" }
+                    if made then made:juice_up(0.3, 0.5) end
+                    G.GAME.consumeable_buffer = 0
+                    return true
+                end
+            })
+            return { message = localize("k_plus_tarot"), colour = G.C.PURPLE, card = card }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- CweamCat [Common] - gains Chips on a target hand, which then rerolls.
+--------------------------------------------------------------------------------
+
+--- Pick a new target poker hand, avoiding an immediate repeat. Mirrors how
+--- vanilla To Do List rerolls, including the is_poker_hand_visible filter so
+--- hands the run has not unlocked are never chosen.
+local function cweamcat_repick(card)
+    local hands = {}
+    for k, _ in pairs(G.GAME.hands) do
+        if SMODS.is_poker_hand_visible(k) then hands[#hands + 1] = k end
+    end
+    if #hands == 0 then return end
+    local old = card.ability.extra.hand
+    local pick = old
+    for _ = 1, 10 do
+        pick = pseudorandom_element(hands, pseudoseed("celesta_cweamcat"))
+        if pick ~= old then break end
+    end
+    card.ability.extra.hand = pick
+end
+
+SMODS.Joker {
+    key = "cweamcat",
+    atlas = "cweamcat",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { chips = 0, chip_gain = 24, hand = "Pair" } },
+
+    loc_vars = function(self, info_queue, card)
+        return {
+            vars = {
+                card.ability.extra.chip_gain,
+                localize(card.ability.extra.hand or "Pair", "poker_hands"),
+                card.ability.extra.chips,
+            },
+        }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        cweamcat_repick(card)
+    end,
+
+    calculate = function(self, card, context)
+        -- Check before scoring, reroll after, so the hand shown when you play
+        -- is the one that counts.
+        if context.before and not context.blueprint then
+            if context.scoring_name == card.ability.extra.hand then
+                card.ability.extra.chips =
+                    card.ability.extra.chips + card.ability.extra.chip_gain
+                return {
+                    message = localize { type = "variable", key = "a_chips",
+                                         vars = { card.ability.extra.chips } },
+                    colour = G.C.CHIPS, card = card,
+                }
+            end
+        end
+
+        if context.after and not context.blueprint then
+            cweamcat_repick(card)
+            return
+        end
+
+        if context.joker_main and card.ability.extra.chips > 0 then
+            return { chips = card.ability.extra.chips }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- PandaBearLily [Common] - a single-card opening hand adds 2 of that suit.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "pandabearlily",
+    atlas = "pandabearlily",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { cards = 2 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.cards } }
+    end,
+
+    calculate = function(self, card, context)
+        -- hands_played == 0 during context.before means this IS the first hand
+        -- of the round; the counter only increments afterwards.
+        if context.before and not context.blueprint
+            and G.GAME.current_round.hands_played == 0
+            and #context.full_hand == 1 then
+            local suit = context.full_hand[1].base.suit
+            if not suit then return end
+
+            for _ = 1, card.ability.extra.cards do
+                G.E_MANAGER:add_event(Event {
+                    func = function()
+                        -- Rank left nil so create_card rolls one; area is the
+                        -- deck rather than the hand.
+                        local made = SMODS.add_card {
+                            set = "Base",
+                            suit = suit,
+                            area = G.deck,
+                            key_append = "celesta_pandabearlily",
+                        }
+                        if made then made:start_materialize() end
+                        return true
+                    end
+                })
+            end
+
+            return {
+                message = localize("k_copied_ex"),
+                colour = G.C.SUITS[suit] or G.C.CHIPS,
+                card = card,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Bluto [Rare] - Blueprint and Brainstorm each trigger one extra time.
+--------------------------------------------------------------------------------
+
+local BLUTO_TARGETS = { j_blueprint = true, j_brainstorm = true }
+
+SMODS.Joker {
+    key = "bluto",
+    atlas = "bluto",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { repetitions = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.j_blueprint
+        info_queue[#info_queue + 1] = G.P_CENTERS.j_brainstorm
+        return { vars = { card.ability.extra.repetitions } }
+    end,
+
+    calculate = function(self, card, context)
+        -- The joker-retrigger pass. `not context.retrigger_joker` stops this
+        -- from retriggering a retrigger, which would compound without bound.
+        if context.retrigger_joker_check and not context.retrigger_joker then
+            local other = context.other_card
+            if other and other ~= card and other.config and other.config.center
+                and BLUTO_TARGETS[other.config.center.key] then
+                return { repetitions = card.ability.extra.repetitions }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Rosedoodle [Uncommon] - Mult cards may give X1.5 Mult when scored.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "rosedoodle",
+    atlas = "rosedoodle",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { odds = 2, x_mult = 1.5 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_mult
+        local n, d = SMODS.get_probability_vars(
+            card, 1, card.ability.extra.odds, "celesta_rosedoodle")
+        return { vars = { n, d, card.ability.extra.x_mult } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.individual and context.cardarea == G.play then
+            if SMODS.has_enhancement(context.other_card, "m_mult")
+                and SMODS.pseudorandom_probability(
+                    card, "celesta_rosedoodle", 1, card.ability.extra.odds) then
+                return {
+                    x_mult = card.ability.extra.x_mult,
+                    colour = G.C.MULT,
+                    card = card,
+                }
+            end
+        end
+    end,
+}
