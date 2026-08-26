@@ -105,6 +105,7 @@ end
 -- Exempting query contexts from FAILING was not enough: they still re-enter.
 -- This makes the roll itself non-reentrant per card, so a nested evaluation
 -- passes straight through to the real calculate instead of rolling again.
+local FROZEN_FAIL_SEED = "celesta_frozen_fail"
 local rolling = setmetatable({}, { __mode = "k" })
 
 local calculate_joker_ref = Card.calculate_joker
@@ -121,13 +122,24 @@ function Card:calculate_joker(context)
                 or context.retrigger_joker_check
             if not is_query then
                 rolling[self] = true
-                local ok, passed = pcall(SMODS.pseudorandom_probability, self,
-                    "celesta_frozen_fail", 1, CelestasMod.FROZEN_FAIL_ODDS,
-                    "celesta_frozen_fail")
+                -- Plain pseudorandom, NOT SMODS.pseudorandom_probability.
+                --
+                -- That helper runs two full calculate_context passes per call
+                -- (mod_probability and fix_probability), each re-evaluating
+                -- every joker. This hook fires on every evaluation of every
+                -- frozen joker, so inside a copier chain - Blueprints copying
+                -- Blueprints, Brainstorm, Hanging Chad retriggers - the cost
+                -- multiplies with the chain and the game locks up mid-score.
+                -- Talisman measured 88k calculations against a 4k baseline.
+                --
+                -- The trade is that probability modifiers (Oops! All 6s,
+                -- Dejavudea, The Clover) no longer reach this roll. For a
+                -- penalty chance that is arguably the right behaviour anyway.
+                local ok, roll = pcall(pseudorandom, pseudoseed(FROZEN_FAIL_SEED))
                 rolling[self] = nil
                 -- A roll that errored is treated as a pass: a frozen joker
                 -- working too often is far better than one that cannot run.
-                if ok and not passed then return end
+                if ok and roll >= 1 / CelestasMod.FROZEN_FAIL_ODDS then return end
             end
         end
     end
