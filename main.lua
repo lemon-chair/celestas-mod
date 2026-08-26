@@ -24,6 +24,13 @@ SMODS.Atlas { key = 'seals',       path = 'seals.png',       px = 71, py = 95 }
 -- larger than a card so its frame reads as overhanging the edges.
 SMODS.Atlas { key = 'enh_exo',  path = 'enh_exo.png',  px = 84, py = 104 }
 SMODS.Atlas { key = 'enh_gash', path = 'enh_gash.png', px = 71, py = 95 }
+SMODS.Atlas { key = 'enh_eutrophic', path = 'enh_eutrophic.png', px = 71, py = 95 }
+SMODS.Atlas { key = 'enh_limestone', path = 'enh_limestone.png', px = 71, py = 95 }
+SMODS.Atlas { key = 'enh_driftwood', path = 'enh_driftwood.png', px = 71, py = 95 }
+
+-- Blind chips are animated sprites, hence frames/ANIMATION_ATLAS.
+SMODS.Atlas { key = 'blind_clover', path = 'blind_clover.png', px = 34, py = 34,
+              frames = 21, atlas_table = 'ANIMATION_ATLAS' }
 
 -- Arena effect sprite sheets (generated from GIFs by tools/gen_fx.py).
 SMODS.Atlas { key = 'fx_downpour', path = 'fx_downpour.png',  px = 256, py = 256 }
@@ -38,6 +45,7 @@ assert(SMODS.load_file('arena/arena.lua'))()
 -- Enhancements load before jokers: Shoto, Saruei and MOTHERv3 all
 -- reference CelestasMod.ENHANCEMENT_KEYS.
 assert(SMODS.load_file('enhancements/enhancements.lua'))()
+assert(SMODS.load_file('blinds/blinds.lua'))()
 
 --------------------------------------------------------------------------------
 -- Jokers — auto-loaded from jokers/.

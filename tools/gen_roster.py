@@ -38,8 +38,10 @@ DISPLAY_NAMES = {
     "huntressspectre": "HuntressSpectre",
     "ironmouse": "Ironmouse",
     "itsdeadlyboop": "ItsDeadlyBoop",
-    "jaxvtuber": "JaxVTuber",
+    "jaxvtuber": "Jax",
+    "jowol": "Jowol",
     "kokonuts": "KokoNuts",
+    "limealicious": "Limealicious",
     "laynalazar": "LaynaLazar",
     "monikacinnyroll": "MonikaCinnyroll",
     "onigiri": "OniGiri",
@@ -67,7 +69,7 @@ def collect():
     d = os.path.join(ROOT, "assets", "1x")
     stems = sorted(os.path.splitext(f)[0] for f in os.listdir(d)
                    if f.lower().endswith(".png")
-                   and not f.lower().startswith(("fx_", "enh_")))
+                   and not f.lower().startswith(("fx_", "enh_", "blind_")))
     missing = [s for s in stems
                if not os.path.exists(os.path.join(ROOT, "assets", "2x", s + ".png"))]
     if missing:
@@ -233,12 +235,44 @@ LOC_TAIL = '''        },
             },
         },
 
+        Blind = {
+            bl_celesta_clover = {
+                name = "The Clover",
+                text = {
+                    "All listed {C:green}probabilities{}",
+                    "are {C:attention}halved{}",
+                },
+            },
+        },
+
         Enhanced = {
             m_celesta_exo = {
                 name = "Exo Card",
                 text = {
                     "Retriggered once per",
                     "{C:attention}consumable{} held",
+                },
+            },
+            m_celesta_eutrophic = {
+                name = "Eutrophic Card",
+                text = {
+                    "Copies the abilities of",
+                    "the {C:attention}leftmost{} card",
+                },
+            },
+            m_celesta_limestone = {
+                name = "Limestone Card",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                    "{C:inactive}no rank or suit",
+                },
+            },
+            m_celesta_driftwood = {
+                name = "Driftwood Card",
+                text = {
+                    "{C:green}#1# in #2#{} chance to break",
+                    "if held in hand at",
+                    "the end of the round",
                 },
             },
             m_celesta_gash = {
@@ -307,6 +341,9 @@ LOC_TAIL = '''        },
     misc = {
         labels = {
             m_celesta_exo = "Exo Card",
+            m_celesta_eutrophic = "Eutrophic Card",
+            m_celesta_limestone = "Limestone Card",
+            m_celesta_driftwood = "Driftwood Card",
             m_celesta_gash = "Gash Card",
             celesta_ectoplast_seal = "Ectoplast Seal",
             celesta_foppy_seal = "Foppy Seal",
@@ -321,6 +358,9 @@ LOC_TAIL = '''        },
             -- (k_plus_stone is Marble Joker's own), so this mod supplies one.
             celesta_upgraded = "Upgraded!",
             celesta_gashed = "Gashed!",
+            celesta_broke = "Broke!",
+            celesta_cleared = "Cleared!",
+            celesta_plus_limestone = "+Limestone",
             celesta_plus_slot = "+1 Consumable Slot",
             celesta_plus_tag = "+1 Tag",
             celesta_sealed = "Sealed!",

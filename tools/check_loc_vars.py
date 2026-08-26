@@ -21,12 +21,13 @@ import importlib
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 BOOTSTRAP = '''
-jokers, seals, enhancements, atlases = {}, {}, {}, {}
+jokers, seals, enhancements, blinds, atlases = {}, {}, {}, {}, {}
 SMODS = {
   Atlas = function(t) atlases[t.key] = t end,
   Joker = function(t) jokers[t.key] = t end,
   Seal  = function(t) seals[t.key] = t end,
   Enhancement = function(t) enhancements[t.key] = t end,
+  Blind = function(t) blinds[t.key] = t end,
   Consumable = function() end, Back = function() end,
   ConsumableTypes = {},
   current_mod = { path = "", name = "M", prefix = "celesta", config = {} },
@@ -113,6 +114,9 @@ def main():
     for key, obj in dict(g.enhancements).items():
         targets.append(("Enhancement", key, "m_celesta_" + key, obj,
                         loc.descriptions.Enhanced))
+    for key, obj in dict(g.blinds).items():
+        targets.append(("Blind", key, "bl_celesta_" + key, obj,
+                        loc.descriptions.Blind))
 
     problems, checked = [], 0
     for kind, key, loc_key, obj, table_ in sorted(targets):

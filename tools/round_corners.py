@@ -65,7 +65,7 @@ def targets(scale):
     d = os.path.join(ROOT, "assets", "%dx" % scale)
     for f in sorted(os.listdir(d)):
         if (f.lower().endswith(".png")
-                and not f.lower().startswith(("fx_", "enh_"))
+                and not f.lower().startswith(("fx_", "enh_", "blind_"))
                 and os.path.splitext(f)[0] not in SHARED):
             yield os.path.join(d, f)
 

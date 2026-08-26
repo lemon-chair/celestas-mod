@@ -350,15 +350,19 @@ return {
                 },
             },
             j_celesta_jaxvtuber = {
-                name = "JaxVTuber",
+                name = "Jax",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Retriggers {C:attention}Stone{} and",
+                    "{C:attention}Limestone{} cards",
+                    "{C:attention}#1#{} extra time",
                 },
             },
             j_celesta_jowol = {
                 name = "Jowol",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:attention}Stone{} cards held in hand",
+                    "give {C:chips}+#1#{} Chips each",
+                    "{C:inactive}(after cards in hand score)",
                 },
             },
             j_celesta_juniperactias = {
@@ -439,7 +443,9 @@ return {
             j_celesta_limealicious = {
                 name = "Limealicious",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "At the start of each round,",
+                    "adds a {C:attention}Limestone{} card",
+                    "to your deck",
                 },
             },
             j_celesta_lucypyre = {
@@ -550,7 +556,9 @@ return {
             j_celesta_neuro = {
                 name = "Neuro",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "At the end of the round,",
+                    "destroys all {C:attention}unenhanced{}",
+                    "cards held in hand",
                 },
             },
             j_celesta_nicoviras = {
@@ -618,7 +626,10 @@ return {
             j_celesta_pomatomaster = {
                 name = "Pomatomaster",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "When a hand is played,",
+                    "enhances the {C:attention}lowest rank{}",
+                    "unenhanced card held in hand",
+                    "to {C:attention}Eutrophic{}",
                 },
             },
             j_celesta_pristinezero = {
@@ -821,7 +832,9 @@ return {
             j_celesta_yuzu = {
                 name = "Yuzu",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:attention}Limestone{} cards held in hand",
+                    "have a {C:green}#1# in #2#{} chance to give",
+                    "{C:money}$#3#{} when a hand is played",
                 },
             },
             j_celesta_zentreya = {
@@ -844,12 +857,44 @@ return {
             },
         },
 
+        Blind = {
+            bl_celesta_clover = {
+                name = "The Clover",
+                text = {
+                    "All listed {C:green}probabilities{}",
+                    "are {C:attention}halved{}",
+                },
+            },
+        },
+
         Enhanced = {
             m_celesta_exo = {
                 name = "Exo Card",
                 text = {
                     "Retriggered once per",
                     "{C:attention}consumable{} held",
+                },
+            },
+            m_celesta_eutrophic = {
+                name = "Eutrophic Card",
+                text = {
+                    "Copies the abilities of",
+                    "the {C:attention}leftmost{} card",
+                },
+            },
+            m_celesta_limestone = {
+                name = "Limestone Card",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                    "{C:inactive}no rank or suit",
+                },
+            },
+            m_celesta_driftwood = {
+                name = "Driftwood Card",
+                text = {
+                    "{C:green}#1# in #2#{} chance to break",
+                    "if held in hand at",
+                    "the end of the round",
                 },
             },
             m_celesta_gash = {
@@ -918,6 +963,9 @@ return {
     misc = {
         labels = {
             m_celesta_exo = "Exo Card",
+            m_celesta_eutrophic = "Eutrophic Card",
+            m_celesta_limestone = "Limestone Card",
+            m_celesta_driftwood = "Driftwood Card",
             m_celesta_gash = "Gash Card",
             celesta_ectoplast_seal = "Ectoplast Seal",
             celesta_foppy_seal = "Foppy Seal",
@@ -932,6 +980,9 @@ return {
             -- (k_plus_stone is Marble Joker's own), so this mod supplies one.
             celesta_upgraded = "Upgraded!",
             celesta_gashed = "Gashed!",
+            celesta_broke = "Broke!",
+            celesta_cleared = "Cleared!",
+            celesta_plus_limestone = "+Limestone",
             celesta_plus_slot = "+1 Consumable Slot",
             celesta_plus_tag = "+1 Tag",
             celesta_sealed = "Sealed!",

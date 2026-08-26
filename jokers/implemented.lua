@@ -1716,3 +1716,257 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Limealicious [Uncommon] - a Limestone card each round.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "limealicious",
+    atlas = "limealicious",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Limestone]
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        -- Same shape as vanilla Marble Joker: build it in G.play so the player
+        -- sees it, then animate it into the deck.
+        if context.setting_blind
+            and not (context.blueprint_card or card).getting_sliced then
+            G.E_MANAGER:add_event(Event {
+                func = function()
+                    local new_card = create_playing_card(
+                        { front = pseudorandom_element(G.P_CARDS, pseudoseed("celesta_lime")),
+                          center = G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Limestone] },
+                        G.play, nil, nil, { G.C.SECONDARY_SET.Enhanced })
+
+                    SMODS.calculate_effect({
+                        message = localize("celesta_plus_limestone"),
+                        colour = G.C.SECONDARY_SET.Enhanced,
+                    }, context.blueprint_card or card)
+
+                    G.E_MANAGER:add_event(Event {
+                        func = function()
+                            draw_card(G.play, G.deck, 90, "up", nil)
+                            return true
+                        end
+                    })
+                    playing_card_joker_effects({ new_card })
+                    return true
+                end
+            })
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Jax [Uncommon] - retriggers Stone and Limestone cards.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "jaxvtuber",
+    atlas = "jaxvtuber",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { repetitions = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_stone
+        info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Limestone]
+        return { vars = { card.ability.extra.repetitions } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.repetition and context.cardarea == G.play then
+            local other = context.other_card
+            if other and (SMODS.has_enhancement(other, "m_stone")
+                or SMODS.has_enhancement(other, CelestasMod.ENHANCEMENT_KEYS.Limestone)) then
+                return {
+                    message = localize("k_again_ex"),
+                    repetitions = card.ability.extra.repetitions,
+                    card = card,
+                }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Yuzu [Common] - held Limestone cards may pay out when a hand is played.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "yuzu",
+    atlas = "yuzu",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { odds = 2, dollars = 3 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Limestone]
+        local n, d = SMODS.get_probability_vars(card, 1, card.ability.extra.odds, "celesta_yuzu")
+        return { vars = { n, d, card.ability.extra.dollars } }
+    end,
+
+    calculate = function(self, card, context)
+        -- The held-in-hand pass, which runs while a hand is being played.
+        if context.individual and context.cardarea == G.hand then
+            local other = context.other_card
+            if other and SMODS.has_enhancement(other, CelestasMod.ENHANCEMENT_KEYS.Limestone)
+                and SMODS.pseudorandom_probability(
+                    card, "celesta_yuzu", 1, card.ability.extra.odds) then
+                return {
+                    dollars = card.ability.extra.dollars,
+                    card = card,
+                }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Jowol [Common] - held Stone cards give Chips.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "jowol",
+    atlas = "jowol",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { chips = 50 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_stone
+        return { vars = { card.ability.extra.chips } }
+    end,
+
+    calculate = function(self, card, context)
+        -- joker_main runs after the played cards and the held-in-hand pass
+        -- have both scored, which is the "after cards in hand finish scoring"
+        -- slot. Counted here rather than per-card so one popup covers them all.
+        if context.joker_main then
+            if not G.hand then return end
+            local stones = 0
+            for _, held in ipairs(G.hand.cards) do
+                if SMODS.has_enhancement(held, "m_stone") then stones = stones + 1 end
+            end
+            if stones > 0 then
+                return { chips = card.ability.extra.chips * stones }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Neuro [Rare] - clears unenhanced cards out of hand at end of round.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "neuro",
+    atlas = "neuro",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        -- main_eval keeps this to the single once-per-round joker pass rather
+        -- than firing again for every card evaluated at end of round.
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            if not G.hand then return end
+            local doomed = {}
+            for _, held in ipairs(G.hand.cards) do
+                if held.config.center == G.P_CENTERS.c_base then
+                    doomed[#doomed + 1] = held
+                end
+            end
+            if #doomed == 0 then return end
+
+            G.E_MANAGER:add_event(Event {
+                func = function()
+                    -- destroy_cards respects eternal and animates the removal.
+                    SMODS.destroy_cards(doomed)
+                    return true
+                end
+            })
+            return {
+                message = localize("celesta_cleared"),
+                colour = G.C.RED,
+                card = card,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Pomatomaster [Rare] - Exo... Eutrophic, on the lowest held card.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "pomatomaster",
+    atlas = "pomatomaster",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Eutrophic]
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        if context.after and not context.blueprint then
+            if not G.hand then return end
+
+            local target, lowest
+            for _, held in ipairs(G.hand.cards) do
+                if held.config.center == G.P_CENTERS.c_base
+                    and not held.celesta_poma_claimed then
+                    -- get_id is the rank's numeric value, so this is a plain
+                    -- minimum. Ties resolve to the leftmost card.
+                    local id = held:get_id()
+                    if id and (not lowest or id < lowest) then
+                        lowest, target = id, held
+                    end
+                end
+            end
+            if not target then return end
+
+            target.celesta_poma_claimed = true
+            G.E_MANAGER:add_event(Event {
+                func = function()
+                    target:set_ability(
+                        G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Eutrophic], nil, true)
+                    target:juice_up(0.3, 0.5)
+                    target.celesta_poma_claimed = nil
+                    return true
+                end
+            })
+            return {
+                message = localize("k_upgrade_ex"),
+                colour = G.C.SECONDARY_SET.Enhanced,
+                card = card,
+            }
+        end
+    end,
+}

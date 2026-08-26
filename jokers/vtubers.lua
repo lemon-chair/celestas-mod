@@ -36,8 +36,6 @@ local ROSTER = {
     { key = "huntressspectre", rarity = 1, cost = 4, mult = 4 },
     { key = "itsdeadlyboop", rarity = 1, cost = 4, mult = 4 },
     { key = "jaws", rarity = 1, cost = 4, mult = 4 },
-    { key = "jaxvtuber", rarity = 1, cost = 4, mult = 4 },
-    { key = "jowol", rarity = 1, cost = 4, mult = 4 },
     { key = "juniperactias", rarity = 1, cost = 4, mult = 4 },
     { key = "kael", rarity = 1, cost = 4, mult = 4 },
     { key = "kairyucrocodile", rarity = 1, cost = 4, mult = 4 },
@@ -46,7 +44,6 @@ local ROSTER = {
     { key = "kourra", rarity = 1, cost = 4, mult = 4 },
     { key = "kyaree", rarity = 1, cost = 4, mult = 4 },
     { key = "liffeh", rarity = 1, cost = 4, mult = 4 },
-    { key = "limealicious", rarity = 1, cost = 4, mult = 4 },
     { key = "lucypyre", rarity = 1, cost = 4, mult = 4 },
     { key = "maplechicken", rarity = 1, cost = 4, mult = 4 },
     { key = "mariyume", rarity = 1, cost = 4, mult = 4 },
@@ -59,13 +56,11 @@ local ROSTER = {
     { key = "mooni", rarity = 1, cost = 4, mult = 4 },
     { key = "nagzz", rarity = 1, cost = 4, mult = 4 },
     { key = "nekrolina", rarity = 1, cost = 4, mult = 4 },
-    { key = "neuro", rarity = 1, cost = 4, mult = 4 },
     { key = "nicoviras", rarity = 1, cost = 4, mult = 4 },
     { key = "nihmune", rarity = 1, cost = 4, mult = 4 },
     { key = "nostro", rarity = 1, cost = 4, mult = 4 },
     { key = "nyanners", rarity = 1, cost = 4, mult = 4 },
     { key = "pipi", rarity = 1, cost = 4, mult = 4 },
-    { key = "pomatomaster", rarity = 1, cost = 4, mult = 4 },
     { key = "pristinezero", rarity = 1, cost = 4, mult = 4 },
     { key = "radiaactive", rarity = 1, cost = 4, mult = 4 },
     { key = "radicalmari", rarity = 1, cost = 4, mult = 4 },
@@ -87,7 +82,6 @@ local ROSTER = {
     { key = "vulpixie", rarity = 1, cost = 4, mult = 4 },
     { key = "yoclesh", rarity = 1, cost = 4, mult = 4 },
     { key = "yokasiri", rarity = 1, cost = 4, mult = 4 },
-    { key = "yuzu", rarity = 1, cost = 4, mult = 4 },
 }
 
 for _, entry in ipairs(ROSTER) do
