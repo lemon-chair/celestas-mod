@@ -1970,3 +1970,179 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Jaws [Common] - eats the cards that did not score.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "jaws",
+    atlas = "jaws",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { chips = 0, chip_gain = 5 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.chip_gain, card.ability.extra.chips } }
+    end,
+
+    calculate = function(self, card, context)
+        -- The destroy pass marks non-scoring played cards with cardarea
+        -- 'unscored'; scoring ones get G.play and destroying_card instead.
+        if context.destroy_card and context.cardarea == "unscored"
+            and not context.blueprint then
+            -- calculate_destroying_cards acts on `remove` without checking
+            -- eternal itself, so guard here or Jaws eats eternal cards. No
+            -- destruction means no growth, hence the early return.
+            if SMODS.is_eternal(context.destroy_card) then return end
+
+            card.ability.extra.chips =
+                card.ability.extra.chips + card.ability.extra.chip_gain
+            return {
+                remove = true,
+                message = localize { type = "variable", key = "a_chips",
+                                     vars = { card.ability.extra.chips } },
+                colour = G.C.CHIPS,
+                card = card,
+            }
+        end
+
+        if context.joker_main and card.ability.extra.chips > 0 then
+            return { chips = card.ability.extra.chips }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Meicha [Common] - straights wrap around.
+--------------------------------------------------------------------------------
+
+-- SMODS.wrap_around_straight is an extension point that returns false by
+-- default; the straight PokerHandPart passes its result into get_straight as
+-- the `wrap` argument. Widening it here means Ace can bridge King and 2
+-- without this having to know anything about straight detection itself.
+local wrap_around_straight_ref = SMODS.wrap_around_straight
+function SMODS.wrap_around_straight()
+    if next(SMODS.find_card("j_celesta_meicha")) then return true end
+    return wrap_around_straight_ref()
+end
+
+SMODS.Joker {
+    key = "meicha",
+    atlas = "meicha",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- AiCandii [Common] - paid for the discards you did not need.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "aicandii",
+    atlas = "aicandii",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { mult = 0, mult_gain = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.mult_gain, card.ability.extra.mult } }
+    end,
+
+    calculate = function(self, card, context)
+        -- main_eval keeps this to the one once-per-round joker pass rather
+        -- than firing again for every card evaluated at end of round.
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            local unused = G.GAME.current_round.discards_left or 0
+            if unused <= 0 then return end
+            SMODS.scale_card(card, {
+                ref_table = card.ability.extra,
+                ref_value = "mult",
+                scalar_value = "mult_gain",
+                message_key = "a_mult",
+                message_colour = G.C.MULT,
+                operation = function(ref_table, ref_value, initial, scaling)
+                    ref_table[ref_value] = initial + scaling * unused
+                end
+            })
+        end
+
+        if context.joker_main and card.ability.extra.mult > 0 then
+            return { mult = card.ability.extra.mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Hannah Hyrule [Uncommon] - a last-hand multiplier on both halves.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "hannahhyrule",
+    atlas = "hannahhyrule",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { x = 1.5 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.x } }
+    end,
+
+    calculate = function(self, card, context)
+        -- hands_left == 0 is how vanilla Dusk detects the final hand.
+        if context.joker_main and G.GAME.current_round.hands_left == 0 then
+            return {
+                x_mult = card.ability.extra.x,
+                x_chips = card.ability.extra.x,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- BeriBug [Common] - retriggers 8s.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "beribug",
+    atlas = "beribug",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { repetitions = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.repetitions } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.repetition and context.cardarea == G.play then
+            local other = context.other_card
+            -- get_id is the rank's numeric value; 8 is literally 8.
+            if other and other.get_id and other:get_id() == 8 then
+                return {
+                    message = localize("k_again_ex"),
+                    repetitions = card.ability.extra.repetitions,
+                    card = card,
+                }
+            end
+        end
+    end,
+}

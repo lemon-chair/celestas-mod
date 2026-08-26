@@ -35,7 +35,9 @@ return {
             j_celesta_aicandii = {
                 name = "AiCandii",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "At the end of the round, gains",
+                    "{C:mult}+#1#{} Mult per unused {C:attention}discard{}",
+                    "{C:inactive}(Currently {C:mult}+#2#{C:inactive} Mult)",
                 },
             },
             j_celesta_amalee = {
@@ -119,9 +121,10 @@ return {
                 },
             },
             j_celesta_beribug = {
-                name = "Beribug",
+                name = "BeriBug",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Retriggers each scored",
+                    "{C:attention}8{} {C:attention}#1#{} extra time",
                 },
             },
             j_celesta_berrycrepe = {
@@ -302,9 +305,10 @@ return {
                 },
             },
             j_celesta_hannahhyrule = {
-                name = "Hannahhyrule",
+                name = "Hannah Hyrule",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "On the {C:attention}final hand{} of the round,",
+                    "{X:chips,C:white}X#1#{} Chips and {X:mult,C:white}X#1#{} Mult",
                 },
             },
             j_celesta_harukakaribu = {
@@ -346,7 +350,9 @@ return {
             j_celesta_jaws = {
                 name = "Jaws",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Destroys {C:attention}non-scoring{} cards",
+                    "in played hand, gaining {C:chips}+#1#{} Chips each",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
                 },
             },
             j_celesta_jaxvtuber = {
@@ -486,7 +492,8 @@ return {
             j_celesta_meicha = {
                 name = "Meicha",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:attention}Straights{} can wrap around",
+                    "{C:inactive}(e.g. 3, 2, Ace, King, Queen)",
                 },
             },
             j_celesta_mellowmabel = {
