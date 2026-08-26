@@ -89,6 +89,8 @@ local EDITION_UPGRADE = {
     e_polychrome    = "e_negative",
 }
 
+local ECTOPLAST_ODDS = 4
+
 SMODS.Seal {
     key = "Ectoplast",
     atlas = "seals",
@@ -97,9 +99,18 @@ SMODS.Seal {
     discovered = true,
     unlocked = true,
 
+    -- The description carries #1# and #2#, so this must supply them; without
+    -- it localize() indexes a nil `vars` and the game crashes on hover.
+    loc_vars = function(self, info_queue, card)
+        local numerator, denominator = SMODS.get_probability_vars(
+            card, 1, ECTOPLAST_ODDS, "celesta_ectoplast")
+        return { vars = { numerator, denominator } }
+    end,
+
     calculate = function(self, card, context)
         if context.main_scoring and context.cardarea == G.play then
-            if not SMODS.pseudorandom_probability(card, "celesta_ectoplast", 1, 4) then
+            if not SMODS.pseudorandom_probability(
+                    card, "celesta_ectoplast", 1, ECTOPLAST_ODDS) then
                 return
             end
             if not G.jokers or not G.jokers.cards then return end
