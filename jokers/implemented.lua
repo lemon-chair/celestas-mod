@@ -1614,6 +1614,39 @@ SMODS.Joker {
 
 local MOD_JOKER_PREFIX = "j_" .. SMODS.current_mod.prefix .. "_"
 
+-- Roll weights by rarity. Only tiers that actually have a candidate take part
+-- in the roll, and the total is renormalised over those - otherwise an empty
+-- tier would silently eat its share and, worse, a roll landing in it would
+-- have to fall through to some arbitrary neighbour.
+local X3_RARITY_WEIGHTS = { [1] = 0.60, [2] = 0.30, [3] = 0.09, [4] = 0.01 }
+
+--- Pick a key from `buckets` (rarity -> list of keys) using X3_RARITY_WEIGHTS.
+local function x3_weighted_pick(buckets)
+    local total = 0
+    for rarity, weight in pairs(X3_RARITY_WEIGHTS) do
+        if buckets[rarity] and #buckets[rarity] > 0 then total = total + weight end
+    end
+    if total <= 0 then return nil end
+
+    local roll = pseudorandom(pseudoseed("celesta_x3dustco_rarity")) * total
+    local chosen
+    for rarity = 1, 4 do
+        local weight = X3_RARITY_WEIGHTS[rarity]
+        if weight and buckets[rarity] and #buckets[rarity] > 0 then
+            roll = roll - weight
+            if roll <= 0 then chosen = rarity break end
+        end
+    end
+    -- Floating point can leave `roll` a hair above zero on the last tier.
+    if not chosen then
+        for rarity = 4, 1, -1 do
+            if buckets[rarity] and #buckets[rarity] > 0 then chosen = rarity break end
+        end
+    end
+    if not chosen then return nil end
+    return pseudorandom_element(buckets[chosen], pseudoseed("celesta_x3dustco"))
+end
+
 SMODS.Joker {
     key = "x3dustco",
     atlas = "x3dustco",
@@ -1623,7 +1656,16 @@ SMODS.Joker {
     blueprint_compat = true, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
-        return {}
+        -- Read straight off the weight table so the printed odds can never
+        -- drift from the odds actually rolled.
+        return {
+            vars = {
+                X3_RARITY_WEIGHTS[1] * 100,
+                X3_RARITY_WEIGHTS[2] * 100,
+                X3_RARITY_WEIGHTS[3] * 100,
+                X3_RARITY_WEIGHTS[4] * 100,
+            },
+        }
     end,
 
     calculate = function(self, card, context)
@@ -1638,17 +1680,24 @@ SMODS.Joker {
             -- it picks up anything added later automatically. add_to_pool is
             -- what keeps the unimplemented placeholders out - they return
             -- false from in_pool - and itself is excluded so it cannot clone.
-            local options = {}
+            -- Bucketed by rarity so the weights below decide the tier first
+            -- and the specific Joker second; picking uniformly from one flat
+            -- list would just mirror how many of each tier happen to exist.
+            -- Modded non-numeric rarities are skipped: they have no weight.
+            local buckets = {}
             for _, center in ipairs(G.P_CENTER_POOLS.Joker or {}) do
                 if center.key and center.key:find(MOD_JOKER_PREFIX, 1, true) == 1
                     and center ~= card.config.center
+                    and type(center.rarity) == "number"
+                    and X3_RARITY_WEIGHTS[center.rarity]
                     and SMODS.add_to_pool(center) then
-                    options[#options + 1] = center.key
+                    buckets[center.rarity] = buckets[center.rarity] or {}
+                    table.insert(buckets[center.rarity], center.key)
                 end
             end
-            if #options == 0 then return end
 
-            local chosen = pseudorandom_element(options, pseudoseed("celesta_x3dustco"))
+            local chosen = x3_weighted_pick(buckets)
+            if not chosen then return end
             G.GAME.joker_buffer = (G.GAME.joker_buffer or 0) + 1
             G.E_MANAGER:add_event(Event {
                 func = function()

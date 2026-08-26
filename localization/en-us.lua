@@ -785,8 +785,9 @@ return {
                 name = "x3Dustco",
                 text = {
                     "At the end of the shop,",
-                    "creates a random {C:attention}Joker{}",
-                    "from this mod",
+                    "creates a random {C:attention}Joker{} from this mod",
+                    "{C:inactive}#1#% Common, #2#% Uncommon,",
+                    "{C:inactive}#3#% Rare, #4#% Legendary",
                 },
             },
             j_celesta_yoclesh = {
