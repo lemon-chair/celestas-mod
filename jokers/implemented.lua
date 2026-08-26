@@ -797,20 +797,34 @@ SMODS.Joker {
 
     calculate = function(self, card, context)
         if context.joker_main then
-            -- The exponential cue Cryptid uses. The sound is Talisman's, not
-            -- Cryptid's: ExponentialMult.wav, registered as `emult` under
-            -- Talisman's `talisman` prefix. Talisman's own e_mult handler
-            -- prints the message but plays nothing, which is why Cryptid
-            -- triggers it by hand too. Guarded on the registry so this stays
-            -- silent rather than erroring if Talisman is not installed.
-            if not SMODS.no_resolve and SMODS.Sounds
-                and SMODS.Sounds.talisman_emult then
-                play_sound("talisman_emult", 1)
-            end
             return {
                 e_mult = card.ability.extra.e_mult,
                 colour = G.C.DARK_EDITION,
                 card = card,
+
+                -- The exponential cue Cryptid uses. The sound is Talisman's,
+                -- not Cryptid's: ExponentialMult.wav, registered as `emult`
+                -- under Talisman's `talisman` prefix. Talisman's own e_mult
+                -- handler prints the message but plays nothing, so it has to
+                -- be triggered by hand - Cryptid does the same.
+                --
+                -- Timing: `func` runs while the effect resolves, but the
+                -- "^N Mult" popup is not drawn then - card_eval_status_text
+                -- queues it on G.E_MANAGER. Calling play_sound directly here
+                -- fires it a beat ahead of the visual, so queue it the same
+                -- way and let the event manager line the two up.
+                func = function()
+                    if SMODS.no_resolve then return end
+                    if not (SMODS.Sounds and SMODS.Sounds.talisman_emult) then return end
+                    G.E_MANAGER:add_event(Event {
+                        trigger = "before",
+                        delay = 0,
+                        func = function()
+                            play_sound("talisman_emult", 1)
+                            return true
+                        end,
+                    })
+                end,
             }
         end
     end,
