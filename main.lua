@@ -39,6 +39,11 @@ SMODS.Atlas { key = 'blind_clover', path = 'blind_clover.png', px = 34, py = 34,
 
 -- Arena effect sprite sheets (generated from GIFs by tools/gen_fx.py).
 SMODS.Atlas { key = 'fx_downpour', path = 'fx_downpour.png',  px = 256, py = 256 }
+SMODS.Atlas { key = 'fx_snowstorm', path = 'fx_snowstorm.png', px = 256, py = 256 }
+
+-- Frozen is an overlay drawn on top of a card, not an edition (see
+-- editions/frozen.lua for why it cannot be one).
+SMODS.Atlas { key = 'frozen', path = 'frozen.png', px = 71, py = 95 }
 
 --------------------------------------------------------------------------------
 -- Arena effects — screen-wide, round-scoped weather. Loaded before jokers
@@ -51,6 +56,7 @@ assert(SMODS.load_file('arena/arena.lua'))()
 -- reference CelestasMod.ENHANCEMENT_KEYS.
 assert(SMODS.load_file('enhancements/enhancements.lua'))()
 assert(SMODS.load_file('blinds/blinds.lua'))()
+assert(SMODS.load_file('editions/frozen.lua'))()
 
 --------------------------------------------------------------------------------
 -- Jokers — auto-loaded from jokers/.

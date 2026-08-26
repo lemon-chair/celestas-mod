@@ -7,7 +7,6 @@
 --- deliberately absent from this list.
 
 local ROSTER = {
-    { key = "amalee", rarity = 1, cost = 4, mult = 4 },
     { key = "ariesakana", rarity = 1, cost = 4, mult = 4 },
     { key = "augustanomoly", rarity = 1, cost = 4, mult = 4 },
     { key = "axialmatt", rarity = 1, cost = 4, mult = 4 },
@@ -18,7 +17,6 @@ local ROSTER = {
     { key = "cerbervt", rarity = 1, cost = 4, mult = 4 },
     { key = "chibidoki", rarity = 1, cost = 4, mult = 4 },
     { key = "clover", rarity = 1, cost = 4, mult = 4 },
-    { key = "cyyuvtuber", rarity = 1, cost = 4, mult = 4 },
     { key = "dooby", rarity = 1, cost = 4, mult = 4 },
     { key = "el_xox", rarity = 1, cost = 4, mult = 4 },
     { key = "elorapard", rarity = 1, cost = 4, mult = 4 },
@@ -68,13 +66,11 @@ local ROSTER = {
     { key = "shenpai", rarity = 1, cost = 4, mult = 4 },
     { key = "shiabun", rarity = 1, cost = 4, mult = 4 },
     { key = "sinder", rarity = 1, cost = 4, mult = 4 },
-    { key = "smugalana", rarity = 1, cost = 4, mult = 4 },
     { key = "snapscube", rarity = 1, cost = 4, mult = 4 },
     { key = "spongeybuns", rarity = 1, cost = 4, mult = 4 },
     { key = "suto", rarity = 1, cost = 4, mult = 4 },
     { key = "vedal", rarity = 1, cost = 4, mult = 4 },
     { key = "vexoria", rarity = 1, cost = 4, mult = 4 },
-    { key = "vulpixie", rarity = 1, cost = 4, mult = 4 },
     { key = "yoclesh", rarity = 1, cost = 4, mult = 4 },
     { key = "yokasiri", rarity = 1, cost = 4, mult = 4 },
 }

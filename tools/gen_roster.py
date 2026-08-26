@@ -18,7 +18,7 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts"}   # not per-joker art
+SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts", "frozen"}   # not per-joker art
 
 # Auto title-casing cannot know how a creator styles their own name.
 # Add corrections here; anything absent falls back to the mechanical rule.
@@ -32,7 +32,7 @@ DISPLAY_NAMES = {
     "cerbervt": "CerberVT",
     "cottontail": "CottontailVA",
     "cweamcat": "CweamCat",
-    "cyyuvtuber": "CyyuVTuber",
+    "cyyuvtuber": "Cy Yu",
     "el_xox": "El_XoX",
     "froggyloch": "FroggyLoch",
     "hannahhyrule": "Hannah Hyrule",
@@ -53,6 +53,7 @@ DISPLAY_NAMES = {
     "motherv3": "MOTHERv3",
     "rtgame": "RTGame",
     "shylily": "ShyLily",
+    "smugalana": "Smug Alana",
     "x3dustco": "x3Dustco",
     "yomiquinnely": "Yomi Quinnely",
     "yuy_ix": "Yuy_ix",
@@ -355,7 +356,7 @@ LOC_TAIL = '''        },
             celesta_star_seal = "Star Seal",
         },
         dictionary = {
-            celesta_cfg_animation = "Arena animation (off = tint only)",
+            celesta_cfg_animation = "Arena weather animation (off = tint only)",
             celesta_cfg_verbose = "Verbose logging",
             celesta_cfg_downpour = "Force Downpour (debug)",
             -- Floating message text. Vanilla has no generic "+card" key
@@ -363,6 +364,9 @@ LOC_TAIL = '''        },
             celesta_upgraded = "Upgraded!",
             celesta_gashed = "Gashed!",
             celesta_broke = "Broke!",
+            celesta_melted = "Melted!",
+            celesta_snowstorm = "Snowstorm!",
+            celesta_frozen = "Frozen!",
             celesta_cleared = "Cleared!",
             celesta_plus_limestone = "+Limestone",
             celesta_plus_slot = "+1 Consumable Slot",

@@ -2146,3 +2146,142 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Smug Alana [Rare] - melting ice takes a sticker with it.
+--------------------------------------------------------------------------------
+--
+-- The strip itself lives in CelestasMod.thaw (editions/frozen.lua), so melting
+-- has one definition wherever it is triggered from. This joker only has to
+-- exist for that path to fire - it checks for it by key.
+
+SMODS.Joker {
+    key = "smugalana",
+    atlas = "smugalana",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- AmaLee [Rare] - brings the Snowstorm, which freezes Jokers.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "amalee",
+    atlas = "amalee",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { odds = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        local n, d = SMODS.get_probability_vars(card, 1, card.ability.extra.odds, "celesta_amalee")
+        return { vars = { n, d } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.setting_blind and not context.blueprint then
+            if not CelestasMod.Arena.is_active("snowstorm") then
+                CelestasMod.Arena.start("snowstorm")
+                return {
+                    message = localize("celesta_snowstorm"),
+                    colour = G.C.BLUE,
+                    card = card,
+                }
+            end
+            return
+        end
+
+        -- After each played hand, while the storm is up.
+        if context.after and not context.blueprint
+            and CelestasMod.Arena.is_active("snowstorm") then
+            if not SMODS.pseudorandom_probability(
+                    card, "celesta_amalee", 1, card.ability.extra.odds) then
+                return
+            end
+            if not G.jokers then return end
+
+            -- Only Jokers that are not already frozen; freezing a frozen card
+            -- would silently reset its timer.
+            local options = {}
+            for _, joker in ipairs(G.jokers.cards) do
+                if not CelestasMod.is_frozen(joker) then
+                    options[#options + 1] = joker
+                end
+            end
+            if #options == 0 then return end
+
+            local target = pseudorandom_element(options, pseudoseed("celesta_amalee_pick"))
+            if CelestasMod.freeze(target) then
+                return {
+                    message = localize("celesta_frozen"),
+                    colour = G.C.BLUE,
+                    card = target,
+                }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Vulpixie [Uncommon] - frozen Jokers keep working.
+--------------------------------------------------------------------------------
+--
+-- The check lives in the Card.calculate_joker hook in editions/frozen.lua,
+-- which looks this joker up by key. Cancelling the failure there rather than
+-- here means it covers every frozen Joker at once, including ones that
+-- evaluate before this one in the row.
+
+SMODS.Joker {
+    key = "vulpixie",
+    atlas = "vulpixie",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Cy Yu [Rare] - retriggers Exo cards.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "cyyuvtuber",
+    atlas = "cyyuvtuber",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { repetitions = 2 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Exo]
+        return { vars = { card.ability.extra.repetitions } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.repetition and context.cardarea == G.play then
+            local other = context.other_card
+            if other and SMODS.has_enhancement(other, CelestasMod.ENHANCEMENT_KEYS.Exo) then
+                return {
+                    message = localize("k_again_ex"),
+                    repetitions = card.ability.extra.repetitions,
+                    card = card,
+                }
+            end
+        end
+    end,
+}

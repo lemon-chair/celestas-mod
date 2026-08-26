@@ -43,7 +43,10 @@ return {
             j_celesta_amalee = {
                 name = "AmaLee",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "At the start of each round,",
+                    "starts a {C:blue}Snowstorm{}",
+                    "{C:green}#1# in #2#{} chance to {C:blue}Freeze{} a random",
+                    "Joker after each hand played",
                 },
             },
             j_celesta_aquwa = {
@@ -218,9 +221,10 @@ return {
                 },
             },
             j_celesta_cyyuvtuber = {
-                name = "CyyuVTuber",
+                name = "Cy Yu",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Retriggers {C:attention}Exo{} cards",
+                    "{C:attention}#1#{} extra times",
                 },
             },
             j_celesta_dejavudea = {
@@ -750,9 +754,11 @@ return {
                 },
             },
             j_celesta_smugalana = {
-                name = "Smugalana",
+                name = "Smug Alana",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "When a {C:blue}Frozen{} Joker melts,",
+                    "removes a random {C:attention}sticker{}",
+                    "from it",
                 },
             },
             j_celesta_snapscube = {
@@ -796,7 +802,8 @@ return {
             j_celesta_vulpixie = {
                 name = "Vulpixie",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:blue}Frozen{} Jokers never",
+                    "fail to trigger",
                 },
             },
             j_celesta_x3dustco = {
@@ -982,7 +989,7 @@ return {
             celesta_star_seal = "Star Seal",
         },
         dictionary = {
-            celesta_cfg_animation = "Arena animation (off = tint only)",
+            celesta_cfg_animation = "Arena weather animation (off = tint only)",
             celesta_cfg_verbose = "Verbose logging",
             celesta_cfg_downpour = "Force Downpour (debug)",
             -- Floating message text. Vanilla has no generic "+card" key
@@ -990,6 +997,9 @@ return {
             celesta_upgraded = "Upgraded!",
             celesta_gashed = "Gashed!",
             celesta_broke = "Broke!",
+            celesta_melted = "Melted!",
+            celesta_snowstorm = "Snowstorm!",
+            celesta_frozen = "Frozen!",
             celesta_cleared = "Cleared!",
             celesta_plus_limestone = "+Limestone",
             celesta_plus_slot = "+1 Consumable Slot",

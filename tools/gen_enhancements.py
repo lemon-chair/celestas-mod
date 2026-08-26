@@ -98,6 +98,12 @@ def main():
             out = composite(img, cw * scale, ch * scale) if needs_base else img
             save(shape_corners(out), "enh_%s" % name, folder)
 
+    # Frozen is an overlay drawn over a whole card, so it takes the card
+    # silhouette but never the card body underneath.
+    fsmall, fbig = load_pair("frozen.png", "frozen2.png", CARD[0], CARD[1])
+    save(shape_corners(fsmall), "frozen", "1x")
+    save(shape_corners(fbig), "frozen", "2x")
+
     small, big = load_pair(EXO[0], EXO[1], EXO[2][0], EXO[2][1])
     for scale, folder in ((1, "1x"), (2, "2x")):
         body = Image.open(BASE_CARD).convert("RGBA").resize(

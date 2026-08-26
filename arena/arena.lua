@@ -48,6 +48,18 @@ Arena.definitions = {
         -- rather than a colour filter over the cards.
         tint   = { 0.32, 0.42, 0.55, 0.17 },
     },
+    snowstorm = {
+        atlas  = "fx_snowstorm",
+        frames = 16,
+        cols   = 4,
+        fps    = 10,
+        tile   = 256,
+        scale  = 2,
+        alpha  = 0.55,
+        -- A pale, near-white wash: snow reads as brightness rather than a
+        -- colour cast, so this is much less saturated than Downpour's blue.
+        tint   = { 0.85, 0.90, 0.96, 0.15 },
+    },
 }
 
 --------------------------------------------------------------------------------
