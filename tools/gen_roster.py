@@ -283,7 +283,7 @@ LOC_TAIL = '''        },
             m_celesta_gash = {
                 name = "Gash Card",
                 text = {
-                    "{X:mult,C:white}X#1#{} Mult",
+                    "{X:chips,C:white}X#1#{} Chips",
                     "{C:green}#2# in #3#{} chance this",
                     "card is destroyed",
                 },

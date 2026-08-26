@@ -92,18 +92,18 @@ SMODS.Enhancement {
     pos = { x = 0, y = 0 },
     discovered = true,
 
-    -- Applied by the game, not by calculate. Card:set_ability copies an
-    -- enhancement's config straight onto the card
-    -- (x_mult = center.config.Xmult or center.config.x_mult or 1) and scoring
-    -- reads ability.x_mult through Card:get_chip_x_mult. Returning it from
-    -- calculate as well would apply it twice - which is exactly what the
-    -- previous x_chips = 2 did, scoring X4 Chips instead of X2.
-    config = { x_mult = 1.5 },
+    -- Applied by the game, NOT returned from calculate. Card:set_ability
+    -- copies an enhancement's config straight onto the card
+    -- (x_chips = center.config.x_chips or 1) and scoring reads ability.x_chips
+    -- through Card:get_chip_x_bonus. Declaring it here AND returning it from
+    -- calculate applies it twice, which is how this once scored X4 Chips while
+    -- advertising X2.
+    config = { x_chips = 2 },
 
     loc_vars = function(self, info_queue, card)
         local numerator, denominator = SMODS.get_probability_vars(
             card, 1, CelestasMod.GASH_ODDS, CelestasMod.GASH_BREAK_ID)
-        return { vars = { self.config.x_mult, numerator, denominator } }
+        return { vars = { self.config.x_chips, numerator, denominator } }
     end,
 
     calculate = function(self, card, context)
