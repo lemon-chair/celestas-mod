@@ -223,3 +223,119 @@ SMODS.Enhancement {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Driftwood: counting as any rank
+--------------------------------------------------------------------------------
+--
+-- SMODS has `any_suit` for wild suits but no rank equivalent, and rank is not
+-- resolved in one place: get_X_same compares get_id() pairwise, while
+-- get_straight buckets cards by rank key. Patching both invites double
+-- counting - a card added to every bucket appears at every position of a
+-- straight, and a wild shared between two rank groups can invent a Two Pair
+-- that the player cannot actually make.
+--
+-- So rather than teach each evaluator about wilds, resolve the wild BEFORE
+-- evaluation: temporarily give every Driftwood in the hand a concrete rank,
+-- run the untouched evaluator, and keep whichever rank produced the best hand.
+-- Every hand type then works with no changes and nothing can be counted twice.
+--
+-- All Driftwoods in a hand take the SAME rank. Searching per-card assignments
+-- is 13^n evaluations; one shared rank is 13 and still covers what players
+-- actually do - completing a pair, trips or quads, five of a kind from a hand
+-- of Driftwoods, or filling a single gap in a straight. Two Driftwoods filling
+-- two DIFFERENT gaps in one straight is the case this does not find.
+--
+-- Only ever runs when a Driftwood is actually in the hand, so normal play
+-- costs one extra table scan and nothing else.
+
+local function is_driftwood(card)
+    return card and card.config and card.config.center
+        and card.config.center.key == CelestasMod.ENHANCEMENT_KEYS.Driftwood
+end
+
+--- Index of the best hand in a results table, by G.handlist order (1 = best).
+local function hand_index(results)
+    if not results or not results.top then return math.huge end
+    for i, name in ipairs(G.handlist) do
+        if results[name] and results[name] == results.top then return i end
+    end
+    return math.huge
+end
+
+local evaluate_poker_hand_ref = evaluate_poker_hand
+function evaluate_poker_hand(hand)
+    local wilds = {}
+    for _, card in ipairs(hand or {}) do
+        if is_driftwood(card) then wilds[#wilds + 1] = card end
+    end
+    if #wilds == 0 then return evaluate_poker_hand_ref(hand) end
+
+    -- Remember what to put back. base.value matters as well as base.id:
+    -- get_straight looks ranks up by key, not just by numeric id.
+    local saved = {}
+    for i, card in ipairs(wilds) do
+        saved[i] = { id = card.base.id, value = card.base.value }
+    end
+    local function restore()
+        for i, card in ipairs(wilds) do
+            card.base.id, card.base.value = saved[i].id, saved[i].value
+        end
+    end
+
+    local best_rank, best_index = nil, math.huge
+    for _, rank_key in ipairs(SMODS.Rank.obj_buffer) do
+        local rank = SMODS.Ranks[rank_key]
+        if rank and rank.id then
+            for _, card in ipairs(wilds) do
+                card.base.id, card.base.value = rank.id, rank_key
+            end
+            local index = hand_index(evaluate_poker_hand_ref(hand))
+            if index < best_index then
+                best_index, best_rank = index, rank_key
+            end
+        end
+    end
+
+    if not best_rank then
+        restore()
+        return evaluate_poker_hand_ref(hand)
+    end
+
+    -- Re-apply the winner and evaluate once more, so the results returned are
+    -- the ones the rest of scoring will use.
+    local winner = SMODS.Ranks[best_rank]
+    for _, card in ipairs(wilds) do
+        card.base.id, card.base.value = winner.id, best_rank
+    end
+    local results = evaluate_poker_hand_ref(hand)
+
+    -- Put the real rank back: the Driftwood keeps its own nominal chip value
+    -- and reads as its printed rank to everything downstream.
+    restore()
+    return results
+end
+
+--------------------------------------------------------------------------------
+-- Driftwood: show the suit in the centre, the way an Ace does
+--------------------------------------------------------------------------------
+--
+-- A card's front sprite is picked from its rank+suit, so a Driftwood would
+-- otherwise print whatever rank it happens to carry - misleading for a card
+-- that counts as all of them. Pointing the front at the Ace of the same suit
+-- gives the large central pip while keeping the suit visible.
+
+local SUIT_CODE = { Spades = "S", Hearts = "H", Diamonds = "D", Clubs = "C" }
+
+local set_sprites_ref = Card.set_sprites
+function Card:set_sprites(_center, _front)
+    if _front and _center
+        and _center.key == CelestasMod.ENHANCEMENT_KEYS.Driftwood then
+        local code = SUIT_CODE[_front.suit]
+        local ace = code and G.P_CARDS[code .. "_A"]
+        -- Modded suits have no code here; those keep their own front rather
+        -- than crashing or silently losing their suit.
+        if ace then _front = ace end
+    end
+    return set_sprites_ref(self, _center, _front)
+end

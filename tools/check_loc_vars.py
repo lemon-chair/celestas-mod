@@ -45,6 +45,13 @@ localize = function(s) return s end
 create_toggle = function(t) return t end
 loc_colour = function() end
 Game = {}; function Game:update() end; function Game:draw() end
+-- Globals the mod wraps; present in the real game.
+Card = {}; function Card:set_sprites() end
+evaluate_poker_hand = function() return {} end
+SMODS.Rank = { obj_buffer = {} }
+SMODS.Ranks = {}
+SMODS.smeared_check = function() return false end
+SMODS.find_card = function() return {} end
 CardArea = {}; function CardArea:emplace() end
 love = { graphics = {} }
 G = {
@@ -53,7 +60,8 @@ G = {
              PLAY_TAROT=6, TAROT_PACK=9, PLANET_PACK=10, SPECTRAL_PACK=15,
              STANDARD_PACK=17, BUFFOON_PACK=18, SMODS_BOOSTER_OPENED=999 },
   C = setmetatable({}, { __index = function() return 0 end }),
-  UIT = {}, GAME = { round = 1 }, ASSET_ATLAS = {},
+  UIT = {}, GAME = { round = 1 }, ASSET_ATLAS = {}, handlist = {},
+  P_CARDS = setmetatable({}, { __index = function() return {} end }),
   P_CENTERS = setmetatable({}, { __index = function() return {} end }),
   P_SEALS = setmetatable({}, { __index = function() return {} end }),
 }

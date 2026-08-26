@@ -892,6 +892,7 @@ return {
             m_celesta_driftwood = {
                 name = "Driftwood Card",
                 text = {
+                    "Counts as {C:attention}any rank{}",
                     "{C:green}#1# in #2#{} chance to break",
                     "if held in hand at",
                     "the end of the round",
