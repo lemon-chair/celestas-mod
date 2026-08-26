@@ -20,6 +20,11 @@ SMODS.Atlas { key = 'modicon',     path = 'icon.png',        px = 32, py = 32 }
 -- Seal emblems, card-shaped cells (built by tools/gen_seals.py).
 SMODS.Atlas { key = 'seals',       path = 'seals.png',       px = 71, py = 95 }
 
+-- Card enhancements (built by tools/gen_enhancements.py). Exo's cell is
+-- larger than a card so its frame reads as overhanging the edges.
+SMODS.Atlas { key = 'enh_exo',  path = 'enh_exo.png',  px = 84, py = 104 }
+SMODS.Atlas { key = 'enh_gash', path = 'enh_gash.png', px = 71, py = 95 }
+
 -- Arena effect sprite sheets (generated from GIFs by tools/gen_fx.py).
 SMODS.Atlas { key = 'fx_downpour', path = 'fx_downpour.png',  px = 256, py = 256 }
 
@@ -29,6 +34,10 @@ SMODS.Atlas { key = 'fx_downpour', path = 'fx_downpour.png',  px = 256, py = 256
 --------------------------------------------------------------------------------
 
 assert(SMODS.load_file('arena/arena.lua'))()
+
+-- Enhancements load before jokers: Shoto, Saruei and MOTHERv3 all
+-- reference CelestasMod.ENHANCEMENT_KEYS.
+assert(SMODS.load_file('enhancements/enhancements.lua'))()
 
 --------------------------------------------------------------------------------
 -- Jokers — auto-loaded from jokers/.

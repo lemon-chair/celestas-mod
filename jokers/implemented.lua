@@ -797,8 +797,8 @@ SMODS.Joker {
     atlas = "ironmouse",
     pos = { x = 0, y = 0 },
 
-    rarity = 3,
-    cost = 9,
+    rarity = 4,
+    cost = 20,
     unlocked = true,
     discovered = true,
     blueprint_compat = true,
@@ -846,6 +846,387 @@ SMODS.Joker {
                     })
                 end,
             }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Shoto [Common] - 1 in 4 to Gash a scored card.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "shoto",
+    atlas = "shoto",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { odds = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Gash]
+        local n, d = SMODS.get_probability_vars(card, 1, card.ability.extra.odds, "celesta_shoto")
+        return { vars = { n, d } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.individual and context.cardarea == G.play then
+            local other = context.other_card
+            if other and not SMODS.has_enhancement(other, CelestasMod.ENHANCEMENT_KEYS.Gash)
+                and SMODS.pseudorandom_probability(card, "celesta_shoto", 1, card.ability.extra.odds) then
+                other:set_ability(G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Gash], nil, true)
+                other:juice_up(0.3, 0.4)
+                return { message = localize("celesta_gashed"), colour = G.C.RED, card = card }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Saruei [Common] - Gashed cards always break when scored.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "saruei",
+    atlas = "saruei",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Gash]
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        -- fix_probability OVERRIDES the odds rather than nudging them, which is
+        -- what "1 in 1" needs. Scoped by identifier so it only touches Gash's
+        -- break roll and nothing else in the run.
+        if context.fix_probability
+            and context.identifier == CelestasMod.GASH_BREAK_ID then
+            return { numerator = context.denominator }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Bao [Rare] - +5 Mult, or X5 Mult while a Downpour is running.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "bao",
+    atlas = "bao",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { mult = 5, x_mult = 5 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.mult, card.ability.extra.x_mult } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.joker_main then
+            if CelestasMod.Arena.is_active("downpour") then
+                return { x_mult = card.ability.extra.x_mult }
+            end
+            return { mult = card.ability.extra.mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Yomi Quinnely [Uncommon] - retriggers one suit, rotating each round.
+--------------------------------------------------------------------------------
+
+local YOMI_SUITS = { "Clubs", "Spades", "Diamonds", "Hearts" }
+
+SMODS.Joker {
+    key = "yomiquinnely",
+    atlas = "yomiquinnely",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { suit_index = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        local suit = YOMI_SUITS[card.ability.extra.suit_index] or YOMI_SUITS[1]
+        return { vars = { localize(suit, "suits_plural") } }
+    end,
+
+    calculate = function(self, card, context)
+        local suit = YOMI_SUITS[card.ability.extra.suit_index] or YOMI_SUITS[1]
+
+        if context.repetition and context.cardarea == G.play then
+            if context.other_card:is_suit(suit) then
+                return { message = localize("k_again_ex"), repetitions = 1, card = card }
+            end
+        end
+
+        -- main_eval keeps the rotation to once per round rather than once per
+        -- card evaluated during the end-of-round pass.
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            card.ability.extra.suit_index =
+                (card.ability.extra.suit_index % #YOMI_SUITS) + 1
+            local next_suit = YOMI_SUITS[card.ability.extra.suit_index]
+            return {
+                message = localize(next_suit, "suits_singular"),
+                colour = G.C.SUITS[next_suit],
+                card = card,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Arielle [Legendary] - every card counts as every suit.
+--------------------------------------------------------------------------------
+
+-- Card:is_suit routes suit equivalence through SMODS.smeared_check, which is
+-- how vanilla Smeared Joker merges Hearts/Diamonds and Spades/Clubs. Widening
+-- it to always match while Arielle is out makes every card every suit, and
+-- covers flushes, suit-gated jokers and enhancements from one place.
+local smeared_check_ref = SMODS.smeared_check
+function SMODS.smeared_check(card, suit)
+    if next(SMODS.find_card("j_celesta_arielle")) then return true end
+    return smeared_check_ref(card, suit)
+end
+
+SMODS.Joker {
+    key = "arielle",
+    atlas = "arielle",
+    pos = { x = 0, y = 0 },
+    rarity = 4, cost = 20,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Deme [Rare] - X0.25 Mult per consecutive single-card hand.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "demenishki",
+    atlas = "demenishki",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { x_mult = 1, x_mult_gain = 0.25 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.x_mult_gain, card.ability.extra.x_mult } }
+    end,
+
+    calculate = function(self, card, context)
+        -- context.before is where full_hand exists, and it lands ahead of
+        -- scoring so a continued streak counts for the hand that extended it.
+        if context.before and not context.blueprint then
+            if #context.full_hand == 1 then
+                card.ability.extra.x_mult =
+                    card.ability.extra.x_mult + card.ability.extra.x_mult_gain
+                return {
+                    message = localize { type = "variable", key = "a_xmult",
+                                         vars = { card.ability.extra.x_mult } },
+                    colour = G.C.MULT, card = card,
+                }
+            elseif card.ability.extra.x_mult > 1 then
+                card.ability.extra.x_mult = 1
+                return { message = localize("k_reset"), colour = G.C.RED, card = card }
+            end
+        end
+
+        if context.joker_main and card.ability.extra.x_mult > 1 then
+            return { x_mult = card.ability.extra.x_mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- MOTHERv3 [Rare] - after each hand, Exo a random unenhanced held card.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "motherv3",
+    atlas = "motherv3",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Exo]
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        if context.after and not context.blueprint then
+            if not G.hand then return end
+            local candidates = {}
+            for _, held in ipairs(G.hand.cards) do
+                if held.config.center == G.P_CENTERS.c_base
+                    and not held.celesta_mother_claimed then
+                    candidates[#candidates + 1] = held
+                end
+            end
+            if #candidates == 0 then return end
+
+            local target = pseudorandom_element(candidates, pseudoseed("celesta_motherv3"))
+            -- Claim immediately: set_ability is deferred, so a copy evaluating
+            -- in the same pass would otherwise re-pick the same card.
+            target.celesta_mother_claimed = true
+            G.E_MANAGER:add_event(Event {
+                func = function()
+                    target:set_ability(G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Exo], nil, true)
+                    target:juice_up(0.3, 0.5)
+                    target.celesta_mother_claimed = nil
+                    return true
+                end
+            })
+            return { message = localize("k_upgrade_ex"),
+                     colour = G.C.SECONDARY_SET.Enhanced, card = card }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Michi [Uncommon] - Purple Seal cards give 2 Tarots on discard.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "michi",
+    atlas = "michi",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_SEALS.Purple
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        -- The Purple Seal already makes one Tarot on discard; this adds the
+        -- second, so the pair is the seal's own plus this one.
+        if context.discard and context.other_card
+            and context.other_card.seal == "Purple" and not context.blueprint then
+            if #G.consumeables.cards + (G.GAME.consumeable_buffer or 0)
+                >= G.consumeables.config.card_limit then
+                return
+            end
+            G.GAME.consumeable_buffer = (G.GAME.consumeable_buffer or 0) + 1
+            G.E_MANAGER:add_event(Event {
+                trigger = "before",
+                delay = 0.0,
+                func = function()
+                    local made = SMODS.add_card { set = "Tarot", key_append = "celesta_michi" }
+                    if made then made:juice_up(0.3, 0.5) end
+                    G.GAME.consumeable_buffer = 0
+                    return true
+                end
+            })
+            return { message = localize("k_plus_tarot"), colour = G.C.PURPLE, card = card }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Bear The Witch [Common] - Bonus cards give +20 extra Chips.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "bearthewitch",
+    atlas = "bearthewitch",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { chips = 20 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_bonus
+        return { vars = { card.ability.extra.chips } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.individual and context.cardarea == G.play then
+            if SMODS.has_enhancement(context.other_card, "m_bonus") then
+                return { chips = card.ability.extra.chips, card = card }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Shoomimi [Rare] - 1 in 6 per shop reroll to gain a consumable slot.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "shoomimi",
+    atlas = "shoomimi",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { odds = 6 } },
+
+    loc_vars = function(self, info_queue, card)
+        local n, d = SMODS.get_probability_vars(card, 1, card.ability.extra.odds, "celesta_shoomimi")
+        return { vars = { n, d } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.reroll_shop and not context.blueprint then
+            if SMODS.pseudorandom_probability(card, "celesta_shoomimi", 1, card.ability.extra.odds) then
+                G.consumeables.config.card_limit = G.consumeables.config.card_limit + 1
+                return { message = localize("celesta_plus_slot"), colour = G.C.FILTER, card = card }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Chacha [Uncommon] - sells for an Uncommon or Rare Joker tag.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "chacha",
+    atlas = "chacha",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = false, eternal_compat = false,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        if context.selling_self and not context.blueprint then
+            local tag_key = pseudorandom_element({ "tag_uncommon", "tag_rare" },
+                pseudoseed("celesta_chacha"))
+            G.E_MANAGER:add_event(Event {
+                func = function()
+                    add_tag(Tag(tag_key))
+                    play_sound("generic1")
+                    return true
+                end
+            })
+            return { message = localize("celesta_plus_tag"), colour = G.C.FILTER, card = card }
         end
     end,
 }

@@ -21,11 +21,12 @@ import importlib
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 BOOTSTRAP = '''
-jokers, seals, atlases = {}, {}, {}
+jokers, seals, enhancements, atlases = {}, {}, {}, {}
 SMODS = {
   Atlas = function(t) atlases[t.key] = t end,
   Joker = function(t) jokers[t.key] = t end,
   Seal  = function(t) seals[t.key] = t end,
+  Enhancement = function(t) enhancements[t.key] = t end,
   Consumable = function() end, Back = function() end,
   ConsumableTypes = {},
   current_mod = { path = "", name = "M", prefix = "celesta", config = {} },
@@ -53,6 +54,7 @@ G = {
   C = setmetatable({}, { __index = function() return 0 end }),
   UIT = {}, GAME = { round = 1 }, ASSET_ATLAS = {},
   P_CENTERS = setmetatable({}, { __index = function() return {} end }),
+  P_SEALS = setmetatable({}, { __index = function() return {} end }),
 }
 
 -- Build a stand-in playing card / joker whose ability mirrors the object's
@@ -108,6 +110,9 @@ def main():
     for key, obj in dict(g.seals).items():
         loc_key = ("celesta_" + key).lower() + "_seal"
         targets.append(("Seal", key, loc_key, obj, loc.descriptions.Other))
+    for key, obj in dict(g.enhancements).items():
+        targets.append(("Enhancement", key, "m_celesta_" + key, obj,
+                        loc.descriptions.Enhanced))
 
     problems, checked = [], 0
     for kind, key, loc_key, obj, table_ in sorted(targets):
@@ -118,9 +123,14 @@ def main():
         text = " ".join(dict(entry.text).values())
         needed = max((int(n) for n in re.findall(r"#(\d+)#", text)), default=0)
         got = count_vars(obj)
+        # count_vars returns (code, message) on error, which lupa hands back
+        # as a tuple; everything else comes through as a bare number.
+        err = ""
+        if isinstance(got, tuple):
+            got, err = got[0], str(got[1]) if len(got) > 1 else ""
         checked += 1
         if got == -2:
-            problems.append("%s %s: loc_vars raised an error" % (kind, key))
+            problems.append("%s %s: loc_vars raised an error: %s" % (kind, key, err))
         elif needed > 0 and got == -1:
             problems.append("%s %s: text needs #%d# but there is no loc_vars"
                             % (kind, key, needed))

@@ -25,7 +25,9 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals"}   # not per-joker a
 DISPLAY_NAMES = {
     "aicandii": "AiCandii",
     "amalee": "AmaLee",
+    "bearthewitch": "Bear The Witch",
     "berrycrepe": "BerryCrepe",
+    "demenishki": "Deme",
     "cerbervt": "CerberVT",
     "cottontail": "CottontailVA",
     "cyyuvtuber": "CyyuVTuber",
@@ -40,10 +42,11 @@ DISPLAY_NAMES = {
     "laynalazar": "LaynaLazar",
     "monikacinnyroll": "MonikaCinnyroll",
     "overezeggs": "OverEzEggs",
-    "motherv3": "MotherV3",
+    "motherv3": "MOTHERv3",
     "rtgame": "RTGame",
     "shylily": "ShyLily",
     "x3dustco": "x3dustco",
+    "yomiquinnely": "Yomi Quinnely",
     "yuy_ix": "Yuy_ix",
 }
 
@@ -60,7 +63,7 @@ def collect():
     d = os.path.join(ROOT, "assets", "1x")
     stems = sorted(os.path.splitext(f)[0] for f in os.listdir(d)
                    if f.lower().endswith(".png")
-                   and not f.lower().startswith("fx_"))
+                   and not f.lower().startswith(("fx_", "enh_")))
     missing = [s for s in stems
                if not os.path.exists(os.path.join(ROOT, "assets", "2x", s + ".png"))]
     if missing:
@@ -226,6 +229,24 @@ LOC_TAIL = '''        },
             },
         },
 
+        Enhanced = {
+            m_celesta_exo = {
+                name = "Exo Card",
+                text = {
+                    "Retriggered once per",
+                    "{C:attention}consumable{} held",
+                },
+            },
+            m_celesta_gash = {
+                name = "Gash Card",
+                text = {
+                    "{X:chips,C:white}X#1#{} Chips",
+                    "{C:green}#2# in #3#{} chance this",
+                    "card is destroyed",
+                },
+            },
+        },
+
         Other = {
             celesta_ectoplast_seal = {
                 name = "Ectoplast Seal",
@@ -281,6 +302,8 @@ LOC_TAIL = '''        },
 
     misc = {
         labels = {
+            m_celesta_exo = "Exo Card",
+            m_celesta_gash = "Gash Card",
             celesta_ectoplast_seal = "Ectoplast Seal",
             celesta_foppy_seal = "Foppy Seal",
             celesta_rose_seal = "Rose Seal",
@@ -293,6 +316,9 @@ LOC_TAIL = '''        },
             -- Floating message text. Vanilla has no generic "+card" key
             -- (k_plus_stone is Marble Joker's own), so this mod supplies one.
             celesta_upgraded = "Upgraded!",
+            celesta_gashed = "Gashed!",
+            celesta_plus_slot = "+1 Consumable Slot",
+            celesta_plus_tag = "+1 Tag",
             celesta_sealed = "Sealed!",
             celesta_hearts = "All Hearts!",
             celesta_plus_seven = "+7 of Spades",

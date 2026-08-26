@@ -65,7 +65,8 @@ return {
             j_celesta_arielle = {
                 name = "Arielle",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "All cards are considered",
+                    "to be the {C:attention}same suit{}",
                 },
             },
             j_celesta_ariesakana = {
@@ -95,13 +96,16 @@ return {
             j_celesta_bao = {
                 name = "Bao",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:mult}+#1#{} Mult, or {X:mult,C:white}X#2#{} Mult",
+                    "during a {C:blue}Downpour{}",
                 },
             },
             j_celesta_bearthewitch = {
-                name = "Bearthewitch",
+                name = "Bear The Witch",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:attention}Bonus{} cards give",
+                    "{C:chips}+#1#{} extra Chips",
+                    "when scored",
                 },
             },
             j_celesta_beepers = {
@@ -164,7 +168,9 @@ return {
             j_celesta_chacha = {
                 name = "Chacha",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "When this Joker is {C:attention}sold{},",
+                    "gain an {C:attention}Uncommon{} or",
+                    "{C:attention}Rare{} Joker tag",
                 },
             },
             j_celesta_chibidoki = {
@@ -215,9 +221,12 @@ return {
                 },
             },
             j_celesta_demenishki = {
-                name = "Demenishki",
+                name = "Deme",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult",
+                    "per consecutive hand played",
+                    "with exactly {C:attention}1{} card",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
                 },
             },
             j_celesta_dooby = {
@@ -475,7 +484,9 @@ return {
             j_celesta_michi = {
                 name = "Michi",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:purple}Purple Seal{} cards give",
+                    "{C:attention}2{} Tarot cards",
+                    "when discarded",
                 },
             },
             j_celesta_milky = {
@@ -509,9 +520,11 @@ return {
                 },
             },
             j_celesta_motherv3 = {
-                name = "MotherV3",
+                name = "MOTHERv3",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "After a hand is played,",
+                    "adds {C:attention}Exo{} to a random",
+                    "unenhanced card held in hand",
                 },
             },
             j_celesta_nagzz = {
@@ -657,7 +670,8 @@ return {
             j_celesta_saruei = {
                 name = "Saruei",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:attention}Gash{} cards always",
+                    "break when scored",
                 },
             },
             j_celesta_shenpai = {
@@ -675,13 +689,16 @@ return {
             j_celesta_shoomimi = {
                 name = "Shoomimi",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:green}#1# in #2#{} chance to gain",
+                    "{C:attention}+1{} consumable slot",
+                    "for each shop {C:attention}reroll{}",
                 },
             },
             j_celesta_shoto = {
                 name = "Shoto",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:green}#1# in #2#{} chance to add a",
+                    "{C:attention}Gash{} to a scored card",
                 },
             },
             j_celesta_shylily = {
@@ -767,9 +784,11 @@ return {
                 },
             },
             j_celesta_yomiquinnely = {
-                name = "Yomiquinnely",
+                name = "Yomi Quinnely",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Retriggers scored",
+                    "{C:attention}#1#{} cards",
+                    "{C:inactive}(suit changes each round)",
                 },
             },
             j_celesta_yuy_ix = {
@@ -802,6 +821,24 @@ return {
                     "Enhances up to {C:attention}#1#{}",
                     "selected cards to",
                     "{C:attention}Mult Cards",
+                },
+            },
+        },
+
+        Enhanced = {
+            m_celesta_exo = {
+                name = "Exo Card",
+                text = {
+                    "Retriggered once per",
+                    "{C:attention}consumable{} held",
+                },
+            },
+            m_celesta_gash = {
+                name = "Gash Card",
+                text = {
+                    "{X:chips,C:white}X#1#{} Chips",
+                    "{C:green}#2# in #3#{} chance this",
+                    "card is destroyed",
                 },
             },
         },
@@ -861,6 +898,8 @@ return {
 
     misc = {
         labels = {
+            m_celesta_exo = "Exo Card",
+            m_celesta_gash = "Gash Card",
             celesta_ectoplast_seal = "Ectoplast Seal",
             celesta_foppy_seal = "Foppy Seal",
             celesta_rose_seal = "Rose Seal",
@@ -873,6 +912,9 @@ return {
             -- Floating message text. Vanilla has no generic "+card" key
             -- (k_plus_stone is Marble Joker's own), so this mod supplies one.
             celesta_upgraded = "Upgraded!",
+            celesta_gashed = "Gashed!",
+            celesta_plus_slot = "+1 Consumable Slot",
+            celesta_plus_tag = "+1 Tag",
             celesta_sealed = "Sealed!",
             celesta_hearts = "All Hearts!",
             celesta_plus_seven = "+7 of Spades",
