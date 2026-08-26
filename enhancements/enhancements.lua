@@ -325,17 +325,28 @@ end
 -- that counts as all of them. Pointing the front at the Ace of the same suit
 -- gives the large central pip while keeping the suit visible.
 
-local SUIT_CODE = { Spades = "S", Hearts = "H", Diamonds = "D", Clubs = "C" }
+-- Index into the driftwood_fronts atlas, matching SUIT_ORDER in
+-- tools/gen_driftwood_fronts.py.
+local DRIFTWOOD_SUIT_POS = { Hearts = 0, Clubs = 1, Diamonds = 2, Spades = 3 }
+local DRIFTWOOD_FRONT_ATLAS = SMODS.current_mod.prefix .. "_driftwood_fronts"
 
 local set_sprites_ref = Card.set_sprites
 function Card:set_sprites(_center, _front)
-    if _front and _center
-        and _center.key == CelestasMod.ENHANCEMENT_KEYS.Driftwood then
-        local code = SUIT_CODE[_front.suit]
-        local ace = code and G.P_CARDS[code .. "_A"]
-        -- Modded suits have no code here; those keep their own front rather
-        -- than crashing or silently losing their suit.
-        if ace then _front = ace end
-    end
-    return set_sprites_ref(self, _center, _front)
+    set_sprites_ref(self, _center, _front)
+
+    local center = _center or (self.config and self.config.center)
+    if not center or center.key ~= CelestasMod.ENHANCEMENT_KEYS.Driftwood then return end
+    if not self.children or not self.children.front then return end
+
+    -- Repoint the front at the stripped-Ace sheet rather than swapping in a
+    -- real Ace: that gave the central pip but printed an "A" in the corners,
+    -- which is wrong for a card that counts as every rank.
+    local suit = (_front and _front.suit) or (self.base and self.base.suit)
+    local pos = DRIFTWOOD_SUIT_POS[suit]
+    local atlas = G.ASSET_ATLAS[DRIFTWOOD_FRONT_ATLAS]
+    -- Modded suits are not in the sheet; those keep their normal front.
+    if not pos or not atlas then return end
+
+    self.children.front.atlas = atlas
+    self.children.front:set_sprite_pos({ x = pos, y = 0 })
 end

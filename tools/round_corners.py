@@ -21,7 +21,7 @@ import sys
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SHARED = {"jokers", "consumables", "decks", "icon", "seals"}   # placeholder sheets, skip
+SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts"}   # placeholder sheets, skip
 CARD_W, CARD_H = 71, 95
 
 # Transparent run inwards from the left edge, per row, for a 71x95 sprite.

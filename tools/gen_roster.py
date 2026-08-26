@@ -18,7 +18,7 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SHARED = {"jokers", "consumables", "decks", "icon", "seals"}   # not per-joker art
+SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts"}   # not per-joker art
 
 # Auto title-casing cannot know how a creator styles their own name.
 # Add corrections here; anything absent falls back to the mechanical rule.
