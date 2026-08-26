@@ -26,6 +26,14 @@ CelestasMod.GASH_ODDS = 4
 -- Exo — retriggered once per consumable held.
 --------------------------------------------------------------------------------
 
+-- How far Exo's frame extends past the card. Sprite:draw_from scales by
+-- (1 + ms), and the art is 84 wide against a 71 wide card, so 84/71 - 1 is
+-- its drawn-at-intended-size value. Nudge this to taste - it is the only
+-- number controlling how thick the border reads.
+CelestasMod.EXO_OVERHANG = 84 / 71 - 1
+
+local exo_frame_sprite
+
 SMODS.Enhancement {
     key = "exo",
     atlas = "enh_exo",
@@ -34,6 +42,21 @@ SMODS.Enhancement {
 
     loc_vars = function(self, info_queue, card)
         return {}
+    end,
+
+    -- Called from the card's draw pass. The centre sprite is only the card
+    -- body; the frame is drawn here instead so it can be larger than the card,
+    -- the same way a Legendary Joker's soul overlay is drawn.
+    draw = function(self, card, layer)
+        local atlas = G.ASSET_ATLAS[SMODS.current_mod.prefix .. "_enh_exo_frame"]
+        if not atlas then return end
+        if not exo_frame_sprite then
+            exo_frame_sprite = Sprite(0, 0, G.CARD_W, G.CARD_H, atlas, { x = 0, y = 0 })
+            exo_frame_sprite.role.draw_major = card
+        end
+        exo_frame_sprite.role.draw_major = card
+        exo_frame_sprite:draw_shader("dissolve", nil, nil, nil,
+            card.children.center, CelestasMod.EXO_OVERHANG, 0)
     end,
 
     calculate = function(self, card, context)

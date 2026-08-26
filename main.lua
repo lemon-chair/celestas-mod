@@ -22,7 +22,10 @@ SMODS.Atlas { key = 'seals',       path = 'seals.png',       px = 71, py = 95 }
 
 -- Card enhancements (built by tools/gen_enhancements.py). Exo's cell is
 -- larger than a card so its frame reads as overhanging the edges.
-SMODS.Atlas { key = 'enh_exo',  path = 'enh_exo.png',  px = 84, py = 104 }
+SMODS.Atlas { key = 'enh_exo',  path = 'enh_exo.png',  px = 71, py = 95 }
+-- Exo's frame is a separate, larger sprite: an enhancement's cell is always
+-- squashed onto the card rect, so overhang has to be drawn, not sized.
+SMODS.Atlas { key = 'enh_exo_frame', path = 'enh_exo_frame.png', px = 84, py = 104 }
 SMODS.Atlas { key = 'enh_gash', path = 'enh_gash.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'enh_eutrophic', path = 'enh_eutrophic.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'enh_limestone', path = 'enh_limestone.png', px = 71, py = 95 }
