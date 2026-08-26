@@ -789,15 +789,29 @@ SMODS.Joker {
     blueprint_compat = true,
     eternal_compat = true,
 
-    config = { extra = { emult = 1.3 } },
+    config = { extra = { e_mult = 1.3 } },
 
     loc_vars = function(self, info_queue, card)
-        return { vars = { card.ability.extra.emult } }
+        return { vars = { card.ability.extra.e_mult } }
     end,
 
     calculate = function(self, card, context)
         if context.joker_main then
-            return { emult = card.ability.extra.emult }
+            -- The exponential cue Cryptid uses. The sound is Talisman's, not
+            -- Cryptid's: ExponentialMult.wav, registered as `emult` under
+            -- Talisman's `talisman` prefix. Talisman's own e_mult handler
+            -- prints the message but plays nothing, which is why Cryptid
+            -- triggers it by hand too. Guarded on the registry so this stays
+            -- silent rather than erroring if Talisman is not installed.
+            if not SMODS.no_resolve and SMODS.Sounds
+                and SMODS.Sounds.talisman_emult then
+                play_sound("talisman_emult", 1)
+            end
+            return {
+                e_mult = card.ability.extra.e_mult,
+                colour = G.C.DARK_EDITION,
+                card = card,
+            }
         end
     end,
 }
