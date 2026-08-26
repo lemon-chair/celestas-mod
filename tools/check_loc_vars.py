@@ -83,7 +83,14 @@ function count_vars(obj)
   end)
   if not ok then return -2, tostring(res) end
   if type(res) ~= "table" or type(res.vars) ~= "table" then return 0 end
-  return #res.vars
+  -- A nil INSIDE vars is the bug that prints "nil" on the card, and #vars
+  -- does not see it - the length of {5, nil} is not reliably 2. Report the
+  -- first hole instead of the raw count.
+  local n = #res.vars
+  for i = 1, n do
+    if res.vars[i] == nil then return -3, tostring(i) end
+  end
+  return n
 end
 '''
 
@@ -143,6 +150,9 @@ def main():
         checked += 1
         if got == -2:
             problems.append("%s %s: loc_vars raised an error: %s" % (kind, key, err))
+        elif got == -3:
+            problems.append("%s %s: loc_vars returns nil for var #%s - the card "
+                            "will print \"nil\"" % (kind, key, err))
         elif needed > 0 and got == -1:
             problems.append("%s %s: text needs #%d# but there is no loc_vars"
                             % (kind, key, needed))
