@@ -878,8 +878,9 @@ return {
             m_celesta_eutrophic = {
                 name = "Eutrophic Card",
                 text = {
-                    "Copies the abilities of",
-                    "the {C:attention}leftmost{} card",
+                    "Copies the {C:chips}Chips{}, {C:mult}Mult{}",
+                    "and abilities of the",
+                    "{C:attention}leftmost{} card in the hand",
                 },
             },
             m_celesta_limestone = {

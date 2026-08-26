@@ -150,19 +150,30 @@ SMODS.Enhancement {
 
         local effect
 
-        -- Config-driven values first. These never reach a calculate function -
-        -- Card:set_ability copies them onto the card and scoring reads them
-        -- directly - so copying behaviour alone would miss Limestone's Mult
-        -- and Gash's X Mult entirely.
+        -- Scoring values first. These never reach a calculate function - the
+        -- game reads them off the card directly - so copying behaviour alone
+        -- would miss them entirely.
+        --
+        -- Use the same getters eval_card uses on a scored card rather than
+        -- reading card.ability by hand. get_chip_bonus() includes the card's
+        -- own rank value (base.nominal), which reading ability.bonus misses -
+        -- that is why copying a plain King used to contribute nothing at all.
+        -- They also fold in enhancement config and any permanent bonuses a
+        -- seal has stacked up.
         if context.main_scoring and context.cardarea == G.play then
             effect = {}
-            local a = left.ability
-            if a then
-                if (a.mult or 0) ~= 0 then effect.mult = a.mult end
-                if (a.bonus or 0) ~= 0 then effect.chips = a.bonus end
-                if (a.x_mult or 1) ~= 1 then effect.x_mult = a.x_mult end
-                if (a.x_chips or 1) ~= 1 then effect.x_chips = a.x_chips end
-            end
+            local chips   = left.get_chip_bonus  and left:get_chip_bonus() or 0
+            local mult    = left.get_chip_mult   and left:get_chip_mult() or 0
+            local x_mult  = left.get_chip_x_mult and left:get_chip_x_mult(context) or 1
+            local x_chips = left.get_chip_x_bonus and left:get_chip_x_bonus() or 1
+
+            if chips ~= 0 then effect.chips = chips end
+            if mult ~= 0 then effect.mult = mult end
+            -- Guarded at 1: these getters return 1 for "nothing", and passing
+            -- that through would print a pointless X1 popup every score.
+            if x_mult > 1 then effect.x_mult = x_mult end
+            if x_chips > 1 then effect.x_chips = x_chips end
+
             if not next(effect) then effect = nil end
         end
 
