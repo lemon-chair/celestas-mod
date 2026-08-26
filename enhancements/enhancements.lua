@@ -194,6 +194,11 @@ SMODS.Enhancement {
             -- The ability is a COPY: an enhancement that scales itself would
             -- otherwise write that growth onto the card being copied, every
             -- time Eutrophic evaluated.
+            -- Same re-entrancy hazard as the frozen roll: a copied centre can
+            -- start a fresh evaluation pass that comes straight back here.
+            if CelestasMod.eutrophic_copying then return effect end
+            CelestasMod.eutrophic_copying = true
+
             local saved_center, saved_ability = card.config.center, card.ability
             card.config.center = center
             local borrowed = copy_table(left.ability)
@@ -209,6 +214,7 @@ SMODS.Enhancement {
             local ok, copied = pcall(center.calculate, center, card, context)
 
             card.config.center, card.ability = saved_center, saved_ability
+            CelestasMod.eutrophic_copying = nil
 
             if not ok then
                 -- Copying arbitrary third-party enhancements is best-effort;

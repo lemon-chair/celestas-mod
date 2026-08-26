@@ -91,9 +91,26 @@ end
 -- A frozen joker sometimes does nothing
 --------------------------------------------------------------------------------
 
+-- Cards currently resolving a freeze roll. Weak keys so a destroyed joker is
+-- not held alive by this table.
+--
+-- Rolling is not free. SMODS.get_probability_vars fires TWO full
+-- calculate_context passes - mod_probability and fix_probability - and each
+-- re-evaluates every joker, re-entering this hook on the same card. Cryptid
+-- additionally wraps calculate_joker and calls eval_card again whenever the
+-- inner chain returns nothing, which is exactly what a failed freeze roll
+-- does. Together those nested until the stack overflowed, first seen when
+-- AmaLee froze a Hanging Chad.
+--
+-- Exempting query contexts from FAILING was not enough: they still re-enter.
+-- This makes the roll itself non-reentrant per card, so a nested evaluation
+-- passes straight through to the real calculate instead of rolling again.
+local rolling = setmetatable({}, { __mode = "k" })
+
 local calculate_joker_ref = Card.calculate_joker
 function Card:calculate_joker(context)
-    if CelestasMod.is_frozen(self) and self.ability.set == "Joker" then
+    if CelestasMod.is_frozen(self) and self.ability.set == "Joker"
+        and not rolling[self] then
         -- Vulpixie cancels the failure outright rather than improving the odds.
         if not next(SMODS.find_card("j_celesta_vulpixie")) then
             -- Getter contexts ask a question rather than producing an effect;
@@ -102,10 +119,15 @@ function Card:calculate_joker(context)
             local is_query = context.mod_probability or context.fix_probability
                 or context.check_enhancement or context.check_eternal
                 or context.retrigger_joker_check
-            if not is_query and not SMODS.pseudorandom_probability(
-                    self, "celesta_frozen_fail", 1, CelestasMod.FROZEN_FAIL_ODDS,
-                    "celesta_frozen_fail") then
-                return
+            if not is_query then
+                rolling[self] = true
+                local ok, passed = pcall(SMODS.pseudorandom_probability, self,
+                    "celesta_frozen_fail", 1, CelestasMod.FROZEN_FAIL_ODDS,
+                    "celesta_frozen_fail")
+                rolling[self] = nil
+                -- A roll that errored is treated as a pass: a frozen joker
+                -- working too often is far better than one that cannot run.
+                if ok and not passed then return end
             end
         end
     end
