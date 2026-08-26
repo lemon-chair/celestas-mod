@@ -25,17 +25,21 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals"}   # not per-joker a
 DISPLAY_NAMES = {
     "aicandii": "AiCandii",
     "amalee": "AmaLee",
+    "berrycrepe": "BerryCrepe",
     "cerbervt": "CerberVT",
+    "cottontail": "CottontailVA",
     "cyyuvtuber": "CyyuVTuber",
     "el_xox": "El_XoX",
     "froggyloch": "FroggyLoch",
     "heavenlyfather": "HeavenlyFather",
     "huntressspectre": "HuntressSpectre",
+    "ironmouse": "Ironmouse",
     "itsdeadlyboop": "ItsDeadlyBoop",
     "jaxvtuber": "JaxVTuber",
     "kokonuts": "KokoNuts",
     "laynalazar": "LaynaLazar",
     "monikacinnyroll": "MonikaCinnyroll",
+    "overezeggs": "OverEzEggs",
     "motherv3": "MotherV3",
     "rtgame": "RTGame",
     "shylily": "ShyLily",
@@ -67,14 +71,23 @@ def collect():
 def implemented_keys():
     """Keys defined by hand in jokers/implemented.lua.
 
-    Matches `SMODS.Joker {` followed by `key = "..."`, which is why that file
-    keeps `key` as the first field of every definition.
+    Two sources, unioned:
+      * `SMODS.Joker {` followed by `key = "..."` - which is why that file
+        keeps `key` as the first field of every literal definition.
+      * `--- IMPLEMENTED: a, b, c` comment lines, for jokers registered from a
+        loop where the key is a variable and cannot be read statically.
+
+    Missing a key here is not silent: it stays in the generated roster and
+    registers a second time, which the load test catches as a duplicate.
     """
     p = os.path.join(ROOT, "jokers", "implemented.lua")
     if not os.path.exists(p):
         return set()
     src = open(p, encoding="utf-8").read()
-    return set(re.findall(r'SMODS\.Joker\s*\{\s*key\s*=\s*["\']([^"\']+)["\']', src))
+    keys = set(re.findall(r'SMODS\.Joker\s*\{\s*key\s*=\s*["\']([^"\']+)["\']', src))
+    for line in re.findall(r'^---\s*IMPLEMENTED:\s*(.+)$', src, re.MULTILINE):
+        keys.update(k.strip() for k in line.split(",") if k.strip())
+    return keys
 
 
 def existing_loc_blocks():
@@ -217,25 +230,30 @@ LOC_TAIL = '''        },
             celesta_ectoplast_seal = {
                 name = "Ectoplast Seal",
                 text = {
-                    "{C:inactive}Effect not yet defined{}",
+                    "When scored, {C:green}#1# in #2#{} chance",
+                    "to upgrade a random Joker's",
+                    "{C:dark_edition}edition{} by one step",
                 },
             },
             celesta_foppy_seal = {
                 name = "Foppy Seal",
                 text = {
-                    "{C:inactive}Effect not yet defined{}",
+                    "Retriggers this card",
+                    "{C:attention}2{} extra times",
                 },
             },
             celesta_rose_seal = {
                 name = "Rose Seal",
                 text = {
-                    "{C:inactive}Effect not yet defined{}",
+                    "When scored, permanently",
+                    "gains {X:mult,C:white}X0.1{} Mult",
                 },
             },
             celesta_star_seal = {
                 name = "Star Seal",
                 text = {
-                    "{C:inactive}Effect not yet defined{}",
+                    "When {C:attention}not scoring{}, copies the",
+                    "card to its left into your deck",
                 },
             },
         },
@@ -274,6 +292,9 @@ LOC_TAIL = '''        },
             celesta_cfg_downpour = "Force Downpour (debug)",
             -- Floating message text. Vanilla has no generic "+card" key
             -- (k_plus_stone is Marble Joker's own), so this mod supplies one.
+            celesta_upgraded = "Upgraded!",
+            celesta_sealed = "Sealed!",
+            celesta_hearts = "All Hearts!",
             celesta_plus_seven = "+7 of Spades",
             celesta_downpour = "Downpour!",
         },

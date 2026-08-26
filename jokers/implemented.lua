@@ -608,3 +608,196 @@ SMODS.Joker {
         end
     end,
 }
+
+--- IMPLEMENTED: cottontail, spite, fraiki, beepers
+--- (declared explicitly because these are registered from a loop, so
+---  tools/gen_roster.py cannot read their keys from the source)
+
+--------------------------------------------------------------------------------
+-- SEAL-GRANTING JOKERS
+-- All four share a shape: on the individual scoring pass, if the card matches
+-- and carries no seal, roll 1 in 4 and stamp a seal on it.
+-- CelestasMod.SEAL_KEYS holds the prefixed keys, set in seals/seals.lua.
+--------------------------------------------------------------------------------
+
+local SEAL_GRANTERS = {
+    {
+        key = "cottontail", seal = "Star", cost = 6,
+        -- Face cards only, and only if the card is bare.
+        eligible = function(c) return c:is_face() and not c.seal end,
+    },
+    {
+        key = "spite", seal = "Ectoplast", cost = 6,
+        -- "Enhanced" means any enhancement at all, i.e. not the base center.
+        eligible = function(c)
+            return c.config.center ~= G.P_CENTERS.c_base and not c.seal
+        end,
+    },
+    {
+        key = "fraiki", seal = "Rose", cost = 6,
+        eligible = function(c) return not c:is_face() and not c.seal end,
+    },
+    {
+        key = "beepers", seal = "Foppy", cost = 6,
+        -- Deliberately targets a card that DOES have a seal: it upgrades a
+        -- Red Seal (1 retrigger) into a Foppy Seal (2).
+        eligible = function(c) return c.seal == "Red" end,
+    },
+}
+
+for _, entry in ipairs(SEAL_GRANTERS) do
+    SMODS.Joker {
+        key = entry.key,
+        atlas = entry.key,
+        pos = { x = 0, y = 0 },
+
+        rarity = 2,
+        cost = entry.cost,
+        unlocked = true,
+        discovered = true,
+        blueprint_compat = true,
+        eternal_compat = true,
+
+        config = { extra = { odds = 4 } },
+
+        loc_vars = function(self, info_queue, card)
+            local numerator, denominator = SMODS.get_probability_vars(
+                card, 1, card.ability.extra.odds, "celesta_" .. entry.key)
+            return { vars = { numerator, denominator } }
+        end,
+
+        calculate = function(self, card, context)
+            if context.individual and context.cardarea == G.play then
+                local other = context.other_card
+                if other and entry.eligible(other)
+                    and SMODS.pseudorandom_probability(
+                        card, "celesta_" .. entry.key, 1, card.ability.extra.odds) then
+                    other:set_seal(CelestasMod.SEAL_KEYS[entry.seal], nil, true)
+                    return {
+                        message = localize("celesta_sealed"),
+                        colour = G.C.PURPLE,
+                        card = card,
+                    }
+                end
+            end
+        end,
+    }
+end
+
+--------------------------------------------------------------------------------
+-- OverEzEggs [Uncommon]
+-- At the end of each round, converts all cards held in hand to Hearts.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "overezeggs",
+    atlas = "overezeggs",
+    pos = { x = 0, y = 0 },
+
+    rarity = 2,
+    cost = 6,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        -- main_eval is the once-per-round joker pass; without it this also
+        -- runs during the per-card and repetition passes.
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            if not G.hand or #G.hand.cards == 0 then return end
+            for _, held in ipairs(G.hand.cards) do
+                -- change_base rather than poking base.suit directly: it keeps
+                -- the sprite and any modded suit bookkeeping in step.
+                SMODS.change_base(held, "Hearts")
+            end
+            return {
+                message = localize("celesta_hearts"),
+                colour = G.C.RED,
+                card = card,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- BerryCrepe [Common]
+-- Scored cards permanently gain +1 Mult.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "berrycrepe",
+    atlas = "berrycrepe",
+    pos = { x = 0, y = 0 },
+
+    rarity = 1,
+    cost = 5,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    config = { extra = { mult_gain = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.mult_gain } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.individual and context.cardarea == G.play then
+            local other = context.other_card
+            if not other then return end
+            -- perma_mult is scored by Card:get_chip_mult and printed on the
+            -- card automatically as "+N Mult", so no display work is needed.
+            other.ability.perma_mult = (other.ability.perma_mult or 0)
+                + card.ability.extra.mult_gain
+            return {
+                extra = {
+                    message = localize {
+                        type = "variable",
+                        key = "a_mult",
+                        vars = { other.ability.perma_mult },
+                    },
+                    colour = G.C.MULT,
+                },
+                card = other,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Ironmouse [Rare]
+-- ^1.3 Mult. Exponential scoring comes from Talisman, which registers `emult`
+-- as a scoring parameter; without Talisman installed the key is unrecognised
+-- and this scores nothing.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "ironmouse",
+    atlas = "ironmouse",
+    pos = { x = 0, y = 0 },
+
+    rarity = 3,
+    cost = 9,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    config = { extra = { emult = 1.3 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.emult } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.joker_main then
+            return { emult = card.ability.extra.emult }
+        end
+    end,
+}

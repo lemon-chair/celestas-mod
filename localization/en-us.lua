@@ -107,7 +107,9 @@ return {
             j_celesta_beepers = {
                 name = "Beepers",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:green}#1# in #2#{} chance to add a",
+                    "{C:attention}Foppy Seal{} to a scored",
+                    "card with a {C:red}Red Seal{}",
                 },
             },
             j_celesta_beribug = {
@@ -117,9 +119,10 @@ return {
                 },
             },
             j_celesta_berrycrepe = {
-                name = "Berrycrepe",
+                name = "BerryCrepe",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Scored cards permanently",
+                    "gain {C:mult}+#1#{} Mult",
                 },
             },
             j_celesta_birdyovo = {
@@ -177,9 +180,11 @@ return {
                 },
             },
             j_celesta_cottontail = {
-                name = "Cottontail",
+                name = "CottontailVA",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:green}#1# in #2#{} chance to add a",
+                    "{C:attention}Star Seal{} to a scored",
+                    "{C:attention}face card{} with no seal",
                 },
             },
             j_celesta_crelly = {
@@ -242,7 +247,9 @@ return {
             j_celesta_fraiki = {
                 name = "Fraiki",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:green}#1# in #2#{} chance to add a",
+                    "{C:attention}Rose Seal{} to a scored",
+                    "{C:attention}non-face card{} with no seal",
                 },
             },
             j_celesta_fream = {
@@ -310,7 +317,7 @@ return {
             j_celesta_ironmouse = {
                 name = "Ironmouse",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{E:1,C:mult}^#1#{} Mult",
                 },
             },
             j_celesta_itsdeadlyboop = {
@@ -556,9 +563,11 @@ return {
                 },
             },
             j_celesta_overezeggs = {
-                name = "Overezeggs",
+                name = "OverEzEggs",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "At the end of each round,",
+                    "converts all cards held",
+                    "in hand to {C:hearts}Hearts{}",
                 },
             },
             j_celesta_pandabearlily = {
@@ -704,7 +713,9 @@ return {
             j_celesta_spite = {
                 name = "Spite",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:green}#1# in #2#{} chance to add an",
+                    "{C:attention}Ectoplast Seal{} to a scored",
+                    "{C:attention}enhanced card{} with no seal",
                 },
             },
             j_celesta_spongeybuns = {
@@ -799,25 +810,30 @@ return {
             celesta_ectoplast_seal = {
                 name = "Ectoplast Seal",
                 text = {
-                    "{C:inactive}Effect not yet defined{}",
+                    "When scored, {C:green}#1# in #2#{} chance",
+                    "to upgrade a random Joker's",
+                    "{C:dark_edition}edition{} by one step",
                 },
             },
             celesta_foppy_seal = {
                 name = "Foppy Seal",
                 text = {
-                    "{C:inactive}Effect not yet defined{}",
+                    "Retriggers this card",
+                    "{C:attention}2{} extra times",
                 },
             },
             celesta_rose_seal = {
                 name = "Rose Seal",
                 text = {
-                    "{C:inactive}Effect not yet defined{}",
+                    "When scored, permanently",
+                    "gains {X:mult,C:white}X0.1{} Mult",
                 },
             },
             celesta_star_seal = {
                 name = "Star Seal",
                 text = {
-                    "{C:inactive}Effect not yet defined{}",
+                    "When {C:attention}not scoring{}, copies the",
+                    "card to its left into your deck",
                 },
             },
         },
@@ -856,6 +872,9 @@ return {
             celesta_cfg_downpour = "Force Downpour (debug)",
             -- Floating message text. Vanilla has no generic "+card" key
             -- (k_plus_stone is Marble Joker's own), so this mod supplies one.
+            celesta_upgraded = "Upgraded!",
+            celesta_sealed = "Sealed!",
+            celesta_hearts = "All Hearts!",
             celesta_plus_seven = "+7 of Spades",
             celesta_downpour = "Downpour!",
         },
