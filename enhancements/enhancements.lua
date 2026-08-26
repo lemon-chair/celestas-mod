@@ -31,9 +31,11 @@ CelestasMod.GASH_ODDS = 4
 --------------------------------------------------------------------------------
 
 -- How far Exo's frame extends past the card. Sprite:draw_from scales by
--- (1 + ms), and the art is 84 wide against a 71 wide card, so 84/71 - 1 is
--- its drawn-at-intended-size value. Nudge this to taste - it is the only
--- number controlling how thick the border reads.
+-- (1 + ms) around a box sized to the card, so the frame's cell must itself be
+-- card-sized - an 84-wide cell renders 84/71 too big AND overflows that box,
+-- which is too large and off-centre at once. gen_enhancements.py fits the art
+-- into a card cell; this number then restores its authored 84-wide size.
+-- It is the only knob for how thick the border reads.
 CelestasMod.EXO_OVERHANG = 84 / 71 - 1
 
 local exo_frame_sprite

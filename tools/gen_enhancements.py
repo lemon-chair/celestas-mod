@@ -109,8 +109,21 @@ def main():
         body = Image.open(BASE_CARD).convert("RGBA").resize(
             (CARD[0] * scale, CARD[1] * scale), Image.NEAREST)
         save(shape_corners(body), "enh_exo", folder)
-    save(small, "enh_exo_frame", "1x")
-    save(big, "enh_exo_frame", "2x")
+    # The frame ships in a CARD-SIZED cell, not its native 84x104.
+    #
+    # Sprite:draw_from centres a box sized to the card and then draws the quad
+    # at its own pixel size, so an 84-wide cell renders 84/71 too big AND
+    # overflows down-right out of that box - too large and off-centre at once.
+    # Fitting the art into a card-sized cell restores every assumption
+    # draw_from makes; CelestasMod.EXO_OVERHANG then does the enlarging, and
+    # 84/71 - 1 puts the frame back at exactly its authored size.
+    for art, folder, scale in ((small, "1x", 1), (big, "2x", 2)):
+        cw, ch = CARD[0] * scale, CARD[1] * scale
+        fit = cw / art.width          # uniform, so the frame keeps its shape
+        sized = art.resize((cw, max(1, round(art.height * fit))), Image.NEAREST)
+        cell = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+        cell.paste(sized, (0, (ch - sized.height) // 2), sized)
+        save(cell, "enh_exo_frame", folder)
 
     print("\natlas declarations for main.lua:")
     for name, (_, _, (cw, ch), _b) in SOURCES.items():
@@ -119,7 +132,7 @@ def main():
     print('SMODS.Atlas { key = "enh_exo", path = "enh_exo.png", px = %d, py = %d }'
           % CARD)
     print('SMODS.Atlas { key = "enh_exo_frame", path = "enh_exo_frame.png",'
-          ' px = %d, py = %d }' % EXO[2])
+          ' px = %d, py = %d }' % CARD)
 
 
 if __name__ == "__main__":

@@ -20,12 +20,13 @@ SMODS.Atlas { key = 'modicon',     path = 'icon.png',        px = 32, py = 32 }
 -- Seal emblems, card-shaped cells (built by tools/gen_seals.py).
 SMODS.Atlas { key = 'seals',       path = 'seals.png',       px = 71, py = 95 }
 
--- Card enhancements (built by tools/gen_enhancements.py). Exo's cell is
--- larger than a card so its frame reads as overhanging the edges.
+-- Card enhancements (built by tools/gen_enhancements.py).
+-- enh_exo is only the card body; its frame is a separate sprite drawn larger
+-- than the card, because an enhancement's cell is always squashed onto the
+-- card rect. Every cell here is card-sized - Sprite:draw_from centres a box
+-- sized to the card, so an oversized cell renders both too big and off-centre.
 SMODS.Atlas { key = 'enh_exo',  path = 'enh_exo.png',  px = 71, py = 95 }
--- Exo's frame is a separate, larger sprite: an enhancement's cell is always
--- squashed onto the card rect, so overhang has to be drawn, not sized.
-SMODS.Atlas { key = 'enh_exo_frame', path = 'enh_exo_frame.png', px = 84, py = 104 }
+SMODS.Atlas { key = 'enh_exo_frame', path = 'enh_exo_frame.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'enh_gash', path = 'enh_gash.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'enh_eutrophic', path = 'enh_eutrophic.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'enh_limestone', path = 'enh_limestone.png', px = 71, py = 95 }
