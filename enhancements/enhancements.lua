@@ -169,8 +169,39 @@ SMODS.Enhancement {
         -- Then the copied centre's own behaviour, run against THIS card so its
         -- effects land here rather than on the card being copied.
         if type(center.calculate) == "function" then
-            local copied = center:calculate(card, context)
-            if copied then
+            -- An enhancement reads its own config off card.ability.extra, so
+            -- handing it Eutrophic's ability crashes anything expecting its
+            -- own fields - Cryptid's Abstract does exactly that. Lend it the
+            -- copied card's ability and centre for the duration.
+            --
+            -- The ability is a COPY: an enhancement that scales itself would
+            -- otherwise write that growth onto the card being copied, every
+            -- time Eutrophic evaluated.
+            local saved_center, saved_ability = card.config.center, card.ability
+            card.config.center = center
+            local borrowed = copy_table(left.ability)
+            -- copy_table is shallow, so `extra` would still be the copied
+            -- card's own table and a scaling enhancement would write its
+            -- growth straight back onto it. That is the table effects
+            -- actually mutate, so it needs its own copy.
+            if type(left.ability.extra) == "table" then
+                borrowed.extra = copy_table(left.ability.extra)
+            end
+            card.ability = borrowed
+
+            local ok, copied = pcall(center.calculate, center, card, context)
+
+            card.config.center, card.ability = saved_center, saved_ability
+
+            if not ok then
+                -- Copying arbitrary third-party enhancements is best-effort;
+                -- one that cannot run against a borrowed card must not take
+                -- the run down with it.
+                CelestasMod.warn_once(
+                    "eutrophic_copy_" .. tostring(center.key),
+                    ("Eutrophic could not copy %s: %s")
+                        :format(tostring(center.key), tostring(copied)))
+            elseif copied then
                 if not effect then return copied end
                 for k, v in pairs(copied) do effect[k] = v end
             end

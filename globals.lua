@@ -23,3 +23,13 @@ function loc_colour(_c, _default)
     G.ARGS.LOC_COLOURS.celesta_white  = G.C.CELESTA.WHITE
     return loc_colour_ref(_c, _default)
 end
+
+--- Log a message once per key, so a per-frame failure reports itself without
+--- flooding the log. Used where this mod interoperates with other mods and
+--- cannot assume their internals.
+local warned = {}
+function CelestasMod.warn_once(key, message)
+    if warned[key] then return end
+    warned[key] = true
+    sendWarnMessage(message, "CelestasMod")
+end
