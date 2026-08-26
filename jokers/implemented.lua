@@ -504,7 +504,12 @@ SMODS.Joker {
             and G.GAME.current_round.hands_left == 0 then
             return {
                 x_mult = card.ability.extra.x_mult,
-                card = context.other_card,
+                colour = G.C.RED,
+                -- The JOKER, not the scored card. The effect pipeline only
+                -- juices `effect.card` when it differs from the card being
+                -- scored, so pointing this at other_card meant nothing
+                -- animated. Vanilla Photograph returns `card = self` here.
+                card = card,
             }
         end
     end,
@@ -770,6 +775,16 @@ SMODS.Joker {
     end,
 }
 
+--- Reads Ironmouse's exponent defensively. Falls back through the older field
+--- name and finally the centre's own default, so a card saved under a previous
+--- field name can never render "^nil Mult" or silently score nothing.
+function CelestasMod.ironmouse_emult(self, card)
+    local extra = card and card.ability and card.ability.extra
+    return (extra and (extra.emult or extra.e_mult))
+        or (self.config and self.config.extra and self.config.extra.emult)
+        or 1.3
+end
+
 --------------------------------------------------------------------------------
 -- Ironmouse [Rare]
 -- ^1.3 Mult. Exponential scoring comes from Talisman, which registers `emult`
@@ -789,16 +804,21 @@ SMODS.Joker {
     blueprint_compat = true,
     eternal_compat = true,
 
-    config = { extra = { e_mult = 1.3 } },
+    -- Stored as `emult`, matching Cryptid. The effect KEY below is `e_mult`;
+    -- Talisman accepts either spelling, but a card created before this field
+    -- was named still carries `emult`, and a nil here is not cosmetic - the
+    -- key drops out of the return entirely, so nothing scores, no popup
+    -- appears and nothing animates. Hence the fallback chain.
+    config = { extra = { emult = 1.3 } },
 
     loc_vars = function(self, info_queue, card)
-        return { vars = { card.ability.extra.e_mult } }
+        return { vars = { CelestasMod.ironmouse_emult(self, card) } }
     end,
 
     calculate = function(self, card, context)
         if context.joker_main then
             return {
-                e_mult = card.ability.extra.e_mult,
+                e_mult = CelestasMod.ironmouse_emult(self, card),
                 colour = G.C.DARK_EDITION,
                 card = card,
 
