@@ -90,7 +90,9 @@ return {
             j_celesta_baddaboom = {
                 name = "Baddaboom",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult",
+                    "each time a {C:attention}Gash{} card breaks",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
                 },
             },
             j_celesta_bao = {
@@ -221,7 +223,9 @@ return {
             j_celesta_dejavudea = {
                 name = "Dejavudea",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:attention}Halves{} all listed",
+                    "{C:green}probabilities{}",
+                    "{C:inactive}(e.g. 1 in 4 becomes 1 in 8)",
                 },
             },
             j_celesta_demenishki = {
@@ -778,9 +782,11 @@ return {
                 },
             },
             j_celesta_x3dustco = {
-                name = "x3dustco",
+                name = "x3Dustco",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "At the end of the shop,",
+                    "creates a random {C:attention}Joker{}",
+                    "from this mod",
                 },
             },
             j_celesta_yoclesh = {

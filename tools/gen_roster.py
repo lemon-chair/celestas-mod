@@ -49,7 +49,7 @@ DISPLAY_NAMES = {
     "motherv3": "MOTHERv3",
     "rtgame": "RTGame",
     "shylily": "ShyLily",
-    "x3dustco": "x3dustco",
+    "x3dustco": "x3Dustco",
     "yomiquinnely": "Yomi Quinnely",
     "yuy_ix": "Yuy_ix",
 }

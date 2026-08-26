@@ -1528,3 +1528,142 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Dejavudea [Uncommon] - halves every listed probability.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "dejavudea",
+    atlas = "dejavudea",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        -- mod_probability is the additive pass every SMODS.get_probability_vars
+        -- call runs through, so this reaches every listed chance in the run
+        -- rather than needing to be taught about each one. Doubling the
+        -- denominator rather than halving the numerator keeps the odds
+        -- readable as "1 in N" instead of turning into a fraction.
+        if context.mod_probability then
+            return { denominator = (context.denominator or 1) * 2 }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Baddaboom [Uncommon] - grows every time a Gash card breaks.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "baddaboom",
+    atlas = "baddaboom",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { x_mult = 1, x_mult_gain = 0.2 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Gash]
+        return { vars = { card.ability.extra.x_mult_gain, card.ability.extra.x_mult } }
+    end,
+
+    calculate = function(self, card, context)
+        -- remove_playing_cards fires once after the destroy pass with every
+        -- card that died, which is where vanilla Caino counts its face cards.
+        -- Counting here rather than hooking the Gash roll means it catches a
+        -- break however it happened.
+        if context.remove_playing_cards and not context.blueprint then
+            local broken = 0
+            for _, removed in ipairs(context.removed or {}) do
+                if SMODS.has_enhancement(removed, CelestasMod.ENHANCEMENT_KEYS.Gash) then
+                    broken = broken + 1
+                end
+            end
+            if broken > 0 then
+                SMODS.scale_card(card, {
+                    ref_table = card.ability.extra,
+                    ref_value = "x_mult",
+                    scalar_value = "x_mult_gain",
+                    message_key = "a_xmult",
+                    message_colour = G.C.MULT,
+                    operation = function(ref_table, ref_value, initial, scaling)
+                        ref_table[ref_value] = initial + scaling * broken
+                    end,
+                })
+            end
+        end
+
+        if context.joker_main and card.ability.extra.x_mult > 1 then
+            return { x_mult = card.ability.extra.x_mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- x3Dustco [Legendary] - at the end of the shop, creates a Joker from this mod.
+--------------------------------------------------------------------------------
+
+local MOD_JOKER_PREFIX = "j_" .. SMODS.current_mod.prefix .. "_"
+
+SMODS.Joker {
+    key = "x3dustco",
+    atlas = "x3dustco",
+    pos = { x = 0, y = 0 },
+    rarity = 4, cost = 20,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        if context.ending_shop and not context.blueprint then
+            if not G.jokers then return end
+            if #G.jokers.cards + (G.GAME.joker_buffer or 0)
+                >= G.jokers.config.card_limit then
+                return
+            end
+
+            -- Built from the live Joker pool rather than a hardcoded list, so
+            -- it picks up anything added later automatically. add_to_pool is
+            -- what keeps the unimplemented placeholders out - they return
+            -- false from in_pool - and itself is excluded so it cannot clone.
+            local options = {}
+            for _, center in ipairs(G.P_CENTER_POOLS.Joker or {}) do
+                if center.key and center.key:find(MOD_JOKER_PREFIX, 1, true) == 1
+                    and center ~= card.config.center
+                    and SMODS.add_to_pool(center) then
+                    options[#options + 1] = center.key
+                end
+            end
+            if #options == 0 then return end
+
+            local chosen = pseudorandom_element(options, pseudoseed("celesta_x3dustco"))
+            G.GAME.joker_buffer = (G.GAME.joker_buffer or 0) + 1
+            G.E_MANAGER:add_event(Event {
+                func = function()
+                    local made = SMODS.add_card { key = chosen }
+                    if made then made:start_materialize() end
+                    G.GAME.joker_buffer = 0
+                    return true
+                end
+            })
+
+            return {
+                message = localize("k_plus_joker"),
+                colour = G.C.BLUE,
+                card = card,
+            }
+        end
+    end,
+}
