@@ -848,7 +848,7 @@ return {
             m_celesta_gash = {
                 name = "Gash Card",
                 text = {
-                    "{X:chips,C:white}X#1#{} Chips",
+                    "{X:mult,C:white}X#1#{} Mult",
                     "{C:green}#2# in #3#{} chance this",
                     "card is destroyed",
                 },

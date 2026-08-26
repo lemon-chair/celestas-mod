@@ -60,19 +60,21 @@ SMODS.Enhancement {
     pos = { x = 0, y = 0 },
     discovered = true,
 
-    config = { x_chips = 2 },
+    -- Applied by the game, not by calculate. Card:set_ability copies an
+    -- enhancement's config straight onto the card
+    -- (x_mult = center.config.Xmult or center.config.x_mult or 1) and scoring
+    -- reads ability.x_mult through Card:get_chip_x_mult. Returning it from
+    -- calculate as well would apply it twice - which is exactly what the
+    -- previous x_chips = 2 did, scoring X4 Chips instead of X2.
+    config = { x_mult = 1.5 },
 
     loc_vars = function(self, info_queue, card)
         local numerator, denominator = SMODS.get_probability_vars(
             card, 1, CelestasMod.GASH_ODDS, CelestasMod.GASH_BREAK_ID)
-        return { vars = { self.config.x_chips, numerator, denominator } }
+        return { vars = { self.config.x_mult, numerator, denominator } }
     end,
 
     calculate = function(self, card, context)
-        if context.main_scoring and context.cardarea == G.play then
-            return { x_chips = self.config.x_chips }
-        end
-
         -- Self-destruct on the destroy pass, exactly as vanilla Glass does:
         -- the card asks to be removed, rather than a joker removing it.
         if context.destroy_card and context.destroy_card == card
