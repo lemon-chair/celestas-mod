@@ -2513,3 +2513,68 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Mint Fantome [Common]
+-- When the played hand finishes scoring, score the leftmost card held in hand.
+--------------------------------------------------------------------------------
+
+-- Set while the held card is being scored, so the pass cannot re-enter.
+local mintfantome_scoring = false
+
+SMODS.Joker {
+    key = "mintfantome",
+    atlas = "mintfantome",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        -- Timing. context.after reads like the obvious hook and is the wrong
+        -- one: vanilla reads hand_chips*mult and commits the score at
+        -- state_events.lua:1031, then fires `after` at :1070, so anything
+        -- scored there would add nothing to the hand.
+        --
+        -- The held-in-hand pass (:798) is the first thing that runs once every
+        -- played card has finished scoring, and it still lands before the
+        -- commit. Reacting to the leftmost held card there is both the right
+        -- moment and the last one that counts.
+        if context.individual and context.cardarea == G.hand
+            and not mintfantome_scoring then
+            local target = G.hand and G.hand.cards and G.hand.cards[1]
+            if not target or context.other_card ~= target then return end
+            -- A debuffed card scores nothing, the same as in the played hand.
+            if target.debuff then return end
+
+            -- A fresh context rather than the live one: SMODS.score_card sets
+            -- main_scoring, individual and other_card as it goes, and
+            -- clobbering the table the caller is still iterating would corrupt
+            -- the rest of the held pass.
+            --
+            -- cardarea = G.play is what makes this scoring rather than another
+            -- held trigger. Every joker watching for a scored card sees this
+            -- one, and the card contributes its chips, enhancement, edition
+            -- and seal exactly as a played card would.
+            mintfantome_scoring = true
+            local ok, err = pcall(SMODS.score_card, target, {
+                cardarea = G.play,
+                full_hand = context.full_hand,
+                scoring_hand = context.scoring_hand,
+                scoring_name = context.scoring_name,
+                poker_hands = context.poker_hands,
+            })
+            mintfantome_scoring = false
+
+            if not ok then
+                CelestasMod.warn_once("mintfantome_score",
+                    "Mint Fantome could not score the leftmost held card: "
+                    .. tostring(err))
+            end
+        end
+    end,
+}

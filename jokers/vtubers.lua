@@ -41,7 +41,6 @@ local ROSTER = {
     { key = "mariyume", rarity = 1, cost = 4, mult = 4 },
     { key = "mellowmabel", rarity = 1, cost = 4, mult = 4 },
     { key = "milky", rarity = 1, cost = 4, mult = 4 },
-    { key = "mintfantome", rarity = 1, cost = 4, mult = 4 },
     { key = "monikacinnyroll", rarity = 1, cost = 4, mult = 4 },
     { key = "moomerrily", rarity = 1, cost = 4, mult = 4 },
     { key = "mooni", rarity = 1, cost = 4, mult = 4 },

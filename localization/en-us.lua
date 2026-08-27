@@ -525,9 +525,11 @@ return {
                 },
             },
             j_celesta_mintfantome = {
-                name = "Mintfantome",
+                name = "Mint Fantome",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "When the played hand",
+                    "finishes scoring, score the",
+                    "{C:attention}leftmost{} card held in hand",
                 },
             },
             j_celesta_monikacinnyroll = {
