@@ -296,9 +296,12 @@ local function build_art(card)
     local atlas = G.ASSET_ATLAS[card.config.center.atlas or card.config.center.set]
     local w, h = atlas.px, atlas.py
 
-    local canvas = love.graphics.newCanvas(w, h)
+    -- stencil = true on BOTH the canvas and setCanvas. LOVE 11 refuses to
+    -- draw to the stencil buffer while a canvas is bound unless the canvas was
+    -- created with a stencil attachment and bound asking for it.
+    local canvas = love.graphics.newCanvas(w, h, { stencil = true })
     local previous = love.graphics.getCanvas()
-    love.graphics.setCanvas(canvas)
+    love.graphics.setCanvas({ canvas, stencil = true })
     love.graphics.clear(0, 0, 0, 0)
     love.graphics.setColor(1, 1, 1, 1)
 
@@ -327,6 +330,40 @@ local function build_art(card)
     return canvas
 end
 
+-- Building happens between frames, never inside one.
+--
+-- The obvious place is the draw hook, the moment the art turns out to be
+-- missing - and it is the wrong place: Balatro draws the whole game into its
+-- own canvas, so binding another one mid-draw means restoring the caller's
+-- canvas afterwards without knowing what attachments it was bound with.
+-- love.graphics.getCanvas hands back the canvas but not the flags, so the
+-- restore is a guess. Doing it from update sidesteps the question - nothing is
+-- bound there.
+--
+-- A card that wants art is queued and drawn plainly for the frame or two until
+-- it arrives, which nobody will catch.
+local pending = setmetatable({}, { __mode = "k" })
+
+local celesta_bind_game_update_ref = Game.update
+function Game:update(dt)
+    celesta_bind_game_update_ref(self, dt)
+    if not next(pending) then return end
+    for card in pairs(pending) do
+        pending[card] = nil
+        if Bind.is_merged(card) and art_cache[card] == nil then
+            local ok, art = pcall(build_art, card)
+            if not ok then
+                CelestasMod.warn_once("bind_art",
+                    "Bind could not build merged art: " .. tostring(art))
+                art = nil
+            end
+            -- false rather than nil: nil means "not tried yet" and would queue
+            -- this card again every single frame.
+            art_cache[card] = art or false
+        end
+    end
+end
+
 local celesta_bind_card_draw_ref = Card.draw
 function Card:draw(layer)
     if not Bind.is_merged(self) or self.facing == "back" or layer == "shadow" then
@@ -335,8 +372,9 @@ function Card:draw(layer)
 
     local art = art_cache[self]
     if art == nil then
-        art = build_art(self) or false      -- false: built and failed, do not retry
-        art_cache[self] = art
+        -- Not built yet. Ask for it and draw plainly this frame.
+        pending[self] = true
+        return celesta_bind_card_draw_ref(self, layer)
     end
     if not art then return celesta_bind_card_draw_ref(self, layer) end
 
