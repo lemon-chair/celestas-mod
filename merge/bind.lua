@@ -362,6 +362,29 @@ special("j_celesta_demenishki", "j_celesta_camila", {
     end,
 })
 
+-- Nagzz + Chibidoki: Nagzz bends every listed chance; together they lean on
+-- the cards whose whole point is a chance.
+special("j_celesta_nagzz", "j_celesta_chibidoki", {
+    key = "nagzz_chibidoki",
+    config = { repetitions = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.repetitions } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.repetition and context.cardarea == G.play
+            and context.other_card
+            and SMODS.has_enhancement(context.other_card, "m_lucky") then
+            return {
+                message = localize("k_again_ex"),
+                repetitions = state.repetitions,
+                card = card,
+            }
+        end
+    end,
+})
+
 --------------------------------------------------------------------------------
 -- Running both halves
 --------------------------------------------------------------------------------

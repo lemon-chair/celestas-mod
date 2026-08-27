@@ -100,13 +100,6 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
-    key = "bind",
-    path = "bind.png",
-    px = 71,
-    py = 95,
-}
-
-SMODS.Atlas {
     key = "birdyovo",
     path = "birdyovo.png",
     px = 71,

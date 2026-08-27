@@ -21,7 +21,12 @@ import sys
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts", "frozen"}   # placeholder sheets, skip
+# Images that are NOT card faces and must never be masked to a card silhouette.
+# The arena sheets are 256x256 weather frames, and Exo's frame is deliberately
+# larger than a card so it reads as overhanging the edges - masking either to
+# 71x95 corners would quietly destroy them.
+SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts", "frozen",
+          "enh_exo_frame", "fx_downpour", "fx_snowstorm"}
 CARD_W, CARD_H = 71, 95
 
 # Transparent run inwards from the left edge, per row, for a 71x95 sprite.

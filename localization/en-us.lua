@@ -139,12 +139,6 @@ return {
                     "gain {C:mult}+#1#{} Mult",
                 },
             },
-            j_celesta_bind = {
-                name = "Bind",
-                text = {
-                    "{C:mult}+#1#{} Mult",
-                },
-            },
             j_celesta_birdyovo = {
                 name = "Birdyovo",
                 text = {
@@ -202,13 +196,16 @@ return {
             j_celesta_chibidoki = {
                 name = "Chibidoki",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Retriggers the {C:attention}lowest{} ranked",
+                    "scoring card in played hand",
+                    "{C:attention}#1#{} times",
                 },
             },
             j_celesta_clover = {
-                name = "Clover",
+                name = "Moo Moo Clover",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:spectral}Milk Bottles{} can select",
+                    "up to {C:attention}#1#{} cards",
                 },
             },
             j_celesta_cottontail = {
@@ -562,9 +559,11 @@ return {
                 },
             },
             j_celesta_moomerrily = {
-                name = "Moomerrily",
+                name = "Moo Merrily",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "At the start of each round,",
+                    "creates a {C:spectral}Milk Bottle{}",
+                    "{C:inactive}(Must have room)",
                 },
             },
             j_celesta_mooni = {
@@ -989,6 +988,13 @@ return {
                     "Destroys all scoring {C:attention}Steel Cards{}",
                     "in played hand, with a {C:green}#1# in #2#{} chance",
                     "to earn {C:money}$#3#{} per card destroyed",
+                },
+            },
+            celesta_bind_nagzz_chibidoki = {
+                name = "Nagzz + Chibidoki",
+                text = {
+                    "Retriggers {C:attention}Lucky Cards{}",
+                    "{C:attention}#1#{} additional time",
                 },
             },
             celesta_bind_deme_camila = {

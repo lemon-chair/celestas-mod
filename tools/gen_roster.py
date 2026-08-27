@@ -21,11 +21,14 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
           "frozen",
           # wear overlays, drawn on top of a playing card
-          "tatter", "lucky_card_tatter", "limestone_tatter"}   # not per-joker art
+          "tatter", "lucky_card_tatter", "limestone_tatter",
+          "bind", "milk_bottle"}   # not per-joker art
 
 # Auto title-casing cannot know how a creator styles their own name.
 # Add corrections here; anything absent falls back to the mechanical rule.
 DISPLAY_NAMES = {
+    "moomerrily": "Moo Merrily",
+    "clover": "Moo Moo Clover",
     "radicalmari": "Radical Mari",
     "rinpenrose": "Rin Penrose",
     "harukakaribu": "Haruka Karibu",
@@ -321,6 +324,13 @@ LOC_TAIL = '''        },
                     "Destroys all scoring {C:attention}Steel Cards{}",
                     "in played hand, with a {C:green}#1# in #2#{} chance",
                     "to earn {C:money}$#3#{} per card destroyed",
+                },
+            },
+            celesta_bind_nagzz_chibidoki = {
+                name = "Nagzz + Chibidoki",
+                text = {
+                    "Retriggers {C:attention}Lucky Cards{}",
+                    "{C:attention}#1#{} additional time",
                 },
             },
             celesta_bind_deme_camila = {

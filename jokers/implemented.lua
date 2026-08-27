@@ -3342,3 +3342,253 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Milk Bottle — permanent Chips on the cards you pick
+--------------------------------------------------------------------------------
+
+CelestasMod.MILK_BOTTLE_KEY = "c_" .. SMODS.current_mod.prefix .. "_milk_bottle"
+CelestasMod.MILK_BOTTLE_BASE_SELECTION = 2
+CelestasMod.MILK_BOTTLE_CLOVER_SELECTION = 3
+
+SMODS.Consumable {
+    key = "milk_bottle",
+    set = "Spectral",
+    atlas = "milk_bottle",
+    pos = { x = 0, y = 0 },
+
+    cost = 4,
+    unlocked = true,
+    discovered = true,
+
+    -- max_highlighted lives on the CENTRE, not the card: the game reads it
+    -- from ability.consumeable, which is this very table. That is what lets
+    -- Moo Moo Clover raise it below - and why it has to be put back when she
+    -- leaves.
+    config = { extra = { chips = 8 }, max_highlighted = 2 },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.chips,
+                          self.config.max_highlighted } }
+    end,
+
+    can_use = function(self, card)
+        local picked = G.hand and G.hand.highlighted
+        return picked and #picked > 0
+            and #picked <= (self.config.max_highlighted or 2)
+    end,
+
+    use = function(self, card, area, copier)
+        local chips = card.ability.extra.chips
+        local picked = {}
+        for i = 1, #G.hand.highlighted do picked[i] = G.hand.highlighted[i] end
+
+        for i, target in ipairs(picked) do
+            G.E_MANAGER:add_event(Event {
+                trigger = "after",
+                delay = 0.15,
+                func = function()
+                    -- perma_bonus is vanilla's own permanent chip store - the
+                    -- one Hiker uses - and get_chip_bonus adds it on top of the
+                    -- card's rank and enhancement, so it stacks with anything
+                    -- the card already carries and survives re-enhancement.
+                    target.ability.perma_bonus =
+                        (target.ability.perma_bonus or 0) + chips
+                    target:juice_up(0.3, 0.3)
+                    play_sound("gold_seal", 1.1 + 0.05 * i, 0.4)
+                    return true
+                end
+            })
+        end
+
+        G.E_MANAGER:add_event(Event {
+            trigger = "after",
+            delay = 0.2,
+            func = function()
+                SMODS.calculate_effect({
+                    message = localize { type = "variable", key = "a_chips",
+                                         vars = { chips } },
+                    colour = G.C.CHIPS,
+                }, picked[1] or card)
+                return true
+            end
+        })
+        delay(0.4)
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Moo Merrily [Uncommon] - a Milk Bottle every round.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "moomerrily",
+    atlas = "moomerrily",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.MILK_BOTTLE_KEY]
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        if context.setting_blind
+            and not (context.blueprint_card or card).getting_sliced then
+            -- The same room check vanilla makes before creating a consumable,
+            -- with the buffer reserving the slot across the event boundary so
+            -- two sources cannot both claim the last one.
+            local buffer = G.GAME.consumeable_buffer or 0
+            if #G.consumeables.cards + buffer >= G.consumeables.config.card_limit then
+                return
+            end
+            G.GAME.consumeable_buffer = buffer + 1
+
+            G.E_MANAGER:add_event(Event {
+                trigger = "before",
+                delay = 0.0,
+                func = function()
+                    local bottle = SMODS.create_card {
+                        set = "Spectral",
+                        key = CelestasMod.MILK_BOTTLE_KEY,
+                        area = G.consumeables,
+                    }
+                    bottle:add_to_deck()
+                    G.consumeables:emplace(bottle)
+                    G.GAME.consumeable_buffer =
+                        math.max(0, (G.GAME.consumeable_buffer or 1) - 1)
+                    return true
+                end
+            })
+
+            return {
+                message = localize("k_plus_spectral"),
+                colour = G.C.SECONDARY_SET.Spectral,
+                card = context.blueprint_card or card,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Moo Moo Clover [Common] - one more card per Milk Bottle.
+--------------------------------------------------------------------------------
+
+--- Sets how many cards a Milk Bottle may target.
+---
+--- This has to be a change to the CENTRE, because there is nowhere else it
+--- could live: set_ability never copies max_highlighted onto a card, and the
+--- game reads it straight off ability.consumeable, which IS the centre's
+--- config table. The same reason Haruka Karibu has to work this way.
+---
+--- Recomputed from the count of Clovers in play rather than nudged up and
+--- down, so it cannot drift, and 0 restores the base - G.P_CENTERS outlives a
+--- run, and a run that ended with a Clover must not leak the wider selection
+--- into the next one.
+local function clover_apply(count)
+    local center = G.P_CENTERS and G.P_CENTERS[CelestasMod.MILK_BOTTLE_KEY]
+    if not (center and center.config) then return end
+    center.config.max_highlighted = count > 0
+        and CelestasMod.MILK_BOTTLE_CLOVER_SELECTION
+        or CelestasMod.MILK_BOTTLE_BASE_SELECTION
+end
+
+--- Counts the Clovers in play, ignoring one card.
+--- Vanilla is not symmetric about when a joker is in G.jokers - bought runs
+--- add_to_deck before emplace, sold strips the card first, debuff and undebuff
+--- each run while the flag still says the opposite - so every path asks for
+--- "everyone else" and the arriving ones add themselves back.
+local function clover_count(excluding)
+    local n = 0
+    for _, joker in ipairs(G.jokers and G.jokers.cards or {}) do
+        if joker ~= excluding and not joker.debuff
+            and joker.config.center.key == "j_celesta_clover" then
+            n = n + 1
+        end
+    end
+    return n
+end
+
+-- Loading a save never runs add_to_deck, so a reloaded run needs this
+-- recomputed once the row exists.
+local celesta_clover_start_run_ref = Game.start_run
+function Game:start_run(args)
+    local ret = celesta_clover_start_run_ref(self, args)
+    clover_apply(clover_count(nil))
+    return ret
+end
+
+SMODS.Joker {
+    key = "clover",
+    atlas = "clover",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { selection = CelestasMod.MILK_BOTTLE_CLOVER_SELECTION } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.MILK_BOTTLE_KEY]
+        return { vars = { card.ability.extra.selection } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        clover_apply(clover_count(card) + 1)
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        clover_apply(clover_count(card))
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Chibidoki [Common] - the lowest card in the hand goes again.
+--------------------------------------------------------------------------------
+
+--- The lowest ranked card among those actually scoring.
+--- Ranked by base.id the way vanilla ranks - Ace 14 down to 2 - and rankless
+--- cards are skipped through SMODS.has_no_rank, which is what Steamodded
+--- patches vanilla's Stone Card check into. Ties go to the LAST such card,
+--- mirroring how Raised Fist resolves them.
+function CelestasMod.lowest_scoring(scoring_hand)
+    local best_id, best_card = math.huge, nil
+    for _, played in ipairs(scoring_hand or {}) do
+        local base = played.base
+        if base and not SMODS.has_no_rank(played) then
+            local id = base.id or math.huge
+            if id <= best_id then best_id, best_card = id, played end
+        end
+    end
+    return best_card
+end
+
+SMODS.Joker {
+    key = "chibidoki",
+    atlas = "chibidoki",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { repetitions = 2 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.repetitions } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.repetition and context.cardarea == G.play then
+            local lowest = CelestasMod.lowest_scoring(context.scoring_hand)
+            if lowest and context.other_card == lowest then
+                return {
+                    message = localize("k_again_ex"),
+                    repetitions = card.ability.extra.repetitions,
+                    card = card,
+                }
+            end
+        end
+    end,
+}
