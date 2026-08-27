@@ -326,7 +326,7 @@ return {
                 name = "Haruka Karibu",
                 text = {
                     "Values on {C:tarot}Tarot{} cards",
-                    "are {C:attention}#1#X{} as large",
+                    "are {C:attention}#1# times{} as large",
                 },
             },
             j_celesta_heavenlyfather = {
