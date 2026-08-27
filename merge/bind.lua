@@ -241,6 +241,35 @@ end
 -- screen space, and getting that subtly wrong is invisible until it is not.
 local art_cache = setmetatable({}, { __mode = "k" })
 
+-- Balatro's card silhouette: the transparent run inwards from the left edge,
+-- per row, for a 71x95 sprite, mirrored horizontally. Measured off the game's
+-- own Jokers.png by tools/round_corners.py, which masks every sprite in this
+-- mod with the same numbers - so a merged card is cut to exactly the shape a
+-- joker is meant to be.
+--
+-- The two halves arrive already rounded, being ordinary joker art. Only the
+-- glow needs this: a stroked rectangle runs straight through the corners the
+-- art carefully leaves empty, which reads as a merged card having square
+-- corners while every other card is round.
+local CORNER_W, CORNER_H = 71, 95
+local CORNER_PROFILE = { CORNER_W, 4, 2, 2 }
+for _ = 1, 87 do CORNER_PROFILE[#CORNER_PROFILE + 1] = 1 end
+for _, inset in ipairs({ 2, 2, 4, CORNER_W }) do
+    CORNER_PROFILE[#CORNER_PROFILE + 1] = inset
+end
+
+--- Fills the card silhouette, scaled to a canvas of any size, as a stencil.
+local function card_silhouette(w, h)
+    local sx, sy = w / CORNER_W, h / CORNER_H
+    for row = 1, CORNER_H do
+        local inset = CORNER_PROFILE[row] * sx
+        local run = w - inset * 2
+        if run > 0 then
+            love.graphics.rectangle("fill", inset, (row - 1) * sy, run, sy + 1)
+        end
+    end
+end
+
 function Bind.invalidate_art(card)
     art_cache[card] = nil
 end
@@ -283,10 +312,15 @@ local function build_art(card)
     love.graphics.draw(other_image, other_quad, 0, 0)
     love.graphics.setStencilTest()
 
+    -- Clipped to the card silhouette so the border follows the rounding
+    -- instead of squaring off the corners.
+    love.graphics.stencil(function() card_silhouette(w, h) end, "replace", 1)
+    love.graphics.setStencilTest("greater", 0)
     love.graphics.setColor(Bind.GLOW)
     love.graphics.setLineWidth(Bind.GLOW_WIDTH)
     love.graphics.line(0, h, w, 0)
     love.graphics.rectangle("line", 0, 0, w, h)
+    love.graphics.setStencilTest()
 
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.setCanvas(previous)

@@ -3102,11 +3102,26 @@ function pseudorandom_element(pool, seed, ...)
     -- Rolled first and then overridden, rather than skipped: the roll consumes
     -- exactly as much of the RNG stream as it would without Mari, so having
     -- her in play does not shift every later roll in the run.
-    local rolled = celesta_mari_pseudorandom_element_ref(pool, seed, ...)
+    --
+    -- BOTH return values matter. Vanilla ends `return _t[key], key`, and
+    -- callers pick whichever they need - get_new_boss takes the second, the
+    -- table KEY, and drops the value. A wrapper that returns only the first
+    -- hands those callers nil, which is how this once crashed every run on
+    -- start with "attempt to perform arithmetic on a nil value" three frames
+    -- deep in get_new_boss.
+    local rolled, rolled_key = celesta_mari_pseudorandom_element_ref(pool, seed, ...)
     if MARI_SEEDS[key] and mari_active() then
-        return leftmost_of(pool) or rolled
+        local left = leftmost_of(pool)
+        if left then
+            -- The key has to travel with the value it belongs to, or a caller
+            -- reading the key gets one that points at a different entry.
+            for k, v in pairs(pool) do
+                if v == left then return left, k end
+            end
+            return left, rolled_key
+        end
     end
-    return rolled
+    return rolled, rolled_key
 end
 
 SMODS.Joker {
