@@ -2635,21 +2635,26 @@ SMODS.Joker {
 -- Adds double the rank of the highest ranked card held in hand to Mult.
 --------------------------------------------------------------------------------
 
---- The rank of the highest ranked card held in hand, or 0 for none.
---- get_id is what vanilla ranks by: Ace is 14 down to 2, and a Stone Card
---- reports a large negative number so it can never win. Limestone carries no
---- rank at all, so it is skipped outright rather than counted as its
---- underlying card.
-local function axialmatt_top_rank()
-    if not (G.hand and G.hand.cards) then return 0 end
-    local best = 0
-    for _, held in ipairs(G.hand.cards) do
-        if not held.debuff and not SMODS.has_no_rank(held) then
-            local id = held:get_id()
-            if type(id) == "number" and id > best then best = id end
+--- The card AxialMatt raises, and the Mult it is worth.
+---
+--- Mirrors vanilla Raised Fist exactly, inverted to pick the highest:
+---   * chosen by base.id (the rank) but valued by base.nominal (the chip
+---     value). A King is 2x10 = +20 and an Ace 2x11 = +22 - NOT 2x13 and
+---     2x14. Raised Fist reads those two fields off different cards' worth
+---     of meaning and this has to match it.
+---   * rankless cards are skipped through SMODS.has_no_rank. That is exactly
+---     what Steamodded patches vanilla's `effect ~= 'Stone Card'` check into,
+---     so Stone Cards and Limestone are both covered.
+---   * ties go to the LAST such card in hand order, mirroring vanilla's `>=`.
+local function axialmatt_raised()
+    local best_id, best_nominal, best_card = 0, 0, nil
+    for _, held in ipairs(G.hand and G.hand.cards or {}) do
+        local base = held.base
+        if base and best_id <= (base.id or 0) and not SMODS.has_no_rank(held) then
+            best_id, best_nominal, best_card = base.id, base.nominal or 0, held
         end
     end
-    return best
+    return best_card, best_nominal
 end
 
 SMODS.Joker {
@@ -2663,15 +2668,33 @@ SMODS.Joker {
     config = { extra = { rank_mult = 2 } },
 
     loc_vars = function(self, info_queue, card)
-        local rank_mult = card.ability.extra.rank_mult
-        return { vars = { rank_mult, rank_mult * axialmatt_top_rank() } }
+        local _, nominal = axialmatt_raised()
+        return { vars = { card.ability.extra.rank_mult,
+                          card.ability.extra.rank_mult * nominal } }
     end,
 
     calculate = function(self, card, context)
-        if context.joker_main then
-            local mult = card.ability.extra.rank_mult * axialmatt_top_rank()
-            if mult > 0 then
-                return { mult = mult }
+        -- The held-in-hand pass, and h_mult rather than mult, because that is
+        -- where Raised Fist lives: the Mult pops on the raised card as the
+        -- hand is read rather than with the joker row afterwards.
+        if context.individual and context.cardarea == G.hand then
+            local raised, nominal = axialmatt_raised()
+            if raised == context.other_card then
+                -- A debuffed card is still eligible to be raised, and then
+                -- reports Debuffed instead of paying. Skipping debuffed cards
+                -- during selection would quietly promote the next card down,
+                -- which Raised Fist does not do.
+                if context.other_card.debuff then
+                    return {
+                        message = localize("k_debuffed"),
+                        colour = G.C.RED,
+                        card = card,
+                    }
+                end
+                return {
+                    h_mult = card.ability.extra.rank_mult * nominal,
+                    card = card,
+                }
             end
         end
     end,

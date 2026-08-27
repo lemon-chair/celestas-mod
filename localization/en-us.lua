@@ -89,9 +89,9 @@ return {
             j_celesta_axialmatt = {
                 name = "AxialMatt",
                 text = {
-                    "Adds {C:attention}#1#X{} the rank of the",
-                    "highest ranked card held",
-                    "in hand to {C:mult}Mult{}",
+                    "Adds {C:attention}#1#X{} the rank of",
+                    "{C:attention}highest{} ranked card",
+                    "held in hand to {C:mult}Mult{}",
                     "{C:inactive}(Currently {C:mult}+#2#{C:inactive} Mult)",
                 },
             },
