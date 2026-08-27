@@ -2668,9 +2668,7 @@ SMODS.Joker {
     config = { extra = { rank_mult = 2 } },
 
     loc_vars = function(self, info_queue, card)
-        local _, nominal = axialmatt_raised()
-        return { vars = { card.ability.extra.rank_mult,
-                          card.ability.extra.rank_mult * nominal } }
+        return {}
     end,
 
     calculate = function(self, card, context)
