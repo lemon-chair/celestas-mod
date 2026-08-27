@@ -175,9 +175,19 @@ end
 -- SMODS.score_card runs once per card per scoring pass, so this counts hands
 -- the card was scored in rather than individual retriggers. A Hanging Chad
 -- deck would otherwise wear its front card out in three hands.
+--
+-- The cardarea check is load-bearing. SMODS.calculate_main_scoring runs over
+-- EVERY playing-card area, not just the played hand, and calls score_card for
+-- every card in each of them:
+--   * a scored card arrives with cardarea == G.play
+--   * a played card outside the poker hand arrives as the string 'unscored'
+--   * every card sitting in hand arrives with cardarea == G.hand
+-- Only the first was actually scored. Counting the others wore cards out for
+-- being held, so a card never once played would tatter after twenty hands.
 local celesta_tatter_score_card_ref = SMODS.score_card
 function SMODS.score_card(card, context)
-    local wore_out = Tattered.record_score(card)
+    local scored = context and context.cardarea == G.play
+    local wore_out = scored and Tattered.record_score(card)
     celesta_tatter_score_card_ref(card, context)
     if wore_out then
         -- Announced after scoring, so the card pays in full for the hand that
