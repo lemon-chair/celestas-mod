@@ -24,10 +24,22 @@ local BIND_SEED = "celesta_bind"
 -- and the draw hook below runs every frame long afterwards.
 local PREFIX = SMODS.current_mod.prefix
 
--- The glowing white the split line and the border are drawn in. One constant
--- so they can never drift apart.
-Bind.GLOW = { 1, 1, 1, 0.9 }
-Bind.GLOW_WIDTH = 2
+-- The glow along the split and around the border. One definition, so the two
+-- can never drift apart.
+--
+-- Drawn as three passes rather than one stroke: widest and faintest first,
+-- narrowest and solid last, so the white core sits inside a soft halo. A
+-- single 2px line is not a glow - it reads as a grey hairline once the card is
+-- scaled down to its place on the board.
+--
+-- Widths are in units of 1/71st of the card, so the 1x and 2x sheets glow
+-- identically instead of the 2x looking half as thick.
+Bind.GLOW = { 1, 1, 1 }
+Bind.GLOW_PASSES = {
+    { width = 5.0, alpha = 0.16 },
+    { width = 2.6, alpha = 0.38 },
+    { width = 1.2, alpha = 1.00 },
+}
 
 --------------------------------------------------------------------------------
 -- State
@@ -318,12 +330,21 @@ local function build_art(card)
 
     -- Clipped to the card silhouette so the border follows the rounding
     -- instead of squaring off the corners.
+    local unit = w / CORNER_W
     love.graphics.stencil(function() card_silhouette(w, h) end, "replace", 1)
     love.graphics.setStencilTest("greater", 0)
-    love.graphics.setColor(Bind.GLOW)
-    love.graphics.setLineWidth(Bind.GLOW_WIDTH)
-    love.graphics.line(0, h, w, 0)
-    love.graphics.rectangle("line", 0, 0, w, h)
+    for _, pass in ipairs(Bind.GLOW_PASSES) do
+        local stroke = pass.width * unit
+        love.graphics.setColor(Bind.GLOW[1], Bind.GLOW[2], Bind.GLOW[3], pass.alpha)
+        love.graphics.setLineWidth(stroke)
+        love.graphics.line(0, h, w, 0)
+        -- Inset by half the stroke. LOVE centres a stroke on its path, so a
+        -- rectangle drawn on the canvas edge loses its outer half off the side
+        -- and the border comes out looking thinner than the split line - which
+        -- is exactly how it looked before.
+        local inset = stroke / 2
+        love.graphics.rectangle("line", inset, inset, w - stroke, h - stroke)
+    end
     love.graphics.setStencilTest()
 
     love.graphics.setColor(1, 1, 1, 1)
