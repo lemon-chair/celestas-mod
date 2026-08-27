@@ -429,6 +429,20 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "limestone_tatter",
+    path = "limestone_tatter.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "lucky_card_tatter",
+    path = "lucky_card_tatter.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "lucypyre",
     path = "lucypyre.png",
     px = 71,
@@ -767,6 +781,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "suto",
     path = "suto.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "tatter",
+    path = "tatter.png",
     px = 71,
     py = 95,
 }

@@ -42,6 +42,11 @@ SMODS.Atlas { key = 'blind_clover', path = 'blind_clover.png', px = 34, py = 34,
 SMODS.Atlas { key = 'fx_downpour', path = 'fx_downpour.png',  px = 256, py = 256 }
 SMODS.Atlas { key = 'fx_snowstorm', path = 'fx_snowstorm.png', px = 256, py = 256 }
 
+-- Wear overlays, drawn on top of a worn-out playing card.
+SMODS.Atlas { key = 'tatter',            path = 'tatter.png',            px = 71, py = 95 }
+SMODS.Atlas { key = 'lucky_card_tatter', path = 'lucky_card_tatter.png', px = 71, py = 95 }
+SMODS.Atlas { key = 'limestone_tatter',  path = 'limestone_tatter.png',  px = 71, py = 95 }
+
 -- Frozen is an overlay drawn on top of a card, not an edition (see
 -- editions/frozen.lua for why it cannot be one).
 SMODS.Atlas { key = 'frozen', path = 'frozen.png', px = 71, py = 95 }
@@ -58,6 +63,8 @@ assert(SMODS.load_file('arena/arena.lua'))()
 assert(SMODS.load_file('enhancements/enhancements.lua'))()
 assert(SMODS.load_file('blinds/blinds.lua'))()
 assert(SMODS.load_file('editions/frozen.lua'))()
+-- After enhancements: it classifies their keys into cracked/chipped.
+assert(SMODS.load_file('wear/tattered.lua'))()
 
 --------------------------------------------------------------------------------
 -- Jokers — auto-loaded from jokers/.

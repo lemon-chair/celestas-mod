@@ -470,6 +470,18 @@ return {
                     "to your deck",
                 },
             },
+            j_celesta_limestone_tatter = {
+                name = "Limestone Tatter",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
+            j_celesta_lucky_card_tatter = {
+                name = "Lucky Card Tatter",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
             j_celesta_lucypyre = {
                 name = "Lucypyre",
                 text = {
@@ -814,6 +826,12 @@ return {
                     "{C:mult}+#1#{} Mult",
                 },
             },
+            j_celesta_tatter = {
+                name = "Tatter",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
             j_celesta_vedal = {
                 name = "Vedal",
                 text = {
@@ -1027,6 +1045,9 @@ return {
             celesta_upgraded = "Upgraded!",
             celesta_gashed = "Gashed!",
             celesta_broke = "Broke!",
+            celesta_tattered = "Tattered!",
+            celesta_cracked = "Cracked!",
+            celesta_chipped = "Chipped!",
             celesta_stripped = "Stripped!",
             celesta_melted = "Melted!",
             celesta_snowstorm = "Snowstorm!",
