@@ -324,15 +324,18 @@ return {
                 },
             },
             j_celesta_harukakaribu = {
-                name = "Harukakaribu",
+                name = "Haruka Karibu",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Values on {C:tarot}Tarot{} cards",
+                    "are {C:attention}#1#X{} as large",
                 },
             },
             j_celesta_heavenlyfather = {
                 name = "HeavenlyFather",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:attention}+#1#{} Booster Pack",
+                    "slots available",
+                    "in the shop",
                 },
             },
             j_celesta_henya = {
@@ -439,7 +442,9 @@ return {
             j_celesta_kyaree = {
                 name = "Kyaree",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "This Joker gains {C:chips}+#1#{} Chips",
+                    "for each {C:spades}Spade{} card discarded",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
                 },
             },
             j_celesta_laynalazar = {

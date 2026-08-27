@@ -2676,3 +2676,203 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Haruka Karibu [Uncommon]
+-- Values on Tarot cards are doubled.
+--------------------------------------------------------------------------------
+
+CelestasMod.HARUKA_SCALE = 2
+
+local HARUKA_KEY = "j_celesta_harukakaribu"
+
+-- The numeric config fields a Tarot can carry: how many cards it affects
+-- (max_highlighted), how many cards it creates (planets, tarots) and its
+-- single loose number (extra - The Hermit's money cap, Temperance's payout
+-- cap).
+local HARUKA_FIELDS = { "max_highlighted", "planets", "tarots", "extra" }
+
+-- The Wheel of Fortune's `extra` is a probability denominator, not a payout:
+-- 1 in 4. Doubling the number would make it 1 in 8, which is the opposite of
+-- a buff, so it is divided instead and the chance is what doubles.
+local HARUKA_ODDS = { c_wheel_of_fortune = true }
+
+-- The original values, captured before anything is scaled. Every application
+-- recomputes from these rather than multiplying what is already there, so a
+-- missed revert cannot compound.
+local haruka_base = nil
+
+--- These values live on the shared centre, not on the card.
+---
+--- set_ability never copies max_highlighted onto a card at all - vanilla reads
+--- it straight off self.ability.consumeable, which IS G.P_CENTERS[key].config,
+--- and the card's description reads the same table. So there is no per-card
+--- value to double: doubling is necessarily a change to the centre, and the
+--- description picks it up for free.
+local function haruka_capture()
+    if haruka_base then return end
+    haruka_base = {}
+    for key, center in pairs(G.P_CENTERS or {}) do
+        if center.set == "Tarot" and center.config then
+            local saved = {}
+            for _, field in ipairs(HARUKA_FIELDS) do
+                if type(center.config[field]) == "number" then
+                    saved[field] = center.config[field]
+                end
+            end
+            if next(saved) then haruka_base[key] = saved end
+        end
+    end
+end
+
+--- Rescales every Tarot centre for `count` copies of Haruka in play.
+--- count 0 restores the originals, which is what makes this safe: G.P_CENTERS
+--- outlives a run, so a run that ended with Haruka in play must not leak
+--- doubled Tarots into the next one.
+local function haruka_apply(count)
+    haruka_capture()
+    local scale = CelestasMod.HARUKA_SCALE ^ count
+    for key, saved in pairs(haruka_base) do
+        local center = G.P_CENTERS[key]
+        if center and center.config then
+            for field, base in pairs(saved) do
+                if HARUKA_ODDS[key] and field == "extra" then
+                    center.config[field] = math.max(1, base / scale)
+                else
+                    center.config[field] = base * scale
+                end
+            end
+        end
+    end
+end
+
+--- Counts the Harukas in play, ignoring one card.
+--- The exclusion is what makes this correct from both callbacks, because
+--- vanilla is not symmetric about when the card is in G.jokers:
+---   * bought      - add_to_deck runs BEFORE emplace, so it is not in the area
+---   * un-debuffed - add_to_deck runs while self.debuff is still true
+---   * sold        - Card:remove strips it from the area BEFORE remove_from_deck
+---   * debuffed    - remove_from_deck runs while self.debuff is still false
+--- Excluding the card in question makes all four read "everyone else", and
+--- the caller adds one back when the card is arriving.
+local function haruka_count(excluding)
+    local n = 0
+    for _, joker in ipairs(G.jokers and G.jokers.cards or {}) do
+        if joker ~= excluding and not joker.debuff
+            and joker.config.center.key == HARUKA_KEY then
+            n = n + 1
+        end
+    end
+    return n
+end
+
+-- Loading a save never runs add_to_deck (CardArea:load appends cards
+-- directly), so a run reloaded with Haruka in play would come back with
+-- undoubled Tarots. Recomputing once at the end of start_run covers that, and
+-- covers starting a fresh run after one that ended with Haruka out.
+local celesta_haruka_start_run_ref = Game.start_run
+function Game:start_run(args)
+    local ret = celesta_haruka_start_run_ref(self, args)
+    haruka_apply(haruka_count(nil))
+    return ret
+end
+
+SMODS.Joker {
+    key = "harukakaribu",
+    atlas = "harukakaribu",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { scale = 2 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.scale } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        haruka_apply(haruka_count(card) + 1)
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        haruka_apply(haruka_count(card))
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- HeavenlyFather [Uncommon]
+-- +2 booster pack slots.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "heavenlyfather",
+    atlas = "heavenlyfather",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { slots = 2 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.slots } }
+    end,
+
+    -- SMODS.change_booster_limit is the designated API: it moves
+    -- G.GAME.modifiers.extra_boosters, which the shop reads when laying out
+    -- packs, and fills the new slots immediately if the shop is already open.
+    -- Pairing it with remove_from_deck means selling the joker, or having it
+    -- debuffed, gives the slots back.
+    add_to_deck = function(self, card, from_debuff)
+        SMODS.change_booster_limit(card.ability.extra.slots)
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        SMODS.change_booster_limit(-card.ability.extra.slots)
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Kyaree [Uncommon]
+-- +6 Chips for each Spade card discarded.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "kyaree",
+    atlas = "kyaree",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { chips = 0, chip_mod = 6 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.chip_mod, card.ability.extra.chips } }
+    end,
+
+    calculate = function(self, card, context)
+        -- Shaped exactly like vanilla Castle, including the "Upgrade!" popup
+        -- in chip blue that gives the tick as it counts up.
+        --
+        -- is_suit rather than a raw base.suit compare, so Wild cards and
+        -- Smeared Joker count the way they do everywhere else.
+        if context.discard and context.other_card
+            and not context.other_card.debuff
+            and context.other_card:is_suit("Spades")
+            and not context.blueprint then
+            card.ability.extra.chips =
+                card.ability.extra.chips + card.ability.extra.chip_mod
+            return {
+                message = localize("k_upgrade_ex"),
+                card = card,
+                colour = G.C.CHIPS,
+            }
+        end
+
+        if context.joker_main and card.ability.extra.chips > 0 then
+            return { chips = card.ability.extra.chips }
+        end
+    end,
+}
