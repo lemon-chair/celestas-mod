@@ -22,8 +22,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 BOOTSTRAP = '''
 jokers, seals, enhancements, blinds, atlases = {}, {}, {}, {}, {}
+sounds = {}
 SMODS = {
   Atlas = function(t) atlases[t.key] = t end,
+  Sound = function(t) sounds[t.key] = t end,
+  Sounds = {},
   Joker = function(t) jokers[t.key] = t end,
   Seal  = function(t) seals[t.key] = t end,
   Enhancement = function(t) enhancements[t.key] = t end,

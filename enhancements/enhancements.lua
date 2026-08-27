@@ -23,6 +23,56 @@ CelestasMod.ENHANCEMENT_KEYS = {
 -- loading, and Exo's draw hook runs every frame long afterwards.
 local EXO_FRAME_ATLAS = SMODS.current_mod.prefix .. "_enh_exo_frame"
 
+--------------------------------------------------------------------------------
+-- Scoring sounds
+--------------------------------------------------------------------------------
+
+-- Declared explicitly, one per file. SMODS.Sound has a register_global that
+-- would sweep assets/sounds/ automatically, but nothing in Steamodded ever
+-- calls it, so a file dropped in that folder registers only if it is named
+-- here.
+--
+-- Keys are prefixed the same way everything else is, so `driftwood_score`
+-- becomes celesta_driftwood_score. Avoid the words music, stream and ambient
+-- in a sound key: SMODS matches those to decide streaming vs static, and a
+-- short effect wants static.
+SMODS.Sound { key = "driftwood_score", path = "driftwood_score.ogg" }
+SMODS.Sound { key = "eutrophic_score", path = "eutrophic_score.mp3" }
+SMODS.Sound { key = "limestone_score", path = "limestone_score.ogg" }
+
+CelestasMod.ENHANCEMENT_SOUNDS = {
+    Driftwood = SMODS.current_mod.prefix .. "_driftwood_score",
+    Eutrophic = SMODS.current_mod.prefix .. "_eutrophic_score",
+    Limestone = SMODS.current_mod.prefix .. "_limestone_score",
+}
+
+--- Queues a scoring sound so it lands with this card's animation.
+---
+--- Scoring evaluates every card in one synchronous pass and queues the
+--- animations as events, so play_sound called straight from calculate would
+--- fire the whole hand's sounds at once, before the first card moves. Going
+--- through the event manager puts each sound in the same queue position as
+--- the card that asked for it.
+---
+--- A retriggered card scores more than once and so plays more than once,
+--- which is the intent - it is the same beat the chip popups make.
+local function play_scoring_sound(key)
+    -- An unregistered key would send play_sound looking for
+    -- resources/sounds/<key>.ogg in the base game and fail there, so a
+    -- missing or misnamed file goes quiet rather than taking the hand down.
+    if not (G.E_MANAGER and key) then return end
+    if not (SMODS.Sounds and SMODS.Sounds[key]) then return end
+    G.E_MANAGER:add_event(Event {
+        trigger = "before",
+        delay = 0.0,
+        blocking = false,
+        func = function()
+            play_sound(key)
+            return true
+        end,
+    })
+end
+
 CelestasMod.GASH_BREAK_ID = "celesta_gash_break"
 CelestasMod.GASH_ODDS = 4
 
@@ -144,6 +194,12 @@ SMODS.Enhancement {
     end,
 
     calculate = function(self, card, context)
+        -- Ahead of the early returns below: the leftmost Eutrophic copies
+        -- nothing, but it is still a Eutrophic card scoring.
+        if context.main_scoring and context.cardarea == G.play then
+            play_scoring_sound(CelestasMod.ENHANCEMENT_SOUNDS.Eutrophic)
+        end
+
         local area = card.area
         if not area or not area.cards then return end
         local left = area.cards[1]
@@ -257,6 +313,15 @@ SMODS.Enhancement {
     loc_vars = function(self, info_queue, card)
         return { vars = { self.config.mult } }
     end,
+
+    -- Limestone's Mult is applied from config by the game, so this exists
+    -- only for the sound. always_scores means it fires even when the card is
+    -- not part of the poker hand, which is when a Stone Card scores too.
+    calculate = function(self, card, context)
+        if context.main_scoring and context.cardarea == G.play then
+            play_scoring_sound(CelestasMod.ENHANCEMENT_SOUNDS.Limestone)
+        end
+    end,
 }
 
 --------------------------------------------------------------------------------
@@ -278,6 +343,10 @@ SMODS.Enhancement {
     end,
 
     calculate = function(self, card, context)
+        if context.main_scoring and context.cardarea == G.play then
+            play_scoring_sound(CelestasMod.ENHANCEMENT_SOUNDS.Driftwood)
+        end
+
         -- The end-of-round pass over cards still in hand. Destroying through
         -- SMODS.destroy_cards rather than returning `remove` because this is
         -- not the scoring destroy pass - nothing is collecting flags here.
