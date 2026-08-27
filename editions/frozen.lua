@@ -108,15 +108,17 @@ end
 local FROZEN_FAIL_SEED = "celesta_frozen_fail"
 local rolling = setmetatable({}, { __mode = "k" })
 
--- Last hand a card announced a failure on, so "Failed!" shows once per hand.
+-- Last event a card announced a failure on, so "Failed!" shows once.
 local announced = setmetatable({}, { __mode = "k" })
 
---- Identifies the current scoring attempt.
---- A joker is evaluated against a dozen contexts per hand - before, one
---- 'individual' per scored card, joker_main, after - and each rolls its own
---- failure. Without this the board fills with popups for a single failure the
---- player experiences as one event.
-local function hand_id()
+-- The failure roll for the current play or discard, cached per card.
+local decision = setmetatable({}, { __mode = "k" })
+
+--- Identifies the current play or discard.
+--- hands_left and discards_left are both decremented before jokers are
+--- evaluated, so this is stable for the whole of one event and changes the
+--- moment the next one begins.
+local function event_id()
     local round = G.GAME and G.GAME.current_round
     if not round then return "?" end
     return table.concat({
@@ -124,6 +126,42 @@ local function hand_id()
         tostring(round.hands_left),
         tostring(round.discards_left),
     }, "/")
+end
+
+--- Rolls once per card per play or discard, and remembers the answer.
+---
+--- A joker is evaluated against a dozen contexts in a single hand - before,
+--- one 'individual' per scored card, joker_main, after. Rolling each of them
+--- separately meant one joker could fail some and pass others in the same
+--- hand, so the player saw "Failed!" over a joker that had visibly just
+--- worked. One decision per event is also the natural reading of "1 in 2
+--- chance to fail": the joker is out for this hand, not for a coin-flip on
+--- each internal lookup.
+local function frozen_fails(card)
+    local id = event_id()
+    local cached = decision[card]
+    if cached and cached.id == id then return cached.failed end
+
+    -- Plain pseudorandom, NOT SMODS.pseudorandom_probability.
+    --
+    -- That helper runs two full calculate_context passes per call
+    -- (mod_probability and fix_probability), each re-evaluating every joker.
+    -- Inside a copier chain - Blueprints copying Blueprints, Brainstorm,
+    -- Hanging Chad retriggers - the cost multiplies with the chain and the
+    -- game locks up mid-score. Talisman measured 88k calculations against a
+    -- 4k baseline.
+    --
+    -- The trade is that probability modifiers (Oops! All 6s, Dejavudea, The
+    -- Clover) no longer reach this roll. For a penalty chance that is
+    -- arguably the right behaviour anyway.
+    rolling[card] = true
+    local ok, roll = pcall(pseudorandom, pseudoseed(FROZEN_FAIL_SEED))
+    rolling[card] = nil
+    -- A roll that errored is treated as a pass: a frozen joker working too
+    -- often is far better than one that cannot run.
+    local failed = ok and roll >= 1 / CelestasMod.FROZEN_FAIL_ODDS or false
+    decision[card] = { id = id, failed = failed }
+    return failed
 end
 
 local calculate_joker_ref = Card.calculate_joker
@@ -138,42 +176,31 @@ function Card:calculate_joker(context)
             local is_query = context.mod_probability or context.fix_probability
                 or context.check_enhancement or context.check_eternal
                 or context.retrigger_joker_check
-            if not is_query then
-                rolling[self] = true
-                -- Plain pseudorandom, NOT SMODS.pseudorandom_probability.
+            if not is_query and frozen_fails(self) then
+                -- Announce only on the main scoring pass. joker_main reaches
+                -- every joker exactly once per hand, which makes it the one
+                -- honest place to say the joker is out for this hand.
                 --
-                -- That helper runs two full calculate_context passes per call
-                -- (mod_probability and fix_probability), each re-evaluating
-                -- every joker. This hook fires on every evaluation of every
-                -- frozen joker, so inside a copier chain - Blueprints copying
-                -- Blueprints, Brainstorm, Hanging Chad retriggers - the cost
-                -- multiplies with the chain and the game locks up mid-score.
-                -- Talisman measured 88k calculations against a 4k baseline.
+                -- Every other context is a poor place to speak. Discarding
+                -- sends context.discard to jokers that have nothing to do
+                -- with discards, and announcing there reads as a failure the
+                -- player had no stake in. A copy carries context.blueprint
+                -- and stays silent too - the popup belongs on the frozen
+                -- joker, not on the Blueprint pointing at it.
                 --
-                -- The trade is that probability modifiers (Oops! All 6s,
-                -- Dejavudea, The Clover) no longer reach this roll. For a
-                -- penalty chance that is arguably the right behaviour anyway.
-                local ok, roll = pcall(pseudorandom, pseudoseed(FROZEN_FAIL_SEED))
-                rolling[self] = nil
-                -- A roll that errored is treated as a pass: a frozen joker
-                -- working too often is far better than one that cannot run.
-                if ok and roll >= 1 / CelestasMod.FROZEN_FAIL_ODDS then
-                    -- Announce the failure once per joker per hand. A copy
-                    -- carries context.blueprint and stays silent - the popup
-                    -- belongs on the frozen joker, not on the Blueprint.
-                    -- Told through card_eval_status_text rather than a
-                    -- returned effect so the return stays nil: anything else
-                    -- reads downstream as "this joker did something".
-                    local hand = hand_id()
-                    if not context.blueprint and announced[self] ~= hand then
-                        announced[self] = hand
-                        card_eval_status_text(self, "extra", nil, nil, nil, {
-                            message = localize("celesta_failed"),
-                            colour = G.C.BLUE,
-                        })
-                    end
-                    return
+                -- Told through card_eval_status_text rather than a returned
+                -- effect so the return stays nil: anything else reads
+                -- downstream as "this joker did something".
+                local id = event_id()
+                if context.joker_main and not context.blueprint
+                    and announced[self] ~= id then
+                    announced[self] = id
+                    card_eval_status_text(self, "extra", nil, nil, nil, {
+                        message = localize("celesta_failed"),
+                        colour = G.C.BLUE,
+                    })
                 end
+                return
             end
         end
     end
