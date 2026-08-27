@@ -1000,6 +1000,7 @@ return {
             celesta_melted = "Melted!",
             celesta_snowstorm = "Snowstorm!",
             celesta_frozen = "Frozen!",
+            celesta_failed = "Failed!",
             celesta_cleared = "Cleared!",
             celesta_plus_limestone = "+Limestone",
             celesta_plus_slot = "+1 Consumable Slot",

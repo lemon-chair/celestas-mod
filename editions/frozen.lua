@@ -108,6 +108,24 @@ end
 local FROZEN_FAIL_SEED = "celesta_frozen_fail"
 local rolling = setmetatable({}, { __mode = "k" })
 
+-- Last hand a card announced a failure on, so "Failed!" shows once per hand.
+local announced = setmetatable({}, { __mode = "k" })
+
+--- Identifies the current scoring attempt.
+--- A joker is evaluated against a dozen contexts per hand - before, one
+--- 'individual' per scored card, joker_main, after - and each rolls its own
+--- failure. Without this the board fills with popups for a single failure the
+--- player experiences as one event.
+local function hand_id()
+    local round = G.GAME and G.GAME.current_round
+    if not round then return "?" end
+    return table.concat({
+        tostring(G.GAME.round),
+        tostring(round.hands_left),
+        tostring(round.discards_left),
+    }, "/")
+end
+
 local calculate_joker_ref = Card.calculate_joker
 function Card:calculate_joker(context)
     if CelestasMod.is_frozen(self) and self.ability.set == "Joker"
@@ -139,7 +157,23 @@ function Card:calculate_joker(context)
                 rolling[self] = nil
                 -- A roll that errored is treated as a pass: a frozen joker
                 -- working too often is far better than one that cannot run.
-                if ok and roll >= 1 / CelestasMod.FROZEN_FAIL_ODDS then return end
+                if ok and roll >= 1 / CelestasMod.FROZEN_FAIL_ODDS then
+                    -- Announce the failure once per joker per hand. A copy
+                    -- carries context.blueprint and stays silent - the popup
+                    -- belongs on the frozen joker, not on the Blueprint.
+                    -- Told through card_eval_status_text rather than a
+                    -- returned effect so the return stays nil: anything else
+                    -- reads downstream as "this joker did something".
+                    local hand = hand_id()
+                    if not context.blueprint and announced[self] ~= hand then
+                        announced[self] = hand
+                        card_eval_status_text(self, "extra", nil, nil, nil, {
+                            message = localize("celesta_failed"),
+                            colour = G.C.BLUE,
+                        })
+                    end
+                    return
+                end
             end
         end
     end
