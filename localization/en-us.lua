@@ -140,7 +140,9 @@ return {
             j_celesta_birdyovo = {
                 name = "Birdyovo",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Every {C:attention}#1#{} scored cards",
+                    "gives {X:mult,C:white}X#2#{} Mult",
+                    "{C:inactive}(#3# to go)",
                 },
             },
             j_celesta_bluto = {
@@ -447,7 +449,9 @@ return {
             j_celesta_liffeh = {
                 name = "Liffeh",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:green}#1# in #2#{} chance to gain",
+                    "an extra {C:tarot}Tarot{} card",
+                    "whenever you gain one",
                 },
             },
             j_celesta_limealicious = {
@@ -790,7 +794,10 @@ return {
             j_celesta_vedal = {
                 name = "Vedal",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Multiplies every value",
+                    "your other {C:attention}Jokers{} give",
+                    "by {X:mult,C:white}X#1#{}",
+                    "{C:inactive}(Cannot be copied)",
                 },
             },
             j_celesta_vexoria = {

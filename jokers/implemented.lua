@@ -2285,3 +2285,231 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Vedal [Legendary]
+-- Multiplies every value your other Jokers produce by X1.5, and cannot be
+-- copied.
+--------------------------------------------------------------------------------
+
+CelestasMod.VEDAL_SCALE = 1.5
+
+-- Additive values are scaled directly: +4 Mult becomes +6 Mult.
+local VEDAL_ADDITIVE = {
+    "chips", "h_chips", "chip_mod",
+    "mult", "h_mult", "mult_mod",
+}
+
+-- Multiplicative values have the multiplier itself scaled, so X3 Mult becomes
+-- X4.5 Mult. Talisman exponential keys are here too, which makes Vedal
+-- enormous in a Talisman run - that is the reading of "all values", but it is
+-- the one list to cut from if it turns out to be too much.
+local VEDAL_MULTIPLICATIVE = {
+    "x_chips", "xchips", "Xchip_mod",
+    "x_mult", "Xmult", "xmult", "x_mult_mod", "Xmult_mod",
+    "e_mult", "emult", "e_chips", "echips",
+}
+
+--- True when a Vedal is in play and not debuffed.
+local function vedal_active()
+    for _, joker in ipairs(SMODS.find_card("j_celesta_vedal")) do
+        if not joker.debuff then return true end
+    end
+    return false
+end
+
+--- Cheap pre-check, so the common case costs a handful of table lookups.
+--- Nearly every joker evaluation returns a table with nothing scalable in it,
+--- and this hook sits on the hottest path in the game - the same path that
+--- once locked the game up mid-score.
+local function vedal_has_target(effect)
+    for _, key in ipairs(VEDAL_ADDITIVE) do
+        local v = effect[key]
+        if type(v) == "number" and v ~= 0 then return true end
+    end
+    for _, key in ipairs(VEDAL_MULTIPLICATIVE) do
+        local v = effect[key]
+        -- 1 is the identity for a multiplier. Scaling it would conjure X1.5
+        -- out of a joker that was explicitly contributing nothing.
+        if type(v) == "number" and v > 1 then return true end
+    end
+    return false
+end
+
+local celesta_vedal_calculate_joker_ref = Card.calculate_joker
+function Card:calculate_joker(context)
+    local effect, post = celesta_vedal_calculate_joker_ref(self, context)
+
+    -- Only the outermost evaluation is scaled. SMODS.blueprint_effect runs the
+    -- copied joker with context.blueprint set and then hands that same table
+    -- back up through the copier own calculate_joker, where context.blueprint
+    -- is nil again. Scaling both would apply X1.5 twice per copy.
+    if type(effect) ~= "table" or context.blueprint then return effect, post end
+    if self.ability.set ~= "Joker" then return effect, post end
+    if self.config.center.key == "j_celesta_vedal" then return effect, post end
+    if not vedal_has_target(effect) then return effect, post end
+    if not vedal_active() then return effect, post end
+
+    -- Scaled onto a copy rather than in place: a joker is free to return its
+    -- own ability table, and scaling that would permanently inflate its stats
+    -- instead of this one trigger.
+    local scaled = {}
+    for k, v in pairs(effect) do scaled[k] = v end
+    local mult = CelestasMod.VEDAL_SCALE
+    for _, key in ipairs(VEDAL_ADDITIVE) do
+        local v = scaled[key]
+        if type(v) == "number" and v ~= 0 then scaled[key] = v * mult end
+    end
+    for _, key in ipairs(VEDAL_MULTIPLICATIVE) do
+        local v = scaled[key]
+        if type(v) == "number" and v > 1 then scaled[key] = v * mult end
+    end
+    return scaled, post
+end
+
+SMODS.Joker {
+    key = "vedal",
+    atlas = "vedal",
+    pos = { x = 0, y = 0 },
+    rarity = 4, cost = 20,
+    unlocked = true, discovered = true,
+    -- The one joker in the mod that opts out of copying, per its own text.
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { x_value = 1.5 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.x_value } }
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Liffeh [Common]
+-- 1 in 4 chance to gain an extra Tarot card whenever you gain one.
+--------------------------------------------------------------------------------
+
+CelestasMod.LIFFEH_ODDS = 4
+
+-- Set while the bonus Tarot is being created, so the bonus cannot roll a
+-- bonus of its own.
+local liffeh_creating = false
+
+--- The first Liffeh in play that is able to act.
+local function liffeh_active()
+    for _, joker in ipairs(SMODS.find_card("j_celesta_liffeh")) do
+        if not joker.debuff then return joker end
+    end
+end
+
+-- Every route by which a Tarot is gained - The Fool, purple seals, The
+-- Emperor, booster packs, shop purchases - ends in the same three lines:
+-- create_card of a Tarot into G.consumeables, then card:add_to_deck(), then
+-- G.consumeables:emplace(card). Hooking add_to_deck catches all of them from
+-- one place, including Tarots added by other mods.
+--
+-- Loading a save does NOT come through here: CardArea:load builds its cards
+-- and appends them to self.cards directly, without add_to_deck or emplace. A
+-- run reloaded with six Tarots in hand will not hand out six more.
+local celesta_liffeh_add_to_deck_ref = Card.add_to_deck
+function Card:add_to_deck(from_debuff)
+    -- add_to_deck guards its own body with self.added_to_deck, so read the
+    -- flag first: a second call on the same card is a no-op and must not roll.
+    local first_time = not self.added_to_deck
+    celesta_liffeh_add_to_deck_ref(self, from_debuff)
+
+    if not first_time or liffeh_creating then return end
+    if not (self.ability and self.ability.set == "Tarot") then return end
+    if not (G.GAME and G.consumeables and G.consumeables.config) then return end
+
+    local liffeh = liffeh_active()
+    if not liffeh then return end
+
+    -- Same room check vanilla makes before creating a Tarot. consumeable_buffer
+    -- reserves the slot across the event boundary so two sources cannot both
+    -- claim the last one.
+    local buffer = G.GAME.consumeable_buffer or 0
+    if #G.consumeables.cards + buffer >= G.consumeables.config.card_limit then return end
+
+    if not SMODS.pseudorandom_probability(
+        liffeh, "celesta_liffeh", 1, CelestasMod.LIFFEH_ODDS, "celesta_liffeh") then
+        return
+    end
+
+    G.GAME.consumeable_buffer = buffer + 1
+    G.E_MANAGER:add_event(Event {
+        trigger = "before",
+        delay = 0.0,
+        func = function()
+            liffeh_creating = true
+            -- A random Tarot rather than a copy of the one that triggered it:
+            -- "an extra Tarot card", the way a purple seal gives one.
+            local extra = create_card("Tarot", G.consumeables, nil, nil, nil, nil,
+                                      nil, "celesta_liffeh")
+            extra:add_to_deck()
+            G.consumeables:emplace(extra)
+            liffeh_creating = false
+            G.GAME.consumeable_buffer = math.max(0, (G.GAME.consumeable_buffer or 1) - 1)
+            return true
+        end,
+    })
+    card_eval_status_text(liffeh, "extra", nil, nil, nil,
+        { message = localize("k_plus_tarot"), colour = G.C.PURPLE })
+end
+
+SMODS.Joker {
+    key = "liffeh",
+    atlas = "liffeh",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { odds = CelestasMod.LIFFEH_ODDS } },
+
+    loc_vars = function(self, info_queue, card)
+        local numerator, denominator = SMODS.get_probability_vars(
+            card, 1, card.ability.extra.odds, "celesta_liffeh")
+        return { vars = { numerator, denominator } }
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Birdyovo [Common]
+-- Every 7 scored cards gives X2 Mult.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "birdyovo",
+    atlas = "birdyovo",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    -- count carries across hands and rounds, so the seventh card is the
+    -- seventh Birdyovo has ever seen, not the seventh of this hand.
+    config = { extra = { x_mult = 2, requirement = 7, count = 0 } },
+
+    loc_vars = function(self, info_queue, card)
+        local extra = card.ability.extra
+        local to_go = extra.requirement - (extra.count % extra.requirement)
+        return { vars = { extra.requirement, extra.x_mult, to_go } }
+    end,
+
+    calculate = function(self, card, context)
+        -- context.individual with cardarea == G.play is the scoring-card pass;
+        -- unscored cards arrive with cardarea set to unscored instead.
+        if context.individual and context.cardarea == G.play then
+            local extra = card.ability.extra
+            -- A copy must not advance the count - the cards were scored once.
+            -- It still pays out on a card that lands on the seventh, so a
+            -- Blueprint doubles the payoff rather than shifting the rhythm.
+            if not context.blueprint then
+                extra.count = extra.count + 1
+            end
+            if extra.count % extra.requirement == 0 then
+                return { x_mult = extra.x_mult, card = card }
+            end
+        end
+    end,
+}
