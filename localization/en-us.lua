@@ -237,9 +237,7 @@ return {
             j_celesta_dejavudea = {
                 name = "Dejavudea",
                 text = {
-                    "{C:attention}Halves{} all listed",
-                    "{C:green}probabilities{}",
-                    "{C:inactive}(e.g. 1 in 4 becomes 1 in 8)",
+                    "{C:mult}+#1#{} Mult",
                 },
             },
             j_celesta_demenishki = {
@@ -573,7 +571,9 @@ return {
             j_celesta_nagzz = {
                 name = "Nagzz",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:attention}Halves{} all listed",
+                    "{C:green}probabilities{}",
+                    "{C:inactive}(e.g. 1 in 4 becomes 1 in 8)",
                 },
             },
             j_celesta_nekrolina = {

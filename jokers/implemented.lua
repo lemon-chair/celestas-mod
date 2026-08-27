@@ -1530,12 +1530,12 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Dejavudea [Uncommon] - halves every listed probability.
+-- Nagzz [Uncommon] - halves every listed probability.
 --------------------------------------------------------------------------------
 
 SMODS.Joker {
-    key = "dejavudea",
-    atlas = "dejavudea",
+    key = "nagzz",
+    atlas = "nagzz",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
     unlocked = true, discovered = true,
