@@ -155,48 +155,49 @@ end
 -- Hooks
 --------------------------------------------------------------------------------
 
--- eval_card is the one place every contribution a card makes passes through.
--- SMODS assembles ret.playing_card from the get_chip_* getters, ret.edition
--- from get_edition, and ret.seals and ret.enhancement alongside them, so
--- halving here catches the rank, the enhancement, the edition and the seal
--- together.
+-- eval_card is the one place every contribution a card makes passes through,
+-- and it is also the per-trigger pass, so it does both jobs here.
 --
--- The getters themselves are deliberately left alone: SMODS reads them into
--- that same table, so halving both would quarter every value.
+-- HALVING. SMODS assembles ret.playing_card from the get_chip_* getters,
+-- ret.edition from get_edition, and ret.seals and ret.enhancement alongside
+-- them, so halving here catches the rank, the enhancement, the edition and
+-- the seal together. The getters themselves are deliberately left alone:
+-- SMODS reads them into that same table, so halving both would quarter
+-- every value.
+--
+-- COUNTING. SMODS.score_card sets context.main_scoring once per repetition of
+-- its reps loop, so a card retriggered four times by Hanging Chad arrives here
+-- four times and is counted four times. Three conditions gate it:
+--
+--   * main_scoring - the trigger itself, not the repetition or destroy passes
+--   * cardarea == G.play - calculate_main_scoring runs over EVERY playing-card
+--     area and evaluates every card in each. A scored card arrives as G.play,
+--     a played card outside the poker hand as the string 'unscored', and every
+--     card sitting in hand as G.hand. Only the first was scored.
+--   * not extra_enhancement - SMODS.calculate_quantum_enhancements re-enters
+--     eval_card once per extra enhancement with main_scoring still set, which
+--     would count a single trigger several times over.
 local celesta_tatter_eval_card_ref = eval_card
 function eval_card(card, context)
     local ret, post = celesta_tatter_eval_card_ref(card, context)
+
+    -- Read BEFORE the count below, so the very trigger that wears a card out
+    -- still pays in full and the halving starts from the next one.
     if Tattered.is_tattered(card) and type(ret) == "table" then
         for _, key in ipairs(OWNED) do halve(ret[key]) end
     end
-    return ret, post
-end
 
--- SMODS.score_card runs once per card per scoring pass, so this counts hands
--- the card was scored in rather than individual retriggers. A Hanging Chad
--- deck would otherwise wear its front card out in three hands.
---
--- The cardarea check is load-bearing. SMODS.calculate_main_scoring runs over
--- EVERY playing-card area, not just the played hand, and calls score_card for
--- every card in each of them:
---   * a scored card arrives with cardarea == G.play
---   * a played card outside the poker hand arrives as the string 'unscored'
---   * every card sitting in hand arrives with cardarea == G.hand
--- Only the first was actually scored. Counting the others wore cards out for
--- being held, so a card never once played would tatter after twenty hands.
-local celesta_tatter_score_card_ref = SMODS.score_card
-function SMODS.score_card(card, context)
-    local scored = context and context.cardarea == G.play
-    local wore_out = scored and Tattered.record_score(card)
-    celesta_tatter_score_card_ref(card, context)
-    if wore_out then
-        -- Announced after scoring, so the card pays in full for the hand that
-        -- finished it off and the popup reads as the consequence.
-        card_eval_status_text(card, "extra", nil, nil, nil, {
-            message = localize("celesta_" .. Tattered.word(card)),
-            colour = G.C.FILTER,
-        })
+    if context and context.main_scoring and context.cardarea == G.play
+        and not context.extra_enhancement then
+        if Tattered.record_score(card) then
+            card_eval_status_text(card, "extra", nil, nil, nil, {
+                message = localize("celesta_" .. Tattered.word(card)),
+                colour = G.C.FILTER,
+            })
+        end
     end
+
+    return ret, post
 end
 
 local tatter_sprites = {}
