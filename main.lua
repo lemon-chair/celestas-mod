@@ -4,6 +4,15 @@
 
 CelestasMod = {}
 
+-- Ray retriggers other Jokers, and Steamodded only runs that calculation when
+-- a loaded mod asks for it - SMODS.calculate_retriggers returns immediately
+-- otherwise. Declared here rather than beside the joker because
+-- SMODS.get_optional_features() reads this once, after every mod's main file
+-- has finished.
+SMODS.current_mod.optional_features = {
+    retrigger_joker = true,
+}
+
 -- Load globals (custom colours + loc_colour hook)
 assert(SMODS.load_file("globals.lua"))()
 

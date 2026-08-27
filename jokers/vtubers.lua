@@ -43,7 +43,6 @@ local ROSTER = {
     { key = "radiaactive", rarity = 1, cost = 4, mult = 4 },
     { key = "rainhoe", rarity = 1, cost = 4, mult = 4 },
     { key = "rainyrentyn", rarity = 1, cost = 4, mult = 4 },
-    { key = "ray", rarity = 1, cost = 4, mult = 4 },
     { key = "rynxryn", rarity = 1, cost = 4, mult = 4 },
     { key = "shenpai", rarity = 1, cost = 4, mult = 4 },
     { key = "shiabun", rarity = 1, cost = 4, mult = 4 },

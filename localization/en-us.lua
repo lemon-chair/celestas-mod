@@ -710,7 +710,9 @@ return {
             j_celesta_ray = {
                 name = "Ray",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Retriggers {C:attention}Greedy{}, {C:attention}Wrathful{},",
+                    "{C:attention}Lusty{} and {C:attention}Gluttonous{} Jokers",
+                    "{C:attention}#1#{} additional time",
                 },
             },
             j_celesta_rinpenrose = {

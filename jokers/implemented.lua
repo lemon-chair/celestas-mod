@@ -3592,3 +3592,53 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Ray [Common] - the suit Jokers go again.
+--------------------------------------------------------------------------------
+
+-- Vanilla's four suit Jokers. Note the key: the base game spells Gluttonous
+-- "gluttenous", and that typo is the actual centre key. The corrected spelling
+-- is listed too, so a future patch fixing it does not silently drop the card
+-- out of Ray's reach.
+local RAY_TARGETS = {
+    j_greedy_joker = true,
+    j_lusty_joker = true,
+    j_wrathful_joker = true,
+    j_gluttenous_joker = true,
+    j_gluttonous_joker = true,
+}
+
+SMODS.Joker {
+    key = "ray",
+    atlas = "ray",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { repetitions = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.repetitions } }
+    end,
+
+    calculate = function(self, card, context)
+        -- retrigger_joker_check is asked of every Joker about every other
+        -- Joker, so the answer has to name who it is being asked about, and
+        -- Ray must refuse itself or it would retrigger its own answer.
+        if context.retrigger_joker_check and context.other_card
+            and context.other_card ~= card then
+            local config = context.other_card.config
+            local key = config and (config.center_key
+                or (config.center and config.center.key))
+            if key and RAY_TARGETS[key] then
+                return {
+                    message = localize("k_again_ex"),
+                    repetitions = card.ability.extra.repetitions,
+                    card = card,
+                }
+            end
+        end
+    end,
+}
