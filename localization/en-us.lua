@@ -139,6 +139,12 @@ return {
                     "gain {C:mult}+#1#{} Mult",
                 },
             },
+            j_celesta_bind = {
+                name = "Bind",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
             j_celesta_birdyovo = {
                 name = "Birdyovo",
                 text = {
@@ -172,7 +178,11 @@ return {
             j_celesta_camila = {
                 name = "Camila",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "If first hand is a single card,",
+                    "destroy it. At the start of the",
+                    "next round, return it to your deck",
+                    "with its {C:dark_edition}edition{} upgraded",
+                    "{C:inactive}(caps at Polychrome)",
                 },
             },
             j_celesta_cerbervt = {
@@ -893,16 +903,6 @@ return {
             },
         },
 
-        Spectral = {
-            c_celesta_bind = {
-                name = "Bind",
-                text = {
-                    "Merge {C:attention}2{} selected {C:attention}Jokers{}",
-                    "into one Joker with",
-                    "the abilities of both",
-                },
-            },
-        },
         Tarot = {
             c_celesta_reforge = {
                 name = "Reforge",
@@ -967,6 +967,39 @@ return {
         },
 
         Other = {
+            celesta_bind_arar_jaws = {
+                name = "Arar + Jaws",
+                text = {
+                    "Adds a random {C:attention}enhancement{} to",
+                    "non-scoring unenhanced cards",
+                    "in played hand",
+                },
+            },
+            celesta_bind_crelly_koko = {
+                name = "Crelly + KokoNuts",
+                text = {
+                    "Destroys scoring {C:attention}Lucky 7s of Spades{},",
+                    "gaining {X:mult,C:white}X#1#{} Mult per card destroyed",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_kumi_maya = {
+                name = "Kumi + Maya",
+                text = {
+                    "Destroys all scoring {C:attention}Steel Cards{}",
+                    "in played hand, with a {C:green}#1# in #2#{} chance",
+                    "to earn {C:money}$#3#{} per card destroyed",
+                },
+            },
+            celesta_bind_deme_camila = {
+                name = "Deme + Camila",
+                text = {
+                    "If first hand is a single card, gains",
+                    "{X:mult,C:white}X0.25{} Mult, or {X:mult,C:white}X0.5{} if {C:dark_edition}Foil{},",
+                    "{X:mult,C:white}X0.75{} if {C:dark_edition}Holographic{}, {X:mult,C:white}X1{} if {C:dark_edition}Polychrome{}",
+                    "{C:inactive}(Currently {X:mult,C:white}X#1#{C:inactive} Mult)",
+                },
+            },
             celesta_ectoplast_seal = {
                 name = "Ectoplast Seal",
                 text = {
@@ -1042,6 +1075,8 @@ return {
             celesta_broke = "Broke!",
             celesta_tattered = "Tattered!",
             celesta_repaired = "Repaired!",
+            celesta_taken = "Taken!",
+            celesta_returned = "Returned!",
             celesta_cracked = "Cracked!",
             celesta_chipped = "Chipped!",
             celesta_stripped = "Stripped!",

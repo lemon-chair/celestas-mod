@@ -299,6 +299,39 @@ LOC_TAIL = '''        },
         },
 
         Other = {
+            celesta_bind_arar_jaws = {
+                name = "Arar + Jaws",
+                text = {
+                    "Adds a random {C:attention}enhancement{} to",
+                    "non-scoring unenhanced cards",
+                    "in played hand",
+                },
+            },
+            celesta_bind_crelly_koko = {
+                name = "Crelly + KokoNuts",
+                text = {
+                    "Destroys scoring {C:attention}Lucky 7s of Spades{},",
+                    "gaining {X:mult,C:white}X#1#{} Mult per card destroyed",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_kumi_maya = {
+                name = "Kumi + Maya",
+                text = {
+                    "Destroys all scoring {C:attention}Steel Cards{}",
+                    "in played hand, with a {C:green}#1# in #2#{} chance",
+                    "to earn {C:money}$#3#{} per card destroyed",
+                },
+            },
+            celesta_bind_deme_camila = {
+                name = "Deme + Camila",
+                text = {
+                    "If first hand is a single card, gains",
+                    "{X:mult,C:white}X0.25{} Mult, or {X:mult,C:white}X0.5{} if {C:dark_edition}Foil{},",
+                    "{X:mult,C:white}X0.75{} if {C:dark_edition}Holographic{}, {X:mult,C:white}X1{} if {C:dark_edition}Polychrome{}",
+                    "{C:inactive}(Currently {X:mult,C:white}X#1#{C:inactive} Mult)",
+                },
+            },
             celesta_ectoplast_seal = {
                 name = "Ectoplast Seal",
                 text = {
@@ -374,6 +407,8 @@ LOC_TAIL = '''        },
             celesta_broke = "Broke!",
             celesta_tattered = "Tattered!",
             celesta_repaired = "Repaired!",
+            celesta_taken = "Taken!",
+            celesta_returned = "Returned!",
             celesta_cracked = "Cracked!",
             celesta_chipped = "Chipped!",
             celesta_stripped = "Stripped!",

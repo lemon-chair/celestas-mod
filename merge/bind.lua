@@ -160,6 +160,209 @@ function Bind.merge(host, absorbed)
 end
 
 --------------------------------------------------------------------------------
+-- Special pairs
+--------------------------------------------------------------------------------
+--
+-- Some pairs are worth more than the sum of their halves. When both centres of
+-- a merge match one of these, the pair's own ability REPLACES both - neither
+-- half's normal behaviour runs.
+--
+-- Keyed on the two centre keys sorted and joined, so a pair matches whichever
+-- order the player merged them in.
+
+Bind.SPECIALS = {}
+
+local function pair_key(a, b)
+    if a > b then a, b = b, a end
+    return a .. "|" .. b
+end
+
+--- def = { key, config, calculate, loc_vars }
+--- `config` is the pair's own mutable state; it is copied onto the card the
+--- first time the pair is evaluated and serialized with it thereafter.
+local function special(key_a, key_b, def)
+    Bind.SPECIALS[pair_key(key_a, key_b)] = def
+end
+
+--- The special governing this merge, if the pair has one.
+function Bind.special_of(card)
+    if not Bind.is_merged(card) then return nil end
+    local host = card.config.center_key
+        or (card.config.center and card.config.center.key)
+    if not host then return nil end
+    return Bind.SPECIALS[pair_key(host, card.ability.celesta_bind.key)]
+end
+
+--- The pair's saved state, created from its config on first use.
+function Bind.special_state(card, def)
+    local bound = card.ability.celesta_bind
+    if type(bound.special) ~= "table" then
+        bound.special = copy_table(def.config or {})
+    end
+    return bound.special
+end
+
+--------------------------------------------------------------------------------
+
+-- Arar + Jaws: the cards that missed out get something out of the hand anyway.
+special("j_celesta_arar", "j_celesta_jaws", {
+    key = "arar_jaws",
+    calculate = function(def, card, context, state)
+        if not (context.after and not context.blueprint) then return end
+        local hand = context.full_hand or (G.play and G.play.cards)
+        if type(hand) ~= "table" then return end
+
+        -- Everything the poker hand actually used, so what is left is exactly
+        -- the cards that were carried along without scoring.
+        local scored = {}
+        for _, played in ipairs(context.scoring_hand or {}) do scored[played] = true end
+
+        local touched = 0
+        for _, played in ipairs(hand) do
+            if not scored[played] and played.config
+                and played.config.center == G.P_CENTERS.c_base then
+                -- poll_enhancement respects the run's pool, so this never
+                -- rolls an enhancement the run has disabled and does pick up
+                -- ones other mods add.
+                local enhancement = SMODS.poll_enhancement {
+                    key = "celesta_bind_arar_jaws",
+                    guaranteed = true,
+                }
+                if enhancement and G.P_CENTERS[enhancement] then
+                    local target = played
+                    G.E_MANAGER:add_event(Event {
+                        func = function()
+                            target:set_ability(G.P_CENTERS[enhancement], nil, true)
+                            return true
+                        end
+                    })
+                    touched = touched + 1
+                end
+            end
+        end
+
+        if touched > 0 then
+            return {
+                message = localize("k_plus_enhancement"),
+                colour = G.C.SECONDARY_SET.Enhanced,
+                card = card,
+            }
+        end
+    end,
+})
+
+-- Crelly + KokoNuts: KokoNuts keeps making Lucky 7s of Spades; this eats them.
+special("j_celesta_crelly", "j_celesta_kokonuts", {
+    key = "crelly_koko",
+    config = { x_mult = 1, x_mult_gain = 0.25 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.destroying_card and context.cardarea == G.play
+            and not context.blueprint then
+            local target = context.destroying_card
+            if SMODS.has_enhancement(target, "m_lucky")
+                and target.get_id and target:get_id() == 7
+                and target.is_suit and target:is_suit("Spades") then
+                -- calculate_destroying_cards acts on `remove` without checking
+                -- whether the card can actually go, so eternals are refused
+                -- here or the row keeps a card that was told to leave.
+                if SMODS.is_eternal and SMODS.is_eternal(target) then return end
+                state.x_mult = state.x_mult + state.x_mult_gain
+                return {
+                    remove = true,
+                    message = localize { type = "variable", key = "a_xmult",
+                                         vars = { state.x_mult } },
+                    colour = G.C.MULT,
+                    card = card,
+                }
+            end
+        end
+
+        if context.joker_main and state.x_mult > 1 then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+-- Kumi + Maya: Kumi eats gold, Maya works with Steel; together they cash Steel in.
+special("j_celesta_kumi", "j_celesta_maya", {
+    key = "kumi_maya",
+    config = { dollars = 15, odds = 2 },
+
+    loc_vars = function(def, card, state)
+        local numerator, denominator = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_kumi_maya")
+        return { vars = { numerator, denominator, state.dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.destroying_card and context.cardarea == G.play
+            and not context.blueprint then
+            local target = context.destroying_card
+            if SMODS.has_enhancement(target, "m_steel") then
+                if SMODS.is_eternal and SMODS.is_eternal(target) then return end
+                -- `remove` and `dollars` are both other_calculation_keys, so
+                -- one table can destroy the card and pay out at once.
+                local effect = { remove = true, card = card }
+                if SMODS.pseudorandom_probability(card, "celesta_bind_kumi_maya",
+                        1, state.odds, "celesta_bind_kumi_maya") then
+                    effect.dollars = state.dollars
+                end
+                return effect
+            end
+        end
+    end,
+})
+
+-- Deme + Camila: both care about a lone first hand; this reads what it was
+-- wearing.
+local DEME_CAMILA_GAINS = {
+    none = 0.25,
+    e_foil = 0.5,
+    e_holo = 0.75,
+    e_polychrome = 1.0,
+}
+
+special("j_celesta_demenishki", "j_celesta_camila", {
+    key = "deme_camila",
+    config = { x_mult = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- hands_played == 0 is vanilla's own idiom for "this is the first hand
+        -- of the round" - DNA and Sixth Sense both gate on it.
+        if context.before and not context.blueprint
+            and G.GAME and G.GAME.current_round
+            and G.GAME.current_round.hands_played == 0
+            and context.full_hand and #context.full_hand == 1 then
+            local played = context.full_hand[1]
+            local edition = played.edition and played.edition.key or "none"
+            -- An unknown edition, from another mod, is worth the plain rate
+            -- rather than nothing.
+            local gain = DEME_CAMILA_GAINS[edition] or DEME_CAMILA_GAINS.none
+            state.x_mult = state.x_mult + gain
+            return {
+                message = localize { type = "variable", key = "a_xmult",
+                                     vars = { state.x_mult } },
+                colour = G.C.MULT,
+                card = card,
+            }
+        end
+
+        if context.joker_main and state.x_mult > 1 then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+--------------------------------------------------------------------------------
 -- Running both halves
 --------------------------------------------------------------------------------
 
@@ -207,6 +410,26 @@ function Card:calculate_joker(context)
     local effect, post = celesta_bind_calculate_joker_ref(self, context)
 
     if running or not Bind.is_merged(self) then return effect, post end
+
+    -- A special pair REPLACES both halves. The host's own calculate has
+    -- already run by this point - the ref is called first so that frozen
+    -- rolls, tattered counting and every other mod's hook still see the
+    -- evaluation - but its result is dropped in favour of the pair's.
+    local def = Bind.special_of(self)
+    if def then
+        if running then return effect, post end
+        running = true
+        local state = Bind.special_state(self, def)
+        local ok, special_effect = pcall(def.calculate, def, self, context, state)
+        running = false
+        if not ok then
+            CelestasMod.warn_once("bind_special_" .. tostring(def.key),
+                ("Bind pair %s failed: %s"):format(tostring(def.key), tostring(special_effect)))
+            return nil, post
+        end
+        return special_effect, post
+    end
+
     local center = Bind.partner_center(self)
     if not center or type(center.calculate) ~= "function" then return effect, post end
 
@@ -415,6 +638,42 @@ end
 -- Description: both halves, side by side
 --------------------------------------------------------------------------------
 
+-- A special pair describes itself, in place of both halves.
+--
+-- Swapped into the card's own AUT rather than assembled as a panel by hand:
+-- card_h_popup then builds it exactly as it builds every other card's, name
+-- row and rarity badge and box included. Hand-assembling a panel is what
+-- crashed set_parent_child the first time.
+local celesta_bind_special_ability_ref = Card.generate_UIBox_ability_table
+function Card:generate_UIBox_ability_table(...)
+    local box = celesta_bind_special_ability_ref(self, ...)
+    local def = Bind.special_of(self)
+    if not (def and type(box) == "table") then return box end
+
+    local state = Bind.special_state(self, def)
+    local vars = {}
+    if type(def.loc_vars) == "function" then
+        local ok, res = pcall(def.loc_vars, def, self, state)
+        if ok and type(res) == "table" and res.vars then vars = res.vars end
+    end
+
+    local loc_key = "celesta_bind_" .. def.key
+    local ok, aut = pcall(generate_card_ui,
+        { set = "Other", key = loc_key }, nil, vars, "Other", nil, false)
+    if not (ok and type(aut) == "table" and aut.main) then
+        CelestasMod.warn_once("bind_special_desc_" .. tostring(def.key),
+            "Bind pair " .. tostring(def.key) .. " has no description")
+        return box
+    end
+    box.main = aut.main
+
+    -- The pair's own name, in place of the host's.
+    local name_rows = {}
+    localize { type = "name", set = "Other", key = loc_key, nodes = name_rows }
+    if name_rows[1] then box.name = name_rows[1] end
+    return box
+end
+
 -- Set while the absorbed half's description is being generated, so the hook
 -- below cannot re-enter itself.
 local describing = false
@@ -458,6 +717,11 @@ function G.UIDEF.card_h_popup(card)
     local root = celesta_bind_popup_ref(card)
     if not Bind.is_merged(card) then return root end
     if type(root) ~= "table" or type(root.nodes) ~= "table" then return root end
+
+    -- A special pair has one ability and therefore one panel. Its description
+    -- is swapped in below, before card_h_popup ever sees it, so there is
+    -- nothing to add here.
+    if Bind.special_of(card) then return root end
 
     local aut, center = partner_ui(card)
     if not aut then return root end

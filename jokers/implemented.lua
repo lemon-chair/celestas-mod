@@ -3225,3 +3225,120 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Camila [Rare]
+-- A lone first hand is consumed, and comes back next round one edition better.
+--------------------------------------------------------------------------------
+
+-- none -> Foil -> Holographic -> Polychrome, and no further.
+CelestasMod.EDITION_LADDER = {
+    none = "e_foil",
+    e_foil = "e_holo",
+    e_holo = "e_polychrome",
+    e_polychrome = "e_polychrome",
+}
+
+--- Everything needed to rebuild a playing card, as plain strings.
+--- Stored on the joker and therefore serialized into the save, so it has to
+--- survive a reload with no live references in it.
+function CelestasMod.snapshot_card(card)
+    if not (card and card.base) then return nil end
+    return {
+        suit = card.base.suit,
+        value = card.base.value,
+        center = card.config and card.config.center_key or "c_base",
+        edition = card.edition and card.edition.key or "none",
+        seal = card.seal,
+    }
+end
+
+--- The G.P_CARDS entry for a suit and rank.
+--- Searched rather than composed: the table is keyed like S_7 and H_A, and
+--- guessing that scheme for every rank is a bug waiting for the first Ten.
+local function front_for(suit, value)
+    for _, front in pairs(G.P_CARDS or {}) do
+        if front.suit == suit and front.value == value then return front end
+    end
+end
+
+SMODS.Joker {
+    key = "camila",
+    atlas = "camila",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = {} },
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        -- Taken on the destroy pass rather than before scoring. A card pulled
+        -- out from under evaluate_play mid-hand leaves the scoring loop
+        -- holding a card that is no longer there; the destroy pass exists
+        -- precisely for removing scored cards and runs once scoring is done.
+        -- The card pays out for the hand that consumes it.
+        if context.destroying_card and context.cardarea == G.play
+            and not context.blueprint
+            and G.GAME.current_round.hands_played == 0
+            and context.full_hand and #context.full_hand == 1
+            and context.destroying_card == context.full_hand[1] then
+            local doomed = context.destroying_card
+            -- Eternal cards refuse destruction, and taking one would strand
+            -- the snapshot forever.
+            if SMODS.is_eternal and SMODS.is_eternal(doomed) then return end
+
+            card.ability.extra.stored = CelestasMod.snapshot_card(doomed)
+            return {
+                remove = true,
+                message = localize("celesta_taken"),
+                colour = G.C.PURPLE,
+                card = card,
+            }
+        end
+
+        -- Handed back when the next blind is picked.
+        if context.setting_blind and card.ability.extra.stored
+            and not (context.blueprint_card or card).getting_sliced then
+            local stored = card.ability.extra.stored
+            card.ability.extra.stored = nil
+
+            G.E_MANAGER:add_event(Event {
+                func = function()
+                    local front = front_for(stored.suit, stored.value)
+                    if not front then return true end
+                    local center = G.P_CENTERS[stored.center] or G.P_CENTERS.c_base
+
+                    -- Built in G.play so the player watches it arrive, then
+                    -- animated into the deck - the same shape KokoNuts uses.
+                    local restored = create_playing_card(
+                        { front = front, center = center },
+                        G.play, nil, nil, { G.C.SECONDARY_SET.Enhanced })
+
+                    local upgraded = CelestasMod.EDITION_LADDER[stored.edition or "none"]
+                    if upgraded then restored:set_edition(upgraded, true, true) end
+                    if stored.seal then restored:set_seal(stored.seal, true) end
+
+                    SMODS.calculate_effect({
+                        message = localize("celesta_returned"),
+                        colour = G.C.DARK_EDITION,
+                    }, context.blueprint_card or card)
+
+                    G.E_MANAGER:add_event(Event {
+                        func = function()
+                            draw_card(G.play, G.deck, 90, "up", nil)
+                            return true
+                        end
+                    })
+
+                    playing_card_joker_effects({ restored })
+                    return true
+                end
+            })
+        end
+    end,
+}
