@@ -919,8 +919,8 @@ return {
             bl_celesta_clover = {
                 name = "The Clover",
                 text = {
-                    "All listed {C:green}probabilities{}",
-                    "are {C:attention}halved{}",
+                    "Cards and Jokers have a",
+                    "{C:green}#1# in #2#{} chance to trigger",
                 },
             },
         },
