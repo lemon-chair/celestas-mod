@@ -144,7 +144,7 @@ return {
                 text = {
                     "Every {C:attention}#1#{} scored cards",
                     "gives {X:mult,C:white}X#2#{} Mult",
-                    "{C:inactive}(#3# to go)",
+                    "{C:inactive}(#3# remaining)",
                 },
             },
             j_celesta_bluto = {
