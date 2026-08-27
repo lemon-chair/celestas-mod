@@ -296,10 +296,11 @@ local function build_art(card)
     local atlas = G.ASSET_ATLAS[card.config.center.atlas or card.config.center.set]
     local w, h = atlas.px, atlas.py
 
-    -- stencil = true on BOTH the canvas and setCanvas. LOVE 11 refuses to
-    -- draw to the stencil buffer while a canvas is bound unless the canvas was
-    -- created with a stencil attachment and bound asking for it.
-    local canvas = love.graphics.newCanvas(w, h, { stencil = true })
+    -- The stencil flag belongs on setCanvas, NOT on newCanvas: LOVE 11 has no
+    -- such canvas setting and rejects it outright ("Invalid canvas setting
+    -- name: stencil"). Asking for it at bind time is what makes LOVE attach a
+    -- stencil buffer for the duration.
+    local canvas = love.graphics.newCanvas(w, h)
     local previous = love.graphics.getCanvas()
     love.graphics.setCanvas({ canvas, stencil = true })
     love.graphics.clear(0, 0, 0, 0)
@@ -399,22 +400,23 @@ function Card:generate_UIBox_ability_table(...)
     if not Bind.is_merged(self) then return box end
 
     local center = Bind.partner_center(self)
-    if not (center and box and box.main) then return box end
+    if not (center and type(box) == "table" and box.info) then return box end
 
-    -- The absorbed half's description is generated against ITS centre, so it
-    -- reads exactly as it would on its own card.
-    local ok, other = pcall(generate_card_ui, center, nil, nil, "Joker", nil, false)
-    if not (ok and other and other.main) then return box end
-
-    local function column(nodes)
-        return { n = G.UIT.C, config = { align = "tm", padding = 0.05 }, nodes = nodes }
+    -- Handing generate_card_ui the table it already built, rather than a fresh
+    -- one, is what puts the absorbed half's description into box.info - the
+    -- same list the game fills for tooltips, so it renders as its own panel
+    -- beside the main one and needs no layout of mine.
+    --
+    -- Building the columns by hand is what the first attempt did, and it
+    -- crashed in set_parent_child: a UI node's `nodes` must be a LIST of
+    -- nodes, and getting that one level wrong is not visible until something
+    -- walks the tree. This route cannot get the shape wrong, because the game
+    -- builds it.
+    local ok, err = pcall(generate_card_ui, center, box, nil, "Joker", nil, nil)
+    if not ok then
+        CelestasMod.warn_once("bind_desc_" .. tostring(center.key),
+            ("Bind could not describe %s: %s"):format(tostring(center.key), tostring(err)))
     end
-
-    box.main = { {
-        n = G.UIT.R,
-        config = { align = "cm" },
-        nodes = { column(box.main), column(other.main) },
-    } }
     return box
 end
 
