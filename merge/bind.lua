@@ -394,30 +394,84 @@ end
 -- Description: both halves, side by side
 --------------------------------------------------------------------------------
 
-local celesta_bind_ability_table_ref = Card.generate_UIBox_ability_table
-function Card:generate_UIBox_ability_table(...)
-    local box = celesta_bind_ability_table_ref(self, ...)
-    if not Bind.is_merged(self) then return box end
+-- Set while the absorbed half's description is being generated, so the hook
+-- below cannot re-enter itself.
+local describing = false
 
-    local center = Bind.partner_center(self)
-    if not (center and type(box) == "table" and box.info) then return box end
+--- The absorbed half's description table, built as though it were on its own
+--- card so its own loc_vars run and any value it has scaled up shows the
+--- number it has actually reached.
+local function partner_ui(card)
+    local center = Bind.partner_center(card)
+    if not center or describing then return nil end
 
-    -- Handing generate_card_ui the table it already built, rather than a fresh
-    -- one, is what puts the absorbed half's description into box.info - the
-    -- same list the game fills for tooltips, so it renders as its own panel
-    -- beside the main one and needs no layout of mine.
-    --
-    -- Building the columns by hand is what the first attempt did, and it
-    -- crashed in set_parent_child: a UI node's `nodes` must be a LIST of
-    -- nodes, and getting that one level wrong is not visible until something
-    -- walks the tree. This route cannot get the shape wrong, because the game
-    -- builds it.
-    local ok, err = pcall(generate_card_ui, center, box, nil, "Joker", nil, nil)
-    if not ok then
+    describing = true
+    local saved_center, saved_ability = card.config.center, card.ability
+    card.config.center = center
+    card.ability = card.ability.celesta_bind.ability
+    local ok, aut = pcall(card.generate_UIBox_ability_table, card)
+    card.config.center, card.ability = saved_center, saved_ability
+    describing = false
+
+    if not (ok and type(aut) == "table" and aut.main) then
         CelestasMod.warn_once("bind_desc_" .. tostring(center.key),
-            ("Bind could not describe %s: %s"):format(tostring(center.key), tostring(err)))
+            ("Bind could not describe %s: %s"):format(tostring(center.key), tostring(aut)))
+        return nil
     end
-    return box
+    return aut, center
+end
+
+-- Both halves get the same panel, because it is literally the same node shape
+-- card_h_popup builds for the card's own description: an outer rounded row in
+-- lightened JOKER_GREY holding an inner row in the type background, wrapping
+-- name_from_rows / desc_from_rows / badges.
+--
+-- The first attempt appended the absorbed half to AUT.info instead, which was
+-- less code but rendered it as a tooltip - a smaller box in a different style
+-- sitting beside a full one.
+-- G.UIDEF is built at boot, well before mods load, so this is present. Guarded
+-- anyway: wrapping a nil would swap a missing popup for a crashing one.
+local celesta_bind_popup_ref = G.UIDEF and G.UIDEF.card_h_popup
+if celesta_bind_popup_ref then
+function G.UIDEF.card_h_popup(card)
+    local root = celesta_bind_popup_ref(card)
+    if not Bind.is_merged(card) then return root end
+    if type(root) ~= "table" or type(root.nodes) ~= "table" then return root end
+
+    local aut, center = partner_ui(card)
+    if not aut then return root end
+
+    -- Its own rarity, shown the way the host's is.
+    local badges = {}
+    local rarity_names = { localize("k_common"), localize("k_uncommon"),
+                           localize("k_rare"), localize("k_legendary") }
+    local label = center.rarity and rarity_names[center.rarity]
+    if label then
+        badges[1] = create_badge(label, get_type_colour(center, card), nil, 1.2)
+    end
+
+    root.nodes[#root.nodes + 1] = {
+        n = G.UIT.C,
+        config = { align = "cm" },
+        nodes = { {
+            n = G.UIT.R,
+            config = { padding = 0.05, r = 0.12,
+                       colour = lighten(G.C.JOKER_GREY, 0.5), emboss = 0.07 },
+            nodes = { {
+                n = G.UIT.R,
+                config = { align = "cm", padding = 0.07, r = 0.1,
+                           colour = adjust_alpha(darken(G.C.BLACK, 0.1), 0.8) },
+                nodes = {
+                    name_from_rows(aut.name),
+                    desc_from_rows(aut.main),
+                    badges[1] and { n = G.UIT.R, config = { align = "cm", padding = 0.03 },
+                                    nodes = badges } or nil,
+                },
+            } },
+        } },
+    }
+    return root
+end
 end
 
 --------------------------------------------------------------------------------
