@@ -893,6 +893,16 @@ return {
             },
         },
 
+        Spectral = {
+            c_celesta_bind = {
+                name = "Bind",
+                text = {
+                    "Merge {C:attention}2{} selected {C:attention}Jokers{}",
+                    "into one Joker with",
+                    "the abilities of both",
+                },
+            },
+        },
         Tarot = {
             c_celesta_reforge = {
                 name = "Reforge",
