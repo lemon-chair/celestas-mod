@@ -2578,3 +2578,101 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Bricky [Uncommon]
+-- +20 Chips for each Stone or Limestone card in the full deck.
+--------------------------------------------------------------------------------
+
+--- Counts the Stone and Limestone cards in the run's full deck.
+--- Read live rather than kept as a running tally. Vanilla Stone Joker caches
+--- one in ability.stone_tally and has to refresh it from several places; a
+--- 52-card walk once per hover and once per hand is not worth that risk of
+--- drifting out of sync when cards are added, destroyed or re-enhanced.
+local function bricky_tally(_)
+    if not G.playing_cards then return 0 end
+    local limestone = CelestasMod.ENHANCEMENT_KEYS.Limestone
+    local tally = 0
+    for _, playing_card in pairs(G.playing_cards) do
+        if SMODS.has_enhancement(playing_card, "m_stone")
+            or SMODS.has_enhancement(playing_card, limestone) then
+            tally = tally + 1
+        end
+    end
+    return tally
+end
+
+SMODS.Joker {
+    key = "bricky",
+    atlas = "bricky",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { chip_mod = 20 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_stone
+        info_queue[#info_queue + 1] =
+            G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Limestone]
+        local chip_mod = card.ability.extra.chip_mod
+        return { vars = { chip_mod, chip_mod * bricky_tally(card) } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.joker_main then
+            local chips = card.ability.extra.chip_mod * bricky_tally(card)
+            if chips > 0 then
+                return { chips = chips }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- AxialMatt [Common]
+-- Adds double the rank of the highest ranked card held in hand to Mult.
+--------------------------------------------------------------------------------
+
+--- The rank of the highest ranked card held in hand, or 0 for none.
+--- get_id is what vanilla ranks by: Ace is 14 down to 2, and a Stone Card
+--- reports a large negative number so it can never win. Limestone carries no
+--- rank at all, so it is skipped outright rather than counted as its
+--- underlying card.
+local function axialmatt_top_rank()
+    if not (G.hand and G.hand.cards) then return 0 end
+    local best = 0
+    for _, held in ipairs(G.hand.cards) do
+        if not held.debuff and not SMODS.has_no_rank(held) then
+            local id = held:get_id()
+            if type(id) == "number" and id > best then best = id end
+        end
+    end
+    return best
+end
+
+SMODS.Joker {
+    key = "axialmatt",
+    atlas = "axialmatt",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { rank_mult = 2 } },
+
+    loc_vars = function(self, info_queue, card)
+        local rank_mult = card.ability.extra.rank_mult
+        return { vars = { rank_mult, rank_mult * axialmatt_top_rank() } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.joker_main then
+            local mult = card.ability.extra.rank_mult * axialmatt_top_rank()
+            if mult > 0 then
+                return { mult = mult }
+            end
+        end
+    end,
+}

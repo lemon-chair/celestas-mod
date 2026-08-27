@@ -87,9 +87,12 @@ return {
                 },
             },
             j_celesta_axialmatt = {
-                name = "Axialmatt",
+                name = "AxialMatt",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Adds {C:attention}#1#X{} the rank of the",
+                    "highest ranked card held",
+                    "in hand to {C:mult}Mult{}",
+                    "{C:inactive}(Currently {C:mult}+#2#{C:inactive} Mult)",
                 },
             },
             j_celesta_baddaboom = {
@@ -155,7 +158,10 @@ return {
             j_celesta_bricky = {
                 name = "Bricky",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "This Joker gains {C:chips}+#1#{} Chips",
+                    "for each {C:attention}Stone Card{} and",
+                    "{C:attention}Limestone Card{} in your full deck",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
                 },
             },
             j_celesta_buffpup = {

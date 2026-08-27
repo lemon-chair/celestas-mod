@@ -9,8 +9,6 @@
 local ROSTER = {
     { key = "ariesakana", rarity = 1, cost = 4, mult = 4 },
     { key = "augustanomoly", rarity = 1, cost = 4, mult = 4 },
-    { key = "axialmatt", rarity = 1, cost = 4, mult = 4 },
-    { key = "bricky", rarity = 1, cost = 4, mult = 4 },
     { key = "buffpup", rarity = 1, cost = 4, mult = 4 },
     { key = "camila", rarity = 1, cost = 4, mult = 4 },
     { key = "cerbervt", rarity = 1, cost = 4, mult = 4 },
