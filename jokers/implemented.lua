@@ -2897,3 +2897,264 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- RTGame [Rare]
+-- Gains X1 Mult after each Ante.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "rtgame",
+    atlas = "rtgame",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { x_mult = 1, x_mult_gain = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.x_mult_gain, card.ability.extra.x_mult } }
+    end,
+
+    calculate = function(self, card, context)
+        -- ease_ante fires this after the ante has actually moved, and carries
+        -- the delta. Guarded to gains only: a blind or voucher that lowers the
+        -- ante should not hand out Mult for the ante being crossed twice.
+        if context.ante_change and not context.blueprint then
+            local moved = tonumber(context.ante_change) or 0
+            if moved > 0 then
+                card.ability.extra.x_mult =
+                    card.ability.extra.x_mult + card.ability.extra.x_mult_gain * moved
+                return {
+                    message = localize { type = "variable", key = "a_xmult",
+                                         vars = { card.ability.extra.x_mult } },
+                    colour = G.C.MULT,
+                    card = card,
+                }
+            end
+        end
+
+        if context.joker_main and card.ability.extra.x_mult > 1 then
+            return { x_mult = card.ability.extra.x_mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Nostro [Common]
+-- A breaking Gashed card is stripped instead of destroyed.
+--------------------------------------------------------------------------------
+
+-- The behaviour itself lives on the Gash enhancement, which asks
+-- CelestasMod.nostro_active() at the moment it would break. This joker only
+-- has to exist.
+SMODS.Joker {
+    key = "nostro",
+    atlas = "nostro",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    -- Nothing to copy: it is a passive the enhancement reads, not a trigger.
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Gash]
+        return {}
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Rin Penrose [Rare]
+-- Gains +10 Mult for every 10 chips scored.
+--------------------------------------------------------------------------------
+
+--- Reads the hand's chip total as a plain number.
+---
+--- hand_chips is a global Balatro assigns during scoring and never clears, so
+--- it still holds this hand's total when the `after` pass runs. Talisman
+--- swaps it for a big-number object once scores outgrow a double, hence the
+--- conversion - and the finite check, because a non-finite value written into
+--- ability.extra would be serialized into the save as inf or nan and come
+--- back as something no comparison can handle. Past that scale the joker
+--- simply stops banking rather than corrupting the run.
+local function rin_chips(value)
+    local n = value
+    if type(n) ~= "number" then
+        if type(to_number) == "function" then
+            local ok, converted = pcall(to_number, n)
+            n = ok and converted or nil
+        else
+            n = nil
+        end
+    end
+    if type(n) ~= "number" then return 0 end
+    if n ~= n or n == math.huge or n == -math.huge then return 0 end
+    return n
+end
+
+SMODS.Joker {
+    key = "rinpenrose",
+    atlas = "rinpenrose",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    -- bank is the chips carried toward the next step, so a hand of 15 chips
+    -- pays once and leaves 5 behind rather than throwing the remainder away.
+    config = { extra = { mult = 0, mult_gain = 10, chips_per_step = 10, bank = 0 } },
+
+    loc_vars = function(self, info_queue, card)
+        local extra = card.ability.extra
+        local remaining = extra.chips_per_step - (extra.bank or 0)
+        return { vars = { extra.mult_gain, extra.chips_per_step,
+                          remaining, extra.mult } }
+    end,
+
+    calculate = function(self, card, context)
+        -- context.after runs once per hand, after scoring is finished. The
+        -- Mult banked here is therefore paid from the NEXT hand onwards,
+        -- which is how every scaling joker in the game behaves.
+        if context.after and not context.blueprint then
+            local extra = card.ability.extra
+            local scored = rin_chips(hand_chips)
+            if scored <= 0 then return end
+
+            extra.bank = (extra.bank or 0) + scored
+            -- Divided rather than looped: one hand under Talisman can be
+            -- worth more steps than a loop would ever finish.
+            local steps = math.floor(extra.bank / extra.chips_per_step)
+            if steps > 0 then
+                extra.bank = extra.bank - steps * extra.chips_per_step
+                extra.mult = extra.mult + steps * extra.mult_gain
+                return {
+                    message = localize { type = "variable", key = "a_mult",
+                                         vars = { extra.mult } },
+                    colour = G.C.MULT,
+                    card = card,
+                }
+            end
+        end
+
+        if context.joker_main and card.ability.extra.mult > 0 then
+            return { mult = card.ability.extra.mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Radical Mari [Uncommon]
+-- Spectral cards target the leftmost available Joker.
+--------------------------------------------------------------------------------
+
+-- The seeds the joker-targeting Spectrals roll with. Every one of them ends
+-- up at pseudorandom_element(pool, pseudoseed(<seed>)):
+--   ankh_choice - Ankh, choosing which Joker survives
+--   ectoplasm   - Ectoplasm, choosing who gets Negative
+--   hex         - Hex, choosing who gets Polychrome
+-- The Wheel of Fortune uses the same shape but is a Tarot, so it is left out.
+local MARI_SEEDS = {
+    ankh_choice = true,
+    ectoplasm = true,
+    hex = true,
+}
+
+-- pseudoseed is called as the argument to pseudorandom_element, and Lua
+-- evaluates arguments left to right, so the key recorded here is always the
+-- one belonging to the call being entered. This is the only way to recover it
+-- - by the time pseudorandom_element runs, the key has already been hashed
+-- into a number that cannot be recomputed without advancing the RNG again.
+local last_seed_key = nil
+local celesta_mari_pseudoseed_ref = pseudoseed
+function pseudoseed(key, ...)
+    last_seed_key = key
+    return celesta_mari_pseudoseed_ref(key, ...)
+end
+
+local function mari_active()
+    for _, joker in ipairs(SMODS.find_card("j_celesta_radicalmari")) do
+        if not joker.debuff then return true end
+    end
+    return false
+end
+
+--- The candidate sitting furthest left in the Joker row.
+--- Picked by position in G.jokers rather than by index in the pool, so it is
+--- leftmost on screen even if the pool was assembled in some other order.
+local function leftmost_of(pool)
+    if type(pool) ~= "table" or not (G.jokers and G.jokers.cards) then return nil end
+    local best, best_pos = nil, math.huge
+    for _, candidate in pairs(pool) do
+        for position, joker in ipairs(G.jokers.cards) do
+            if joker == candidate and position < best_pos then
+                best, best_pos = candidate, position
+                break
+            end
+        end
+    end
+    return best
+end
+
+local celesta_mari_pseudorandom_element_ref = pseudorandom_element
+function pseudorandom_element(pool, seed, ...)
+    local key = last_seed_key
+    -- Rolled first and then overridden, rather than skipped: the roll consumes
+    -- exactly as much of the RNG stream as it would without Mari, so having
+    -- her in play does not shift every later roll in the run.
+    local rolled = celesta_mari_pseudorandom_element_ref(pool, seed, ...)
+    if MARI_SEEDS[key] and mari_active() then
+        return leftmost_of(pool) or rolled
+    end
+    return rolled
+end
+
+SMODS.Joker {
+    key = "radicalmari",
+    atlas = "radicalmari",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- MonikaCinnyRoll [Uncommon]
+-- Retriggers scoring cards while Downpour is active.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "monikacinnyroll",
+    atlas = "monikacinnyroll",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { repetitions = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.repetitions } }
+    end,
+
+    calculate = function(self, card, context)
+        -- cardarea == G.play is the scoring-card repetition pass; cards held
+        -- in hand arrive with G.hand instead and are not "scoring cards".
+        --
+        -- Arena.active() already expires an effect that outlived its round,
+        -- so this cannot keep retriggering into a later round if a save was
+        -- reloaded mid-Downpour.
+        if context.repetition and context.cardarea == G.play
+            and CelestasMod.Arena.is_active("downpour") then
+            return {
+                message = localize("k_again_ex"),
+                repetitions = card.ability.extra.repetitions,
+                card = card,
+            }
+        end
+    end,
+}

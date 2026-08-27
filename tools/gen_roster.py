@@ -23,6 +23,8 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
 # Auto title-casing cannot know how a creator styles their own name.
 # Add corrections here; anything absent falls back to the mechanical rule.
 DISPLAY_NAMES = {
+    "radicalmari": "Radical Mari",
+    "rinpenrose": "Rin Penrose",
     "harukakaribu": "Haruka Karibu",
     "axialmatt": "AxialMatt",
     "mintfantome": "Mint Fantome",
@@ -367,6 +369,7 @@ LOC_TAIL = '''        },
             celesta_upgraded = "Upgraded!",
             celesta_gashed = "Gashed!",
             celesta_broke = "Broke!",
+            celesta_stripped = "Stripped!",
             celesta_melted = "Melted!",
             celesta_snowstorm = "Snowstorm!",
             celesta_frozen = "Frozen!",

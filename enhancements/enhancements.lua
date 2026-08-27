@@ -73,6 +73,36 @@ local function play_scoring_sound(key)
     })
 end
 
+--- True when a Nostro is in play and able to act.
+--- Asked at the moment a Gash breaks rather than cached: Nostro can be
+--- bought, sold or debuffed between one break and the next.
+function CelestasMod.nostro_active()
+    for _, joker in ipairs(SMODS.find_card("j_celesta_nostro")) do
+        if not joker.debuff then return true end
+    end
+    return false
+end
+
+--- Strips a card back to a plain playing card - no enhancement, no edition,
+--- no seal - which is what Nostro turns a Gash break into.
+--- Queued rather than immediate: this runs inside the destroy pass, which is
+--- still walking the played cards.
+function CelestasMod.strip_card(card)
+    if not (G.E_MANAGER and card) then return end
+    G.E_MANAGER:add_event(Event {
+        func = function()
+            if G.P_CENTERS and G.P_CENTERS.c_base and card.set_ability then
+                card:set_ability(G.P_CENTERS.c_base, nil, true)
+            end
+            -- set_edition(edition, immediate, silent)
+            if card.set_edition then card:set_edition(nil, true, true) end
+            -- set_seal(seal, silent, immediate)
+            if card.set_seal then card:set_seal(nil, true, true) end
+            return true
+        end,
+    })
+end
+
 CelestasMod.GASH_BREAK_ID = "celesta_gash_break"
 CelestasMod.GASH_ODDS = 4
 
@@ -173,6 +203,17 @@ SMODS.Enhancement {
             end
             if SMODS.pseudorandom_probability(card, CelestasMod.GASH_BREAK_ID,
                     1, CelestasMod.GASH_ODDS, CelestasMod.GASH_BREAK_ID) then
+                -- Nostro turns the break into a stripping. Returning no
+                -- `remove` is what spares the card: the destroy pass only
+                -- removes cards that ask to be removed.
+                if CelestasMod.nostro_active() then
+                    CelestasMod.strip_card(card)
+                    return {
+                        message = localize("celesta_stripped"),
+                        colour = G.C.FILTER,
+                        card = card,
+                    }
+                end
                 return { remove = true }
             end
         end

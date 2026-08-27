@@ -543,9 +543,11 @@ return {
                 },
             },
             j_celesta_monikacinnyroll = {
-                name = "MonikaCinnyroll",
+                name = "MonikaCinnyRoll",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Retriggers scoring cards",
+                    "{C:attention}#1#{} extra time while",
+                    "{C:blue}Downpour{} is active",
                 },
             },
             j_celesta_moomerrily = {
@@ -603,7 +605,10 @@ return {
             j_celesta_nostro = {
                 name = "Nostro",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "When a {C:attention}Gashed{} card breaks,",
+                    "it loses all enhancements,",
+                    "editions and seals",
+                    "instead of disappearing",
                 },
             },
             j_celesta_nyanners = {
@@ -672,9 +677,10 @@ return {
                 },
             },
             j_celesta_radicalmari = {
-                name = "Radicalmari",
+                name = "Radical Mari",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:spectral}Spectral{} cards prioritize",
+                    "the leftmost available {C:attention}Joker{}",
                 },
             },
             j_celesta_rainhoe = {
@@ -696,9 +702,12 @@ return {
                 },
             },
             j_celesta_rinpenrose = {
-                name = "Rinpenrose",
+                name = "Rin Penrose",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "This Joker gains {C:mult}+#1#{} Mult",
+                    "for every {C:chips}#2#{} chips scored",
+                    "{C:inactive}(#3# chips remaining)",
+                    "{C:inactive}(Currently {C:mult}+#4#{C:inactive} Mult)",
                 },
             },
             j_celesta_rosedoodle = {
@@ -712,7 +721,9 @@ return {
             j_celesta_rtgame = {
                 name = "RTGame",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "After each {C:attention}Ante{}, this",
+                    "Joker gains {X:mult,C:white}X#1#{} Mult",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
                 },
             },
             j_celesta_rynxryn = {
@@ -1016,6 +1027,7 @@ return {
             celesta_upgraded = "Upgraded!",
             celesta_gashed = "Gashed!",
             celesta_broke = "Broke!",
+            celesta_stripped = "Stripped!",
             celesta_melted = "Melted!",
             celesta_snowstorm = "Snowstorm!",
             celesta_frozen = "Frozen!",
