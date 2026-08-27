@@ -3158,3 +3158,55 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Dejavudea [Uncommon]
+-- Repairs the cards in the played hand and protects them for the rest of the
+-- run.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "dejavudea",
+    atlas = "dejavudea",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    -- Protection is a binary state, so a copy has nothing left to add.
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        -- context.before lands ahead of scoring, so a worn card played this
+        -- hand is repaired in time to score at full value rather than paying
+        -- half on the way through.
+        --
+        -- full_hand is every card played, not just the ones the poker hand
+        -- scores. Playing a worn card alongside a pair protects it too, which
+        -- is the reading that makes the joker usable on purpose.
+        if context.before and not context.blueprint then
+            local hand = context.full_hand or (G.play and G.play.cards)
+            if type(hand) ~= "table" then return end
+
+            local repaired = 0
+            for _, played in ipairs(hand) do
+                -- repair() insures every card it touches and reports back only
+                -- for the ones that actually had wear to undo, so the popup
+                -- appears when something visibly changed.
+                if CelestasMod.Tattered.repair(played) then
+                    repaired = repaired + 1
+                end
+            end
+
+            if repaired > 0 then
+                return {
+                    message = localize("celesta_repaired"),
+                    colour = G.C.FILTER,
+                    card = card,
+                }
+            end
+        end
+    end,
+}

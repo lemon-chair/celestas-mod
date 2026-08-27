@@ -18,7 +18,10 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts", "frozen"}   # not per-joker art
+SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
+          "frozen",
+          # wear overlays, drawn on top of a playing card
+          "tatter", "lucky_card_tatter", "limestone_tatter"}   # not per-joker art
 
 # Auto title-casing cannot know how a creator styles their own name.
 # Add corrections here; anything absent falls back to the mechanical rule.
@@ -370,6 +373,7 @@ LOC_TAIL = '''        },
             celesta_gashed = "Gashed!",
             celesta_broke = "Broke!",
             celesta_tattered = "Tattered!",
+            celesta_repaired = "Repaired!",
             celesta_cracked = "Cracked!",
             celesta_chipped = "Chipped!",
             celesta_stripped = "Stripped!",

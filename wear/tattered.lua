@@ -97,9 +97,33 @@ local function threshold(card)
     return at
 end
 
+--- True for a card Dejavudea has protected. Stored on the card, so the
+--- protection lasts the rest of the run and survives a save.
+function Tattered.is_immune(card)
+    return card and card.ability and card.ability.celesta_tatter_immune == true
+end
+
+--- Undoes any wear on a card and protects it from wearing again.
+--- Returns true only when there was wear to undo, so a caller can tell the
+--- difference between repairing a card and merely insuring one.
+function Tattered.repair(card)
+    if not is_playing_card(card) then return false end
+    card.ability.celesta_tatter_immune = true
+    if card.ability.celesta_tattered then
+        card.ability.celesta_tattered = nil
+        -- The counter goes too. It is dead weight while the card is immune,
+        -- and clearing it means a card that somehow lost immunity starts over
+        -- rather than tattering again on its next trigger.
+        card.ability.celesta_scored = 0
+        return true
+    end
+    return false
+end
+
 --- Counts one scoring and reports whether the card just wore out.
 function Tattered.record_score(card)
     if not is_playing_card(card) or Tattered.is_tattered(card) then return false end
+    if Tattered.is_immune(card) then return false end
     local count = (card.ability.celesta_scored or 0) + 1
     card.ability.celesta_scored = count
     if count < threshold(card) then return false end

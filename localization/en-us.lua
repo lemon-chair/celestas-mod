@@ -237,7 +237,10 @@ return {
             j_celesta_dejavudea = {
                 name = "Dejavudea",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Removes {C:attention}Tattered{} from cards",
+                    "in played hand, and prevents",
+                    "them from becoming {C:attention}Tattered{}",
+                    "for the rest of the run",
                 },
             },
             j_celesta_demenishki = {
@@ -468,18 +471,6 @@ return {
                     "At the start of each round,",
                     "adds a {C:attention}Limestone{} card",
                     "to your deck",
-                },
-            },
-            j_celesta_limestone_tatter = {
-                name = "Limestone Tatter",
-                text = {
-                    "{C:mult}+#1#{} Mult",
-                },
-            },
-            j_celesta_lucky_card_tatter = {
-                name = "Lucky Card Tatter",
-                text = {
-                    "{C:mult}+#1#{} Mult",
                 },
             },
             j_celesta_lucypyre = {
@@ -826,12 +817,6 @@ return {
                     "{C:mult}+#1#{} Mult",
                 },
             },
-            j_celesta_tatter = {
-                name = "Tatter",
-                text = {
-                    "{C:mult}+#1#{} Mult",
-                },
-            },
             j_celesta_vedal = {
                 name = "Vedal",
                 text = {
@@ -1046,6 +1031,7 @@ return {
             celesta_gashed = "Gashed!",
             celesta_broke = "Broke!",
             celesta_tattered = "Tattered!",
+            celesta_repaired = "Repaired!",
             celesta_cracked = "Cracked!",
             celesta_chipped = "Chipped!",
             celesta_stripped = "Stripped!",
