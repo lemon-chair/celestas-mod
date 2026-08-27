@@ -568,10 +568,23 @@ function Bind.invalidate_art(card)
     art_cache[card] = nil
 end
 
+--- The atlas a centre draws itself from.
+--- The same rule Card:set_sprites uses (card.lua:165): a centre's own atlas if
+--- it declares one, otherwise its set for the sets that have their own sheet,
+--- otherwise the shared "centers" sheet.
+local function atlas_for(center)
+    if not center then return nil end
+    local key = center.atlas
+        or ((center.set == "Joker" or center.consumeable or center.set == "Voucher")
+            and center.set)
+        or "centers"
+    return G.ASSET_ATLAS[key]
+end
+
 --- The atlas and quad a centre draws itself from.
 local function face_of(center)
     if not center then return nil end
-    local atlas = G.ASSET_ATLAS[center.atlas or center.set]
+    local atlas = atlas_for(center)
     if not (atlas and atlas.image) then return nil end
     local pos = center.pos or { x = 0, y = 0 }
     local w, h = atlas.px, atlas.py
@@ -587,7 +600,8 @@ local function build_art(card)
     local other_image, other_quad = face_of(Bind.partner_center(card))
     if not (host_image and other_image) then return nil end
 
-    local atlas = G.ASSET_ATLAS[card.config.center.atlas or card.config.center.set]
+    local atlas = atlas_for(card.config.center)
+    if not atlas then return nil end
     local w, h = atlas.px, atlas.py
 
     -- The stencil flag belongs on setCanvas, NOT on newCanvas: LOVE 11 has no
@@ -631,7 +645,13 @@ local function build_art(card)
 
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.setCanvas(previous)
-    return canvas
+
+    -- Handed back as a private atlas rather than a bare canvas. The sprite is
+    -- given this whole table in place of its own, so nothing is ever written
+    -- into the shared one - vanilla Jokers all draw from a single Jokers.png,
+    -- and swapping the image on that table would hand every other joker on the
+    -- board this canvas for the rest of the frame.
+    return { image = canvas, px = w, py = h }
 end
 
 -- Building happens between frames, never inside one.
@@ -686,11 +706,34 @@ function Card:draw(layer)
     -- the normal draw, so everything else - shadows, tilt, edition shaders,
     -- stickers - keeps working untouched.
     local sprite = self.children.center
-    if not (sprite and sprite.atlas) then return celesta_bind_card_draw_ref(self, layer) end
-    local saved_image = sprite.atlas.image
-    sprite.atlas.image = art
+    if not (sprite and sprite.atlas and sprite.sprite) then
+        return celesta_bind_card_draw_ref(self, layer)
+    end
+
+    -- The QUAD has to be swapped too, not just the image.
+    --
+    -- Sprite:draw_shader draws self.atlas.image through self.sprite, and that
+    -- quad was cut for the card's real atlas: for a mod joker, whose atlas is
+    -- one card, it is (0,0,71,95) and pointing it at this canvas happens to be
+    -- right. For a vanilla joker it points at that joker's cell deep inside
+    -- the shared Jokers.png, and sampling a 71x95 canvas with it returns
+    -- whatever lies outside - which is exactly how a merge of two vanilla
+    -- jokers came out as a smear.
+    if not art.quad then
+        art.quad = love.graphics.newQuad(0, 0, art.px, art.py,
+                                         art.image:getDimensions())
+    end
+
+    local saved_atlas, saved_quad, saved_dims =
+        sprite.atlas, sprite.sprite, sprite.image_dims
+    sprite.atlas = art
+    sprite.sprite = art.quad
+    sprite.image_dims = { art.image:getDimensions() }
+
     celesta_bind_card_draw_ref(self, layer)
-    sprite.atlas.image = saved_image
+
+    sprite.atlas, sprite.sprite, sprite.image_dims =
+        saved_atlas, saved_quad, saved_dims
 end
 
 --------------------------------------------------------------------------------
