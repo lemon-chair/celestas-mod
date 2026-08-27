@@ -318,6 +318,15 @@ LOC_TAIL = '''        },
                     "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
                 },
             },
+            celesta_bind_jax_bricky = {
+                name = "Jax + Bricky",
+                text = {
+                    "This Joker gains {C:chips}+#1#{} Chips",
+                    "for each {C:attention}Stone{} or {C:attention}Limestone{}",
+                    "card scored",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
+                },
+            },
             celesta_bind_kumi_maya = {
                 name = "Kumi + Maya",
                 text = {

@@ -362,6 +362,42 @@ special("j_celesta_demenishki", "j_celesta_camila", {
     end,
 })
 
+-- Jax + Bricky: Bricky alone reads the whole deck every hand; bound to Jax it
+-- stops counting and starts collecting, keeping what it is paid.
+special("j_celesta_jaxvtuber", "j_celesta_bricky", {
+    key = "jax_bricky",
+    config = { chips = 0, chip_mod = 20 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.chip_mod, state.chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- The individual pass runs over the scoring cards BEFORE the joker row
+        -- is evaluated, so a stone scored this hand is already paying by the
+        -- time joker_main asks for the total.
+        if context.individual and context.cardarea == G.play
+            and not context.blueprint then
+            local scored = context.other_card
+            local limestone = (CelestasMod.ENHANCEMENT_KEYS or {}).Limestone
+            if scored and (SMODS.has_enhancement(scored, "m_stone")
+                or (limestone and SMODS.has_enhancement(scored, limestone))) then
+                state.chips = state.chips + state.chip_mod
+                return {
+                    message = localize { type = "variable", key = "a_chips",
+                                         vars = { state.chips } },
+                    colour = G.C.CHIPS,
+                    card = card,
+                }
+            end
+        end
+
+        if context.joker_main and state.chips > 0 then
+            return { chips = state.chips }
+        end
+    end,
+})
+
 -- Nagzz + Chibidoki: Nagzz bends every listed chance; together they lean on
 -- the cards whose whole point is a chance.
 special("j_celesta_nagzz", "j_celesta_chibidoki", {
