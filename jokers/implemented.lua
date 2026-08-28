@@ -2367,6 +2367,102 @@ function Card:calculate_joker(context)
     return scaled, post
 end
 
+--------------------------------------------------------------------------------
+-- Showing the boost on the Jokers it boosts
+--------------------------------------------------------------------------------
+
+-- Vedal changes what a Joker SCORES, and nothing about that reaches the
+-- Joker's tooltip - so a boosted Bloodstone still advertised X1.5 while paying
+-- X2.25, and a scaling Joker's "(Currently ...)" line never moved.
+--
+-- The hard part is knowing WHICH number to scale. A joker's loc_vars is an
+-- unlabelled ordered list: Bloodstone's is
+--     { probabilities.normal, extra.odds, extra.Xmult }   -- 2, 2, 1.5
+-- and only the third may move. Scaling all three turns "2 in 2 chance" into
+-- "3 in 3", which is both wrong and meaningless.
+--
+-- The description text is what disambiguates them. Balatro marks every number
+-- with the colour it prints in, and a value Vedal touches is always written in
+-- mult or chip markup:
+--     "{X:mult,C:white}X#3#{} Mult"        -> scale
+--     "{C:chips}+#1#{} Chips"              -> scale
+--     "{C:green}#1# in #2#{} chance"       -> leave alone
+--     "{C:attention}#1#{} cards"           -> leave alone
+-- So the markup immediately before each #n# decides it.
+
+--- Which loc_var indices a centre prints as Mult or Chips.
+local function vedal_scalable_vars(center)
+    local descriptions = G.localization and G.localization.descriptions
+    local set = descriptions and center.set and descriptions[center.set]
+    local entry = set and set[center.key]
+    if not (entry and entry.text) then return nil end
+
+    local marked = nil
+    for _, line in ipairs(entry.text) do
+        -- The nearest {markup} before a #n#, with no other placeholder or
+        -- brace between them, is the one it prints in.
+        for markup, index in string.gmatch(line, "{([^}]*)}[^#{]*#(%d+)#") do
+            if string.find(markup, "mult") or string.find(markup, "chips") then
+                marked = marked or {}
+                marked[tonumber(index)] = true
+            end
+        end
+    end
+    return marked
+end
+
+-- The card currently being described, so the boost is only shown for Jokers
+-- actually in the row - a Joker sitting in the shop is not owned yet, and
+-- advertising a boost it will not get until bought would be a lie.
+local vedal_described = nil
+
+local celesta_vedal_ability_ref = Card.generate_UIBox_ability_table
+function Card:generate_UIBox_ability_table(...)
+    local previous = vedal_described
+    vedal_described = self
+    local ok, box = pcall(celesta_vedal_ability_ref, self, ...)
+    vedal_described = previous
+    if not ok then error(box, 0) end
+    return box
+end
+
+-- Hooked at generate_card_ui rather than at loc_vars: vanilla Jokers do not
+-- all have a loc_vars function, their numbers come from a chain inside
+-- generate_UIBox_ability_table, and both routes arrive here as specific_vars.
+local celesta_vedal_card_ui_ref = generate_card_ui
+function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges, hide_desc, main_start, main_end)
+    local card = vedal_described
+    if not (card and card.area == G.jokers
+        and type(_c) == "table" and _c.set == "Joker"
+        and _c.key ~= "j_celesta_vedal"
+        and type(specific_vars) == "table" and type(specific_vars.vars) == "table"
+        and vedal_active()) then
+        return celesta_vedal_card_ui_ref(_c, full_UI_table, specific_vars, card_type,
+                                         badges, hide_desc, main_start, main_end)
+    end
+
+    local marked = vedal_scalable_vars(_c)
+    if marked then
+        -- Copied, not scaled in place: these come straight off the joker's
+        -- ability in some cases, and scaling that would inflate the real thing
+        -- every time the card was hovered.
+        local copy = {}
+        for k, v in pairs(specific_vars) do copy[k] = v end
+        local vars = {}
+        for i, v in ipairs(specific_vars.vars) do
+            -- Only numbers. Bloodstone's first var is a STRING built with
+            -- ''..probabilities.normal, and arithmetic on it would error.
+            vars[i] = (marked[i] and type(v) == "number")
+                and v * CelestasMod.VEDAL_SCALE or v
+        end
+        copy.vars = vars
+        specific_vars = copy
+    end
+
+    return celesta_vedal_card_ui_ref(_c, full_UI_table, specific_vars, card_type,
+                                     badges, hide_desc, main_start, main_end)
+end
+
 SMODS.Joker {
     key = "vedal",
     atlas = "vedal",
