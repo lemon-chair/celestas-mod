@@ -22,6 +22,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 BOOTSTRAP = '''
 jokers, seals, enhancements, blinds, atlases = {}, {}, {}, {}, {}
+consumables = {}
 sounds = {}
 SMODS = {
   Atlas = function(t) atlases[t.key] = t end,
@@ -31,7 +32,8 @@ SMODS = {
   Seal  = function(t) seals[t.key] = t end,
   Enhancement = function(t) enhancements[t.key] = t end,
   Blind = function(t) blinds[t.key] = t end,
-  Consumable = function() end, Back = function() end,
+  Consumable = function(t) consumables[t.key] = t end,
+  Back = function() end,
   ConsumableTypes = {},
   current_mod = { path = "", name = "M", prefix = "celesta", config = {} },
 }
@@ -135,9 +137,21 @@ def main():
     for key, obj in dict(g.blinds).items():
         targets.append(("Blind", key, "bl_celesta_" + key, obj,
                         loc.descriptions.Blind))
+    # Consumables read their text from the block named after their set, so a
+    # Spectral needs descriptions.Spectral to exist at all. gen_roster.py owns
+    # that whole table and rewrites it, so an entry added to en-us.lua by hand
+    # survives exactly until the next regeneration - which is how Bind and the
+    # Milk Bottle both ended up in the shop with a blank description box.
+    for key, obj in dict(g.consumables).items():
+        set_name = obj.set or "Tarot"
+        table_ = dict(loc.descriptions).get(set_name)
+        targets.append(("Consumable", key, "c_celesta_" + key, obj, table_))
 
     problems, checked = [], 0
     for kind, key, loc_key, obj, table_ in sorted(targets):
+        if table_ is None:
+            problems.append("%s %s: no descriptions block for its set" % (kind, key))
+            continue
         entry = dict(table_).get(loc_key)
         if entry is None:
             problems.append("%s %s: no localization entry %s" % (kind, key, loc_key))

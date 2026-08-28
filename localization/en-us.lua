@@ -915,6 +915,25 @@ return {
             },
         },
 
+        Spectral = {
+            c_celesta_bind = {
+                name = "Bind",
+                text = {
+                    "Merge {C:attention}2{} selected {C:attention}Jokers{}",
+                    "into one Joker with",
+                    "the abilities of both",
+                },
+            },
+            c_celesta_milk_bottle = {
+                name = "Milk Bottle",
+                text = {
+                    "Give up to {C:attention}#2#{} selected",
+                    "cards a permanent",
+                    "{C:chips}+#1#{} Chip bonus",
+                },
+            },
+        },
+
         Blind = {
             bl_celesta_clover = {
                 name = "The Clover",
