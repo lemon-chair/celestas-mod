@@ -369,6 +369,16 @@ SMODS.Enhancement {
 -- Driftwood — may break if still held at the end of the round.
 --------------------------------------------------------------------------------
 
+--- True when a Sinder is in play and able to act.
+--- Asked at the moment a Driftwood would break rather than cached: Sinder can
+--- be bought, sold or debuffed between one end of round and the next.
+function CelestasMod.sinder_active()
+    for _, joker in ipairs(SMODS.find_card("j_celesta_sinder")) do
+        if not joker.debuff then return true end
+    end
+    return false
+end
+
 CelestasMod.DRIFTWOOD_ODDS = 6
 
 SMODS.Enhancement {
@@ -393,6 +403,10 @@ SMODS.Enhancement {
         -- not the scoring destroy pass - nothing is collecting flags here.
         if context.end_of_round and context.cardarea == G.hand
             and not context.blueprint and not context.repetition then
+            -- Sinder takes the risk away entirely. Checked before the roll so
+            -- the RNG is not consumed either - a Driftwood that cannot break
+            -- should not be quietly shifting every later roll in the run.
+            if CelestasMod.sinder_active() then return end
             if SMODS.pseudorandom_probability(card, "celesta_driftwood", 1,
                     CelestasMod.DRIFTWOOD_ODDS, "celesta_driftwood") then
                 G.E_MANAGER:add_event(Event {

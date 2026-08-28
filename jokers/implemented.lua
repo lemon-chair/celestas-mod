@@ -326,7 +326,7 @@ SMODS.Joker {
 
 --------------------------------------------------------------------------------
 -- LaynaLazar [Uncommon]
--- Removes Mult enhancements from scoring cards; gains +4 permanent Mult
+-- Removes Mult enhancements from scoring cards; gains +2 permanent Mult
 -- for each one removed.
 --------------------------------------------------------------------------------
 
@@ -342,7 +342,7 @@ SMODS.Joker {
     blueprint_compat = true,
     eternal_compat = true,
 
-    config = { extra = { mult = 0, mult_gain = 4 } },
+    config = { extra = { mult = 0, mult_gain = 2 } },
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_mult
@@ -3951,5 +3951,173 @@ SMODS.Joker {
 
     remove_from_deck = function(self, card, from_debuff)
         milky_sync(card)
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- The suit converters: FeFe's siblings
+--------------------------------------------------------------------------------
+--
+-- Four Jokers that differ only in which suit they name, so the behaviour is
+-- written once. See FeFe above for why this runs on context.before.
+
+--- Converts every scoring card that has a suit to `suit`.
+--- Returns how many were changed, so the caller can stay quiet when the hand
+--- was already that suit.
+local function convert_scoring_to(context, suit)
+    local scoring = context.scoring_hand
+    if type(scoring) ~= "table" then return 0 end
+
+    local converted = 0
+    for _, played in ipairs(scoring) do
+        -- A card with no suit has none to convert. Stone Cards and Limestone
+        -- report through has_no_suit, and changing their base would hand them
+        -- one they are not supposed to have.
+        if not SMODS.has_no_suit(played) and not played:is_suit(suit) then
+            local target = played
+            G.E_MANAGER:add_event(Event {
+                func = function()
+                    SMODS.change_base(target, suit)
+                    return true
+                end
+            })
+            converted = converted + 1
+        end
+    end
+    return converted
+end
+
+--- The body all three share. Written out as three separate declarations
+--- rather than built in a loop because tools/gen_roster.py finds implemented
+--- Jokers by matching `SMODS.Joker {` followed by a literal `key = "..."`:
+--- a key passed as a variable is invisible to it, and the generator would
+--- register each of these a second time as a placeholder.
+local function converter_calculate(suit, colour, message)
+    return function(self, card, context)
+        if context.before and not context.blueprint then
+            if convert_scoring_to(context, suit) > 0 then
+                return { message = localize(message), colour = colour, card = card }
+            end
+        end
+    end
+end
+
+SMODS.Joker {
+    key = "vexoria",
+    atlas = "vexoria",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+    loc_vars = function(self, info_queue, card) return {} end,
+    calculate = converter_calculate("Spades", G.C.SPADES, "celesta_spades"),
+}
+
+SMODS.Joker {
+    key = "ebiko",
+    atlas = "ebiko",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+    loc_vars = function(self, info_queue, card) return {} end,
+    calculate = converter_calculate("Diamonds", G.C.DIAMONDS, "celesta_diamonds"),
+}
+
+SMODS.Joker {
+    key = "nihmune",
+    atlas = "nihmune",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+    loc_vars = function(self, info_queue, card) return {} end,
+    calculate = converter_calculate("Clubs", G.C.CLUBS, "celesta_clubs"),
+}
+
+--------------------------------------------------------------------------------
+-- Eros [Uncommon] - eats Bonus enhancements, keeps the Chips.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "eros",
+    atlas = "eros",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { chips = 0, chip_gain = 15 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_bonus
+        return { vars = { card.ability.extra.chip_gain, card.ability.extra.chips } }
+    end,
+
+    calculate = function(self, card, context)
+        -- Same shape as LaynaLazar, and as vanilla Vampire: context.before, so
+        -- the enhancement is stripped before the hand scores and those cards
+        -- do not pay their Chips this hand. scoring_hand is only populated here.
+        if context.before and not context.blueprint then
+            local removed = {}
+            for _, played in ipairs(context.scoring_hand) do
+                if SMODS.has_enhancement(played, "m_bonus")
+                    and not played.debuff
+                    and not played.celesta_stripped then
+                    removed[#removed + 1] = played
+                    -- The flag stops a copier stripping the same card twice in
+                    -- one pass: set_ability is deferred into an event, so the
+                    -- second look would still see the enhancement.
+                    played.celesta_stripped = true
+                    played:set_ability(G.P_CENTERS.c_base, nil, true)
+                    G.E_MANAGER:add_event(Event {
+                        func = function()
+                            played:juice_up()
+                            played.celesta_stripped = nil
+                            return true
+                        end
+                    })
+                end
+            end
+
+            if #removed > 0 then
+                SMODS.scale_card(card, {
+                    ref_table = card.ability.extra,
+                    ref_value = "chips",
+                    scalar_value = "chip_gain",
+                    message_key = "a_chips",
+                    message_colour = G.C.CHIPS,
+                    operation = function(ref_table, ref_value, initial, scaling)
+                        ref_table[ref_value] = initial + scaling * #removed
+                    end
+                })
+            end
+        end
+
+        if context.joker_main and card.ability.extra.chips > 0 then
+            return { chips = card.ability.extra.chips }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Sinder [Uncommon] - Driftwood stops breaking.
+--------------------------------------------------------------------------------
+
+-- The behaviour lives on the Driftwood enhancement, which asks
+-- CelestasMod.sinder_active() before rolling. This Joker only has to exist.
+SMODS.Joker {
+    key = "sinder",
+    atlas = "sinder",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    -- Nothing to copy: it is a passive the enhancement reads, not a trigger.
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] =
+            G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Driftwood]
+        return {}
     end,
 }

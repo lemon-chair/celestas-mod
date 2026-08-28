@@ -49,6 +49,12 @@ return {
                     "Joker after each hand played",
                 },
             },
+            j_celesta_angelsteps = {
+                name = "Angelsteps",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
             j_celesta_aquwa = {
                 name = "Aquwa",
                 text = {
@@ -82,6 +88,12 @@ return {
             },
             j_celesta_augustanomoly = {
                 name = "Augustanomoly",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
+            j_celesta_auteru = {
+                name = "Auteru",
                 text = {
                     "{C:mult}+#1#{} Mult",
                 },
@@ -208,6 +220,12 @@ return {
                     "up to {C:attention}#1#{} cards",
                 },
             },
+            j_celesta_cosmic = {
+                name = "Cosmic",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
             j_celesta_cottontail = {
                 name = "CottontailVA",
                 text = {
@@ -259,14 +277,39 @@ return {
                     "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
                 },
             },
+            j_celesta_dokidomiki = {
+                name = "Dokidomiki",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
             j_celesta_dooby = {
                 name = "Dooby",
                 text = {
                     "{C:mult}+#1#{} Mult",
                 },
             },
+            j_celesta_ebiko = {
+                name = "Ebiko",
+                text = {
+                    "Converts all scoring cards",
+                    "in played hand to {C:diamonds}Diamonds{}",
+                },
+            },
             j_celesta_el_xox = {
                 name = "El_XoX",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
+            j_celesta_elara = {
+                name = "Elara",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
+            j_celesta_ellyvtuber = {
+                name = "Ellyvtuber",
                 text = {
                     "{C:mult}+#1#{} Mult",
                 },
@@ -277,11 +320,32 @@ return {
                     "{C:mult}+#1#{} Mult",
                 },
             },
+            j_celesta_eros = {
+                name = "Eros",
+                text = {
+                    "Removes {C:attention}Bonus{} enhancements",
+                    "from scoring cards. This Joker",
+                    "gains {C:chips}+#1#{} Chips per one removed",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
+                },
+            },
             j_celesta_fefe = {
                 name = "FeFe",
                 text = {
                     "Converts all scoring cards",
                     "in played hand to {C:hearts}Hearts{}",
+                },
+            },
+            j_celesta_fenari = {
+                name = "Fenari",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
+            j_celesta_fleshy = {
+                name = "Fleshy",
+                text = {
+                    "{C:mult}+#1#{} Mult",
                 },
             },
             j_celesta_fraiki = {
@@ -298,12 +362,24 @@ return {
                     "{C:mult}+#1#{} Mult",
                 },
             },
+            j_celesta_freyaamari = {
+                name = "Freyaamari",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
             j_celesta_froggyloch = {
                 name = "FroggyLoch",
                 text = {
                     "Scoring cards have a",
                     "{C:green}#1# in #2#{} chance to retrigger",
                     "{C:attention}#3#{} additional time",
+                },
+            },
+            j_celesta_froot = {
+                name = "Froot",
+                text = {
+                    "{C:mult}+#1#{} Mult",
                 },
             },
             j_celesta_fufu = {
@@ -320,6 +396,18 @@ return {
             },
             j_celesta_giwi = {
                 name = "Giwi",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
+            j_celesta_glassesjournal = {
+                name = "Glassesjournal",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
+            j_celesta_glowypumpkin = {
+                name = "Glowypumpkin",
                 text = {
                     "{C:mult}+#1#{} Mult",
                 },
@@ -362,6 +450,12 @@ return {
                 name = "Ironmouse",
                 text = {
                     "{E:1,C:mult}^#1#{} Mult",
+                },
+            },
+            j_celesta_isaa = {
+                name = "Isaa",
+                text = {
+                    "{C:mult}+#1#{} Mult",
                 },
             },
             j_celesta_itsdeadlyboop = {
@@ -499,6 +593,12 @@ return {
                     "{C:mult}+#1#{} Mult",
                 },
             },
+            j_celesta_matarakan = {
+                name = "Matarakan",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
             j_celesta_maya = {
                 name = "Maya",
                 text = {
@@ -542,6 +642,12 @@ return {
                 text = {
                     "{C:spectral}Milk Bottles{} do not",
                     "take up consumable slots",
+                },
+            },
+            j_celesta_minikomew = {
+                name = "Minikomew",
+                text = {
+                    "{C:mult}+#1#{} Mult",
                 },
             },
             j_celesta_mintfantome = {
@@ -590,6 +696,12 @@ return {
                     "{C:inactive}(e.g. 1 in 4 becomes 1 in 8)",
                 },
             },
+            j_celesta_nana_ruru = {
+                name = "Nana Ruru",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
             j_celesta_nekrolina = {
                 name = "Nekrolina",
                 text = {
@@ -613,7 +725,8 @@ return {
             j_celesta_nihmune = {
                 name = "Nihmune",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Converts all scoring cards",
+                    "in played hand to {C:clubs}Clubs{}",
                 },
             },
             j_celesta_nostro = {
@@ -627,6 +740,18 @@ return {
             },
             j_celesta_nyanners = {
                 name = "Nyanners",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
+            j_celesta_obkatiekat = {
+                name = "Obkatiekat",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
+            j_celesta_occi = {
+                name = "Occi",
                 text = {
                     "{C:mult}+#1#{} Mult",
                 },
@@ -663,6 +788,12 @@ return {
                     "{C:inactive}(Must have room)",
                 },
             },
+            j_celesta_piapiufo = {
+                name = "Piapiufo",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
             j_celesta_pipi = {
                 name = "Pipi",
                 text = {
@@ -680,6 +811,12 @@ return {
             },
             j_celesta_pristinezero = {
                 name = "Pristinezero",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
+            j_celesta_projektmelody = {
+                name = "Projektmelody",
                 text = {
                     "{C:mult}+#1#{} Mult",
                 },
@@ -742,8 +879,26 @@ return {
                     "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
                 },
             },
+            j_celesta_rubensargasm = {
+                name = "Rubensargasm",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
             j_celesta_rynxryn = {
                 name = "Rynxryn",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
+            j_celesta_saiiren = {
+                name = "Saiiren",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
+            j_celesta_sansin = {
+                name = "Sansin",
                 text = {
                     "{C:mult}+#1#{} Mult",
                 },
@@ -753,6 +908,12 @@ return {
                 text = {
                     "{C:attention}Gash{} cards always",
                     "break when scored",
+                },
+            },
+            j_celesta_shaoanvt = {
+                name = "Shaoanvt",
+                text = {
+                    "{C:mult}+#1#{} Mult",
                 },
             },
             j_celesta_shenpai = {
@@ -790,8 +951,21 @@ return {
                     "additional times",
                 },
             },
+            j_celesta_sigrid_bird = {
+                name = "Sigrid Bird",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
             j_celesta_sinder = {
                 name = "Sinder",
+                text = {
+                    "{C:attention}Driftwood{} cards",
+                    "never break",
+                },
+            },
+            j_celesta_smittenseraph = {
+                name = "Smittenseraph",
                 text = {
                     "{C:mult}+#1#{} Mult",
                 },
@@ -804,8 +978,20 @@ return {
                     "from it",
                 },
             },
+            j_celesta_smuggiess = {
+                name = "Smuggiess",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
             j_celesta_snapscube = {
                 name = "Snapscube",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
+            j_celesta_sonneflower = {
+                name = "Sonneflower",
                 text = {
                     "{C:mult}+#1#{} Mult",
                 },
@@ -826,8 +1012,44 @@ return {
                     "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
                 },
             },
+            j_celesta_squchan = {
+                name = "Squchan",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
             j_celesta_suto = {
                 name = "Suto",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
+            j_celesta_taehoongie = {
+                name = "Taehoongie",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
+            j_celesta_trickywi = {
+                name = "Trickywi",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
+            j_celesta_unnamed = {
+                name = "Unnamed",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
+            j_celesta_uzuri = {
+                name = "Uzuri",
+                text = {
+                    "{C:mult}+#1#{} Mult",
+                },
+            },
+            j_celesta_vantacrow_bringer = {
+                name = "Vantacrow Bringer",
                 text = {
                     "{C:mult}+#1#{} Mult",
                 },
@@ -843,6 +1065,13 @@ return {
             },
             j_celesta_vexoria = {
                 name = "Vexoria",
+                text = {
+                    "Converts all scoring cards",
+                    "in played hand to {C:spades}Spades{}",
+                },
+            },
+            j_celesta_vienna = {
+                name = "Vienna",
                 text = {
                     "{C:mult}+#1#{} Mult",
                 },
@@ -1133,6 +1362,9 @@ return {
             celesta_plus_tag = "+1 Tag",
             celesta_sealed = "Sealed!",
             celesta_hearts = "All Hearts!",
+            celesta_spades = "All Spades!",
+            celesta_diamonds = "All Diamonds!",
+            celesta_clubs = "All Clubs!",
             celesta_plus_seven = "+7 of Spades",
             celesta_downpour = "Downpour!",
         },
