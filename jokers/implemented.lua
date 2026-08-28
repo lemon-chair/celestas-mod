@@ -3746,3 +3746,62 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Spongey [Rare] - soaks up every other Joker's trigger.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "spongeybuns",
+    atlas = "spongeybuns",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { chips = 0, chip_mod = 10 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.chip_mod, card.ability.extra.chips } }
+    end,
+
+    calculate = function(self, card, context)
+        -- post_trigger fires once for anything that just produced an effect,
+        -- with other_card as whatever produced it and other_context as the
+        -- context it was answering.
+        if context.post_trigger and not context.blueprint then
+            local trigger = context.other_card
+            local inner = context.other_context
+
+            -- Probability lookups run a full evaluation pass of their own and
+            -- arrive here looking exactly like a trigger. They are questions,
+            -- not triggers, and counting them would pay Spongey for every
+            -- listed chance anything in the run consults.
+            if inner and (inner.mod_probability or inner.fix_probability
+                or inner.fixed_probability or inner.retrigger_joker_check) then
+                return
+            end
+
+            -- other_card is not always a Joker: the same context is raised for
+            -- playing cards, seals and enhancements as they trigger.
+            if not (trigger and trigger.ability and trigger.ability.set == "Joker") then
+                return
+            end
+            -- Itself excluded, so it does not pay itself for scoring.
+            if trigger == card then return end
+
+            card.ability.extra.chips =
+                card.ability.extra.chips + card.ability.extra.chip_mod
+            return {
+                message = localize { type = "variable", key = "a_chips",
+                                     vars = { card.ability.extra.chips } },
+                colour = G.C.CHIPS,
+                card = card,
+            }
+        end
+
+        if context.joker_main and card.ability.extra.chips > 0 then
+            return { chips = card.ability.extra.chips }
+        end
+    end,
+}

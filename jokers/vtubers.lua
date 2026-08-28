@@ -48,7 +48,6 @@ local ROSTER = {
     { key = "shiabun", rarity = 1, cost = 4, mult = 4 },
     { key = "sinder", rarity = 1, cost = 4, mult = 4 },
     { key = "snapscube", rarity = 1, cost = 4, mult = 4 },
-    { key = "spongeybuns", rarity = 1, cost = 4, mult = 4 },
     { key = "suto", rarity = 1, cost = 4, mult = 4 },
     { key = "vexoria", rarity = 1, cost = 4, mult = 4 },
     { key = "yoclesh", rarity = 1, cost = 4, mult = 4 },

@@ -817,9 +817,11 @@ return {
                 },
             },
             j_celesta_spongeybuns = {
-                name = "Spongeybuns",
+                name = "Spongey",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "This Joker gains {C:chips}+#1#{} Chips",
+                    "every time a {C:attention}Joker{} triggers",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
                 },
             },
             j_celesta_suto = {

@@ -11,6 +11,11 @@ CelestasMod = {}
 -- has finished.
 SMODS.current_mod.optional_features = {
     retrigger_joker = true,
+    -- Spongey reacts to other Jokers triggering, and Steamodded only raises
+    -- that context when a loaded mod asks for it. Cryptid happens to ask for
+    -- both of these, which would mask the omission on any install that has it
+    -- and leave the joker silently dead everywhere else.
+    post_trigger = true,
 }
 
 -- Load globals (custom colours + loc_colour hook)
