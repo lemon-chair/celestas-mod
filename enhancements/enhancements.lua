@@ -442,10 +442,23 @@ local function is_driftwood(card)
 end
 
 --- Index of the best hand in a results table, by G.handlist order (1 = best).
+--- Where a set of results places in G.handlist, best first.
+---
+--- Read the way the game reads it: the first entry in handlist that is
+--- NON-EMPTY. Steamodded replaces evaluate_poker_hand wholesale, and its
+--- version fills every hand with `evaluate(...) or {}` before setting
+--- results.top from the first key that is merely non-nil - so top is not the
+--- hand that was made, and G.FUNCS.get_poker_hand_info ignores it entirely in
+--- favour of `next(poker_hands[v])`.
+---
+--- Trusting top meant every candidate rank scored the same index, so the first
+--- rank tried always won: a Driftwood filling J-10-9-_-7 came out as a 2 and
+--- the hand read as a plain Flush instead of a Straight Flush.
 local function hand_index(results)
-    if not results or not results.top then return math.huge end
+    if not results then return math.huge end
     for i, name in ipairs(G.handlist) do
-        if results[name] and results[name] == results.top then return i end
+        local made = results[name]
+        if made and next(made) then return i end
     end
     return math.huge
 end
