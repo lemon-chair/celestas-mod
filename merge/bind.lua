@@ -24,6 +24,10 @@ local BIND_SEED = "celesta_bind"
 -- and the draw hook below runs every frame long afterwards.
 local PREFIX = SMODS.current_mod.prefix
 
+-- The Spectral card's own key, for the Jokers that want to point a tooltip at
+-- it. Built here for the same reason: the prefix is only readable at load.
+CelestasMod.BIND_KEY = "c_" .. PREFIX .. "_bind"
+
 -- The glow along the split and around the border. One definition, so the two
 -- can never drift apart.
 --

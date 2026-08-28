@@ -4576,3 +4576,114 @@ SMODS.Joker {
         return {}
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Sigrid & Bird [Legendary] - Blueprint in both directions at once.
+--------------------------------------------------------------------------------
+
+--- The cards either side of position `index`, left first, gaps left out.
+---
+--- Built by appending rather than as a literal: `{ row[i - 1], row[i + 1] }`
+--- with no left neighbour is a table whose first slot is nil, and ipairs stops
+--- at the first gap - which silently dropped the RIGHT neighbour whenever this
+--- Joker was leftmost in the row.
+function CelestasMod.neighbours(row, index)
+    local out = {}
+    if row[index - 1] then out[#out + 1] = row[index - 1] end
+    if row[index + 1] then out[#out + 1] = row[index + 1] end
+    return out
+end
+
+SMODS.Joker {
+    key = "sigrid_bird",
+    atlas = "sigrid_bird",
+    pos = { x = 0, y = 0 },
+    rarity = 4, cost = 20,
+    unlocked = true, discovered = true,
+    -- Copyable, the way Blueprint is: a copier next to this one ends up
+    -- pointed at the same two neighbours.
+    blueprint_compat = true, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        local row = G.jokers and G.jokers.cards
+        if not row then return {} end
+        for i, joker in ipairs(row) do
+            if joker == card then
+                for _, side in ipairs(CelestasMod.neighbours(row, i)) do
+                    info_queue[#info_queue + 1] = side.config.center
+                end
+                break
+            end
+        end
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        local row = G.jokers and G.jokers.cards
+        if not row then return end
+
+        local index
+        for i, joker in ipairs(row) do
+            if joker == card then index = i break end
+        end
+        if not index then return end
+
+        -- Left first, then right, so the order the two copies resolve in
+        -- matches the order the row is read.
+        local effects = {}
+        for _, side in ipairs(CelestasMod.neighbours(row, index)) do
+            -- blueprint_effect refuses a copier pointed at itself, a debuffed
+            -- target, and anything that opts out of copying, so there is
+            -- nothing else to check here.
+            local copied = SMODS.blueprint_effect(card, side, context)
+            if copied then effects[#effects + 1] = copied end
+        end
+
+        if #effects == 0 then return end
+        -- One calculate returns one effect table, so two copies are chained
+        -- through `extra` - which is what merge_effects builds.
+        return SMODS.merge_effects(effects)
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Nana & Ruru [Rare] - a chance to run a merged Joker again.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "nana_ruru",
+    atlas = "nana_ruru",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 9,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { odds = 4, repetitions = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.BIND_KEY]
+        -- Reads the live odds so the text tracks Oops! All 6s and friends.
+        local numerator, denominator = SMODS.get_probability_vars(
+            card, 1, card.ability.extra.odds, "celesta_nana_ruru")
+        return { vars = { numerator, denominator, card.ability.extra.repetitions } }
+    end,
+
+    calculate = function(self, card, context)
+        -- retrigger_joker_check is asked of every Joker about every other
+        -- Joker, so the answer has to name who it is being asked about, and
+        -- this must refuse itself - a merged Nana & Ruru would otherwise
+        -- retrigger its own answer.
+        if context.retrigger_joker_check and context.other_card
+            and context.other_card ~= card
+            and CelestasMod.Bind and CelestasMod.Bind.is_merged(context.other_card) then
+            if SMODS.pseudorandom_probability(card, "celesta_nana_ruru", 1,
+                    card.ability.extra.odds, "celesta_nana_ruru") then
+                return {
+                    message = localize("k_again_ex"),
+                    repetitions = card.ability.extra.repetitions,
+                    card = card,
+                }
+            end
+        end
+    end,
+}

@@ -708,9 +708,10 @@ return {
                 },
             },
             j_celesta_nana_ruru = {
-                name = "Nana Ruru",
+                name = "Nana & Ruru",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:green}#1# in #2#{} chance to retrigger",
+                    "each {C:attention}merged{} Joker #3# time",
                 },
             },
             j_celesta_nekrolina = {
@@ -964,9 +965,11 @@ return {
                 },
             },
             j_celesta_sigrid_bird = {
-                name = "Sigrid Bird",
+                name = "Sigrid & Bird",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Copies the abilities of",
+                    "the Jokers to the {C:attention}left{}",
+                    "and {C:attention}right{} of this Joker",
                 },
             },
             j_celesta_sinder = {
