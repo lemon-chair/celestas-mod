@@ -1902,6 +1902,20 @@ SMODS.Joker {
         -- it is present at all depends on that patch matching the installed
         -- build. The round number is set by the game itself and cannot go
         -- missing, and it gives the once-per-round behaviour directly.
+        -- TEMPORARY, while this is being chased. Two theories for why Neuro
+        -- destroyed nothing - a missing context.main_eval, and a destroy left
+        -- in the event queue until after the hand was emptied - have both been
+        -- disproven since, so the next round is being asked directly rather
+        -- than guessed at a third time. Remove once the log has answered.
+        if context.end_of_round then
+            sendInfoMessage(("[neuro] end_of_round reached: main_eval=%s "
+                .. "individual=%s repetition=%s blueprint=%s hand=%s round=%s")
+                :format(tostring(context.main_eval), tostring(context.individual),
+                        tostring(context.repetition), tostring(context.blueprint),
+                        tostring(G.hand and #G.hand.cards), tostring(G.GAME and G.GAME.round)),
+                "CelestasMod")
+        end
+
         if context.end_of_round and not context.blueprint
             and not context.individual and not context.repetition then
             if not (G.hand and G.GAME) then return end
@@ -1918,6 +1932,9 @@ SMODS.Joker {
                     doomed[#doomed + 1] = held
                 end
             end
+            sendInfoMessage(("[neuro] %d unenhanced of %d held, last_round=%s")
+                :format(#doomed, #G.hand.cards, tostring(card.ability.extra.last_round)),
+                "CelestasMod")
             if #doomed == 0 then return end
             card.ability.extra.last_round = round
 
@@ -1927,6 +1944,8 @@ SMODS.Joker {
             -- sitting in the queue when that happens is operating on cards
             -- that have already left. destroy_cards still respects eternal.
             SMODS.destroy_cards(doomed, nil, true)
+            sendInfoMessage("[neuro] destroy_cards returned; hand now "
+                .. tostring(#G.hand.cards), "CelestasMod")
 
             return {
                 message = localize("celesta_cleared"),
