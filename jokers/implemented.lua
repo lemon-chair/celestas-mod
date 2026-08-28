@@ -516,7 +516,7 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Megalodon [Uncommon]
+-- Megalodon [Rare]
 -- Gains +5 Mult for each card in the played hand. Resets at end of round.
 --------------------------------------------------------------------------------
 
@@ -525,8 +525,8 @@ SMODS.Joker {
     atlas = "megalodon",
     pos = { x = 0, y = 0 },
 
-    rarity = 2,
-    cost = 6,
+    rarity = 3,
+    cost = 8,
     unlocked = true,
     discovered = true,
     blueprint_compat = true,
@@ -2083,14 +2083,14 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- AiCandii [Common] - paid for the discards you did not need.
+-- AiCandii [Uncommon] - paid for the discards you did not need.
 --------------------------------------------------------------------------------
 
 SMODS.Joker {
     key = "aicandii",
     atlas = "aicandii",
     pos = { x = 0, y = 0 },
-    rarity = 1, cost = 5,
+    rarity = 2, cost = 6,
     unlocked = true, discovered = true,
     blueprint_compat = true, eternal_compat = true,
 
