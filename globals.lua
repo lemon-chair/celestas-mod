@@ -88,3 +88,58 @@ function Card:load(cardTable, other_card)
                 :format(tostring(self.config.center.key), added))
     end
 end
+
+--------------------------------------------------------------------------------
+-- Which numbers in a description may be scaled
+--------------------------------------------------------------------------------
+
+-- A card's loc_vars is an unlabelled ordered list. Lucky Card's is
+--     { probability, 5, 20, 15, 20 }
+-- printed as "#1# in #2# chance for +#3# Mult" and "#1# in #4# to win $#5#":
+-- only #3# and #5# are values, #2# and #4# are odds. Nothing in the list says
+-- which is which.
+--
+-- The description text does. Balatro marks every number with the colour it
+-- prints in, and a value is always written in mult, chip or money markup while
+-- odds are green and counts are attention. So the markup immediately before
+-- each #n# decides whether it may be scaled.
+local SCALABLE_MARKUP = { "mult", "chips", "money" }
+
+--- The set of loc_var indices a centre prints as a scalable value.
+--- Returns nil when the centre has no description to read.
+function CelestasMod.scalable_vars(set, key)
+    local descriptions = G.localization and G.localization.descriptions
+    local block = descriptions and set and descriptions[set]
+    local entry = block and key and block[key]
+    if not (entry and entry.text) then return nil end
+
+    local marked = nil
+    for _, line in ipairs(entry.text) do
+        -- The nearest {markup} before a #n#, with no other placeholder or
+        -- brace between them, is the one it prints in.
+        for markup, index in string.gmatch(line, "{([^}]*)}[^#{]*#(%d+)#") do
+            for _, want in ipairs(SCALABLE_MARKUP) do
+                if string.find(markup, want, 1, true) then
+                    marked = marked or {}
+                    marked[tonumber(index)] = true
+                    break
+                end
+            end
+        end
+    end
+    return marked
+end
+
+--- A copy of `vars` with the marked entries multiplied by `scale`.
+--- Copied rather than scaled in place: these come straight off a card's
+--- ability in some cases, and scaling that would change the real thing every
+--- time the card was hovered.
+function CelestasMod.scale_vars(vars, marked, scale)
+    local out = {}
+    for i, v in ipairs(vars) do
+        -- Only numbers. Several jokers pass a STRING built with
+        -- ''..probabilities.normal, and arithmetic on it would error.
+        out[i] = (marked[i] and type(v) == "number") and v * scale or v
+    end
+    return out
+end

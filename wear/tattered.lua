@@ -253,4 +253,86 @@ function Card:draw(layer)
     sprite:draw_shader("dissolve", nil, nil, nil, self.children.center)
 end
 
+--------------------------------------------------------------------------------
+-- Saying so on the card
+--------------------------------------------------------------------------------
+
+-- A worn card said nothing about being worn and still advertised its full
+-- numbers, so a tattered Lucky Card read exactly like a fresh one while paying
+-- half. Two separate gaps: the badge, and the values.
+
+-- The badge colour. get_badge_colour builds G.BADGE_COL lazily on its first
+-- call, so the reference is called FIRST and only then overridden - assigning
+-- G.BADGE_COL directly would replace vanilla's table before it existed and
+-- lose every stock badge colour with it.
+local WEAR_BADGE_COLOUR = { 0.55, 0.42, 0.35, 1 }
+
+-- Defined at boot in UI_definitions.lua, well before mods load. Guarded
+-- anyway: wrapping a nil would swap a missing colour for a crash.
+local celesta_wear_badge_colour_ref = get_badge_colour
+if celesta_wear_badge_colour_ref then
+function get_badge_colour(key)
+    local colour = celesta_wear_badge_colour_ref(key)
+    if key == "celesta_tattered" or key == "celesta_cracked"
+        or key == "celesta_chipped" then
+        return WEAR_BADGE_COLOUR
+    end
+    return colour
+end
+end
+
+-- The card being described, so only worn cards are touched.
+local describing = nil
+
+local celesta_wear_ability_ref = Card.generate_UIBox_ability_table
+function Card:generate_UIBox_ability_table(...)
+    local previous = describing
+    describing = self
+    local ok, box = pcall(celesta_wear_ability_ref, self, ...)
+    describing = previous
+    if not ok then error(box, 0) end
+    return box
+end
+
+local celesta_wear_card_ui_ref = generate_card_ui
+function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges, hide_desc, main_start, main_end)
+    local card = describing
+    if not (card and Tattered.is_tattered(card) and type(_c) == "table") then
+        return celesta_wear_card_ui_ref(_c, full_UI_table, specific_vars, card_type,
+                                        badges, hide_desc, main_start, main_end)
+    end
+
+    -- The badge, so the card says what happened to it.
+    -- Copied, so the caller's badge list is not appended to twice if the
+    -- tooltip is rebuilt.
+    local list = {}
+    for _, badge in ipairs(badges or {}) do list[#list + 1] = badge end
+    list[#list + 1] = "celesta_" .. Tattered.word(card)
+    badges = list
+
+    if type(specific_vars) == "table" then
+        local copy = {}
+        for k, v in pairs(specific_vars) do copy[k] = v end
+
+        -- The "+N chips" line is not a loc_var at all - it is drawn from
+        -- specific_vars.nominal_chips, which vanilla fills from base.nominal.
+        if type(copy.nominal_chips) == "number" then
+            copy.nominal_chips = copy.nominal_chips * Tattered.SCALE
+        end
+
+        -- The enhancement's own numbers, by the same markup rule the scoring
+        -- uses: the Mult and the money halve, the odds do not.
+        if type(copy.vars) == "table" then
+            local marked = CelestasMod.scalable_vars(_c.set, _c.key)
+            if marked then
+                copy.vars = CelestasMod.scale_vars(copy.vars, marked, Tattered.SCALE)
+            end
+        end
+        specific_vars = copy
+    end
+
+    return celesta_wear_card_ui_ref(_c, full_UI_table, specific_vars, card_type,
+                                    badges, hide_desc, main_start, main_end)
+end
+
 Tattered.classify_enhancements()
