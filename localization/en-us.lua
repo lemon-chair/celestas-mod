@@ -1021,7 +1021,8 @@ return {
             j_celesta_suto = {
                 name = "Suto",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Converts all played cards",
+                    "into {C:attention}Wild Cards{}",
                 },
             },
             j_celesta_taehoongie = {
@@ -1220,6 +1221,13 @@ return {
         },
 
         Other = {
+            celesta_bind_arar_arar = {
+                name = "Arar + Arar",
+                text = {
+                    "{X:mult,C:white}X#1#{} Mult when exactly",
+                    "{C:attention}#2#{} hands remain",
+                },
+            },
             celesta_bind_arar_jaws = {
                 name = "Arar + Jaws",
                 text = {

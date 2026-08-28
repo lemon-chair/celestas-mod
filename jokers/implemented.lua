@@ -4121,3 +4121,66 @@ SMODS.Joker {
         return {}
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Suto [Rare] - the whole played hand turns Wild.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "suto",
+    atlas = "suto",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_wild
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        -- Vanilla Midas Mask's shape: context.before, set_ability immediately
+        -- so the change is in place before anything reads a suit this hand,
+        -- and juice the card from an event so the flourish is not lost inside
+        -- the evaluation.
+        --
+        -- The whole played hand rather than the scoring cards. FeFe and its
+        -- siblings convert what scores; this one is a Rare and takes the
+        -- cards that were carried along too, which is where the change keeps
+        -- paying - a Wild card is Wild for the rest of the run.
+        if context.before and not context.blueprint then
+            local played = context.full_hand or (G.play and G.play.cards)
+            if type(played) ~= "table" then return end
+
+            local converted = 0
+            for _, target in ipairs(played) do
+                if target.config and target.config.center ~= G.P_CENTERS.m_wild
+                    and not target.celesta_suto_claimed then
+                    -- set_ability is deferred, so a copier evaluating in this
+                    -- same pass would otherwise see the card as unconverted
+                    -- and spend its message on work already done.
+                    target.celesta_suto_claimed = true
+                    target:set_ability(G.P_CENTERS.m_wild, nil, true)
+                    local claimed = target
+                    G.E_MANAGER:add_event(Event {
+                        func = function()
+                            claimed:juice_up()
+                            claimed.celesta_suto_claimed = nil
+                            return true
+                        end
+                    })
+                    converted = converted + 1
+                end
+            end
+
+            if converted > 0 then
+                return {
+                    message = localize("k_plus_enhancement"),
+                    colour = G.C.SECONDARY_SET.Enhanced,
+                    card = card,
+                }
+            end
+        end
+    end,
+}

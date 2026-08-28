@@ -421,6 +421,26 @@ special("j_celesta_nagzz", "j_celesta_chibidoki", {
     end,
 })
 
+-- Arar + Arar: two of the same Joker, and the pair does something neither
+-- half does alone. hands_left is read at the moment the Joker row is
+-- evaluated, and vanilla decrements it before any of that happens: the first
+-- hand of a five-hand round is played with four remaining, not five.
+special("j_celesta_arar", "j_celesta_arar", {
+    key = "arar_arar",
+    config = { x_mult = 14, hands = 4 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult, state.hands } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local round = G.GAME and G.GAME.current_round
+        if not round or round.hands_left ~= state.hands then return end
+        return { x_mult = state.x_mult }
+    end,
+})
+
 --------------------------------------------------------------------------------
 -- Running both halves
 --------------------------------------------------------------------------------

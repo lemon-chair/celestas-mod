@@ -73,7 +73,6 @@ local ROSTER = {
     { key = "snapscube", rarity = 1, cost = 4, mult = 4 },
     { key = "sonneflower", rarity = 1, cost = 4, mult = 4 },
     { key = "squchan", rarity = 1, cost = 4, mult = 4 },
-    { key = "suto", rarity = 1, cost = 4, mult = 4 },
     { key = "taehoongie", rarity = 1, cost = 4, mult = 4 },
     { key = "trickywi", rarity = 1, cost = 4, mult = 4 },
     { key = "unnamed", rarity = 1, cost = 4, mult = 4 },

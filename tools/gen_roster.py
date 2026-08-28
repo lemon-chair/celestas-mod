@@ -327,6 +327,13 @@ LOC_TAIL = '''        },
         },
 
         Other = {
+            celesta_bind_arar_arar = {
+                name = "Arar + Arar",
+                text = {
+                    "{X:mult,C:white}X#1#{} Mult when exactly",
+                    "{C:attention}#2#{} hands remain",
+                },
+            },
             celesta_bind_arar_jaws = {
                 name = "Arar + Jaws",
                 text = {
