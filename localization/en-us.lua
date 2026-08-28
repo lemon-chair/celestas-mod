@@ -297,9 +297,11 @@ return {
                 },
             },
             j_celesta_el_xox = {
-                name = "El_XoX",
+                name = "El_Xox",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "At the end of the round,",
+                    "gain {C:money}$#1#{} for each",
+                    "{C:attention}hand{} used that round",
                 },
             },
             j_celesta_elara = {
@@ -359,7 +361,8 @@ return {
             j_celesta_fream = {
                 name = "Fream",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Retriggers {C:attention}Wild Cards{}",
+                    "#1# time",
                 },
             },
             j_celesta_freyaamari = {
@@ -437,7 +440,8 @@ return {
             j_celesta_henya = {
                 name = "Henya",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Retriggered cards give",
+                    "{C:money}$#1#{} for each retrigger",
                 },
             },
             j_celesta_huntressspectre = {
@@ -497,19 +501,25 @@ return {
             j_celesta_kael = {
                 name = "Kael",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:attention}Face cards{} are",
+                    "considered {C:attention}10s{}",
                 },
             },
             j_celesta_kairyucrocodile = {
-                name = "Kairyucrocodile",
+                name = "Kairyu",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Gain {C:attention}+#1#{} hand size for each",
+                    "{C:red}discard{} used this round",
+                    "{C:inactive}(Currently {C:attention}+#2#{C:inactive} hand size)",
+                    "{C:inactive}Resets at end of round",
                 },
             },
             j_celesta_kirana = {
                 name = "Kirana",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Gain {C:money}$#1#{} for each {C:attention}3{}",
+                    "held in hand at the",
+                    "end of the round",
                 },
             },
             j_celesta_kiri = {
@@ -588,9 +598,10 @@ return {
                 },
             },
             j_celesta_mariyume = {
-                name = "Mariyume",
+                name = "Mari Yume",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Copies the ability of",
+                    "the {C:attention}rightmost{} Joker",
                 },
             },
             j_celesta_matarakan = {
@@ -1236,6 +1247,21 @@ return {
                     "in played hand",
                 },
             },
+            celesta_bind_bear_moo = {
+                name = "Bear The Witch + Moo Merrily",
+                text = {
+                    "Each {C:spectral}Milk Bottle{} held gives",
+                    "{X:mult,C:white}X#1#{} Mult",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_blueprint_brainstorm = {
+                name = "Blueprint + Brainstorm",
+                text = {
+                    "Retriggers each other",
+                    "{C:attention}Joker{} #1# time",
+                },
+            },
             celesta_bind_crelly_koko = {
                 name = "Crelly + KokoNuts",
                 text = {
@@ -1366,6 +1392,7 @@ return {
             celesta_failed = "Failed!",
             celesta_cleared = "Cleared!",
             celesta_plus_limestone = "+Limestone",
+            celesta_plus_hand_size = "+1 Hand Size",
             celesta_plus_slot = "+1 Consumable Slot",
             celesta_plus_tag = "+1 Tag",
             celesta_sealed = "Sealed!",

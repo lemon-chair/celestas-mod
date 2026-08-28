@@ -445,6 +445,67 @@ special("j_celesta_arar", "j_celesta_arar", {
     end,
 })
 
+--- The Mult from every Milk Bottle currently held, multiplied together.
+---
+--- Counted at the moment it is asked for rather than tracked: a consumable
+--- comes and goes through more paths than are worth hooking, and the answer is
+--- a scan of at most a few cards.
+local function bottles_held_mult(state)
+    local total = 1
+    for _, held in ipairs(G.consumeables and G.consumeables.cards or {}) do
+        local config = held.config
+        local key = config and (config.center_key
+            or (config.center and config.center.key))
+        if key == CelestasMod.MILK_BOTTLE_KEY then total = total * state.x_mult end
+    end
+    return total
+end
+
+-- Blueprint + Brainstorm: the two copiers, and between them they stop copying
+-- and start doubling. Every Joker in the row goes round again - including the
+-- Jokers a copier would normally have to be standing next to.
+special("j_blueprint", "j_brainstorm", {
+    key = "blueprint_brainstorm",
+    config = { repetitions = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.repetitions } }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- retrigger_joker_check is asked of every Joker about every other
+        -- Joker, so the answer has to name who it is being asked about, and
+        -- this must refuse itself or it would retrigger its own answer.
+        if context.retrigger_joker_check and context.other_card
+            and context.other_card ~= card then
+            return {
+                message = localize("k_again_ex"),
+                repetitions = state.repetitions,
+                card = card,
+            }
+        end
+    end,
+})
+
+-- Bear The Witch + Moo Merrily: Moo Merrily makes the Milk Bottles, and this
+-- pays for keeping them rather than drinking them. The Observatory voucher's
+-- shape, for a consumable instead of a Planet.
+special("j_celesta_bearthewitch", "j_celesta_moomerrily", {
+    key = "bear_moo",
+    config = { x_mult = 1.5 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult, bottles_held_mult(state) } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.joker_main then
+            local total = bottles_held_mult(state)
+            if total > 1 then return { x_mult = total } end
+        end
+    end,
+})
+
 --------------------------------------------------------------------------------
 -- Running both halves
 --------------------------------------------------------------------------------

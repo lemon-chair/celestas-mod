@@ -4184,3 +4184,375 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Henya [Uncommon] - paid by the retrigger.
+--------------------------------------------------------------------------------
+--
+-- A retrigger has no context of its own: SMODS runs the whole scoring pass for
+-- a card again, once per repetition, with exactly the same context. eval_card,
+-- though, is called once per trigger per card - the same signal the Tattered
+-- system counts - so the tally is kept there, once, rather than by each Joker
+-- that wants to read it.
+--
+-- Kept in one place for a reason: a Blueprint copying Henya calls Henya's own
+-- calculate a second time in the same pass. A tally that Henya maintained
+-- itself would count that copy as another trigger.
+
+--- Identifies one play or discard. Both counters are decremented before
+--- anything is evaluated, so this is stable across a single scoring sequence
+--- and changes the moment the next one begins.
+--- (blinds.lua computes the same thing for The Clover's once-per-event roll.)
+local function hand_event_id()
+    local round = G.GAME and G.GAME.current_round
+    if not round then return "?" end
+    return table.concat({ tostring(G.GAME.round), tostring(round.hands_left),
+                          tostring(round.discards_left) }, "/")
+end
+
+--- How many times this card has triggered in the current scoring sequence.
+--- 1 is its own trigger; anything above that is a retrigger.
+local function trigger_count(scored)
+    local seq = scored and scored.celesta_triggers
+    if not seq or seq.id ~= hand_event_id() then return 0 end
+    return seq.n
+end
+
+local celesta_henya_eval_card_ref = eval_card
+function eval_card(card, context)
+    -- The same gate Tattered counts on: the main scoring pass over a real
+    -- card. extra_enhancement is excluded because a quantum enhancement
+    -- re-enters for a trigger that has already been counted.
+    if context and context.main_scoring and not context.extra_enhancement
+        and (context.cardarea == G.play or context.cardarea == G.hand) then
+        local id = hand_event_id()
+        local seq = card.celesta_triggers
+        if not seq or seq.id ~= id then
+            seq = { id = id, n = 0 }
+            card.celesta_triggers = seq
+        end
+        seq.n = seq.n + 1
+    end
+    return celesta_henya_eval_card_ref(card, context)
+end
+
+SMODS.Joker {
+    key = "henya",
+    atlas = "henya",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { dollars = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.dollars } }
+    end,
+
+    calculate = function(self, card, context)
+        -- The individual pass runs once per trigger, immediately after the
+        -- eval_card above has counted it - so the count is already correct
+        -- for the trigger being paid for.
+        if context.individual and context.other_card
+            and (context.cardarea == G.play or context.cardarea == G.hand) then
+            if trigger_count(context.other_card) > 1 then
+                return {
+                    dollars = card.ability.extra.dollars,
+                    card = card,
+                }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- El_Xox [Common] - paid by the hand.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "el_xox",
+    atlas = "el_xox",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 4,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { dollars = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.dollars } }
+    end,
+
+    -- calc_dollar_bonus rather than an end_of_round calculate: this is the
+    -- hook vanilla pays reward money through, so the amount shows up in the
+    -- round's cash-out screen as its own line the way Delayed Gratification's
+    -- does, rather than arriving as a floating message mid-scoring.
+    calc_dollar_bonus = function(self, card)
+        local round = G.GAME and G.GAME.current_round
+        local played = round and round.hands_played or 0
+        if played <= 0 then return end
+        return played * card.ability.extra.dollars
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Fream [Common] - Wild Cards go round twice.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "fream",
+    atlas = "fream",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { repetitions = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_wild
+        return { vars = { card.ability.extra.repetitions } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.repetition and context.cardarea == G.play
+            and context.other_card
+            and SMODS.has_enhancement(context.other_card, "m_wild") then
+            return {
+                message = localize("k_again_ex"),
+                repetitions = card.ability.extra.repetitions,
+                card = card,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Kirana [Rare] - paid for holding 3s.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "kirana",
+    atlas = "kirana",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { dollars = 3 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.dollars } }
+    end,
+
+    calculate = function(self, card, context)
+        -- main_eval is the once-per-round Joker pass; without it this fires
+        -- again for every card evaluated during the end-of-round pass.
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            if not G.hand then return end
+
+            local threes = 0
+            for _, held in ipairs(G.hand.cards) do
+                -- A Stone Card has no rank to be a 3, and get_id on one
+                -- returns its printed rank regardless.
+                if not SMODS.has_no_rank(held) and not held.debuff
+                    and held:get_id() == 3 then
+                    threes = threes + 1
+                end
+            end
+            if threes == 0 then return end
+
+            return {
+                dollars = threes * card.ability.extra.dollars,
+                card = card,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Kael [Uncommon] - every face card is a 10.
+--------------------------------------------------------------------------------
+--
+-- Same approach as Driftwood counting as any rank, and for the same reason:
+-- rank is not resolved in one place, so rather than teach get_X_same and
+-- get_straight about a card that is two ranks at once, the rank is rewritten
+-- BEFORE evaluation and put back afterwards. Every hand type then works with
+-- no changes to any evaluator.
+--
+-- Only the hand evaluation is affected. A King keeps its own printed rank
+-- everywhere else, is still a face card to Pareidolia and its friends, and
+-- scores the ten Chips it already scored.
+
+--- True when a Kael is in play and able to act.
+local function kael_active()
+    for _, joker in ipairs(SMODS.find_card("j_celesta_kael")) do
+        if not joker.debuff then return true end
+    end
+    return false
+end
+
+local celesta_kael_evaluate_ref = evaluate_poker_hand
+function evaluate_poker_hand(hand)
+    if not kael_active() then return celesta_kael_evaluate_ref(hand) end
+
+    local ten = SMODS.Ranks["10"]
+    if not ten then return celesta_kael_evaluate_ref(hand) end
+
+    local faces, saved = {}, {}
+    for _, card in ipairs(hand or {}) do
+        if card.is_face and card:is_face() and not SMODS.has_no_rank(card) then
+            faces[#faces + 1] = card
+            -- base.value matters as well as base.id: get_straight looks ranks
+            -- up by key, not by numeric id.
+            saved[#saved + 1] = { id = card.base.id, value = card.base.value }
+        end
+    end
+    if #faces == 0 then return celesta_kael_evaluate_ref(hand) end
+
+    for _, card in ipairs(faces) do
+        card.base.id, card.base.value = ten.id, "10"
+    end
+    local results = celesta_kael_evaluate_ref(hand)
+    for i, card in ipairs(faces) do
+        card.base.id, card.base.value = saved[i].id, saved[i].value
+    end
+    return results
+end
+
+SMODS.Joker {
+    key = "kael",
+    atlas = "kael",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    -- A passive the evaluator reads, not a trigger; there is nothing to copy.
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Mari Yume [Rare] - Blueprint, aimed at the far end of the row.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "mariyume",
+    atlas = "mariyume",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    -- Copyable, like Blueprint is: a Blueprint next to this one copies it and
+    -- ends up pointed at the same rightmost Joker.
+    blueprint_compat = true, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        local target = G.jokers and G.jokers.cards and G.jokers.cards[#G.jokers.cards]
+        if target and target ~= card then
+            info_queue[#info_queue + 1] = target.config.center
+        end
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        local row = G.jokers and G.jokers.cards
+        if not row then return end
+
+        local target = row[#row]
+        -- Nothing to copy when it IS the rightmost. blueprint_effect refuses
+        -- a copier pointed at itself anyway; returning early keeps the run out
+        -- of the copy stack entirely.
+        if not target or target == card then return end
+
+        return SMODS.blueprint_effect(card, target, context)
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Kairyu [Uncommon] - the more you throw away, the more you hold.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "kairyucrocodile",
+    atlas = "kairyucrocodile",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    -- A copy would grant a second set of the same slots, which the reset
+    -- below could not take back off: the amount applied lives on this card.
+    blueprint_compat = false, eternal_compat = true,
+
+    -- `applied` is what this card has actually handed out. It lives in the
+    -- ability table rather than a local because card_limit is saved with the
+    -- run: a local would come back as zero after a reload and the size would
+    -- never be given back.
+    config = { extra = { h_size = 1, applied = 0 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.h_size, card.ability.extra.applied } }
+    end,
+
+    --- Brings the hand size in line with the number of discards used.
+    ---
+    --- Written as a difference against what is already applied rather than as
+    --- an add: every path in and out of the deck goes through here, so the
+    --- card can be bought, sold, debuffed and reloaded without the size
+    --- drifting.
+    celesta_resize = function(self, card, wanted)
+        local applied = card.ability.extra.applied or 0
+        if wanted == applied then return 0 end
+        if G.hand then G.hand:change_size(wanted - applied) end
+        card.ability.extra.applied = wanted
+        return wanted - applied
+    end,
+
+    calculate = function(self, card, context)
+        -- pre_discard, not discard: `discard` arrives once per discarded
+        -- CARD, while this fires once per discard action. It also carries
+        -- context.hook, which marks the discards a Joker forces - vanilla does
+        -- not count those against the round, so neither does this.
+        --
+        -- discards_used is incremented AFTER the whole discard sequence, so at
+        -- this point it is still the count before this one.
+        if context.pre_discard and not context.blueprint and not context.hook then
+            local round = G.GAME and G.GAME.current_round
+            local used = (round and round.discards_used or 0) + 1
+            local delta = self:celesta_resize(card, used * card.ability.extra.h_size)
+            if delta > 0 then
+                return {
+                    message = localize("celesta_plus_hand_size"),
+                    colour = G.C.FILTER,
+                    card = card,
+                }
+            end
+        end
+
+        -- main_eval is the once-per-round Joker pass.
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            if (card.ability.extra.applied or 0) > 0 then
+                self:celesta_resize(card, 0)
+                return {
+                    message = localize("k_reset"),
+                    colour = G.C.FILTER,
+                    card = card,
+                }
+            end
+        end
+    end,
+
+    -- Sold, or debuffed: the size it handed out goes back. Bought or
+    -- un-debuffed mid-round, it hands out what the round has earned so far.
+    add_to_deck = function(self, card, from_debuff)
+        local round = G.GAME and G.GAME.current_round
+        local used = round and round.discards_used or 0
+        card.ability.extra.applied = 0
+        self:celesta_resize(card, used * card.ability.extra.h_size)
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        self:celesta_resize(card, 0)
+    end,
+}

@@ -27,6 +27,13 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
 # Auto title-casing cannot know how a creator styles their own name.
 # Add corrections here; anything absent falls back to the mechanical rule.
 DISPLAY_NAMES = {
+    "henya": "Henya",
+    "el_xox": "El_Xox",
+    "fream": "Fream",
+    "kirana": "Kirana",
+    "kael": "Kael",
+    "mariyume": "Mari Yume",
+    "kairyucrocodile": "Kairyu",
     "sinder": "Sinder",
     "eros": "Eros",
     "ebiko": "Ebiko",
@@ -342,6 +349,21 @@ LOC_TAIL = '''        },
                     "in played hand",
                 },
             },
+            celesta_bind_bear_moo = {
+                name = "Bear The Witch + Moo Merrily",
+                text = {
+                    "Each {C:spectral}Milk Bottle{} held gives",
+                    "{X:mult,C:white}X#1#{} Mult",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_blueprint_brainstorm = {
+                name = "Blueprint + Brainstorm",
+                text = {
+                    "Retriggers each other",
+                    "{C:attention}Joker{} #1# time",
+                },
+            },
             celesta_bind_crelly_koko = {
                 name = "Crelly + KokoNuts",
                 text = {
@@ -472,6 +494,7 @@ LOC_TAIL = '''        },
             celesta_failed = "Failed!",
             celesta_cleared = "Cleared!",
             celesta_plus_limestone = "+Limestone",
+            celesta_plus_hand_size = "+1 Hand Size",
             celesta_plus_slot = "+1 Consumable Slot",
             celesta_plus_tag = "+1 Tag",
             celesta_sealed = "Sealed!",
