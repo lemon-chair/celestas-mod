@@ -56,7 +56,6 @@ local ROSTER = {
     { key = "rubensargasm", rarity = 1, cost = 4, mult = 4 },
     { key = "rynxryn", rarity = 1, cost = 4, mult = 4 },
     { key = "saiiren", rarity = 1, cost = 4, mult = 4 },
-    { key = "sansin", rarity = 1, cost = 4, mult = 4 },
     { key = "shaoanvt", rarity = 1, cost = 4, mult = 4 },
     { key = "shenpai", rarity = 1, cost = 4, mult = 4 },
     { key = "shiabun", rarity = 1, cost = 4, mult = 4 },

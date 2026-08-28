@@ -911,7 +911,8 @@ return {
             j_celesta_sansin = {
                 name = "Sansin",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Cards take {C:attention}twice{} as long",
+                    "to become {C:attention}Tattered{}",
                 },
             },
             j_celesta_saruei = {

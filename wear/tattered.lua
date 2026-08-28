@@ -22,6 +22,10 @@ Tattered.MIN_SCORES = 20
 Tattered.MAX_SCORES = 30
 Tattered.SCALE = 0.5
 
+-- How much longer a card lasts per Joker that slows the wear. The text on
+-- Sansin says "twice", so this and that description move together.
+Tattered.DELAY_MULTIPLIER = 2
+
 local TATTER_SEED = "celesta_tatter"
 
 -- Resolved at load: SMODS.current_mod is only valid while the mod is loading,
@@ -97,6 +101,22 @@ local function threshold(card)
     return at
 end
 
+--- How much longer cards take to wear out, from Jokers that slow the wear.
+---
+--- Applied against the rolled threshold at the moment a score is counted,
+--- rather than baked into the roll: buying a Sansin has to help the cards that
+--- are already part-worn, and selling one has to stop helping them. The count
+--- itself keeps rising either way, so nothing is lost or double-counted.
+---
+--- Two of them stack multiplicatively - each one doubles what is left.
+function Tattered.wear_delay()
+    local factor = 1
+    for _, joker in ipairs(SMODS.find_card("j_celesta_sansin")) do
+        if not joker.debuff then factor = factor * Tattered.DELAY_MULTIPLIER end
+    end
+    return factor
+end
+
 --- True for a card Dejavudea has protected. Stored on the card, so the
 --- protection lasts the rest of the run and survives a save.
 function Tattered.is_immune(card)
@@ -126,7 +146,7 @@ function Tattered.record_score(card)
     if Tattered.is_immune(card) then return false end
     local count = (card.ability.celesta_scored or 0) + 1
     card.ability.celesta_scored = count
-    if count < threshold(card) then return false end
+    if count < threshold(card) * Tattered.wear_delay() then return false end
     card.ability.celesta_tattered = true
     return true
 end

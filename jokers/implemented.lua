@@ -4556,3 +4556,23 @@ SMODS.Joker {
         self:celesta_resize(card, 0)
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Sansin [Uncommon] - the deck wears out half as fast.
+--------------------------------------------------------------------------------
+
+-- The behaviour lives in wear/tattered.lua, which asks Tattered.wear_delay()
+-- each time it counts a score. This Joker only has to exist.
+SMODS.Joker {
+    key = "sansin",
+    atlas = "sansin",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    -- A passive the wear system reads, not a trigger; nothing to copy.
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+}
