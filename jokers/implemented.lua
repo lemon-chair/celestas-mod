@@ -1892,60 +1892,60 @@ SMODS.Joker {
     end,
 
     calculate = function(self, card, context)
-        -- end_of_round reaches a Joker through more than one pass: the single
-        -- joker evaluation, and then again per held card with `individual` or
-        -- `repetition` set. Only the first is wanted.
+        -- Modelled on Cryptid's SUS, which does the same job at the same
+        -- moment and demonstrably works alongside this mod. Two things taken
+        -- from it, both of which this had wrong:
         --
-        -- Gated on the round number rather than on context.main_eval. That
-        -- flag is set by SMODS.calculate_context, which reaches this through a
-        -- lovely patch over vanilla's direct calculate_joker call - so whether
-        -- it is present at all depends on that patch matching the installed
-        -- build. The round number is set by the game itself and cannot go
-        -- missing, and it gives the once-per-round behaviour directly.
-        -- TEMPORARY, while this is being chased. Two theories for why Neuro
-        -- destroyed nothing - a missing context.main_eval, and a destroy left
-        -- in the event queue until after the hand was emptied - have both been
-        -- disproven since, so the next round is being asked directly rather
-        -- than guessed at a third time. Remove once the log has answered.
-        if context.end_of_round then
-            sendInfoMessage(("[neuro] end_of_round reached: main_eval=%s "
-                .. "individual=%s repetition=%s blueprint=%s hand=%s round=%s")
-                :format(tostring(context.main_eval), tostring(context.individual),
-                        tostring(context.repetition), tostring(context.blueprint),
-                        tostring(G.hand and #G.hand.cards), tostring(G.GAME and G.GAME.round)),
-                "CelestasMod")
-        end
+        -- The gate is cardarea == G.jokers, which is what marks the
+        -- once-per-round joker pass. This used context.main_eval instead. That
+        -- is set around the same call, but only by SMODS.calculate_context,
+        -- which reaches jokers through a lovely patch over vanilla's direct
+        -- calculate_joker; cardarea is set by the card-area walk itself and
+        -- does not depend on that patch holding.
+        --
+        -- The cards are dissolved directly rather than through
+        -- SMODS.destroy_cards. That helper raises a nested
+        -- SMODS.calculate_context({ remove_playing_cards = ... }) - a fresh
+        -- evaluation pass from inside the end-of-round pass. Cryptid
+        -- explicitly does not do that here, noting it makes the removal
+        -- effects trigger repeatedly.
+        if context.end_of_round and context.cardarea == G.jokers
+            and not context.blueprint then
+            if not (G.hand and G.GAME and #G.hand.cards >= 1) then return end
 
-        if context.end_of_round and not context.blueprint
-            and not context.individual and not context.repetition then
-            if not (G.hand and G.GAME) then return end
-
+            -- Once per round: end_of_round reaches a joker more than once.
             local round = G.GAME.round
             if card.ability.extra.last_round == round then return end
 
             local doomed = {}
             for _, held in ipairs(G.hand.cards) do
-                -- getting_sliced excludes anything already on its way out, so
-                -- a second pass cannot collect the same card twice.
                 if held.config.center == G.P_CENTERS.c_base
-                    and not held.getting_sliced then
+                    and not held.getting_sliced
+                    and not SMODS.is_eternal(held) then
                     doomed[#doomed + 1] = held
                 end
             end
-            sendInfoMessage(("[neuro] %d unenhanced of %d held, last_round=%s")
-                :format(#doomed, #G.hand.cards, tostring(card.ability.extra.last_round)),
-                "CelestasMod")
             if #doomed == 0 then return end
             card.ability.extra.last_round = round
 
-            -- Destroyed immediately rather than from a queued event. The hand
-            -- is emptied into the discard later in this same end_round pass
-            -- (G.FUNCS.draw_from_hand_to_discard), and a destruction still
-            -- sitting in the queue when that happens is operating on cards
-            -- that have already left. destroy_cards still respects eternal.
-            SMODS.destroy_cards(doomed, nil, true)
-            sendInfoMessage("[neuro] destroy_cards returned; hand now "
-                .. tostring(#G.hand.cards), "CelestasMod")
+            G.E_MANAGER:add_event(Event {
+                trigger = "after",
+                delay = 0.1,
+                func = function()
+                    -- Backwards, and only the last one animates: removing from
+                    -- a list while walking it forwards skips entries, and that
+                    -- flag is what stops every card playing the sound at once.
+                    for i = #doomed, 1, -1 do
+                        local held = doomed[i]
+                        if SMODS.shatters(held) then
+                            held:shatter()
+                        else
+                            held:start_dissolve(nil, i == #doomed)
+                        end
+                    end
+                    return true
+                end,
+            })
 
             return {
                 message = localize("celesta_cleared"),
