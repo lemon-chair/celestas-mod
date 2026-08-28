@@ -113,8 +113,13 @@ end
 -- each #n# decides whether it may be scaled.
 local SCALABLE_MARKUP = { "mult", "chips", "money" }
 
---- The set of loc_var indices a centre prints as a scalable value.
---- Returns nil when the centre has no description to read.
+--- Which loc_var indices a centre prints as a scalable value, and how.
+--- Returns index -> "mult" for a multiplier (X:mult, X:chips) or "add" for a
+--- plain amount (C:mult, C:chips, C:money); nil when there is nothing to scale
+--- or no description to read.
+---
+--- The two are not scaled the same way, which is why they are told apart here
+--- rather than lumped together: halving Glass's X2 Mult means X1.5, not X1.
 function CelestasMod.scalable_vars(set, key)
     local descriptions = G.localization and G.localization.descriptions
     local block = descriptions and set and descriptions[set]
@@ -126,28 +131,47 @@ function CelestasMod.scalable_vars(set, key)
         -- The nearest {markup} before a #n#, with no other placeholder or
         -- brace between them, is the one it prints in.
         for markup, index in string.gmatch(line, "{([^}]*)}[^#{]*#(%d+)#") do
+            local scalable = false
             for _, want in ipairs(SCALABLE_MARKUP) do
-                if string.find(markup, want, 1, true) then
-                    marked = marked or {}
-                    marked[tonumber(index)] = true
-                    break
-                end
+                if string.find(markup, want, 1, true) then scalable = true break end
+            end
+            if scalable then
+                marked = marked or {}
+                -- "X:mult" is a multiplier, "C:mult" an amount.
+                marked[tonumber(index)] =
+                    string.find(markup, "X:", 1, true) and "mult" or "add"
             end
         end
     end
     return marked
 end
 
---- A copy of `vars` with the marked entries multiplied by `scale`.
+--- A copy of `vars` with the marked entries scaled.
+---
+--- `multiplier_excess` selects how a multiplier is scaled, and must match how
+--- the same value is scaled when it SCORES, or the card advertises one number
+--- and pays another:
+---   false - the multiplier itself moves.       Vedal: X3 -> X4.5
+---   true  - only the part above 1 moves.       Tattered: X2 -> X1.5
+---
 --- Copied rather than scaled in place: these come straight off a card's
 --- ability in some cases, and scaling that would change the real thing every
 --- time the card was hovered.
-function CelestasMod.scale_vars(vars, marked, scale)
+function CelestasMod.scale_vars(vars, marked, scale, multiplier_excess)
     local out = {}
     for i, v in ipairs(vars) do
+        local kind = marked[i]
         -- Only numbers. Several jokers pass a STRING built with
         -- ''..probabilities.normal, and arithmetic on it would error.
-        out[i] = (marked[i] and type(v) == "number") and v * scale or v
+        if kind and type(v) == "number" then
+            if kind == "mult" and multiplier_excess and v > 1 then
+                out[i] = 1 + (v - 1) * scale
+            else
+                out[i] = v * scale
+            end
+        else
+            out[i] = v
+        end
     end
     return out
 end

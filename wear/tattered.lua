@@ -285,6 +285,39 @@ end
 -- described (lovely/center.toml). Declaring only the stock eight drops it and
 -- crashes the game on the next hover, so it is named here and everything past
 -- it forwarded untouched.
+-- An enhancement's numbers never reach specific_vars.
+--
+-- For a Joker, generate_UIBox_ability_table builds loc_vars and hands them in
+-- as specific_vars, which is what Vedal scales. For an ENHANCED CARD they are
+-- built inside generate_card_ui itself, straight off the centre's config -
+--     elseif _c.effect == 'Lucky Card' then
+--         loc_vars = {probabilities.normal, _c.config.mult, 5, _c.config.p_dollars, 15}
+-- - and specific_vars carries only the playing card's own fields. So halving
+-- specific_vars left a tattered Lucky Card still advertising +20 Mult and $20.
+--
+-- Those internal vars reach exactly one place: the localize call that renders
+-- the description. Catching them there applies the same markup rule the rest
+-- of this uses, and the odds are safe because 5 and 15 are literals in that
+-- list rather than config values.
+local wearing = nil
+
+local celesta_wear_localize_ref = localize
+function localize(args, misc_category)
+    if wearing and type(args) == "table" and args.type == "descriptions"
+        and args.key == wearing.key and type(args.vars) == "table" then
+        local marked = CelestasMod.scalable_vars(args.set or wearing.set, args.key)
+        if marked then
+            -- Shallow copy, so `nodes` stays the same table the caller is
+            -- waiting to have filled in.
+            local copy = {}
+            for k, v in pairs(args) do copy[k] = v end
+            copy.vars = CelestasMod.scale_vars(args.vars, marked, Tattered.SCALE, true)
+            args = copy
+        end
+    end
+    return celesta_wear_localize_ref(args, misc_category)
+end
+
 local celesta_wear_card_ui_ref = generate_card_ui
 function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges,
                           hide_desc, main_start, main_end, card, ...)
@@ -316,15 +349,22 @@ function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges,
         if type(copy.vars) == "table" then
             local marked = CelestasMod.scalable_vars(_c.set, _c.key)
             if marked then
-                copy.vars = CelestasMod.scale_vars(copy.vars, marked, Tattered.SCALE)
+                copy.vars = CelestasMod.scale_vars(copy.vars, marked, Tattered.SCALE, true)
             end
         end
         specific_vars = copy
     end
 
-    return celesta_wear_card_ui_ref(_c, full_UI_table, specific_vars, card_type,
-                                    badges, hide_desc, main_start, main_end,
-                                    card, ...)
+    -- Flagged across the call so the localize hook above knows the description
+    -- being rendered belongs to a worn card. Cleared on the way out, error or
+    -- not, so a failure cannot leave every later description being halved.
+    wearing = { set = _c.set, key = _c.key }
+    local ok, ui = pcall(celesta_wear_card_ui_ref, _c, full_UI_table, specific_vars,
+                         card_type, badges, hide_desc, main_start, main_end,
+                         card, ...)
+    wearing = nil
+    if not ok then error(ui, 0) end
+    return ui
 end
 
 Tattered.classify_enhancements()
