@@ -1884,30 +1884,50 @@ SMODS.Joker {
     unlocked = true, discovered = true,
     blueprint_compat = true, eternal_compat = true,
 
+    -- last_round is how it fires once per round; see calculate.
+    config = { extra = { last_round = -1 } },
+
     loc_vars = function(self, info_queue, card)
         return {}
     end,
 
     calculate = function(self, card, context)
-        -- main_eval keeps this to the single once-per-round joker pass rather
-        -- than firing again for every card evaluated at end of round.
-        if context.end_of_round and context.main_eval and not context.blueprint then
-            if not G.hand then return end
+        -- end_of_round reaches a Joker through more than one pass: the single
+        -- joker evaluation, and then again per held card with `individual` or
+        -- `repetition` set. Only the first is wanted.
+        --
+        -- Gated on the round number rather than on context.main_eval. That
+        -- flag is set by SMODS.calculate_context, which reaches this through a
+        -- lovely patch over vanilla's direct calculate_joker call - so whether
+        -- it is present at all depends on that patch matching the installed
+        -- build. The round number is set by the game itself and cannot go
+        -- missing, and it gives the once-per-round behaviour directly.
+        if context.end_of_round and not context.blueprint
+            and not context.individual and not context.repetition then
+            if not (G.hand and G.GAME) then return end
+
+            local round = G.GAME.round
+            if card.ability.extra.last_round == round then return end
+
             local doomed = {}
             for _, held in ipairs(G.hand.cards) do
-                if held.config.center == G.P_CENTERS.c_base then
+                -- getting_sliced excludes anything already on its way out, so
+                -- a second pass cannot collect the same card twice.
+                if held.config.center == G.P_CENTERS.c_base
+                    and not held.getting_sliced then
                     doomed[#doomed + 1] = held
                 end
             end
             if #doomed == 0 then return end
+            card.ability.extra.last_round = round
 
-            G.E_MANAGER:add_event(Event {
-                func = function()
-                    -- destroy_cards respects eternal and animates the removal.
-                    SMODS.destroy_cards(doomed)
-                    return true
-                end
-            })
+            -- Destroyed immediately rather than from a queued event. The hand
+            -- is emptied into the discard later in this same end_round pass
+            -- (G.FUNCS.draw_from_hand_to_discard), and a destruction still
+            -- sitting in the queue when that happens is operating on cards
+            -- that have already left. destroy_cards still respects eternal.
+            SMODS.destroy_cards(doomed, nil, true)
+
             return {
                 message = localize("celesta_cleared"),
                 colour = G.C.RED,
