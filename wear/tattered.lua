@@ -281,30 +281,21 @@ function get_badge_colour(key)
 end
 end
 
--- The card being described, so only worn cards are touched.
-local describing = nil
-
-local celesta_wear_ability_ref = Card.generate_UIBox_ability_table
-function Card:generate_UIBox_ability_table(...)
-    local previous = describing
-    describing = self
-    local ok, box = pcall(celesta_wear_ability_ref, self, ...)
-    describing = previous
-    if not ok then error(box, 0) end
-    return box
-end
-
+-- Steamodded patches generate_card_ui to take a NINTH argument, the card being
+-- described (lovely/center.toml). Declaring only the stock eight drops it and
+-- crashes the game on the next hover, so it is named here and everything past
+-- it forwarded untouched.
 local celesta_wear_card_ui_ref = generate_card_ui
-function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges, hide_desc, main_start, main_end)
-    local card = describing
+function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges,
+                          hide_desc, main_start, main_end, card, ...)
     if not (card and Tattered.is_tattered(card) and type(_c) == "table") then
         return celesta_wear_card_ui_ref(_c, full_UI_table, specific_vars, card_type,
-                                        badges, hide_desc, main_start, main_end)
+                                        badges, hide_desc, main_start, main_end,
+                                        card, ...)
     end
 
-    -- The badge, so the card says what happened to it.
-    -- Copied, so the caller's badge list is not appended to twice if the
-    -- tooltip is rebuilt.
+    -- The badge, so the card says what happened to it. Copied, so the caller's
+    -- list is not appended to twice if the tooltip is rebuilt.
     local list = {}
     for _, badge in ipairs(badges or {}) do list[#list + 1] = badge end
     list[#list + 1] = "celesta_" .. Tattered.word(card)
@@ -332,7 +323,8 @@ function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges, h
     end
 
     return celesta_wear_card_ui_ref(_c, full_UI_table, specific_vars, card_type,
-                                    badges, hide_desc, main_start, main_end)
+                                    badges, hide_desc, main_start, main_end,
+                                    card, ...)
 end
 
 Tattered.classify_enhancements()

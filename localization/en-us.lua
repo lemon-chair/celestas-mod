@@ -831,8 +831,8 @@ return {
             j_celesta_vedal = {
                 name = "Vedal",
                 text = {
-                    "Multiplies every value",
-                    "your other {C:attention}Jokers{} give",
+                    "Multiplies every value other",
+                    "{C:attention}Jokers from this mod{} give",
                     "by {X:mult,C:white}X#1#{}",
                     "{C:inactive}(Cannot be copied)",
                 },

@@ -465,8 +465,8 @@ local function combine(primary, secondary)
 end
 
 local celesta_bind_calculate_joker_ref = Card.calculate_joker
-function Card:calculate_joker(context)
-    local effect, post = celesta_bind_calculate_joker_ref(self, context)
+function Card:calculate_joker(context, ...)
+    local effect, post = celesta_bind_calculate_joker_ref(self, context, ...)
 
     if running or not Bind.is_merged(self) then return effect, post end
 

@@ -84,12 +84,12 @@ local function is_query(context)
 end
 
 local celesta_clover_calculate_joker_ref = Card.calculate_joker
-function Card:calculate_joker(context)
+function Card:calculate_joker(context, ...)
     if self.ability and self.ability.set == "Joker"
         and not is_query(context) and clover_suppresses(self) then
         return
     end
-    return celesta_clover_calculate_joker_ref(self, context)
+    return celesta_clover_calculate_joker_ref(self, context, ...)
 end
 
 local celesta_clover_eval_card_ref = eval_card

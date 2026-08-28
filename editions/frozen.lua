@@ -165,7 +165,7 @@ local function frozen_fails(card)
 end
 
 local calculate_joker_ref = Card.calculate_joker
-function Card:calculate_joker(context)
+function Card:calculate_joker(context, ...)
     if CelestasMod.is_frozen(self) and self.ability.set == "Joker"
         and not rolling[self] then
         -- Vulpixie cancels the failure outright rather than improving the odds.
@@ -204,7 +204,7 @@ function Card:calculate_joker(context)
             end
         end
     end
-    return calculate_joker_ref(self, context)
+    return calculate_joker_ref(self, context, ...)
 end
 
 --------------------------------------------------------------------------------

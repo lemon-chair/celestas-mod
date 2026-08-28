@@ -89,6 +89,14 @@ function Card:load(cardTable, other_card)
     end
 end
 
+--- True when a centre was registered by this mod.
+--- SMODS stamps every object it registers with the mod that declared it, which
+--- is a far more reliable test than matching on the key prefix - a key can be
+--- taken over, and other mods can carry a similar prefix.
+function CelestasMod.is_ours(center)
+    return center ~= nil and center.mod ~= nil and center.mod == CelestasMod.MOD
+end
+
 --------------------------------------------------------------------------------
 -- Which numbers in a description may be scaled
 --------------------------------------------------------------------------------
@@ -142,38 +150,4 @@ function CelestasMod.scale_vars(vars, marked, scale)
         out[i] = (marked[i] and type(v) == "number") and v * scale or v
     end
     return out
-end
-
---------------------------------------------------------------------------------
--- TEMPORARY diagnostic: every scaling joker, every scale
---------------------------------------------------------------------------------
---
--- Chasing a report that Cryptid's Compound Interest froze while Vedal was in
--- play and resumed the moment Vedal was sold. Neither of Vedal's mechanisms
--- can reach it on paper - it scales inside calc_dollar_bonus, which never goes
--- through calculate_joker, and its loc_vars passes number_format, which always
--- returns a string, so the display scaler skips it entirely.
---
--- SMODS.scale_card is the single choke point every scaling joker of that shape
--- goes through, so this reports what it is asked to do and what it does. If it
--- is never called for compound_interest, the joker is not being evaluated at
--- all; if it is called and the value does not move, the fault is downstream.
--- Remove once answered.
-if SMODS.scale_card then
-    local celesta_scale_ref = SMODS.scale_card
-    function SMODS.scale_card(card, args)
-        local key = card and card.config and card.config.center
-            and card.config.center.key or "?"
-        local ref = args and args.ref_table
-        local before = ref and args.ref_value and ref[args.ref_value]
-        celesta_scale_ref(card, args)
-        local after = ref and args.ref_value and ref[args.ref_value]
-        if type(before) == "number" or type(after) == "number" then
-            sendInfoMessage(("[scale] %s %s: %s -> %s (vedal=%s)"):format(
-                key, tostring(args and args.ref_value),
-                tostring(before), tostring(after),
-                tostring(next(SMODS.find_card("j_celesta_vedal")) ~= nil)),
-                "CelestasMod")
-        end
-    end
 end

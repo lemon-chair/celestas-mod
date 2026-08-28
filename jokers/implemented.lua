@@ -2376,8 +2376,8 @@ local function vedal_has_target(effect)
 end
 
 local celesta_vedal_calculate_joker_ref = Card.calculate_joker
-function Card:calculate_joker(context)
-    local effect, post = celesta_vedal_calculate_joker_ref(self, context)
+function Card:calculate_joker(context, ...)
+    local effect, post = celesta_vedal_calculate_joker_ref(self, context, ...)
 
     -- Only the outermost evaluation is scaled. SMODS.blueprint_effect runs the
     -- copied joker with context.blueprint set and then hands that same table
@@ -2386,6 +2386,12 @@ function Card:calculate_joker(context)
     if type(effect) ~= "table" or context.blueprint then return effect, post end
     if self.ability.set ~= "Joker" then return effect, post end
     if self.config.center.key == "j_celesta_vedal" then return effect, post end
+    -- This mod's Jokers only. Reaching into other mods' Jokers meant reaching
+    -- into machinery this cannot see: Compound Interest scales inside
+    -- calc_dollar_bonus rather than calculate, and froze while Vedal was out.
+    -- Rather than keep guessing at how a boost here reaches a scale there,
+    -- Vedal now stays within what this mod owns, and says so on the card.
+    if not CelestasMod.is_ours(self.config.center) then return effect, post end
     if not vedal_has_target(effect) then return effect, post end
     if not vedal_active() then return effect, post end
 
@@ -2429,34 +2435,26 @@ end
 --     "{C:attention}#1#{} cards"           -> leave alone
 -- So the markup immediately before each #n# decides it.
 
--- The card currently being described, so the boost is only shown for Jokers
--- actually in the row - a Joker sitting in the shop is not owned yet, and
--- advertising a boost it will not get until bought would be a lie.
-local vedal_described = nil
-
-local celesta_vedal_ability_ref = Card.generate_UIBox_ability_table
-function Card:generate_UIBox_ability_table(...)
-    local previous = vedal_described
-    vedal_described = self
-    local ok, box = pcall(celesta_vedal_ability_ref, self, ...)
-    vedal_described = previous
-    if not ok then error(box, 0) end
-    return box
-end
-
--- Hooked at generate_card_ui rather than at loc_vars: vanilla Jokers do not
--- all have a loc_vars function, their numbers come from a chain inside
--- generate_UIBox_ability_table, and both routes arrive here as specific_vars.
+-- Steamodded patches generate_card_ui to take a NINTH argument, the card being
+-- described (lovely/center.toml). That is both how this knows whose tooltip it
+-- is looking at, and a trap: a wrapper declaring the stock eight silently drops
+-- it, and the game crashes indexing a nil card on the next hover. Everything
+-- past the arguments actually used is forwarded untouched, so another one
+-- appearing cannot break this again.
 local celesta_vedal_card_ui_ref = generate_card_ui
-function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges, hide_desc, main_start, main_end)
-    local card = vedal_described
+function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges,
+                          hide_desc, main_start, main_end, card, ...)
+    -- Only Jokers actually in the row: one in the shop is not owned yet, and
+    -- advertising a boost it will not get until bought would be a lie.
     if not (card and card.area == G.jokers
         and type(_c) == "table" and _c.set == "Joker"
         and _c.key ~= "j_celesta_vedal"
+        and CelestasMod.is_ours(_c)
         and type(specific_vars) == "table" and type(specific_vars.vars) == "table"
         and vedal_active()) then
         return celesta_vedal_card_ui_ref(_c, full_UI_table, specific_vars, card_type,
-                                         badges, hide_desc, main_start, main_end)
+                                         badges, hide_desc, main_start, main_end,
+                                         card, ...)
     end
 
     local marked = CelestasMod.scalable_vars(_c.set, _c.key)
@@ -2469,7 +2467,8 @@ function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges, h
     end
 
     return celesta_vedal_card_ui_ref(_c, full_UI_table, specific_vars, card_type,
-                                     badges, hide_desc, main_start, main_end)
+                                     badges, hide_desc, main_start, main_end,
+                                     card, ...)
 end
 
 SMODS.Joker {
