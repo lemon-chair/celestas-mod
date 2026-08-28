@@ -3805,3 +3805,151 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- FeFe [Uncommon] - the scoring cards all turn to Hearts.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "fefe",
+    atlas = "fefe",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        -- context.before runs after the poker hand has been named but before
+        -- any card scores, so the conversion lands in time for every suit
+        -- check during scoring - Bloodstone, a Lusty Joker, a flush-suit
+        -- Blind - without retroactively rewriting which hand was played.
+        if context.before and not context.blueprint then
+            local scoring = context.scoring_hand
+            if type(scoring) ~= "table" then return end
+
+            local converted = 0
+            for _, played in ipairs(scoring) do
+                -- A card with no suit has none to convert. Stone Cards and
+                -- Limestone report through has_no_suit, and changing their
+                -- base would hand them one they are not supposed to have.
+                if not SMODS.has_no_suit(played) and not played:is_suit("Hearts") then
+                    local target = played
+                    G.E_MANAGER:add_event(Event {
+                        func = function()
+                            SMODS.change_base(target, "Hearts")
+                            return true
+                        end
+                    })
+                    converted = converted + 1
+                end
+            end
+
+            if converted > 0 then
+                return {
+                    message = localize("celesta_hearts"),
+                    colour = G.C.HEARTS,
+                    card = card,
+                }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Milky [Rare] - Milk Bottles are free to hold.
+--------------------------------------------------------------------------------
+
+--- True when a Milky is in play and able to act.
+local function milky_active(excluding)
+    for _, joker in ipairs(G.jokers and G.jokers.cards or {}) do
+        if joker ~= excluding and not joker.debuff
+            and joker.config.center.key == "j_celesta_milky" then
+            return true
+        end
+    end
+    return false
+end
+
+--- Widens the consumable area by however many Milk Bottles are being held.
+---
+--- A slot is freed by raising card_limit, which is exactly how a Negative
+--- consumable pays for itself in vanilla - the room check every source makes
+--- is `#cards + buffer < card_limit`, so there is nothing else to teach.
+---
+--- The amount already applied lives on G.GAME rather than in a local. It is
+--- baked into card_limit, and card_limit is saved: a local would come back as
+--- zero after a reload and hand out the same slots a second time, every time.
+local function milky_sync(excluding_joker)
+    if not (G.GAME and G.consumeables and G.consumeables.config) then return end
+    local applied = G.GAME.celesta_milky_slots or 0
+
+    local wanted = 0
+    if milky_active(excluding_joker) then
+        for _, held in ipairs(G.consumeables.cards) do
+            local key = held.config and (held.config.center_key
+                or (held.config.center and held.config.center.key))
+            if key == CelestasMod.MILK_BOTTLE_KEY then wanted = wanted + 1 end
+        end
+    end
+
+    if wanted ~= applied then
+        G.consumeables.config.card_limit =
+            G.consumeables.config.card_limit + (wanted - applied)
+        G.GAME.celesta_milky_slots = wanted
+    end
+end
+
+CelestasMod.milky_sync = milky_sync
+
+-- The count changes whenever any card enters or leaves the deck, which is the
+-- same pair of calls a Milk Bottle arrives and departs through.
+local celesta_milky_add_ref = Card.add_to_deck
+function Card:add_to_deck(from_debuff)
+    celesta_milky_add_ref(self, from_debuff)
+    milky_sync()
+end
+
+local celesta_milky_remove_ref = Card.remove_from_deck
+function Card:remove_from_deck(from_debuff)
+    celesta_milky_remove_ref(self, from_debuff)
+    milky_sync()
+end
+
+-- Loading a save never runs add_to_deck, so the count is recomputed once the
+-- consumable area exists. The applied amount is read back off G.GAME, so this
+-- settles on the right number rather than stacking another set of slots.
+local celesta_milky_start_run_ref = Game.start_run
+function Game:start_run(args)
+    local ret = celesta_milky_start_run_ref(self, args)
+    milky_sync()
+    return ret
+end
+
+SMODS.Joker {
+    key = "milky",
+    atlas = "milky",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.MILK_BOTTLE_KEY]
+        return {}
+    end,
+
+    -- Bought and sold are not symmetric about when the card is in G.jokers -
+    -- add_to_deck runs before emplace, and Card:remove strips the card first -
+    -- so the leaving card is excluded explicitly and the arriving one is not.
+    add_to_deck = function(self, card, from_debuff)
+        milky_sync()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        milky_sync(card)
+    end,
+}

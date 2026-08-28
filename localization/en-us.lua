@@ -278,9 +278,10 @@ return {
                 },
             },
             j_celesta_fefe = {
-                name = "Fefe",
+                name = "FeFe",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Converts all scoring cards",
+                    "in played hand to {C:hearts}Hearts{}",
                 },
             },
             j_celesta_fraiki = {
@@ -539,7 +540,8 @@ return {
             j_celesta_milky = {
                 name = "Milky",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:spectral}Milk Bottles{} do not",
+                    "take up consumable slots",
                 },
             },
             j_celesta_mintfantome = {
