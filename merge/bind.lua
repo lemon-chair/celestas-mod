@@ -154,6 +154,10 @@ function Bind.merge(host, absorbed)
 
     Bind.invalidate_art(host)
 
+    -- Defined further down, with the rest of the hooks that are not part of
+    -- the calculate pass; looked up here at call time.
+    Bind.apply_partner_passive(host)
+
     absorbed.ability.eternal = nil       -- or it refuses to leave the row
     absorbed:start_dissolve(nil, true)
     return true
@@ -542,6 +546,101 @@ function Card:calculate_joker(context, ...)
     end
 
     return combine(effect, partner), post
+end
+
+--------------------------------------------------------------------------------
+-- The hooks that are not part of the calculate pass
+--------------------------------------------------------------------------------
+--
+-- `calculate` is dispatched through Card:calculate_joker, which is wrapped
+-- above, so both halves are asked. The rest of a centre's hooks are dispatched
+-- straight off self.config.center and never look further, so the absorbed half
+-- is simply never asked. Each one below is a behaviour that would go silently
+-- missing on a merge.
+
+--- Runs `fn(center, card)` with the absorbed half's centre and ability lent to
+--- the card, so the centre reads and writes its own state rather than the
+--- host's. Returns nil when there is nothing to run.
+---
+--- During the lend the card no longer looks merged - celesta_bind lives on the
+--- host's ability, not the absorbed one - so a hook that re-enters any of this
+--- passes straight through instead of recursing.
+local function with_partner(card, hook, fn)
+    if not Bind.is_merged(card) then return nil end
+    -- A special pair replaces both halves, so neither half's hooks run.
+    if Bind.special_of(card) then return nil end
+
+    local center = Bind.partner_center(card)
+    if not (center and type(center[hook]) == "function") then return nil end
+
+    local saved_center, saved_ability = card.config.center, card.ability
+    card.config.center = center
+    card.ability = card.ability.celesta_bind.ability
+    local ok, ret = pcall(fn, center, card)
+    card.config.center, card.ability = saved_center, saved_ability
+
+    if not ok then
+        CelestasMod.warn_once("bind_" .. hook .. "_" .. tostring(center.key),
+            ("Bind could not run %s on %s: %s"):format(hook, tostring(center.key), tostring(ret)))
+        return nil
+    end
+    return ret
+end
+
+-- End-of-round money. Vanilla dispatches this to self.config.center alone, and
+-- it is where a whole family of Jokers both pays AND scales - Cryptid's
+-- Compound Interest raises its own rate here and never touches `calculate`.
+-- Without this an absorbed one pays nothing and sits frozen at its opening
+-- rate for the rest of the run.
+local celesta_bind_dollar_ref = Card.calculate_dollar_bonus
+function Card:calculate_dollar_bonus(...)
+    local own = celesta_bind_dollar_ref(self, ...)
+    -- Vanilla returns before paying anything when debuffed; the absorbed half
+    -- is debuffed by exactly the same token.
+    if self.debuff then return own end
+
+    local theirs = with_partner(self, "calc_dollar_bonus", function(center, card)
+        return center:calc_dollar_bonus(card)
+    end)
+    if type(theirs) ~= "number" then return own end
+    return (own or 0) + theirs
+end
+
+-- Passives: +1 hand size, an extra Joker slot, anything a centre applies once
+-- when it enters the deck and undoes when it leaves.
+--
+-- Both guard their bodies with self.added_to_deck, so the flag is read BEFORE
+-- the ref runs and flips it - otherwise the partner's half of the passive
+-- would be applied every time the card was touched.
+local celesta_bind_add_ref = Card.add_to_deck
+function Card:add_to_deck(from_debuff)
+    local first = not self.added_to_deck
+    celesta_bind_add_ref(self, from_debuff)
+    if not first then return end
+    with_partner(self, "add_to_deck", function(center, card)
+        center:add_to_deck(card, from_debuff)
+    end)
+end
+
+local celesta_bind_remove_ref = Card.remove_from_deck
+function Card:remove_from_deck(from_debuff)
+    local was_added = self.added_to_deck
+    celesta_bind_remove_ref(self, from_debuff)
+    if not was_added then return end
+    with_partner(self, "remove_from_deck", function(center, card)
+        center:remove_from_deck(card, from_debuff)
+    end)
+end
+
+--- Applies the absorbed half's passive at merge time.
+--- The absorbed card dissolves out of the row, which runs its own
+--- remove_from_deck and takes the passive back off; this puts it on the host.
+--- Not needed on load: a passive lands in state that is itself saved, so
+--- re-applying it would hand out the same slot twice.
+function Bind.apply_partner_passive(host)
+    with_partner(host, "add_to_deck", function(center, card)
+        center:add_to_deck(card, false)
+    end)
 end
 
 --------------------------------------------------------------------------------
