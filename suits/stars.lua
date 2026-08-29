@@ -134,10 +134,13 @@ SMODS.Consumable {
         -- localize a nil colour, which renders as a blank suit name.
         local colour = (G.C.SUITS or {})[CelestasMod.STARS_SUIT]
             or HEX(CelestasMod.STARS_COLOUR)
+        -- colours goes INSIDE vars: localize reads
+        -- args.vars.colours[tonumber(part.control.V)], and Steamodded's
+        -- generate_ui does not forward a colours table returned beside vars.
         return {
             vars = { self.config.max_highlighted,
-                     localize(CelestasMod.STARS_SUIT, "suits_plural") },
-            colours = { colour },
+                     localize(CelestasMod.STARS_SUIT, "suits_plural"),
+                     colours = { colour } },
         }
     end,
 

@@ -105,6 +105,27 @@ function count_vars(obj)
   end
   return n
 end
+
+-- How many {V:n} colours loc_vars supplies.
+--
+-- localize reads args.vars.colours[n], so the table has to sit INSIDE vars.
+-- Steamodded's generate_ui forwards res.vars, res.key, res.set, res.scale and
+-- res.text_colour and nothing else, so a colours table returned BESIDE vars is
+-- silently dropped and {V:n} then indexes a nil - which crashes on hover
+-- rather than merely rendering wrong. Returning -4 flags exactly that mistake,
+-- because it is the one worth naming.
+function count_colours(obj)
+  if type(obj.loc_vars) ~= "function" then return 0 end
+  local ok, res = pcall(function()
+    return obj:loc_vars({}, fake_card(obj))
+  end)
+  if not ok or type(res) ~= "table" then return 0 end
+  if type(res.vars) == "table" and type(res.vars.colours) == "table" then
+    return #res.vars.colours
+  end
+  if type(res.colours) == "table" then return -4 end
+  return 0
+end
 '''
 
 
@@ -132,6 +153,7 @@ def main():
 
     g = lua.globals()
     count_vars = g.count_vars
+    count_colours = g.count_colours
 
     targets = []
     for key, obj in dict(g.jokers).items():
@@ -166,7 +188,12 @@ def main():
             continue
         text = " ".join(dict(entry.text).values())
         needed = max((int(n) for n in re.findall(r"#(\d+)#", text)), default=0)
+        # {V:n} picks colours[n] out of vars, and is a separate contract from
+        # the #n# placeholders.
+        needed_colours = max((int(n) for n in re.findall(r"\{V:(\d+)", text)),
+                             default=0)
         got = count_vars(obj)
+        got_colours = count_colours(obj)
         # count_vars returns (code, message) on error, which lupa hands back
         # as a tuple; everything else comes through as a bare number.
         err = ""
@@ -184,6 +211,15 @@ def main():
         elif needed > max(got, 0):
             problems.append("%s %s: text needs #%d# but loc_vars returns %d var(s)"
                             % (kind, key, needed, max(got, 0)))
+        elif needed_colours > 0 and got_colours == -4:
+            problems.append("%s %s: text uses {V:%d} and loc_vars returns colours "
+                            "BESIDE vars - it has to be inside, as vars.colours, "
+                            "or Steamodded drops it and localize indexes a nil"
+                            % (kind, key, needed_colours))
+        elif needed_colours > max(got_colours, 0):
+            problems.append("%s %s: text uses {V:%d} but loc_vars supplies %d "
+                            "colour(s) in vars.colours"
+                            % (kind, key, needed_colours, max(got_colours, 0)))
 
     print("checked %d objects" % checked)
     if problems:

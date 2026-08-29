@@ -4739,9 +4739,15 @@ SMODS.Joker {
 
 --- The Star suit's name and colour, for the descriptions that print it.
 ---
+--- The colour goes INSIDE vars, as vars.colours, which is where localize reads
+--- it from: `args.vars.colours[tonumber(part.control.V)]`. Steamodded's
+--- generate_ui forwards res.vars, res.key, res.set, res.scale and
+--- res.text_colour and nothing else, so a colours table returned beside vars
+--- is dropped and {V:1} then indexes a nil - a crash on hover, not a blank.
+--- Vanilla's own suit Tarots build it the same way.
+---
 --- The colour falls back to the raw value: G.C.SUITS is filled in when the
---- suit registers its colours, and handing localize a nil colour renders the
---- {V:1} slot as a blank name.
+--- suit registers its colours.
 local function star_name_and_colour()
     return localize(CelestasMod.STARS_SUIT, "suits_plural"),
            (G.C.SUITS or {})[CelestasMod.STARS_SUIT]
@@ -4770,7 +4776,7 @@ SMODS.Joker {
 
     loc_vars = function(self, info_queue, card)
         local name, colour = star_name_and_colour()
-        return { vars = { card.ability.extra.mult, name }, colours = { colour } }
+        return { vars = { card.ability.extra.mult, name, colours = { colour } } }
     end,
 
     calculate = function(self, card, context)
@@ -4813,8 +4819,8 @@ SMODS.Joker {
         local numerator, denominator = SMODS.get_probability_vars(
             card, 1, card.ability.extra.odds, "celesta_vienna")
         local name, colour = star_name_and_colour()
-        return { vars = { numerator, denominator, card.ability.extra.e_mult, name },
-                 colours = { colour } }
+        return { vars = { numerator, denominator, card.ability.extra.e_mult, name,
+                          colours = { colour } } }
     end,
 
     calculate = function(self, card, context)
@@ -4846,7 +4852,7 @@ SMODS.Joker {
 
     loc_vars = function(self, info_queue, card)
         local name, colour = star_name_and_colour()
-        return { vars = { card.ability.extra.x_mult, name }, colours = { colour } }
+        return { vars = { card.ability.extra.x_mult, name, colours = { colour } } }
     end,
 
     calculate = function(self, card, context)
@@ -4873,7 +4879,7 @@ SMODS.Joker {
 
     loc_vars = function(self, info_queue, card)
         local name, colour = star_name_and_colour()
-        return { vars = { card.ability.extra.dollars, name }, colours = { colour } }
+        return { vars = { card.ability.extra.dollars, name, colours = { colour } } }
     end,
 
     calculate = function(self, card, context)
@@ -4905,8 +4911,8 @@ SMODS.Joker {
 
     loc_vars = function(self, info_queue, card)
         local name, colour = star_name_and_colour()
-        return { vars = { card.ability.extra.chip_mod, card.ability.extra.chips, name },
-                 colours = { colour } }
+        return { vars = { card.ability.extra.chip_mod, card.ability.extra.chips, name,
+                          colours = { colour } } }
     end,
 
     calculate = function(self, card, context)
