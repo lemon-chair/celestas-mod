@@ -5168,15 +5168,45 @@ local function yoka_neutral(key, value)
         or key:find("e_mult") ~= nil or key:find("e_chips") ~= nil
 end
 
+--- True when this Joker is willing to be changed at all.
+--- Cryptid marks some of its own as `immutable`, and Oil Lamp checks exactly
+--- this before touching its neighbour. Without Cryptid there is no such
+--- concept and everything is fair game.
+local function yoka_may_change(target)
+    if type(Card) == "table" and type(Card.no) == "function" then
+        return not Card.no(target, "immutable", true)
+    end
+    return true
+end
+
 --- Multiplies every printed number a Joker keeps, in place.
 ---
 --- Straight multiplication rather than Vedal's rule, which scales the excess
 --- of a multiplier so that halving X2 lands on X1.5 instead of X1. That rule
 --- exists to stop a REDUCTION wiping a multiplier out; going up has no such
 --- problem, and "multiply the values by 1.5" plainly means X2 becomes X3.
+---
+--- Cryptid does this job already. Oil Lamp is the same Joker - the neighbour
+--- to the right, at end of round - and it hands the work to
+--- Cryptid.manipulate(target, { value = increase }), which walks the whole
+--- ability table, applies each centre's misprintize_caps, refuses the values
+--- that are neutral rather than absent, keeps Talisman's big numbers big and
+--- knows about Cryptid's own fused Jokers. Reimplementing that would be
+--- reimplementing it worse, so when Cryptid is present it is asked.
+---
+--- The fallback below is what runs without Cryptid, and only has to be right
+--- about base-game Jokers.
 local function yoka_scale(target, scale)
     local ability = target and target.ability
-    if type(ability) ~= "table" then return 0 end
+    if type(ability) ~= "table" then return false end
+    if not yoka_may_change(target) then return false end
+
+    if type(Cryptid) == "table" and type(Cryptid.manipulate) == "function" then
+        local ok = pcall(Cryptid.manipulate, target, { value = scale })
+        if ok then return true end
+        CelestasMod.warn_once("yoka_manipulate",
+            "Yoka Siri could not use Cryptid.manipulate; scaling by hand instead")
+    end
 
     local changed = 0
 
@@ -5202,7 +5232,7 @@ local function yoka_scale(target, scale)
         end
     end
 
-    return changed
+    return changed > 0
 end
 
 SMODS.Joker {
@@ -5235,7 +5265,7 @@ SMODS.Joker {
             local target = index and row[index + 1]
             if not target or target == card then return end
 
-            if yoka_scale(target, card.ability.extra.scale) > 0 then
+            if yoka_scale(target, card.ability.extra.scale) then
                 target:juice_up(0.4, 0.5)
                 return {
                     message = localize { type = "variable", key = "a_xmult",
