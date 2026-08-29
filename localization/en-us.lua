@@ -1192,7 +1192,7 @@ return {
                 text = {
                     "{C:attention}+#1#{} Ante, {C:attention}-#2#{} hand size",
                     "{C:inactive}(+#3# Ante and -#4# hand size",
-                    "{C:inactive}after the first use)",
+                    "{C:inactive}from the second use on)",
                 },
             },
             c_celesta_bind = {

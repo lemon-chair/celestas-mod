@@ -1,11 +1,20 @@
 --- RAISE
 ---
 --- A Spectral that skips Antes at the cost of hand size, and costs more the
---- second time. The escalation is per RUN, not per card - the card is consumed
---- on use, so a counter on it would reset with every fresh copy.
+--- second time. Built on vanilla Ectoplasm, which is the same trade with an
+--- escalating price, and on Ouija, which is the other Spectral that shrinks
+--- the hand.
 ---
---- The count lives on G.GAME because that is what the run save serializes;
---- the same place Milky keeps the slots it has handed out.
+--- Ectoplasm keeps its running price on G.GAME (`ecto_minus`, lazily started
+--- at 1), applies it from a deferred event, and prints the price it is about
+--- to charge - `loc_vars = {G.GAME.ecto_minus or 1}`. All three of those are
+--- followed here. The escalation has to live on the run rather than the card
+--- either way: the card is consumed on use, so a counter on it would reset
+--- with every fresh copy.
+---
+--- Also followed: neither Ectoplasm nor Ouija refuses to be used when the hand
+--- is nearly gone. Ectoplasm will take a starting hand of 8 down to 0 across
+--- four uses and vanilla lets it, so this does not invent a floor either.
 
 SMODS.Atlas { key = "raise", path = "raise.png", px = 71, py = 95 }
 
@@ -23,15 +32,6 @@ local function next_cost(card)
     return extra.ante_more, extra.hand_size_more
 end
 
---- The hand size the run is actually working from.
---- real_card_limit is the honest number: card_limit is clamped at zero, so
---- once it bottoms out it stops telling you how far below you are.
-local function current_hand_size()
-    local config = G.hand and G.hand.config
-    if not config then return nil end
-    return config.real_card_limit or config.card_limit
-end
-
 SMODS.Consumable {
     key = "raise",
     set = "Spectral",
@@ -47,20 +47,12 @@ SMODS.Consumable {
 
     loc_vars = function(self, info_queue, card)
         local extra = card.ability.extra
-        -- Both tiers are printed rather than only the one that applies next.
-        -- The second is the one that decides whether using the first is a good
-        -- idea, and it is not visible anywhere else.
-        return { vars = { extra.ante, extra.hand_size,
-                          extra.ante_more, extra.hand_size_more } }
-    end,
-
-    can_use = function(self, card)
-        local size = current_hand_size()
-        if not size then return false end
-        -- A hand of nothing cannot be played, and the game offers no way back
-        -- up. Refusing the card is better than selling a soft lock.
-        local _, cost = next_cost(card)
-        return size - cost >= 1
+        -- The price it is about to charge, read live off the run - the way
+        -- Ectoplasm prints G.GAME.ecto_minus rather than its starting value.
+        -- The second line is worded as a standing fact rather than as
+        -- something still to come, so it stays true after the rise.
+        local antes, cost = next_cost(card)
+        return { vars = { antes, cost, extra.ante_more, extra.hand_size_more } }
     end,
 
     use = function(self, card, area, copier)
@@ -71,14 +63,17 @@ SMODS.Consumable {
         -- not count those, so it cannot be the source of truth here.
         G.GAME.celesta_raise_uses = uses_this_run() + 1
 
-        if G.hand then G.hand:change_size(-hand_cost) end
+        -- Ante immediately, hand size from an event - Ectoplasm's order, and
+        -- it reads better: the Ante counter moves, then the hand shrinks.
         ease_ante(antes)
 
         G.E_MANAGER:add_event(Event {
             trigger = "after",
-            delay = 0.2,
+            delay = 0.4,
             func = function()
+                if G.hand then G.hand:change_size(-hand_cost) end
                 play_sound("gold_seal", 0.9, 0.5)
+                card:juice_up(0.3, 0.5)
                 card_eval_status_text(card, "extra", nil, nil, nil,
                     { message = localize("celesta_raised"), colour = G.C.FILTER })
                 return true
