@@ -175,3 +175,60 @@ function CelestasMod.scale_vars(vars, marked, scale, multiplier_excess)
     end
     return out
 end
+
+--------------------------------------------------------------------------------
+-- The deck preview, and cards it cannot draw
+--------------------------------------------------------------------------------
+--
+-- Steamodded's G.UIDEF.deck_preview counts the run's cards with
+--
+--     if SUITS[v.base.suit][v.base.value] and not v_nr and not v_ns then
+--
+-- where SUITS is keyed by registered suit. The two indexes are evaluated
+-- before the `and`, so an entry in G.playing_cards whose base carries a suit
+-- that is not registered - or no base at all - crashes the game the moment the
+-- deck panel is drawn, which is every frame while a hand is being selected.
+--
+-- G.playing_cards is a registry used for counting, not the thing that owns the
+-- cards: a card lives in its CardArea. Dropping an unrenderable entry from the
+-- registry therefore removes it from the deck COUNT and nothing else, which is
+-- the least destructive way to keep the panel alive.
+--
+-- What puts such an entry there is not yet known - it is not in the save, and
+-- every conversion in this mod goes through SMODS.change_base with a suit that
+-- exists. So this reports what it found rather than only swallowing it: the
+-- suit, the rank and the centre key are enough to recognise the card next
+-- time, and warn_once keeps it to one line per distinct suit.
+
+--- Drops entries the deck preview cannot draw. Returns how many went.
+function CelestasMod.prune_unrenderable_cards()
+    if not (G.playing_cards and SMODS and SMODS.Suits) then return 0 end
+
+    local removed = 0
+    for i = #G.playing_cards, 1, -1 do
+        local card = G.playing_cards[i]
+        local base = card and card.base
+        local suit = base and base.suit
+        if not (suit and SMODS.Suits[suit]) then
+            local center = card and card.config
+                and (card.config.center_key
+                     or (card.config.center and card.config.center.key))
+            CelestasMod.warn_once("unrenderable_" .. tostring(suit),
+                ("Removed a card from the deck count that the deck preview "
+                 .. "cannot draw: suit=%s rank=%s centre=%s playing_card=%s")
+                    :format(tostring(suit), tostring(base and base.value),
+                            tostring(center), tostring(card and card.playing_card)))
+            table.remove(G.playing_cards, i)
+            removed = removed + 1
+        end
+    end
+    return removed
+end
+
+if G.UIDEF and G.UIDEF.deck_preview then
+    local celesta_deck_preview_ref = G.UIDEF.deck_preview
+    function G.UIDEF.deck_preview(...)
+        CelestasMod.prune_unrenderable_cards()
+        return celesta_deck_preview_ref(...)
+    end
+end
