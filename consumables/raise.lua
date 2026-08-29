@@ -81,11 +81,28 @@ SMODS.Consumable {
         -- it reads better: the Ante counter moves, then the hand shrinks.
         ease_ante(antes)
 
+        -- Applied here rather than from the event below. Ectoplasm can defer
+        -- it because it is already running inside the chain of events its own
+        -- Spectral queued; a Consumable's `use` is the last thing that happens
+        -- before the card is gone, and anything left in the queue behind it is
+        -- at the mercy of whatever the Ante change triggers next. The Ante is
+        -- the visible half of this card, so the hand size must not be the half
+        -- that can go missing.
+        if G.hand then G.hand:change_size(-hand_cost) end
+
+        if CelestasMod.MOD and CelestasMod.MOD.config
+            and CelestasMod.MOD.config.verbose_logging then
+            local config = G.hand and G.hand.config
+            sendInfoMessage(("[raise] use #%d: +%s Ante, -%s hand size (limit now %s)")
+                :format(uses_this_run(), tostring(antes), tostring(hand_cost),
+                        tostring(config and (config.real_card_limit or config.card_limit))),
+                "CelestasMod")
+        end
+
         G.E_MANAGER:add_event(Event {
             trigger = "after",
             delay = 0.4,
             func = function()
-                if G.hand then G.hand:change_size(-hand_cost) end
                 play_sound("gold_seal", 0.9, 0.5)
                 card:juice_up(0.3, 0.5)
                 card_eval_status_text(card, "extra", nil, nil, nil,
