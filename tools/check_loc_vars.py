@@ -214,6 +214,11 @@ def main():
             continue
         text = " ".join(dict(entry.text).values())
         needed = max((int(n) for n in re.findall(r"#(\d+)#", text)), default=0)
+        # An {X:...} tag paints the multiplier badge; it does not print the
+        # "X". A value inside one has to be written as X#n# (or ^#n# for an
+        # exponent), or the card reads "by 1.5" where it means "by X1.5".
+        bare_badge = re.findall(r"\{X:[^}]*\}\s*#(\d+)#", text)
+
         # {V:n} picks colours[n] out of vars, and is a separate contract from
         # the #n# placeholders.
         needed_colours = max((int(n) for n in re.findall(r"\{V:(\d+)", text)),
@@ -241,6 +246,11 @@ def main():
         elif needed > max(got, 0):
             problems.append("%s %s: text needs #%d# but loc_vars returns %d var(s)"
                             % (kind, key, needed, max(got, 0)))
+        elif bare_badge:
+            problems.append("%s %s: #%s# sits in an {X:...} badge with no X - "
+                            "the tag paints the badge but does not print the "
+                            "letter, so the card reads \"by 1.5\" where it "
+                            "means \"by X1.5\"" % (kind, key, bare_badge[0]))
         elif needed_colours > 0 and got_colours == -4:
             problems.append("%s %s: text uses {V:%d} and loc_vars returns colours "
                             "BESIDE vars - it has to be inside, as vars.colours, "

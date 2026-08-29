@@ -1142,7 +1142,7 @@ return {
                 text = {
                     "After defeating a {C:attention}Boss Blind{},",
                     "multiply the values of the Joker",
-                    "to the {C:attention}right{} by {X:mult,C:white}#1#{}",
+                    "to the {C:attention}right{} by {X:mult,C:white}X#1#{}",
                 },
             },
             j_celesta_yomiquinnely = {
