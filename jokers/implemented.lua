@@ -3860,6 +3860,48 @@ SMODS.Joker {
 --------------------------------------------------------------------------------
 -- FeFe [Uncommon] - the scoring cards all turn to Hearts.
 --------------------------------------------------------------------------------
+--
+-- FeFe and its three siblings differ only in which suit they name, so the
+-- behaviour is written once, here, above the first of them.
+
+--- Converts every scoring card that has a suit to `suit`.
+--- Returns how many were changed, so the caller can stay quiet when the hand
+--- was already that suit.
+---
+--- The rewrite is SYNCHRONOUS and only the juice is queued, which is vanilla's
+--- Midas Mask shape:
+---     v:set_ability(G.P_CENTERS.m_gold, nil, true)
+---     G.E_MANAGER:add_event(Event({ func = function() v:juice_up() ... end }))
+---
+--- That is not a style choice. context.before is raised part-way through
+--- G.FUNCS.evaluate_play, and the rest of that function - naming the hand,
+--- every card's chips, every suit check a Joker or Blind makes - runs
+--- synchronously before it returns. An event queued here does not run until
+--- evaluate_play has finished, and in fact not until the NEXT frame, because
+--- the event evaluate_play is itself running inside blocks the queue for the
+--- rest of this one. So a queued conversion misses the hand that triggered it
+--- entirely; it would only be seen by the next one.
+local function convert_scoring_to(context, suit)
+    local scoring = context.scoring_hand
+    if type(scoring) ~= "table" then return 0 end
+
+    local converted = 0
+    for _, played in ipairs(scoring) do
+        -- A card with no suit has none to convert. Stone Cards and Limestone
+        -- report through has_no_suit, and changing their base would hand them
+        -- one they are not supposed to have.
+        if not SMODS.has_no_suit(played) and not played:is_suit(suit) then
+            SMODS.change_base(played, suit)
+            converted = converted + 1
+
+            local target = played
+            G.E_MANAGER:add_event(Event {
+                func = function() target:juice_up() return true end
+            })
+        end
+    end
+    return converted
+end
 
 SMODS.Joker {
     key = "fefe",
@@ -3875,31 +3917,11 @@ SMODS.Joker {
 
     calculate = function(self, card, context)
         -- context.before runs after the poker hand has been named but before
-        -- any card scores, so the conversion lands in time for every suit
-        -- check during scoring - Bloodstone, a Lusty Joker, a flush-suit
-        -- Blind - without retroactively rewriting which hand was played.
+        -- any card scores, so the conversion counts towards every suit check
+        -- during scoring - Bloodstone, a Lusty Joker, a flush-suit Blind -
+        -- without retroactively rewriting which hand was played.
         if context.before and not context.blueprint then
-            local scoring = context.scoring_hand
-            if type(scoring) ~= "table" then return end
-
-            local converted = 0
-            for _, played in ipairs(scoring) do
-                -- A card with no suit has none to convert. Stone Cards and
-                -- Limestone report through has_no_suit, and changing their
-                -- base would hand them one they are not supposed to have.
-                if not SMODS.has_no_suit(played) and not played:is_suit("Hearts") then
-                    local target = played
-                    G.E_MANAGER:add_event(Event {
-                        func = function()
-                            SMODS.change_base(target, "Hearts")
-                            return true
-                        end
-                    })
-                    converted = converted + 1
-                end
-            end
-
-            if converted > 0 then
+            if convert_scoring_to(context, "Hearts") > 0 then
                 return {
                     message = localize("celesta_hearts"),
                     colour = G.C.HEARTS,
@@ -4009,34 +4031,9 @@ SMODS.Joker {
 -- The suit converters: FeFe's siblings
 --------------------------------------------------------------------------------
 --
--- Four Jokers that differ only in which suit they name, so the behaviour is
--- written once. See FeFe above for why this runs on context.before.
-
---- Converts every scoring card that has a suit to `suit`.
---- Returns how many were changed, so the caller can stay quiet when the hand
---- was already that suit.
-local function convert_scoring_to(context, suit)
-    local scoring = context.scoring_hand
-    if type(scoring) ~= "table" then return 0 end
-
-    local converted = 0
-    for _, played in ipairs(scoring) do
-        -- A card with no suit has none to convert. Stone Cards and Limestone
-        -- report through has_no_suit, and changing their base would hand them
-        -- one they are not supposed to have.
-        if not SMODS.has_no_suit(played) and not played:is_suit(suit) then
-            local target = played
-            G.E_MANAGER:add_event(Event {
-                func = function()
-                    SMODS.change_base(target, suit)
-                    return true
-                end
-            })
-            converted = converted + 1
-        end
-    end
-    return converted
-end
+-- Three more Jokers that differ from FeFe only in which suit they name, so
+-- they share its convert_scoring_to. See FeFe above for why the rewrite is
+-- synchronous and only the juice is queued.
 
 --- The body all three share. Written out as three separate declarations
 --- rather than built in a loop because tools/gen_roster.py finds implemented
