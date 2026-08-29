@@ -89,9 +89,10 @@ return {
                 },
             },
             j_celesta_augustanomoly = {
-                name = "Augustanomoly",
+                name = "August Anomoly",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:blue}Blue Seal{} cards produce",
+                    "twice as many {C:planet}Planet{} cards",
                 },
             },
             j_celesta_auteru = {
@@ -194,9 +195,10 @@ return {
                 },
             },
             j_celesta_cerbervt = {
-                name = "CerberVT",
+                name = "Cerber",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Retriggers the scoring card",
+                    "with the {C:attention}highest{} rank #1# times",
                 },
             },
             j_celesta_chacha = {
@@ -344,7 +346,10 @@ return {
             j_celesta_fenari = {
                 name = "Fenari",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "At the end of the round, removes a",
+                    "random {C:attention}sticker{} from a random Joker.",
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult per sticker",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
                 },
             },
             j_celesta_fleshy = {
@@ -397,7 +402,8 @@ return {
             j_celesta_geega = {
                 name = "Geega",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Jokers that become {C:attention}debuffed{}",
+                    "turn {C:dark_edition}Negative{}",
                 },
             },
             j_celesta_giwi = {
@@ -413,9 +419,10 @@ return {
                 },
             },
             j_celesta_glowypumpkin = {
-                name = "Glowypumpkin",
+                name = "Glowy Pumpkin",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:planet}Planet{} cards created by",
+                    "{C:blue}Blue Seals{} are {C:dark_edition}Negative{}",
                 },
             },
             j_celesta_hannahhyrule = {
@@ -841,7 +848,8 @@ return {
             j_celesta_radiaactive = {
                 name = "Radiaactive",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Retriggers {C:blue}Blue Seal{} cards",
+                    "held in hand #1# time",
                 },
             },
             j_celesta_radicalmari = {
@@ -1067,7 +1075,8 @@ return {
             j_celesta_unnamed = {
                 name = "Unnamed",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Played cards that were",
+                    "{C:attention}flipped over{} are scored",
                 },
             },
             j_celesta_uzuri = {
@@ -1129,9 +1138,11 @@ return {
                 },
             },
             j_celesta_yokasiri = {
-                name = "Yokasiri",
+                name = "Yoka Siri",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "After defeating a {C:attention}Boss Blind{},",
+                    "multiply the values of the Joker",
+                    "to the {C:attention}right{} by {X:mult,C:white}#1#{}",
                 },
             },
             j_celesta_yomiquinnely = {

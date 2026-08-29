@@ -5124,3 +5124,414 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Yoka Siri [Rare] - pays the neighbour after a boss falls.
+--------------------------------------------------------------------------------
+
+-- Numbers a Joker keeps in ability.extra that are not "values" in the sense
+-- this multiplies. Odds get worse when multiplied rather than better, a
+-- repetition count is a whole number of extra triggers, and a tally is
+-- bookkeeping rather than a printed stat.
+local YOKA_LEAVE_ALONE = {
+    odds = true, repetitions = true, perma_repetitions = true,
+    perish_tally = true, cry_prob = true,
+    -- this mod's own bookkeeping
+    applied = true, bank = true, suit_index = true, last_round = true,
+    needed = true, levels = true,
+}
+
+--- Multiplies every printed number a Joker keeps, in place.
+---
+--- Straight multiplication rather than Vedal's rule, which scales the excess
+--- of a multiplier so that halving X2 lands on X1.5 instead of X1. That rule
+--- exists to stop a REDUCTION wiping a multiplier out; going up has no such
+--- problem, and "multiply the values by 1.5" plainly means X2 becomes X3.
+local function yoka_scale(target, scale)
+    local extra = target and target.ability and target.ability.extra
+    if type(extra) ~= "table" then return 0 end
+
+    local changed = 0
+    for key, value in pairs(extra) do
+        if type(value) == "number" and not YOKA_LEAVE_ALONE[key] then
+            extra[key] = value * scale
+            changed = changed + 1
+        end
+    end
+    return changed
+end
+
+SMODS.Joker {
+    key = "yokasiri",
+    atlas = "yokasiri",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 9,
+    unlocked = true, discovered = true,
+    -- A copy would multiply the same neighbour a second time.
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { scale = 1.5 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.scale } }
+    end,
+
+    calculate = function(self, card, context)
+        -- main_eval is the once-per-round Joker pass.
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            local blind = G.GAME and G.GAME.blind
+            if not (blind and blind.boss) then return end
+
+            local row = G.jokers and G.jokers.cards
+            if not row then return end
+            local index
+            for i, joker in ipairs(row) do
+                if joker == card then index = i break end
+            end
+            local target = index and row[index + 1]
+            if not target or target == card then return end
+
+            if yoka_scale(target, card.ability.extra.scale) > 0 then
+                target:juice_up(0.4, 0.5)
+                return {
+                    message = localize { type = "variable", key = "a_xmult",
+                                         vars = { card.ability.extra.scale } },
+                    colour = G.C.MULT,
+                    card = card,
+                }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Radiaactive [Uncommon] - Blue Seals go round twice.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "radiaactive",
+    atlas = "radiaactive",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { repetitions = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_SEALS.Blue
+        return { vars = { card.ability.extra.repetitions } }
+    end,
+
+    calculate = function(self, card, context)
+        -- Held in hand, not played: a Blue Seal does its work at end of round
+        -- from the hand, so that is the pass worth repeating.
+        if context.repetition and context.cardarea == G.hand
+            and context.other_card and context.other_card.seal == "Blue" then
+            return {
+                message = localize("k_again_ex"),
+                repetitions = card.ability.extra.repetitions,
+                card = card,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Blue Seal planets: August Anomoly and Glowy Pumpkin
+--------------------------------------------------------------------------------
+--
+-- Both of these act on the Planet a Blue Seal makes, and neither can find it
+-- from a calculate context: the Seal builds it inside an event queued from
+-- Card:get_end_of_round_effect, where no Joker is consulted.
+--
+-- It is identifiable at the source, though. Vanilla creates it with
+--     create_card('Planet', G.consumeables, nil, nil, nil, nil, _planet, 'blusl')
+-- and that last argument - the key_append - is 'blusl' for this and nothing
+-- else in the game. Wrapping create_card and watching for it is exact, where
+-- watching for "a Planet appeared at end of round" would also catch Moo
+-- Merrily, a Cryptid effect, or the player using a card.
+
+local BLUE_SEAL_APPEND = "blusl"
+
+--- True when a Joker with this key is in play and able to act.
+local function joker_active(key)
+    for _, joker in ipairs(SMODS.find_card(key)) do
+        if not joker.debuff then return true end
+    end
+    return false
+end
+
+--- Room for one more consumable, by the same test every vanilla source makes.
+local function consumable_room()
+    if not (G.consumeables and G.consumeables.config) then return false end
+    return #G.consumeables.cards + (G.GAME.consumeable_buffer or 0)
+        < G.consumeables.config.card_limit
+end
+
+local celesta_blue_seal_create_ref = create_card
+function create_card(_type, area, legendary, _rarity, skip_materialize,
+                     soulable, forced_key, key_append, ...)
+    local card = celesta_blue_seal_create_ref(_type, area, legendary, _rarity,
+        skip_materialize, soulable, forced_key, key_append, ...)
+
+    if key_append ~= BLUE_SEAL_APPEND or not card then return card end
+
+    -- Negative first: the copy below is made from this card, so it inherits
+    -- the edition and both Planets match.
+    if joker_active("j_celesta_glowypumpkin") and card.set_edition then
+        card:set_edition({ negative = true }, true, true)
+    end
+
+    if joker_active("j_celesta_augustanomoly") then
+        -- A Negative consumable costs no slot, so the second one only has to
+        -- fit when it is not Negative. Vanilla reserved room for one card
+        -- before this ran; this asks again for the other.
+        if card.edition and card.edition.negative or consumable_room() then
+            local twin = copy_card(card, nil, nil, nil, skip_materialize)
+            if twin then
+                twin:add_to_deck()
+                G.consumeables:emplace(twin)
+            end
+        end
+    end
+
+    return card
+end
+
+SMODS.Joker {
+    key = "augustanomoly",
+    atlas = "augustanomoly",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    -- The work happens at the Seal, not here; there is no trigger to copy.
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_SEALS.Blue
+        return {}
+    end,
+}
+
+SMODS.Joker {
+    key = "glowypumpkin",
+    atlas = "glowypumpkin",
+    pos = { x = 0, y = 0 },
+    rarity = 4, cost = 20,
+    unlocked = true, discovered = true,
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_SEALS.Blue
+        info_queue[#info_queue + 1] = G.P_CENTERS.e_negative
+        return {}
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Fenari [Rare] - peels stickers off, and grows doing it.
+--------------------------------------------------------------------------------
+
+--- Every sticker a card is currently wearing.
+--- Read from SMODS.Stickers rather than a list of the three vanilla ones, so a
+--- sticker another mod adds is peeled off too.
+local function stickers_on(target)
+    local worn = {}
+    if not (target and target.ability) then return worn end
+    for key in pairs(SMODS.Stickers or {}) do
+        if target.ability[key] then worn[#worn + 1] = key end
+    end
+    return worn
+end
+
+SMODS.Joker {
+    key = "fenari",
+    atlas = "fenari",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 9,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { x_mult = 1, x_mult_gain = 0.5 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.x_mult_gain, card.ability.extra.x_mult } }
+    end,
+
+    calculate = function(self, card, context)
+        -- main_eval is the once-per-round Joker pass.
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            local wearing = {}
+            for _, joker in ipairs(G.jokers and G.jokers.cards or {}) do
+                if #stickers_on(joker) > 0 then wearing[#wearing + 1] = joker end
+            end
+            if #wearing == 0 then return end
+
+            local target = pseudorandom_element(wearing, pseudoseed("celesta_fenari"))
+            if not target then return end
+            local worn = stickers_on(target)
+            local sticker = pseudorandom_element(worn, pseudoseed("celesta_fenari_which"))
+            if not sticker then return end
+
+            target.ability[sticker] = nil
+            -- Perishable keeps a countdown beside its flag; left behind it
+            -- would debuff the Joker on its own later.
+            if sticker == "perishable" then target.ability.perish_tally = nil end
+            target:juice_up(0.3, 0.4)
+
+            card.ability.extra.x_mult =
+                card.ability.extra.x_mult + card.ability.extra.x_mult_gain
+            return {
+                message = localize { type = "variable", key = "a_xmult",
+                                     vars = { card.ability.extra.x_mult } },
+                colour = G.C.MULT,
+                card = card,
+            }
+        end
+
+        if context.joker_main and card.ability.extra.x_mult > 1 then
+            return { x_mult = card.ability.extra.x_mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Geega [Rare] - a debuffed Joker is worth something after all.
+--------------------------------------------------------------------------------
+--
+-- Card:set_debuff is where every route in ends up: a Blind debuffing the row,
+-- a Perishable running out - which has its own branch above the general one -
+-- and anything a mod does through SMODS.debuff_card.
+
+local celesta_geega_set_debuff_ref = Card.set_debuff
+function Card:set_debuff(should_debuff)
+    local was_debuffed = self.debuff
+    local ret = celesta_geega_set_debuff_ref(self, should_debuff)
+
+    if self.debuff and not was_debuffed
+        and self.ability and self.ability.set == "Joker"
+        and not (self.edition and self.edition.negative)
+        and joker_active("j_celesta_geega") then
+        -- Not the Geega doing the debuffing to itself: a Joker that debuffs
+        -- itself and turns Negative for it is fine, but it must not be the
+        -- reason it counts as active.
+        self:set_edition({ negative = true }, true, true)
+    end
+
+    return ret
+end
+
+SMODS.Joker {
+    key = "geega",
+    atlas = "geega",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 9,
+    unlocked = true, discovered = true,
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.e_negative
+        return {}
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Cerber [Uncommon] - the biggest card goes round again.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "cerbervt",
+    atlas = "cerbervt",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { repetitions = 2 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.repetitions } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.repetition and context.cardarea == G.play
+            and context.other_card then
+            local scoring = context.scoring_hand
+            if type(scoring) ~= "table" then return end
+
+            -- A Stone Card has no rank to be the highest. Ties go to the LAST
+            -- such card, so exactly one card is picked however many share the
+            -- rank - the same rule Chibidoki uses for the lowest.
+            local highest
+            for _, played in ipairs(scoring) do
+                if not SMODS.has_no_rank(played) then
+                    if not highest or played:get_id() >= highest:get_id() then
+                        highest = played
+                    end
+                end
+            end
+
+            if highest and highest == context.other_card then
+                return {
+                    message = localize("k_again_ex"),
+                    repetitions = card.ability.extra.repetitions,
+                    card = card,
+                }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Unnamed [Common] - the cards nobody saw still count.
+--------------------------------------------------------------------------------
+--
+-- Splash is not a special case in the scoring code; it is one answer to a
+-- question the game asks about every played card:
+--     local splashed = SMODS.always_scores(card) or next(find_joker('Splash'))
+--     ... SMODS.calculate_context({modify_scoring_hand = true, other_card = card, ...})
+--     if flags.add_to_hand then splashed = true end
+-- So rather than copy Splash, this answers the same question for the cards it
+-- cares about. add_to_hand is the supported way in.
+--
+-- "Flipped over" has to be captured before scoring, because by then it is no
+-- longer true: CardArea:emplace turns a face-down card face up as it enters
+-- the play area -
+--     if card.facing == 'back' and self.config.type ~= 'discard' ... then card:flip() end
+-- - so the flag is set from inside emplace, reading the facing the card
+-- arrived with. It is cleared when the card lands anywhere else, which is
+-- every route out of the play area.
+
+local celesta_unnamed_emplace_ref = CardArea.emplace
+function CardArea:emplace(card, location, stay_flipped)
+    if card then
+        if self == G.play then
+            card.celesta_played_flipped = (card.facing == "back") or nil
+        elseif self == G.hand or self == G.discard then
+            card.celesta_played_flipped = nil
+        end
+    end
+    return celesta_unnamed_emplace_ref(self, card, location, stay_flipped)
+end
+
+SMODS.Joker {
+    key = "unnamed",
+    atlas = "unnamed",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    -- Answering a question twice does not answer it harder.
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        if context.modify_scoring_hand and context.other_card
+            and context.other_card.celesta_played_flipped then
+            return { add_to_hand = true }
+        end
+    end,
+}
