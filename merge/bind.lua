@@ -1112,8 +1112,93 @@ SMODS.Consumable {
 -- exactly 2 rather than something large, so the rest of the game's
 -- single-selection behaviour is disturbed as little as possible. Cryptid sets
 -- this to 1e100 for its own cards; whoever asks for more wins.
+--------------------------------------------------------------------------------
+-- Misprint: both halves, not just the host
+--------------------------------------------------------------------------------
+--
+-- Cryptid's Misprint Deck randomises a Joker's numbers by walking card.ability
+-- and descending exactly one level. On a merged card that reaches the host's
+-- ability.extra and stops: the absorbed half's own ability sits three levels
+-- down, at celesta_bind.ability.extra, so it never moves while every other
+-- Joker in the run does.
+--
+-- Numbers it was carrying at the moment of the merge do come along, because
+-- Bind.merge copies the ability table as it stands - a Joker misprinted before
+-- being merged keeps those. What it loses is every re-roll afterwards, so it
+-- drifts further out of step the longer the run goes on. This is what fixes
+-- that.
+--
+-- Done by lending Cryptid the absorbed half and letting it do exactly what it
+-- does to any Joker, rather than reimplementing the walk. Cryptid decides
+-- between misprinting and restoring base values, applies each centre's caps
+-- and records base values per centre key - all of which has to be right, and
+-- none of which is this mod's to duplicate. Lending means the absorbed half is
+-- measured against ITS OWN centre, which is the whole point: its base values
+-- are its own, not the host's.
+--
+-- The pair's agreed state, celesta_bind.special, is deliberately left out: it
+-- lives beside celesta_bind.ability, not inside it, so this cannot reach it.
+-- See Bind.special_state for why that matters.
+
+local misprint_hooked = false
+
+local function hook_cryptid_misprint()
+    if misprint_hooked then return end
+    if type(Cryptid) ~= "table" or type(Cryptid.misprintize) ~= "function" then
+        return
+    end
+    misprint_hooked = true
+
+    local misprintize_ref = Cryptid.misprintize
+    function Cryptid.misprintize(card, override, force_reset, stack, grow_type, pow_level)
+        local ret = misprintize_ref(card, override, force_reset, stack, grow_type, pow_level)
+        if not Bind.is_merged(card) then return ret end
+
+        local bound = card.ability.celesta_bind
+        local center = Bind.partner_center(card)
+        if type(bound.ability) ~= "table" or not center then return ret end
+
+        -- The same lend Card:calculate_joker uses. The inner call is the
+        -- original function, not this wrapper, so it cannot recurse - and
+        -- while it is lent the card does not read as merged anyway, because
+        -- celesta_bind lives on the host's ability rather than this one.
+        local saved_center = card.config.center
+        local saved_key = card.config.center_key
+        local saved_ability = card.ability
+        card.config.center = center
+        card.config.center_key = bound.key
+        card.ability = bound.ability
+
+        local ok, err = pcall(misprintize_ref, card, override, force_reset,
+                              stack, grow_type, pow_level)
+
+        -- Cryptid REPLACES the table rather than editing it in place - the
+        -- last line of misprintize_tbl is `ref_tbl[ref_value] = tbl`, where
+        -- tbl is a deep copy. So the lent half's new ability has to be taken
+        -- back off the card before it is handed its own one again, or the
+        -- misprinted copy is simply dropped on the floor.
+        local misprinted = card.ability
+
+        card.config.center = saved_center
+        card.config.center_key = saved_key
+        card.ability = saved_ability
+
+        if ok and type(misprinted) == "table" then bound.ability = misprinted end
+
+        if not ok then
+            CelestasMod.warn_once("bind_misprint_" .. tostring(bound.key),
+                ("Bind could not misprint %s: %s"):format(tostring(bound.key), tostring(err)))
+        end
+        return ret
+    end
+end
+
+-- Cryptid loads after this mod, so the hook cannot be installed at load time.
+-- Installed BEFORE the reference runs rather than after: a saved run restores
+-- its cards inside start_run, and those cards can be misprinted on the way in.
 local celesta_bind_start_run_ref = Game.start_run
 function Game:start_run(args)
+    hook_cryptid_misprint()
     local ret = celesta_bind_start_run_ref(self, args)
     if G.jokers and G.jokers.config
         and (G.jokers.config.highlighted_limit or 1) < 2 then
