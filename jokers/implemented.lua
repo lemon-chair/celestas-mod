@@ -3742,6 +3742,9 @@ SMODS.Joker {
 -- is listed too, so a future patch fixing it does not silently drop the card
 -- out of Ray's reach.
 local RAY_TARGETS = {
+    -- Cosmic is this mod's Star-suit equivalent of the vanilla four, so Ray
+    -- treats it the same way.
+    j_celesta_cosmic = true,
     j_greedy_joker = true,
     j_lusty_joker = true,
     j_wrathful_joker = true,
@@ -4717,6 +4720,375 @@ SMODS.Joker {
                 return {
                     message = localize("k_again_ex"),
                     repetitions = card.ability.extra.repetitions,
+                    card = card,
+                }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- The Star suit Jokers
+--------------------------------------------------------------------------------
+--
+-- All of these ask through card:is_suit, not base.suit. is_suit routes through
+-- SMODS.smeared_check, so a Wild Card counts as a Star and Arielle makes every
+-- card one - which is what those are for. (The one place this mod deliberately
+-- reads base.suit instead is Yomi's "is there a Star in the deck at all", where
+-- Arielle would otherwise answer yes for every deck.)
+
+--- The Star suit's name and colour, for the descriptions that print it.
+---
+--- The colour falls back to the raw value: G.C.SUITS is filled in when the
+--- suit registers its colours, and handing localize a nil colour renders the
+--- {V:1} slot as a blank name.
+local function star_name_and_colour()
+    return localize(CelestasMod.STARS_SUIT, "suits_plural"),
+           (G.C.SUITS or {})[CelestasMod.STARS_SUIT]
+               or HEX(CelestasMod.STARS_COLOUR)
+end
+
+--- True when a scored card counts as a Star.
+local function is_star(other_card)
+    return other_card ~= nil and other_card.is_suit ~= nil
+        and other_card:is_suit(CelestasMod.STARS_SUIT)
+end
+
+--------------------------------------------------------------------------------
+-- Cosmic [Common] - the plain one.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "cosmic",
+    atlas = "cosmic",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { mult = 3 } },
+
+    loc_vars = function(self, info_queue, card)
+        local name, colour = star_name_and_colour()
+        return { vars = { card.ability.extra.mult, name }, colours = { colour } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.individual and context.cardarea == G.play
+            and is_star(context.other_card) then
+            return { mult = card.ability.extra.mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Vienna [Uncommon] - a chance at exponential Mult.
+--------------------------------------------------------------------------------
+--
+-- ^Mult is Talisman's, not Steamodded's: Talisman wraps SMODS.calculate_effect
+-- to understand `e_mult` and adds Card:get_chip_e_mult alongside it. Without
+-- Talisman the key is simply ignored and the Joker would do nothing at all,
+-- silently - so it is asked about here and says so once if it is missing.
+--
+-- Asked at score time rather than at load: mods load in priority order, and
+-- Talisman may not have run yet when this file does.
+local function exponential_supported()
+    if Card.get_chip_e_mult ~= nil then return true end
+    CelestasMod.warn_once("vienna_no_talisman",
+        "Vienna scores ^Mult, which needs Talisman; without it the Joker does nothing")
+    return false
+end
+
+SMODS.Joker {
+    key = "vienna",
+    atlas = "vienna",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 7,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { odds = 3, e_mult = 1.15 } },
+
+    loc_vars = function(self, info_queue, card)
+        local numerator, denominator = SMODS.get_probability_vars(
+            card, 1, card.ability.extra.odds, "celesta_vienna")
+        local name, colour = star_name_and_colour()
+        return { vars = { numerator, denominator, card.ability.extra.e_mult, name },
+                 colours = { colour } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.individual and context.cardarea == G.play
+            and is_star(context.other_card) then
+            -- Rolled per card, so a hand of five Stars gets five rolls.
+            if SMODS.pseudorandom_probability(card, "celesta_vienna", 1,
+                    card.ability.extra.odds, "celesta_vienna") then
+                if not exponential_supported() then return end
+                return { e_mult = card.ability.extra.e_mult }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- PiapiUFO [Rare] - every Star multiplies.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "piapiufo",
+    atlas = "piapiufo",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { x_mult = 1.5 } },
+
+    loc_vars = function(self, info_queue, card)
+        local name, colour = star_name_and_colour()
+        return { vars = { card.ability.extra.x_mult, name }, colours = { colour } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.individual and context.cardarea == G.play
+            and is_star(context.other_card) then
+            return { x_mult = card.ability.extra.x_mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Mooni [Common] - paid for throwing Stars away.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "mooni",
+    atlas = "mooni",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 4,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { dollars = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        local name, colour = star_name_and_colour()
+        return { vars = { card.ability.extra.dollars, name }, colours = { colour } }
+    end,
+
+    calculate = function(self, card, context)
+        -- context.discard arrives once per discarded card, which is exactly
+        -- the per-card payout this wants.
+        if context.discard and not context.blueprint
+            and is_star(context.other_card) then
+            return {
+                dollars = card.ability.extra.dollars,
+                card = card,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Aries Akana [Uncommon] - collects Chips off Stars.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "ariesakana",
+    atlas = "ariesakana",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { chips = 0, chip_mod = 3 } },
+
+    loc_vars = function(self, info_queue, card)
+        local name, colour = star_name_and_colour()
+        return { vars = { card.ability.extra.chip_mod, card.ability.extra.chips, name },
+                 colours = { colour } }
+    end,
+
+    calculate = function(self, card, context)
+        -- The individual pass runs over the scoring cards BEFORE the Joker row
+        -- is evaluated, so a Star scored this hand is already paying by the
+        -- time joker_main asks for the total.
+        if context.individual and context.cardarea == G.play
+            and not context.blueprint and is_star(context.other_card) then
+            SMODS.scale_card(card, {
+                ref_table = card.ability.extra,
+                ref_value = "chips",
+                scalar_value = "chip_mod",
+                message_key = "a_chips",
+                message_colour = G.C.CHIPS,
+            })
+        end
+
+        if context.joker_main and card.ability.extra.chips > 0 then
+            return { chips = card.ability.extra.chips }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- SonneFlower [Uncommon] - grows on Diamonds, and only on Diamonds.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "sonneflower",
+    atlas = "sonneflower",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { x_mult = 1, x_mult_gain = 0.25 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.x_mult_gain, card.ability.extra.x_mult } }
+    end,
+
+    calculate = function(self, card, context)
+        -- context.before is the one pass that sees the whole scoring hand
+        -- before any of it scores, so the decision is made once per hand
+        -- rather than once per card.
+        if context.before and not context.blueprint then
+            local diamond = false
+            for _, played in ipairs(context.scoring_hand or {}) do
+                if played:is_suit("Diamonds") then diamond = true break end
+            end
+
+            if diamond then
+                card.ability.extra.x_mult =
+                    card.ability.extra.x_mult + card.ability.extra.x_mult_gain
+                return {
+                    message = localize { type = "variable", key = "a_xmult",
+                                         vars = { card.ability.extra.x_mult } },
+                    colour = G.C.MULT,
+                    card = card,
+                }
+            end
+
+            -- Reset only when there is something to lose, so a run of
+            -- Diamond-less hands does not announce a reset every time.
+            if card.ability.extra.x_mult > 1 then
+                card.ability.extra.x_mult = 1
+                return {
+                    message = localize("k_reset"),
+                    colour = G.C.MULT,
+                    card = card,
+                }
+            end
+        end
+
+        if context.joker_main and card.ability.extra.x_mult > 1 then
+            return { x_mult = card.ability.extra.x_mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Taehoongie [Uncommon] - one of every suit.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "taehoongie",
+    atlas = "taehoongie",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { levels = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.levels,
+                          localize("Five of a Kind", "poker_hands") } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.before and not context.blueprint then
+            -- Every suit the game has, not a hardcoded five: another mod
+            -- adding a suit should widen what this asks for rather than
+            -- leaving it satisfiable while a suit goes unrepresented.
+            local wanted, found = 0, 0
+            for _, suit in pairs(SMODS.Suits) do
+                wanted = wanted + 1
+                for _, played in ipairs(context.scoring_hand or {}) do
+                    if played:is_suit(suit.key) then found = found + 1 break end
+                end
+            end
+            if wanted == 0 or found < wanted then return end
+
+            return {
+                level_up = card.ability.extra.levels,
+                level_up_hand = "Five of a Kind",
+                message = localize("k_level_up_ex"),
+                colour = G.C.SECONDARY_SET.Planet,
+                card = card,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Shenpai [Uncommon] - gilds a Four of a Kind.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "shenpai",
+    atlas = "shenpai",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { needed = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_SEALS.Gold
+        return { vars = { card.ability.extra.needed } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.before and not context.blueprint then
+            -- Grouped by rank rather than trusting the hand name: a Five of a
+            -- Kind contains four of a rank too, and so does a Full House's
+            -- larger half when a Joker has widened what scores.
+            local by_rank = {}
+            for _, played in ipairs(context.scoring_hand or {}) do
+                if not SMODS.has_no_rank(played) then
+                    local id = played:get_id()
+                    by_rank[id] = by_rank[id] or {}
+                    table.insert(by_rank[id], played)
+                end
+            end
+
+            local gilded = 0
+            for _, group in pairs(by_rank) do
+                if #group >= card.ability.extra.needed then
+                    for _, target in ipairs(group) do
+                        -- A card that is already Gold is left alone, so the
+                        -- Joker does not claim to have done something it did
+                        -- not do when the hand is replayed.
+                        if target.seal ~= "Gold" then
+                            local sealed = target
+                            G.E_MANAGER:add_event(Event {
+                                func = function()
+                                    sealed:set_seal("Gold", nil, true)
+                                    return true
+                                end
+                            })
+                            gilded = gilded + 1
+                        end
+                    end
+                end
+            end
+
+            if gilded > 0 then
+                return {
+                    message = localize("celesta_sealed"),
+                    colour = G.C.MONEY,
                     card = card,
                 }
             end

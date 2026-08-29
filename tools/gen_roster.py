@@ -30,6 +30,14 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
 # Auto title-casing cannot know how a creator styles their own name.
 # Add corrections here; anything absent falls back to the mechanical rule.
 DISPLAY_NAMES = {
+    "cosmic": "Cosmic",
+    "vienna": "Vienna",
+    "piapiufo": "PiapiUFO",
+    "mooni": "Mooni",
+    "ariesakana": "Aries Akana",
+    "sonneflower": "SonneFlower",
+    "taehoongie": "Taehoongie",
+    "shenpai": "Shenpai",
     "sigrid_bird": "Sigrid & Bird",
     "nana_ruru": "Nana & Ruru",
     "henya": "Henya",

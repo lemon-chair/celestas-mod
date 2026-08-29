@@ -81,9 +81,11 @@ return {
                 },
             },
             j_celesta_ariesakana = {
-                name = "Ariesakana",
+                name = "Aries Akana",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "This Joker gains {C:chips}+#1#{} Chips",
+                    "for each scoring {V:1}#3#{} card",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
                 },
             },
             j_celesta_augustanomoly = {
@@ -223,7 +225,8 @@ return {
             j_celesta_cosmic = {
                 name = "Cosmic",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Played cards with {V:1}#2#{} suit",
+                    "give {C:mult}+#1#{} Mult when scored",
                 },
             },
             j_celesta_cottontail = {
@@ -688,7 +691,8 @@ return {
             j_celesta_mooni = {
                 name = "Mooni",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Earn {C:money}$#1#{} for each",
+                    "discarded {V:1}#2#{} suit card",
                 },
             },
             j_celesta_motherv3 = {
@@ -801,9 +805,10 @@ return {
                 },
             },
             j_celesta_piapiufo = {
-                name = "Piapiufo",
+                name = "PiapiUFO",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Each played card with {V:1}#2#{} suit",
+                    "gives {X:mult,C:white}X#1#{} Mult when scored",
                 },
             },
             j_celesta_pipi = {
@@ -932,7 +937,9 @@ return {
             j_celesta_shenpai = {
                 name = "Shenpai",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "If the scoring hand contains {C:attention}#1#{}",
+                    "cards of the same rank, give",
+                    "them all {C:attention}Gold Seals{}",
                 },
             },
             j_celesta_shiabun = {
@@ -1006,9 +1013,12 @@ return {
                 },
             },
             j_celesta_sonneflower = {
-                name = "Sonneflower",
+                name = "SonneFlower",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult if the",
+                    "scoring hand contains a {C:diamonds}Diamond{} card,",
+                    "resetting if it does not",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
                 },
             },
             j_celesta_spite = {
@@ -1043,7 +1053,9 @@ return {
             j_celesta_taehoongie = {
                 name = "Taehoongie",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "If the scoring hand contains a card",
+                    "of every {C:attention}suit{}, level up",
+                    "{C:attention}#2#{} #1# time",
                 },
             },
             j_celesta_trickywi = {
@@ -1089,7 +1101,9 @@ return {
             j_celesta_vienna = {
                 name = "Vienna",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:green}#1# in #2#{} chance for played cards",
+                    "with {V:1}#4#{} suit to give {X:mult,C:white}^#3#{} Mult",
+                    "when scored",
                 },
             },
             j_celesta_vulpixie = {
