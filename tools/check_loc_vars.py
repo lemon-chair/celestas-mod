@@ -106,6 +106,17 @@ function count_vars(obj)
   return n
 end
 
+-- Whether a Consumable can ever be used.
+--
+-- Vanilla's Card:can_use_consumeable is a chain of name checks ending in
+-- `return false`, and Steamodded patches the obj:can_use dispatch in ahead of
+-- it. A modded Consumable with no can_use therefore falls through the chain,
+-- matches none of the vanilla names, and its USE button is greyed out for the
+-- whole run. Nothing errors; the card simply cannot be played.
+function has_can_use(obj)
+  return type(obj.can_use) == "function"
+end
+
 -- How many vars a Blind's collection_loc_vars supplies.
 --
 -- Blind text goes through two hooks. loc_vars feeds the text on the Blind once
@@ -180,6 +191,7 @@ def main():
     count_vars = g.count_vars
     count_colours = g.count_colours
     count_collection_vars = g.count_collection_vars
+    has_can_use = g.has_can_use
 
     targets = []
     for key, obj in dict(g.jokers).items():
@@ -223,6 +235,13 @@ def main():
         # the #n# placeholders.
         needed_colours = max((int(n) for n in re.findall(r"\{V:(\d+)", text)),
                              default=0)
+        # A Consumable that cannot answer can_use is unplayable, which no
+        # amount of correct description text makes up for.
+        if kind == "Consumable" and not has_can_use(obj):
+            problems.append("%s %s: no can_use, so its USE button is greyed "
+                            "out forever - vanilla's chain of name checks ends "
+                            "in `return false` and a modded key matches none "
+                            "of them" % (kind, key))
         got = count_vars(obj)
         got_colours = count_colours(obj)
         # Blinds alone have a second text hook for the popup.
@@ -275,7 +294,8 @@ def main():
         # Not all of these crash: a missing collection_loc_vars or a bare
         # {X:...} badge only renders wrong, which is why that class went
         # unnoticed long enough to need a tool.
-        print(chr(10) + "%d PROBLEM(S) - these crash or misprint a description:" % len(problems))
+        print(chr(10) + "%d PROBLEM(S) - these crash, misprint or disable "
+              "an object:" % len(problems))
         for p in problems:
             print("   " + p)
         sys.exit(1)

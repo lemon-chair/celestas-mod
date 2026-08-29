@@ -55,6 +55,20 @@ SMODS.Consumable {
         return { vars = { antes, cost, extra.ante_more, extra.hand_size_more } }
     end,
 
+    can_use = function(self, card)
+        -- A modded Consumable MUST answer this. Vanilla's can_use_consumeable
+        -- is a chain of name checks that ends in `return false`, and
+        -- Steamodded's patch inserts the obj:can_use dispatch ahead of that
+        -- chain - so a Consumable with no can_use falls through it, matches
+        -- nothing, and its USE button is greyed out forever.
+        --
+        -- Ectoplasm looks like it needs no such check only because its
+        -- condition is written into that vanilla chain: "is there a Joker
+        -- without an edition". Raise has no requirement of its own - the
+        -- hand-size floor is deliberately absent - so it is always usable.
+        return true
+    end,
+
     use = function(self, card, area, copier)
         local antes, hand_cost = next_cost(card)
 
