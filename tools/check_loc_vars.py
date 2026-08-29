@@ -272,7 +272,10 @@ def main():
 
     print("checked %d objects" % checked)
     if problems:
-        print("\n%d PROBLEM(S) - these crash the game on hover:" % len(problems))
+        # Not all of these crash: a missing collection_loc_vars or a bare
+        # {X:...} badge only renders wrong, which is why that class went
+        # unnoticed long enough to need a tool.
+        print(chr(10) + "%d PROBLEM(S) - these crash or misprint a description:" % len(problems))
         for p in problems:
             print("   " + p)
         sys.exit(1)
