@@ -98,7 +98,8 @@ return {
             j_celesta_auteru = {
                 name = "Auteru",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Played cards with {V:1}#2#{} suit",
+                    "give {C:mult}+#1#{} Mult when scored",
                 },
             },
             j_celesta_axialmatt = {
@@ -179,9 +180,11 @@ return {
                 },
             },
             j_celesta_buffpup = {
-                name = "Buffpup",
+                name = "BuffPup",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:chips}+#1#{} Chips for each {V:1}#2#{}",
+                    "card in your {C:attention}full deck{}",
+                    "{C:inactive}(Currently {C:chips}+#3#{C:inactive} Chips)",
                 },
             },
             j_celesta_camila = {
@@ -396,7 +399,9 @@ return {
             j_celesta_fufu = {
                 name = "Fufu",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult for each",
+                    "unique {C:attention}suit{} in your {C:attention}full deck{}",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
                 },
             },
             j_celesta_geega = {
@@ -469,7 +474,9 @@ return {
             j_celesta_isaa = {
                 name = "Isaa",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Scores the played hand",
+                    "a second time",
+                    "{C:red}-#1#{} Hand",
                 },
             },
             j_celesta_itsdeadlyboop = {
@@ -602,9 +609,11 @@ return {
                 },
             },
             j_celesta_maplechicken = {
-                name = "Maplechicken",
+                name = "Maple Chicken",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Retriggers each {V:1}#2#{} card,",
+                    "scored or held in hand,",
+                    "{C:attention}#1#{} additional time",
                 },
             },
             j_celesta_mariyume = {
@@ -617,7 +626,10 @@ return {
             j_celesta_matarakan = {
                 name = "Matarakan",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Stores the money from every",
+                    "{C:attention}sold card{}, then pays {X:money,C:white}X#1#{} of it",
+                    "at the end of the {C:attention}Ante{} and is destroyed",
+                    "{C:inactive}(Currently {C:money}$#2#{C:inactive})",
                 },
             },
             j_celesta_maya = {
@@ -668,7 +680,9 @@ return {
             j_celesta_minikomew = {
                 name = "Minikomew",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:mult}+#1#{} Mult for every {C:money}$1{}",
+                    "your money is below {C:money}$0{}",
+                    "{C:inactive}(Currently {C:mult}+#2#{C:inactive} Mult)",
                 },
             },
             j_celesta_mintfantome = {
@@ -776,7 +790,8 @@ return {
             j_celesta_occi = {
                 name = "Occi",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Converts all scoring cards",
+                    "to the {C:attention}#1#{} of {C:spades}#2#{}",
                 },
             },
             j_celesta_onigiri = {
@@ -834,15 +849,18 @@ return {
                 },
             },
             j_celesta_pristinezero = {
-                name = "Pristinezero",
+                name = "Pristine Zero",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{X:mult,C:white}X#1#{} Mult if you have",
+                    "exactly {C:money}$0{}",
                 },
             },
             j_celesta_projektmelody = {
-                name = "Projektmelody",
+                name = "Projekt Melody",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Earn {C:money}$#1#{} at end of round",
+                    "Payout increases by {C:money}$#2#{} after",
+                    "each round, or {C:money}$#3#{} after skipping a Blind",
                 },
             },
             j_celesta_radiaactive = {
@@ -905,9 +923,11 @@ return {
                 },
             },
             j_celesta_rubensargasm = {
-                name = "Rubensargasm",
+                name = "Ruben Sargasm",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Gains {C:money}$#1#{} of sell value",
+                    "for each {C:attention}Joker{} you own",
+                    "{C:inactive}(Currently {C:money}+$#2#{C:inactive})",
                 },
             },
             j_celesta_rynxryn = {
@@ -1024,7 +1044,7 @@ return {
                 name = "SonneFlower",
                 text = {
                     "This Joker gains {X:mult,C:white}X#1#{} Mult if the",
-                    "scoring hand contains a {C:diamonds}Diamond{} card,",
+                    "scoring hand contains a {V:1}#3#{} card,",
                     "resetting if it does not",
                     "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
                 },
@@ -1179,6 +1199,14 @@ return {
         },
 
         Tarot = {
+            c_celesta_tree = {
+                name = "Tree",
+                text = {
+                    "Converts up to",
+                    "{C:attention}#1#{} selected cards",
+                    "to {V:1}#2#{}",
+                },
+            },
             c_celesta_star_fury = {
                 name = "Star Fury",
                 text = {
@@ -1455,6 +1483,8 @@ return {
             celesta_clubs = "All Clubs!",
             celesta_plus_seven = "+7 of Spades",
             celesta_downpour = "Downpour!",
+            celesta_aces = "All Aces of Spades!",
+            celesta_stored = "Stored!",
         },
     },
 }

@@ -55,66 +55,11 @@ SMODS.Suit {
 }
 
 --- True when the run's deck holds at least one Star card.
----
---- Read off base.suit rather than through card:is_suit. is_suit routes through
---- SMODS.smeared_check, so a Wild Card matches every suit and Arielle makes
---- every card match every suit - either would report a Star in a deck that has
---- none. This asks what is printed on the card, which is the question.
----
---- G.playing_cards is the whole run deck wherever its cards happen to be, so a
---- Star in the discard pile or in hand counts as much as one in the draw pile.
 function CelestasMod.stars_in_deck()
-    for _, held in ipairs(G.playing_cards or {}) do
-        if held.base and held.base.suit == CelestasMod.STARS_SUIT then
-            return true
-        end
-    end
-    return false
+    return CelestasMod.suit_in_deck(CelestasMod.STARS_SUIT)
 end
 
---------------------------------------------------------------------------------
--- Keeping Stars out of the starting deck
---------------------------------------------------------------------------------
---
--- A registered suit is in every deck by default: Game:start_run builds the
--- starting deck by walking G.P_CARDS, so thirteen Star cards would be dealt
--- into every run and the base deck would be 65 cards. That is a balance change
--- to the whole game rather than an addition to it, so the suit exists but is
--- not dealt - Stars arrive by conversion.
---
--- They are still reachable without anything else being written: Sigil, Grim,
--- Familiar and Incantation all pick from SMODS.Suits, which includes this one.
---
--- Done by lifting the prototypes out of G.P_CARDS for the duration of the
--- build rather than by filtering afterwards, because the deck is assembled and
--- shuffled inside start_run and there is no seam between those.
-
-local celesta_stars_start_run_ref = Game.start_run
-function Game:start_run(args)
-    -- A save is restored from the card list it stores, not from P_CARDS, in a
-    -- different branch of start_run entirely - but the restore still looks
-    -- each card's prototype up. Hiding them here would make a run that already
-    -- holds Star cards fail to load, so loads are passed straight through.
-    if not args or args.savetext then
-        return celesta_stars_start_run_ref(self, args)
-    end
-
-    local hidden = {}
-    for key, proto in pairs(G.P_CARDS) do
-        if proto.suit == CelestasMod.STARS_SUIT then hidden[key] = proto end
-    end
-    for key in pairs(hidden) do G.P_CARDS[key] = nil end
-
-    -- pcall so a failure anywhere in start_run cannot leave the suit missing
-    -- for the rest of the session: without the restore, every later conversion
-    -- to Stars would look up a prototype that is not there.
-    local ok, err = pcall(celesta_stars_start_run_ref, self, args)
-
-    for key, proto in pairs(hidden) do G.P_CARDS[key] = proto end
-
-    if not ok then error(err, 0) end
-    return
-end
+CelestasMod.register_conversion_suit(CelestasMod.STARS_SUIT)
 
 --------------------------------------------------------------------------------
 -- Star Fury - the Tarot that makes Star cards
@@ -147,18 +92,13 @@ SMODS.Consumable {
     config = { max_highlighted = 3 },
 
     loc_vars = function(self, info_queue, card)
-        -- G.C.SUITS is filled in when the suit registers its colours. Falling
-        -- back to the raw value keeps {V:1} substitutable rather than handing
-        -- localize a nil colour, which renders as a blank suit name.
-        local colour = (G.C.SUITS or {})[CelestasMod.STARS_SUIT]
-            or HEX(CelestasMod.STARS_COLOUR)
+        local name, colour = CelestasMod.suit_name_and_colour(
+            CelestasMod.STARS_SUIT, CelestasMod.STARS_COLOUR)
         -- colours goes INSIDE vars: localize reads
         -- args.vars.colours[tonumber(part.control.V)], and Steamodded's
         -- generate_ui does not forward a colours table returned beside vars.
         return {
-            vars = { self.config.max_highlighted,
-                     localize(CelestasMod.STARS_SUIT, "suits_plural"),
-                     colours = { colour } },
+            vars = { self.config.max_highlighted, name, colours = { colour } },
         }
     end,
 

@@ -35,6 +35,7 @@ NON_CARD = {
     # The suit pip is drawn into a fixed 0.3x0.3 rect, so its cell size is free
     # and the art's own 13x13 grid is used rather than resampling into 18x18.
     "suit_stars_ui": "13x13 suit pip",
+    "suit_leaf_ui": "13x13 suit pip",
 }
 
 

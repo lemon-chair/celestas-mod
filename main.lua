@@ -71,11 +71,16 @@ SMODS.Atlas { key = 'limestone_tatter',  path = 'limestone_tatter.png',  px = 71
 SMODS.Atlas { key = 'frozen', path = 'frozen.png', px = 71, py = 95 }
 
 --------------------------------------------------------------------------------
--- The Stars suit. Loaded before everything that reads suits, and before the
--- Jokers, so CelestasMod.STARS_SUIT is resolved by the time anything asks.
+-- The suits this mod adds. Loaded before everything that reads suits, and
+-- before the Jokers, so CelestasMod.STARS_SUIT and CelestasMod.LEAF_SUIT are
+-- resolved by the time anything asks. shared.lua first: it holds the registry
+-- both of them enrol in and the single start_run hook that keeps them out of
+-- the starting deck.
 --------------------------------------------------------------------------------
 
+assert(SMODS.load_file('suits/shared.lua'))()
 assert(SMODS.load_file('suits/stars.lua'))()
+assert(SMODS.load_file('suits/leaf.lua'))()
 
 --------------------------------------------------------------------------------
 -- Arena effects — screen-wide, round-scoped weather. Loaded before jokers

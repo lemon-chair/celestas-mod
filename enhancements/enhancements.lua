@@ -540,8 +540,12 @@ end
 -- gives the large central pip while keeping the suit visible.
 
 -- Index into the driftwood_fronts atlas, matching SUIT_ORDER in
--- tools/gen_driftwood_fronts.py.
+-- tools/gen_driftwood_fronts.py. This mod's own suits are drawn from their own
+-- sheets and appended after the vanilla four, so a Driftwood Star or Leaf gets
+-- the same rankless front rather than falling back to a printed rank.
 local DRIFTWOOD_SUIT_POS = { Hearts = 0, Clubs = 1, Diamonds = 2, Spades = 3 }
+DRIFTWOOD_SUIT_POS[CelestasMod.STARS_SUIT] = 4
+DRIFTWOOD_SUIT_POS[CelestasMod.LEAF_SUIT] = 5
 local DRIFTWOOD_FRONT_ATLAS = SMODS.current_mod.prefix .. "_driftwood_fronts"
 
 local set_sprites_ref = Card.set_sprites
@@ -558,7 +562,7 @@ function Card:set_sprites(_center, _front)
     local suit = (_front and _front.suit) or (self.base and self.base.suit)
     local pos = DRIFTWOOD_SUIT_POS[suit]
     local atlas = G.ASSET_ATLAS[DRIFTWOOD_FRONT_ATLAS]
-    -- Modded suits are not in the sheet; those keep their normal front.
+    -- Another mod's suit is not in the sheet; those keep their normal front.
     if not pos or not atlas then return end
 
     self.children.front.atlas = atlas

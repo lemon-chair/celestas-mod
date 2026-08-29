@@ -23,13 +23,26 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
           # wear overlays, drawn on top of a playing card
           "tatter", "lucky_card_tatter", "limestone_tatter",
           "bind", "milk_bottle",
-          # the Stars suit: a 13-cell rank row and its UI pip
+          # the added suits: a 13-cell rank row and a UI pip each
           "suit_stars", "suit_stars_ui",
-          "star_fury", "raise"}   # not per-joker art
+          "suit_leaf", "suit_leaf_ui",
+          # the consumables that make them, and the rest of the standalones
+          "star_fury", "tree", "raise"}   # not per-joker art
 
 # Auto title-casing cannot know how a creator styles their own name.
 # Add corrections here; anything absent falls back to the mechanical rule.
 DISPLAY_NAMES = {
+    "auteru": "Auteru",
+    "buffpup": "BuffPup",
+    "maplechicken": "Maple Chicken",
+    "fufu": "Fufu",
+    "isaa": "Isaa",
+    "occi": "Occi",
+    "matarakan": "Matarakan",
+    "projektmelody": "Projekt Melody",
+    "pristinezero": "Pristine Zero",
+    "minikomew": "Minikomew",
+    "rubensargasm": "Ruben Sargasm",
     "yokasiri": "Yoka Siri",
     "radiaactive": "Radiaactive",
     "augustanomoly": "August Anomoly",
@@ -272,6 +285,14 @@ EXAMPLE_KEYS = ["j_celesta_spark", "j_celesta_ledger", "j_celesta_tollkeeper"]
 LOC_TAIL = '''        },
 
         Tarot = {
+            c_celesta_tree = {
+                name = "Tree",
+                text = {
+                    "Converts up to",
+                    "{C:attention}#1#{} selected cards",
+                    "to {V:1}#2#{}",
+                },
+            },
             c_celesta_star_fury = {
                 name = "Star Fury",
                 text = {
@@ -548,6 +569,8 @@ LOC_TAIL = '''        },
             celesta_clubs = "All Clubs!",
             celesta_plus_seven = "+7 of Spades",
             celesta_downpour = "Downpour!",
+            celesta_aces = "All Aces of Spades!",
+            celesta_stored = "Stored!",
         },
     },
 }

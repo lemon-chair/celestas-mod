@@ -953,24 +953,35 @@ local YOMI_BASE_SUITS = { "Clubs", "Spades", "Diamonds", "Hearts" }
 
 --- The suits Yomi rotates through.
 ---
---- Stars join the list only once the deck actually holds one. They are not
---- dealt at the start of a run - see suits/stars.lua - so a rotation that
---- could land on them beforehand would spend a whole round retriggering a suit
---- the player has no cards in.
+--- An added suit joins the list only once the deck actually holds one of its
+--- cards. Neither Stars nor Leaves are dealt at the start of a run - see
+--- suits/shared.lua - so a rotation that could land on one beforehand would
+--- spend a whole round retriggering a suit the player has no cards in.
 ---
---- Read off base.suit rather than through is_suit: is_suit routes through
---- SMODS.smeared_check, and Arielle widens that to match everything, which
---- would report Stars as present in every deck.
+--- CelestasMod.suit_in_deck reads base.suit rather than going through is_suit:
+--- is_suit routes through SMODS.smeared_check, and Arielle widens that to
+--- match everything, which would report every suit as present in every deck.
 local function yomi_suits()
-    if not CelestasMod.stars_in_deck() then return YOMI_BASE_SUITS end
-    -- Appended, not prepended: the four keep the positions a saved suit_index
-    -- already points at, so acquiring a Star card does not jump a Yomi that is
-    -- part-way through the rotation onto a different suit. Stars are simply
-    -- reached when it next wraps.
-    local with_stars = {}
-    for i, suit in ipairs(YOMI_BASE_SUITS) do with_stars[i] = suit end
-    with_stars[#with_stars + 1] = CelestasMod.STARS_SUIT
-    return with_stars
+    -- Appended in registration order, never prepended: the four vanilla suits
+    -- keep the positions a saved suit_index already points at, so acquiring a
+    -- Star card does not jump a Yomi part-way through the rotation onto a
+    -- different suit - it simply reaches the new one when it next wraps.
+    --
+    -- With two added suits that is no longer quite airtight: picking up a Star
+    -- while already holding Leaves inserts Stars ahead of Leaves and moves the
+    -- rotation on by one. Reserving a slot for a suit the deck does not have
+    -- would mean rotating onto nothing, which is the worse of the two.
+    local suits = nil
+    for _, suit in ipairs(CelestasMod.CONVERSION_SUIT_ORDER or {}) do
+        if CelestasMod.suit_in_deck(suit) then
+            if not suits then
+                suits = {}
+                for i, base in ipairs(YOMI_BASE_SUITS) do suits[i] = base end
+            end
+            suits[#suits + 1] = suit
+        end
+    end
+    return suits or YOMI_BASE_SUITS
 end
 
 --- The suit at `index`, wrapped into range.
@@ -993,8 +1004,11 @@ SMODS.Joker {
 
     loc_vars = function(self, info_queue, card)
         local suits = yomi_suits()
+        -- Singular: the name qualifies "cards", so it reads "Heart cards" the
+        -- way vanilla's suit Jokers do - and the Leaf suit's plural is
+        -- "Leaves", which would not read at all.
         return { vars = { localize(yomi_suit_at(suits, card.ability.extra.suit_index),
-                                   "suits_plural") } }
+                                   "suits_singular") } }
     end,
 
     calculate = function(self, card, context)
@@ -3739,9 +3753,10 @@ SMODS.Joker {
 -- is listed too, so a future patch fixing it does not silently drop the card
 -- out of Ray's reach.
 local RAY_TARGETS = {
-    -- Cosmic is this mod's Star-suit equivalent of the vanilla four, so Ray
-    -- treats it the same way.
+    -- Cosmic and Auteru are this mod's Star- and Leaf-suit equivalents of the
+    -- vanilla four, so Ray treats them the same way.
     j_celesta_cosmic = true,
+    j_celesta_auteru = true,
     j_greedy_joker = true,
     j_lusty_joker = true,
     j_wrathful_joker = true,
@@ -4790,10 +4805,12 @@ SMODS.Joker {
 ---
 --- The colour falls back to the raw value: G.C.SUITS is filled in when the
 --- suit registers its colours.
+--- Singular, because every one of these descriptions uses the suit to qualify
+--- a noun - "Star suit", "Star card" - which is the form vanilla's own suit
+--- Jokers use. The Tarots that name the suit as a set stay plural.
 local function star_name_and_colour()
-    return localize(CelestasMod.STARS_SUIT, "suits_plural"),
-           (G.C.SUITS or {})[CelestasMod.STARS_SUIT]
-               or HEX(CelestasMod.STARS_COLOUR)
+    return CelestasMod.suit_name_and_colour(
+        CelestasMod.STARS_SUIT, CelestasMod.STARS_COLOUR, true)
 end
 
 --- Keeps a Joker out of the pools until the deck holds a Star.
@@ -4815,6 +4832,24 @@ end
 local function is_star(other_card)
     return other_card ~= nil and other_card.is_suit ~= nil
         and other_card:is_suit(CelestasMod.STARS_SUIT)
+end
+
+--- The Leaf suit's name and colour, and the same question about a card. Same
+--- shape as the two above, and for the same reasons.
+local function leaf_name_and_colour()
+    return CelestasMod.suit_name_and_colour(
+        CelestasMod.LEAF_SUIT, CelestasMod.LEAF_COLOUR, true)
+end
+
+local function is_leaf(other_card)
+    return other_card ~= nil and other_card.is_suit ~= nil
+        and other_card:is_suit(CelestasMod.LEAF_SUIT)
+end
+
+--- Keeps a Joker out of the pools until the deck holds a Leaf, for the Jokers
+--- that can do nothing at all without one. See star_gated above.
+local function leaf_gated(self, args)
+    return CelestasMod.leaf_in_deck()
 end
 
 --------------------------------------------------------------------------------
@@ -5011,8 +5046,12 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- SonneFlower [Uncommon] - grows on Diamonds, and only on Diamonds.
+-- SonneFlower [Uncommon] - grows on Leaves, and only on Leaves.
 --------------------------------------------------------------------------------
+--
+-- Not star_gated, and deliberately: a deck with no Leaves in it can still be
+-- given some, and a Joker that resets to X1 every hand until then is doing
+-- something the player can see and act on rather than nothing.
 
 SMODS.Joker {
     key = "sonneflower",
@@ -5025,7 +5064,9 @@ SMODS.Joker {
     config = { extra = { x_mult = 1, x_mult_gain = 0.25 } },
 
     loc_vars = function(self, info_queue, card)
-        return { vars = { card.ability.extra.x_mult_gain, card.ability.extra.x_mult } }
+        local name, colour = leaf_name_and_colour()
+        return { vars = { card.ability.extra.x_mult_gain, card.ability.extra.x_mult,
+                          name, colours = { colour } } }
     end,
 
     calculate = function(self, card, context)
@@ -5033,12 +5074,12 @@ SMODS.Joker {
         -- before any of it scores, so the decision is made once per hand
         -- rather than once per card.
         if context.before and not context.blueprint then
-            local diamond = false
+            local leaf = false
             for _, played in ipairs(context.scoring_hand or {}) do
-                if played:is_suit("Diamonds") then diamond = true break end
+                if is_leaf(played) then leaf = true break end
             end
 
-            if diamond then
+            if leaf then
                 card.ability.extra.x_mult =
                     card.ability.extra.x_mult + card.ability.extra.x_mult_gain
                 return {
@@ -5070,6 +5111,11 @@ SMODS.Joker {
 --------------------------------------------------------------------------------
 -- Taehoongie [Uncommon] - one of every suit.
 --------------------------------------------------------------------------------
+--
+-- It asks for one card of every suit the game has, so it is gated on the deck
+-- actually being able to answer: with two conversion-only suits registered, a
+-- Stars-only gate would let it into the shop in a run that has no Leaf and no
+-- way for the condition to be met.
 
 SMODS.Joker {
     key = "taehoongie",
@@ -5081,7 +5127,7 @@ SMODS.Joker {
 
     config = { extra = { levels = 1 } },
 
-    in_pool = star_gated,
+    in_pool = function(self, args) return CelestasMod.all_suits_in_deck() end,
 
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.levels,
@@ -5661,4 +5707,607 @@ SMODS.Joker {
             return { add_to_hand = true }
         end
     end,
+}
+
+--------------------------------------------------------------------------------
+-- The Leaf suit Jokers
+--------------------------------------------------------------------------------
+--
+-- Same shape as the Star suit set above, and for the same reasons: is_leaf
+-- asks through card:is_suit so a Wild Card counts, leaf_gated keeps a Joker
+-- out of the pools while the deck has no Leaf to work with, and the suit
+-- colour goes inside vars as vars.colours.
+
+--------------------------------------------------------------------------------
+-- Auteru [Common] - the plain one. Cosmic's opposite number.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "auteru",
+    atlas = "auteru",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { mult = 3 } },
+
+    in_pool = leaf_gated,
+
+    loc_vars = function(self, info_queue, card)
+        local name, colour = leaf_name_and_colour()
+        return { vars = { card.ability.extra.mult, name, colours = { colour } } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.individual and context.cardarea == G.play
+            and is_leaf(context.other_card) then
+            return { mult = card.ability.extra.mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- BuffPup [Common] - paid by the deck, not by the hand.
+--------------------------------------------------------------------------------
+--
+-- Counted off the whole run deck rather than the hand, so it is worth exactly
+-- as much whatever gets played - the same live-count shape as vanilla's
+-- Erosion, which reads #G.playing_cards in its description and again when it
+-- scores.
+
+SMODS.Joker {
+    key = "buffpup",
+    atlas = "buffpup",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { chips = 16 } },
+
+    in_pool = leaf_gated,
+
+    loc_vars = function(self, info_queue, card)
+        local name, colour = leaf_name_and_colour()
+        local held = CelestasMod.count_suit_in_deck(CelestasMod.LEAF_SUIT)
+        return { vars = { card.ability.extra.chips, name,
+                          held * card.ability.extra.chips,
+                          colours = { colour } } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.joker_main then
+            local held = CelestasMod.count_suit_in_deck(CelestasMod.LEAF_SUIT)
+            if held > 0 then
+                return { chips = held * card.ability.extra.chips }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Maple Chicken [Uncommon] - every Leaf goes round twice.
+--------------------------------------------------------------------------------
+--
+-- Two cardareas, because a Leaf card can be doing either job: G.play is the
+-- retrigger vanilla's Sock and Buskin gives face cards as they score, and
+-- G.hand is the one Mime gives cards held in hand. A Steel or Gold Leaf sat in
+-- hand is exactly the case that needs the second one, so both are answered
+-- rather than only the scoring pass.
+
+SMODS.Joker {
+    key = "maplechicken",
+    atlas = "maplechicken",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { repetitions = 1 } },
+
+    in_pool = leaf_gated,
+
+    loc_vars = function(self, info_queue, card)
+        local name, colour = leaf_name_and_colour()
+        return { vars = { card.ability.extra.repetitions, name,
+                          colours = { colour } } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.repetition and is_leaf(context.other_card)
+            and (context.cardarea == G.play or context.cardarea == G.hand) then
+            return {
+                message = localize("k_again_ex"),
+                repetitions = card.ability.extra.repetitions,
+                card = card,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Fufu [Uncommon] - paid for a varied deck.
+--------------------------------------------------------------------------------
+--
+-- Live-counted rather than accrued: "for each unique suit in your full deck"
+-- is a question about the deck as it is now, so converting the last Heart away
+-- costs the Mult back rather than leaving it banked.
+--
+-- Suitless cards are not a suit. Stone and Limestone still carry a base.suit
+-- under the enhancement, so the enhancement has to be asked rather than the
+-- base - CelestasMod.unique_suits_in_deck does that through SMODS.has_no_suit.
+--
+-- Not gated on either added suit: a vanilla deck already answers four.
+
+--- X1 plus the gain per distinct suit the deck is printed with.
+local function fufu_x_mult(card)
+    return 1 + card.ability.extra.x_mult_gain * CelestasMod.unique_suits_in_deck()
+end
+
+SMODS.Joker {
+    key = "fufu",
+    atlas = "fufu",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 7,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { x_mult_gain = 0.5 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.x_mult_gain, fufu_x_mult(card) } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.joker_main then
+            local x_mult = fufu_x_mult(card)
+            if x_mult > 1 then return { x_mult = x_mult } end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Isaa [Rare] - the hand is played, and then played again.
+--------------------------------------------------------------------------------
+--
+-- Two halves, and each one copies something that already exists.
+--
+-- The cost is Troubadour's, which is the only Joker in the game that changes
+-- how many hands a round gets: it adds to G.GAME.round_resets.hands in
+-- add_to_deck and takes the same back in remove_from_deck. round_resets is the
+-- per-round starting value, so the change lands from the next round on rather
+-- than mid-blind, and selling Isaa gives the hand back.
+--
+-- The second scoring is G.FUNCS.evaluate_play run again. That function is
+-- self-contained and synchronous: it names the poker hand off G.play.cards,
+-- computes the whole score inline and queues only the display, so calling it a
+-- second time from context.after - which is raised at the very end of the
+-- first pass, before the cards leave G.play - scores the same hand again and
+-- queues its events behind the first pass's. Nothing about the first pass is
+-- undone; the second score is added on top.
+--
+-- Two things it has to get right:
+--   * Re-entry. The second pass raises context.after too, and so would every
+--     pass after that. The flag below is why there are two scorings and not a
+--     stack overflow. A second Isaa still adds its own extra pass, because it
+--     is reached from the FIRST pass's after-loop, after the flag is down.
+--   * Cards the first pass destroyed. A Glass Card that broke is flagged and
+--     queued to dissolve, but it is still sitting in G.play.cards, so a second
+--     pass would score it again and roll to break it a second time - two
+--     dissolves for one card. They are lifted out for the rescore and put
+--     back, because draw_from_play_to_discard walks the same list afterwards
+--     and skips them by the same flags.
+
+--- Raised while the extra scoring pass is running.
+local isaa_rescoring = false
+
+--- Runs `fn` over G.play.cards with the already-destroyed cards taken out.
+local function isaa_without_destroyed(fn)
+    local play = G.play
+    if not (play and play.cards) then return fn() end
+
+    local full, kept = play.cards, {}
+    for _, held in ipairs(full) do
+        if not (held.destroyed or held.shattered) then kept[#kept + 1] = held end
+    end
+    -- Nothing was destroyed, so there is nothing to protect from.
+    if #kept == #full then return fn() end
+
+    play.cards = kept
+    local ok, err = pcall(fn)
+    play.cards = full
+    if not ok then error(err, 0) end
+end
+
+SMODS.Joker {
+    key = "isaa",
+    atlas = "isaa",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    -- An extra scoring pass cannot be credited to a copier: the whole hand
+    -- scores again, and the hand it costs is Isaa's alone. A Blueprint would
+    -- be getting the effect without the price.
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { hands = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.hands } }
+    end,
+
+    -- Recorded rather than assumed: if the deck is down to its last hand the
+    -- full cost is not taken, and remove_from_deck has to give back exactly
+    -- what was taken or the count drifts every time Isaa changes hands.
+    add_to_deck = function(self, card, from_debuff)
+        local resets = G.GAME and G.GAME.round_resets
+        if not resets then return end
+        local take = math.min(card.ability.extra.hands,
+                              math.max(0, (resets.hands or 0) - 1))
+        card.ability.extra.taken = take
+        resets.hands = resets.hands - take
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        local resets = G.GAME and G.GAME.round_resets
+        if not resets then return end
+        resets.hands = resets.hands + (card.ability.extra.taken or 0)
+        card.ability.extra.taken = 0
+    end,
+
+    calculate = function(self, card, context)
+        if context.after and not context.blueprint and not isaa_rescoring
+            and G.play and G.play.cards and #G.play.cards > 0
+            and G.FUNCS and G.FUNCS.evaluate_play then
+
+            -- Said before the second pass rather than returned after it: a
+            -- returned message is queued behind everything the rescore adds,
+            -- which reads as the hand announcing itself once it is over.
+            card_eval_status_text(card, "extra", nil, nil, nil,
+                { message = localize("k_again_ex"), colour = G.C.RED })
+
+            isaa_rescoring = true
+            local ok, err = pcall(isaa_without_destroyed, function()
+                G.FUNCS.evaluate_play()
+            end)
+            isaa_rescoring = false
+            if not ok then error(err, 0) end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Occi [Rare] - everything that scored is an Ace of Spades.
+--------------------------------------------------------------------------------
+--
+-- Midas Mask is the reference: it runs on context.before, walks
+-- context.scoring_hand and rewrites each card in place, then juices them up
+-- from an event. The rewrite is synchronous and the animation is not, which is
+-- what makes the change count towards the hand it triggered on - context.before
+-- runs after the poker hand has been named but before any card scores, and an
+-- event queued there would not run until the whole hand had already scored.
+--
+-- Suitless AND rankless cards are left alone: Stone and Limestone are the card
+-- rather than a card with a face on it, and giving them an Ace of Spades base
+-- would hand them a rank and a suit they are not supposed to have. This is the
+-- same line FeFe and its siblings draw.
+
+SMODS.Joker {
+    key = "occi",
+    atlas = "occi",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    -- Spades is a vanilla suit, so {C:spades} paints it and there is no
+    -- {V:1} colour to thread through vars the way the added suits need.
+    loc_vars = function(self, info_queue, card)
+        return { vars = { localize("Ace", "ranks"),
+                          localize("Spades", "suits_plural") } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.before and not context.blueprint then
+            local scoring = context.scoring_hand
+            if type(scoring) ~= "table" then return end
+
+            local changed = 0
+            for _, played in ipairs(scoring) do
+                -- What is printed on the card, not what it counts as: a Wild
+                -- Ace already counts as a Spade, and leaving it alone would
+                -- mean Occi silently skipped a card it is meant to convert.
+                local base = played.base or {}
+                local already = base.suit == "Spades" and base.value == "Ace"
+                if not (SMODS.has_no_suit(played) and SMODS.has_no_rank(played))
+                    and not already then
+                    SMODS.change_base(played, "Spades", "Ace")
+                    changed = changed + 1
+                    local target = played
+                    G.E_MANAGER:add_event(Event {
+                        func = function() target:juice_up() return true end
+                    })
+                end
+            end
+
+            if changed > 0 then
+                return {
+                    message = localize("celesta_aces"),
+                    colour = G.C.SPADES,
+                    card = card,
+                }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Matarakan [Uncommon] - a savings account with a deadline.
+--------------------------------------------------------------------------------
+--
+-- The money from a sale goes into the Joker instead of into the player's
+-- pocket. Vanilla pays a sale out from inside Card:sell_card, in a queued
+-- event, and only then raises context.selling_card on every OTHER Joker in the
+-- row - so the sale price is still readable on context.card, and taking it
+-- back is a matter of queuing the opposite. Both events land in the same
+-- drain, so the player never sees the money arrive.
+--
+-- Paying out at "the end of the Ante" is Rocket's test: context.end_of_round
+-- with G.GAME.blind.boss, which is the round that finishes an Ante.
+--
+-- Self-destruct is Gros Michel's: remove from the row first, then remove the
+-- card. That route is also the one merge/bind.lua watches, so a merged
+-- Matarakan unmerges and leaves its partner behind rather than taking it down.
+
+SMODS.Joker {
+    key = "matarakan",
+    atlas = "matarakan",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    -- Copying it would copy the payout without the deposits.
+    blueprint_compat = false, eternal_compat = false,
+
+    config = { extra = { stored = 0, payout_mult = 1.5 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.payout_mult,
+                          card.ability.extra.stored } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.selling_card and context.card and not context.blueprint then
+            local price = context.card.sell_cost or 0
+            if price > 0 then
+                card.ability.extra.stored = card.ability.extra.stored + price
+                -- Queued rather than returned as `dollars`: the sale's own
+                -- payout is a queued event too, and this has to land behind it
+                -- rather than being folded into a scoring total.
+                G.E_MANAGER:add_event(Event {
+                    func = function() ease_dollars(-price) return true end
+                })
+                return {
+                    message = localize("celesta_stored"),
+                    colour = G.C.MONEY,
+                    card = card,
+                }
+            end
+        end
+
+        if context.end_of_round and not context.blueprint
+            and G.GAME and G.GAME.blind and G.GAME.blind.boss then
+            local payout = math.floor(card.ability.extra.stored
+                                      * card.ability.extra.payout_mult)
+
+            -- Gros Michel's exit, beat for beat.
+            G.E_MANAGER:add_event(Event {
+                func = function()
+                    play_sound("tarot1")
+                    card.T.r = -0.2
+                    card:juice_up(0.3, 0.4)
+                    card.states.drag.is = true
+                    card.children.center.pinch.x = true
+                    G.E_MANAGER:add_event(Event {
+                        trigger = "after", delay = 0.3, blockable = false,
+                        func = function()
+                            G.jokers:remove_card(card)
+                            card:remove()
+                            return true
+                        end
+                    })
+                    return true
+                end
+            })
+
+            -- `dollars` rather than a hand-rolled ease_dollars: Steamodded
+            -- pays it out and prints the +$N itself, in every context.
+            if payout > 0 then
+                return { dollars = payout, colour = G.C.MONEY, card = card }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Projekt Melody [Uncommon] - the payout that grows either way.
+--------------------------------------------------------------------------------
+--
+-- Paid through calc_dollar_bonus, so the money appears as its own line on the
+-- cash-out screen the way Rocket's and Delayed Gratification's do.
+--
+-- The raise happens on context.ending_shop rather than context.end_of_round,
+-- and that is the whole difference between paying $1 on the first round and
+-- paying $2. end_of_round runs BEFORE the cash-out screen asks each Joker for
+-- its dollar bonus - it is why Rocket pays its upgraded amount on the very
+-- round the Boss died - so raising there would mean the first round already
+-- paid the second round's rate. Leaving the shop is unambiguously after the
+-- round, and it is the one thing a played round always ends with.
+--
+-- Skipping a Blind never reaches a shop, which is why the two raises sit on
+-- two different contexts rather than on one with a flag.
+
+SMODS.Joker {
+    key = "projektmelody",
+    atlas = "projektmelody",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { dollars = 1, round_gain = 1, skip_gain = 3 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.dollars,
+                          card.ability.extra.round_gain,
+                          card.ability.extra.skip_gain } }
+    end,
+
+    calc_dollar_bonus = function(self, card)
+        local dollars = card.ability.extra.dollars
+        if dollars <= 0 then return end
+        return dollars
+    end,
+
+    calculate = function(self, card, context)
+        local gain = (context.ending_shop and card.ability.extra.round_gain)
+            or (context.skip_blind and card.ability.extra.skip_gain)
+
+        if gain and not context.blueprint then
+            card.ability.extra.dollars = card.ability.extra.dollars + gain
+            return {
+                message = localize("k_upgrade_ex"),
+                colour = G.C.MONEY,
+                card = card,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Pristine Zero [Uncommon] - broke, exactly.
+--------------------------------------------------------------------------------
+--
+-- Vanilla's Bull reads G.GAME.dollars straight, and so does this. Exactly
+-- zero: a dollar either way and it is worth nothing, which is the whole card.
+
+SMODS.Joker {
+    key = "pristinezero",
+    atlas = "pristinezero",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 7,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { x_mult = 3 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.x_mult } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.joker_main and G.GAME and G.GAME.dollars == 0 then
+            return { x_mult = card.ability.extra.x_mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Minikomew [Common] - paid by the size of the hole.
+--------------------------------------------------------------------------------
+--
+-- Bull again with the sign flipped: Bull is extra*math.max(0, G.GAME.dollars),
+-- and this is the same expression asked about the debt instead. At $0 or above
+-- it is worth nothing at all.
+
+--- How far below zero the player is, never negative.
+local function minikomew_debt()
+    return math.max(0, -((G.GAME and G.GAME.dollars) or 0))
+end
+
+SMODS.Joker {
+    key = "minikomew",
+    atlas = "minikomew",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { mult = 2 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.mult,
+                          card.ability.extra.mult * minikomew_debt() } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.joker_main then
+            local debt = minikomew_debt()
+            if debt > 0 then
+                return { mult = card.ability.extra.mult * debt }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Ruben Sargasm [Common] - worth more in company.
+--------------------------------------------------------------------------------
+--
+-- Sell value is not something a Joker returns; it is read off the card.
+-- Vanilla computes it in Card:set_cost as
+--     self.sell_cost = math.max(1, math.floor(self.cost/2)) + (self.ability.extra_value or 0)
+-- so extra_value is the supported way to raise it, and Egg and Gift Card both
+-- write to exactly that field.
+--
+-- The catch is that nothing calls set_cost when a Joker is bought, so the
+-- value would sit stale until something else happened to refresh it.
+-- Card:update is where vanilla solves the same problem for Temperance, which
+-- re-adds every Joker's sell value there every frame - so this asks in the
+-- same place, and only calls set_cost on the frames where the answer changed.
+
+--- This Joker's own centre key. Written out the way Ray's target list is,
+--- rather than built from SMODS.current_mod.prefix: the prefix is a constant
+--- of this mod, and every other centre key named in this file is a literal.
+local RUBEN_KEY = "j_celesta_rubensargasm"
+
+--- Every Joker in the row counts, this one included.
+local function ruben_extra_value(card)
+    local extra = card.ability and card.ability.extra
+    local per = extra and extra.per_joker
+    if not per then return 0 end
+    return per * #(((G.jokers or {}).cards) or {})
+end
+
+local celesta_ruben_update_ref = Card.update
+function Card:update(dt)
+    celesta_ruben_update_ref(self, dt)
+
+    -- Cheapest test first: almost every card in the game is not a Joker at
+    -- all, and this runs for all of them on every frame.
+    if self.ability and self.ability.set == "Joker" and self.area == G.jokers
+        and self.config and self.config.center_key == RUBEN_KEY then
+        local want = ruben_extra_value(self)
+        if (self.ability.extra_value or 0) ~= want then
+            self.ability.extra_value = want
+            self:set_cost()
+        end
+    end
+end
+
+SMODS.Joker {
+    key = "rubensargasm",
+    atlas = "rubensargasm",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 4,
+    unlocked = true, discovered = true,
+    -- It has no calculate to copy; the sell value belongs to this card.
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.per_joker,
+                          ruben_extra_value(card) } }
+    end,
+
+    config = { extra = { per_joker = 2 } },
 }

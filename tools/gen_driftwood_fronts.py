@@ -16,7 +16,12 @@ content down its height:
     A  /  small pip  /  big central pip  /  small pip  /  A (rotated)
 so the first and last bands are the rank glyph at any scale.
 
-Output: assets/{1x,2x}/driftwood_fronts.png, four cells in SUIT_ORDER.
+The mod's own suits get the same treatment from their own sheets, which are
+laid out the same way: one row of 13 rank cells with the Ace last, and the same
+five content bands down an Ace. They are read from assets/ rather than from the
+game, so their cells are appended after the four vanilla ones.
+
+Output: assets/{1x,2x}/driftwood_fronts.png, one cell per suit in SUIT_ORDER.
 """
 import io
 import os
@@ -31,7 +36,13 @@ BALATRO = r"C:\Program Files (x86)\Steam\steamapps\common\Balatro\Balatro.exe"
 CARD_W, CARD_H = 71, 95
 ACE_COLUMN = 12
 # Row index in 8BitDeck matches the suit's y in G.P_CARDS.
-SUIT_ORDER = ["Hearts", "Clubs", "Diamonds", "Spades"]
+VANILLA_ROWS = ["Hearts", "Clubs", "Diamonds", "Spades"]
+
+# This mod's own suits, and the one-row sheet each is drawn on. Appended after
+# the vanilla four, so adding a suit here never renumbers an existing cell.
+MOD_SHEETS = [("celesta_Stars", "suit_stars"), ("celesta_Leaf", "suit_leaf")]
+
+SUIT_ORDER = VANILLA_ROWS + [suit for suit, _ in MOD_SHEETS]
 
 
 def content_bands(alpha, height, width):
@@ -73,13 +84,24 @@ def main():
         cw, ch = CARD_W * scale, CARD_H * scale
 
         sheet = Image.new("RGBA", (cw * len(SUIT_ORDER), ch), (0, 0, 0, 0))
-        for i, suit in enumerate(SUIT_ORDER):
-            box = (ACE_COLUMN * cw, i * ch, (ACE_COLUMN + 1) * cw, (i + 1) * ch)
-            stripped, bands = strip_rank(deck.crop(box))
-            sheet.paste(stripped, (i * cw, 0))
+
+        def place(index, suit, source, row):
+            box = (ACE_COLUMN * cw, row * ch, (ACE_COLUMN + 1) * cw, (row + 1) * ch)
+            stripped, bands = strip_rank(source.crop(box))
+            sheet.paste(stripped, (index * cw, 0))
             if scale == 1:
-                print("   %-9s bands %s -> cleared %s and %s"
+                print("   %-14s bands %s -> cleared %s and %s"
                       % (suit, len(bands), bands[0], bands[-1]))
+
+        for i, suit in enumerate(VANILLA_ROWS):
+            place(i, suit, deck, i)
+
+        for j, (suit, art) in enumerate(MOD_SHEETS):
+            path = os.path.join(ROOT, "assets", folder, art + ".png")
+            if not os.path.exists(path):
+                sys.exit("missing suit sheet: " + path)
+            # One row, so the Ace is at row 0 of its own sheet.
+            place(len(VANILLA_ROWS) + j, suit, Image.open(path).convert("RGBA"), 0)
 
         out = os.path.join(ROOT, "assets", folder, "driftwood_fronts.png")
         sheet.save(out)
