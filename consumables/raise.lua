@@ -46,13 +46,15 @@ SMODS.Consumable {
                          ante_more = 3, hand_size_more = 2 } },
 
     loc_vars = function(self, info_queue, card)
-        local extra = card.ability.extra
         -- The price it is about to charge, read live off the run - the way
         -- Ectoplasm prints G.GAME.ecto_minus rather than its starting value.
-        -- The second line is worded as a standing fact rather than as
-        -- something still to come, so it stays true after the rise.
+        --
+        -- Ectoplasm's text does not mention that its price climbs, and this
+        -- does not either: the number on the card is always the one the next
+        -- use will cost, which is the thing worth knowing at the moment of
+        -- deciding. Saying it twice made the card wordier without saying more.
         local antes, cost = next_cost(card)
-        return { vars = { antes, cost, extra.ante_more, extra.hand_size_more } }
+        return { vars = { antes, cost } }
     end,
 
     can_use = function(self, card)

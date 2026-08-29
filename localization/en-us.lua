@@ -1201,9 +1201,8 @@ return {
             c_celesta_raise = {
                 name = "Raise",
                 text = {
-                    "{C:attention}+#1#{} Ante, {C:attention}-#2#{} hand size",
-                    "{C:inactive}(+#3# Ante and -#4# hand size",
-                    "{C:inactive}from the second use on)",
+                    "{C:attention}+#1#{} Ante,",
+                    "{C:red}-#2#{} hand size",
                 },
             },
             c_celesta_bind = {
