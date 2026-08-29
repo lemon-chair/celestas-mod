@@ -4411,15 +4411,33 @@ SMODS.Joker {
 -- Kael [Uncommon] - every face card is a 10.
 --------------------------------------------------------------------------------
 --
--- Same approach as Driftwood counting as any rank, and for the same reason:
--- rank is not resolved in one place, so rather than teach get_X_same and
--- get_straight about a card that is two ranks at once, the rank is rewritten
--- BEFORE evaluation and put back afterwards. Every hand type then works with
--- no changes to any evaluator.
+-- Built the way Cryptid's Maximized is built, which is the same idea one rank
+-- further: it wraps Card:get_id and answers with the rank it wants cards to
+-- count as. Vanilla's Pareidolia does the mirror image for faces, widening
+-- Card:is_face rather than the rank.
 --
--- Only the hand evaluation is affected. A King keeps its own printed rank
--- everywhere else, is still a face card to Pareidolia and its friends, and
--- scores the ten Chips it already scored.
+-- Two details taken straight from Maximized, both of which cost something to
+-- learn the hard way:
+--
+-- Card:is_face CALLS Card:get_id -
+--     function Card:is_face(from_boss)
+--         if self.debuff and not from_boss then return end
+--         local id = self:get_id()
+--         if id == 11 or id == 12 or id == 13 or next(find_joker("Pareidolia")) then
+-- - so asking is_face from inside a get_id wrapper recurses forever. Maximized
+-- inlines the id range and the Pareidolia lookup instead of calling it, and so
+-- does this.
+--
+-- And the deck viewer has to be exempt. Maximized keeps an `override` flag
+-- that G.UIDEF.view_deck raises around itself, because a player looking at
+-- their deck wants to see the ranks their cards actually have. The same flag
+-- is here for the same reason.
+--
+-- Straights are deliberately untouched. get_straight buckets cards by their
+-- rank KEY rather than by get_id, so a King is still a King when the game
+-- looks for a run - which means Kael no longer breaks 9-10-J-Q-K the way
+-- rewriting base.value did. Pairs, trips and quads all go through get_id and
+-- do see the 10.
 
 --- True when a Kael is in play and able to act.
 local function kael_active()
@@ -4429,32 +4447,59 @@ local function kael_active()
     return false
 end
 
-local celesta_kael_evaluate_ref = evaluate_poker_hand
-function evaluate_poker_hand(hand)
-    if not kael_active() then return celesta_kael_evaluate_ref(hand) end
+-- Raised while something needs the PRINTED rank rather than Kael's answer.
+local kael_suppressed = false
 
-    local ten = SMODS.Ranks["10"]
-    if not ten then return celesta_kael_evaluate_ref(hand) end
+local celesta_kael_get_id_ref = Card.get_id
+function Card:get_id()
+    local id = celesta_kael_get_id_ref(self)
+    if kael_suppressed or not kael_active() then return id end
 
-    local faces, saved = {}, {}
-    for _, card in ipairs(hand or {}) do
-        if card.is_face and card:is_face() and not SMODS.has_no_rank(card) then
-            faces[#faces + 1] = card
-            -- base.value matters as well as base.id: get_straight looks ranks
-            -- up by key, not by numeric id.
-            saved[#saved + 1] = { id = card.base.id, value = card.base.value }
-        end
-    end
-    if #faces == 0 then return celesta_kael_evaluate_ref(hand) end
+    -- A Stone Card has no rank to convert, and get_id hands one back a large
+    -- negative number precisely so it matches nothing. Pareidolia calls it a
+    -- face card anyway; this does not follow it that far, because a Stone
+    -- Card that could pair with a King would be a stranger thing than a Stone
+    -- Card that cannot.
+    if SMODS.has_no_rank(self) then return id end
 
-    for _, card in ipairs(faces) do
-        card.base.id, card.base.value = ten.id, "10"
+    -- The face test, inlined rather than called - see above. Pareidolia makes
+    -- every card a face card, so under both this makes every card a 10.
+    if (id and id >= 11 and id <= 13) or next(find_joker("Pareidolia")) then
+        return 10
     end
-    local results = celesta_kael_evaluate_ref(hand)
-    for i, card in ipairs(faces) do
-        card.base.id, card.base.value = saved[i].id, saved[i].value
+    return id
+end
+
+--- Runs fn with Kael's answer suppressed, so get_id gives the printed rank.
+local function kael_printed(fn, ...)
+    local saved = kael_suppressed
+    kael_suppressed = true
+    local ok, ret = pcall(fn, ...)
+    kael_suppressed = saved
+    if not ok then error(ret, 0) end
+    return ret
+end
+
+-- A King is still a face card. is_face works off get_id -
+--     local id = self:get_id()
+--     if id == 11 or id == 12 or id == 13 or next(find_joker("Pareidolia"))
+-- - so without this a King answering 10 stops being a face card, and
+-- Photograph, Midas Mask, Baron, Sock and Buskin and Pareidolia itself all
+-- quietly stop seeing it. Kael changes what a card COUNTS AS, not what it IS.
+--
+-- Maximized never meets this because it maps faces to 13, which is still a
+-- face id. Mapping them to 10 walks straight into it.
+local celesta_kael_is_face_ref = Card.is_face
+function Card:is_face(from_boss)
+    return kael_printed(celesta_kael_is_face_ref, self, from_boss)
+end
+
+-- The deck viewer shows printed ranks, the way Maximized exempts it.
+if G.UIDEF and G.UIDEF.view_deck then
+    local celesta_kael_view_deck_ref = G.UIDEF.view_deck
+    function G.UIDEF.view_deck(...)
+        return kael_printed(celesta_kael_view_deck_ref, ...)
     end
-    return results
 end
 
 SMODS.Joker {
@@ -4463,7 +4508,7 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
     unlocked = true, discovered = true,
-    -- A passive the evaluator reads, not a trigger; there is nothing to copy.
+    -- A passive the rank lookup reads, not a trigger; there is nothing to copy.
     blueprint_compat = false, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -4472,6 +4517,7 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
+
 -- Mari Yume [Rare] - Blueprint, aimed at the far end of the row.
 --------------------------------------------------------------------------------
 
