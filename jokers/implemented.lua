@@ -789,7 +789,8 @@ end
 -- Ironmouse [Rare]
 -- ^1.3 Mult. Exponential scoring comes from Talisman, which registers `emult`
 -- as a scoring parameter; without Talisman installed the key is unrecognised
--- and this scores nothing.
+-- and this scores nothing. Talisman is a declared dependency, so that is not
+-- a configuration the mod is expected to run in.
 --------------------------------------------------------------------------------
 
 SMODS.Joker {
@@ -4807,7 +4808,14 @@ SMODS.Joker {
 -- ^Mult is Talisman's, not Steamodded's: Talisman wraps SMODS.calculate_effect
 -- to understand `e_mult` and adds Card:get_chip_e_mult alongside it. Without
 -- Talisman the key is simply ignored and the Joker would do nothing at all,
--- silently - so it is asked about here and says so once if it is missing.
+-- silently.
+--
+-- Talisman is a declared dependency in CelestasMod.json, so Steamodded will
+-- refuse to load this mod without it and the branch below should be
+-- unreachable. It is kept because "unreachable" rests on the manifest staying
+-- correct, and the failure it guards is a Joker that quietly does nothing -
+-- the kind that gets reported as "Vienna is broken" rather than as a missing
+-- dependency.
 --
 -- Asked at score time rather than at load: mods load in priority order, and
 -- Talisman may not have run yet when this file does.
