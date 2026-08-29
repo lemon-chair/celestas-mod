@@ -117,6 +117,13 @@ SMODS.Blind {
     boss_colour = HEX("4C9A2A"),
     discovered = true,
 
+    -- Blind text goes through TWO hooks, and supplying only one leaves the
+    -- other printing "nil" for every placeholder. loc_vars feeds the text on
+    -- the Blind itself once it is in play; collection_loc_vars feeds the
+    -- popup - the panel on the Blind select screen and the entry in the
+    -- collection - which otherwise falls back to `self.vars`, and SMODS.Blind
+    -- defaults that to an empty table. Steamodded's own take_ownership of The
+    -- Wheel defines both for this reason.
     loc_vars = function(self)
         -- Shown through get_probability_vars so the number on the blind is the
         -- number actually rolled: with Oops! All 6s in play the text reads
@@ -124,6 +131,13 @@ SMODS.Blind {
         local numerator, denominator = SMODS.get_probability_vars(
             nil, 1, CelestasMod.CLOVER_ODDS, CLOVER_SEED)
         return { vars = { numerator, denominator } }
+    end,
+
+    -- The collection is browsed with no run loaded, so the printed odds are
+    -- the base ones rather than whatever a run would modify them to. The Wheel
+    -- answers its own collection entry the same way.
+    collection_loc_vars = function(self)
+        return { vars = { 1, CelestasMod.CLOVER_ODDS } }
     end,
 }
 
@@ -178,7 +192,12 @@ SMODS.Blind {
     boss_colour = HEX("C9A227"),
     discovered = true,
 
+    -- Both hooks, for the reason spelled out on The Clover above.
     loc_vars = function(self)
+        return { vars = { CelestasMod.GREED_COST } }
+    end,
+
+    collection_loc_vars = function(self)
         return { vars = { CelestasMod.GREED_COST } }
     end,
 

@@ -106,6 +106,31 @@ function count_vars(obj)
   return n
 end
 
+-- How many vars a Blind's collection_loc_vars supplies.
+--
+-- Blind text goes through two hooks. loc_vars feeds the text on the Blind once
+-- it is in play; collection_loc_vars feeds the popup - the panel on the select
+-- screen and the collection entry - which otherwise falls back to self.vars,
+-- and SMODS.Blind defaults that to an empty table. Supplying only loc_vars
+-- leaves the popup printing "nil" for every placeholder, which is not a crash
+-- and so goes unnoticed until someone looks at it.
+--
+-- -1 means the hook is missing entirely, which is the mistake worth naming.
+function count_collection_vars(obj)
+  if type(obj.collection_loc_vars) ~= "function" then
+    if type(obj.vars) == "table" and #obj.vars > 0 then return #obj.vars end
+    return -1
+  end
+  local ok, res = pcall(function() return obj:collection_loc_vars() end)
+  if not ok then return -2, tostring(res) end
+  if type(res) ~= "table" or type(res.vars) ~= "table" then return 0 end
+  local n = #res.vars
+  for i = 1, n do
+    if res.vars[i] == nil then return -3, tostring(i) end
+  end
+  return n
+end
+
 -- How many {V:n} colours loc_vars supplies.
 --
 -- localize reads args.vars.colours[n], so the table has to sit INSIDE vars.
@@ -154,6 +179,7 @@ def main():
     g = lua.globals()
     count_vars = g.count_vars
     count_colours = g.count_colours
+    count_collection_vars = g.count_collection_vars
 
     targets = []
     for key, obj in dict(g.jokers).items():
@@ -194,6 +220,10 @@ def main():
                              default=0)
         got = count_vars(obj)
         got_colours = count_colours(obj)
+        # Blinds alone have a second text hook for the popup.
+        got_collection = count_collection_vars(obj) if kind == "Blind" else None
+        if isinstance(got_collection, tuple):
+            got_collection = got_collection[0]
         # count_vars returns (code, message) on error, which lupa hands back
         # as a tuple; everything else comes through as a bare number.
         err = ""
@@ -216,6 +246,15 @@ def main():
                             "BESIDE vars - it has to be inside, as vars.colours, "
                             "or Steamodded drops it and localize indexes a nil"
                             % (kind, key, needed_colours))
+        elif needed > 0 and got_collection == -1:
+            problems.append("%s %s: text needs #%d# but there is no "
+                            "collection_loc_vars - the Blind select popup and "
+                            "the collection will print \"nil\" for every "
+                            "placeholder" % (kind, key, needed))
+        elif got_collection is not None and needed > max(got_collection, 0):
+            problems.append("%s %s: text needs #%d# but collection_loc_vars "
+                            "supplies %d var(s)"
+                            % (kind, key, needed, max(got_collection, 0)))
         elif needed_colours > max(got_colours, 0):
             problems.append("%s %s: text uses {V:%d} but loc_vars supplies %d "
                             "colour(s) in vars.colours"
