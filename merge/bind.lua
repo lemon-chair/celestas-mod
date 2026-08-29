@@ -202,6 +202,20 @@ function Bind.special_of(card)
 end
 
 --- The pair's saved state, created from its config on first use.
+---
+--- Deliberately kept under ability.celesta_bind rather than in ability.extra,
+--- and that is load-bearing for more than tidiness: Cryptid's Misprint Deck
+--- randomises numbers by walking card.ability and descending exactly ONE
+--- level, so ability.extra.x is reached and ability.celesta_bind.special.x is
+--- not. A merged pair's numbers therefore stay as written.
+---
+--- That is wanted. A pair's effect is agreed between two halves and several of
+--- them hand out retriggers; a randomised repetition count on a Joker that is
+--- already doubling the whole row is how a run stops being playable. The host
+--- half's own ability.extra is still misprinted, as any Joker's would be.
+---
+--- test_misprint.py asserts this against Cryptid's real traversal, so if
+--- Cryptid ever descends further this is found rather than discovered.
 function Bind.special_state(card, def)
     local bound = card.ability.celesta_bind
     if type(bound.special) ~= "table" then
