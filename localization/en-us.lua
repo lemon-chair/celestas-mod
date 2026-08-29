@@ -1221,6 +1221,13 @@ return {
                     "{C:green}#1# in #2#{} chance to trigger",
                 },
             },
+            bl_celesta_greed = {
+                name = "The Greed",
+                text = {
+                    "Hands and discards",
+                    "cost {C:money}$#1#{} to use",
+                },
+            },
         },
 
         Enhanced = {

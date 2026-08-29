@@ -28,6 +28,7 @@ CELL = 34          # at 1x
 # key -> source file
 BLINDS = {
     "clover": "the_clover.png",
+    "greed": "the_greed2.png",
 }
 
 

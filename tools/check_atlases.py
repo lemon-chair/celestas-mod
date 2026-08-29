@@ -29,6 +29,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NON_CARD = {
     "modicon": "32x32 mod badge",
     "blind_clover": "34x34 animated blind chip",
+    "blind_greed": "34x34 animated blind chip",
     "fx_downpour": "256x256 weather frames",
     "fx_snowstorm": "256x256 weather frames",
     # The suit pip is drawn into a fixed 0.3x0.3 rect, so its cell size is free

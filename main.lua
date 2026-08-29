@@ -51,6 +51,8 @@ SMODS.Atlas { key = 'driftwood_fronts', path = 'driftwood_fronts.png', px = 71, 
 -- Blind chips are animated sprites, hence frames/ANIMATION_ATLAS.
 SMODS.Atlas { key = 'blind_clover', path = 'blind_clover.png', px = 34, py = 34,
               frames = 21, atlas_table = 'ANIMATION_ATLAS' }
+SMODS.Atlas { key = 'blind_greed', path = 'blind_greed.png', px = 34, py = 34,
+              frames = 21, atlas_table = 'ANIMATION_ATLAS' }
 
 -- Arena effect sprite sheets (generated from GIFs by tools/gen_fx.py).
 SMODS.Atlas { key = 'fx_downpour', path = 'fx_downpour.png',  px = 256, py = 256 }

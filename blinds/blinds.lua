@@ -126,3 +126,77 @@ SMODS.Blind {
         return { vars = { numerator, denominator } }
     end,
 }
+
+--------------------------------------------------------------------------------
+-- The Greed - hands and discards cost money
+--------------------------------------------------------------------------------
+--
+-- Discards go through vanilla's own machinery. The Golden Needle challenge
+-- charges for a discard with `G.GAME.modifiers.discard_cost`, which
+-- state_events.lua spends right where the discard is counted:
+--     if G.GAME.modifiers.discard_cost then
+--         ease_dollars(-G.GAME.modifiers.discard_cost)
+--     end
+-- Setting that for the duration is better than charging by hand: it is
+-- deducted at exactly the moment vanilla deducts it, and it skips the discards
+-- a Joker forces, which are not the player's to pay for.
+--
+-- There is no `hand_cost` to match it - Golden Needle only charges for
+-- discards - so the hand is charged from press_play, which vanilla calls once
+-- per played hand and returns from early when the Blind is disabled.
+
+CelestasMod.GREED_COST = 2
+
+--- Remembers whatever discard cost was already in force and installs ours.
+--- A challenge can be charging for discards too, and this must not become the
+--- way to cancel it. `false` records "there was none" - nil would read as
+--- "nothing saved yet" and let a second call overwrite the real answer with
+--- our own value.
+local function greed_take_over()
+    if G.GAME.celesta_greed_prior == nil then
+        G.GAME.celesta_greed_prior = G.GAME.modifiers.discard_cost or false
+    end
+    G.GAME.modifiers.discard_cost = CelestasMod.GREED_COST
+end
+
+--- Puts back whatever was there before. Safe to call twice: a Blind that is
+--- disabled and then defeated gets both hooks.
+local function greed_hand_back()
+    if G.GAME.celesta_greed_prior == nil then return end
+    G.GAME.modifiers.discard_cost = G.GAME.celesta_greed_prior or nil
+    G.GAME.celesta_greed_prior = nil
+end
+
+SMODS.Blind {
+    key = "greed",
+    atlas = "blind_greed",
+    pos = { x = 0, y = 0 },
+
+    dollars = 5,
+    mult = 2,
+    boss = { min = 1, max = 10 },
+    boss_colour = HEX("C9A227"),
+    discovered = true,
+
+    loc_vars = function(self)
+        return { vars = { CelestasMod.GREED_COST } }
+    end,
+
+    set_blind = function(self)
+        greed_take_over()
+    end,
+
+    disable = function(self)
+        greed_hand_back()
+    end,
+
+    defeat = function(self)
+        greed_hand_back()
+    end,
+
+    press_play = function(self)
+        -- vanilla's Blind:press_play returns before this when the Blind is
+        -- disabled, so there is nothing to check here.
+        ease_dollars(-CelestasMod.GREED_COST)
+    end,
+}
