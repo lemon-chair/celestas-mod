@@ -948,7 +948,41 @@ SMODS.Joker {
 -- Yomi Quinnely [Uncommon] - retriggers one suit, rotating each round.
 --------------------------------------------------------------------------------
 
-local YOMI_SUITS = { "Clubs", "Spades", "Diamonds", "Hearts" }
+local YOMI_BASE_SUITS = { "Clubs", "Spades", "Diamonds", "Hearts" }
+
+--- The suits Yomi rotates through.
+---
+--- Stars join the list only once the deck actually holds one. They are not
+--- dealt at the start of a run - see suits/stars.lua - so a rotation that
+--- could land on them beforehand would spend a whole round retriggering a suit
+--- the player has no cards in.
+---
+--- Read off base.suit rather than through is_suit: is_suit routes through
+--- SMODS.smeared_check, and Arielle widens that to match everything, which
+--- would report Stars as present in every deck.
+local function yomi_suits()
+    for _, held in ipairs(G.playing_cards or {}) do
+        if held.base and held.base.suit == CelestasMod.STARS_SUIT then
+            -- Appended, not prepended: the four keep the positions a saved
+            -- suit_index already points at, so acquiring a Star card does not
+            -- jump a Yomi that is part-way through the rotation onto a
+            -- different suit. Stars are simply reached when it next wraps.
+            local with_stars = {}
+            for i, suit in ipairs(YOMI_BASE_SUITS) do with_stars[i] = suit end
+            with_stars[#with_stars + 1] = CelestasMod.STARS_SUIT
+            return with_stars
+        end
+    end
+    return YOMI_BASE_SUITS
+end
+
+--- The suit at `index`, wrapped into range.
+--- The list changes length when the first Star card arrives or the last one
+--- leaves, so a saved index can point past the end; wrapping keeps it inside
+--- the list rather than silently resetting the rotation to Clubs.
+local function yomi_suit_at(suits, index)
+    return suits[((index - 1) % #suits) + 1]
+end
 
 SMODS.Joker {
     key = "yomiquinnely",
@@ -961,12 +995,14 @@ SMODS.Joker {
     config = { extra = { suit_index = 1 } },
 
     loc_vars = function(self, info_queue, card)
-        local suit = YOMI_SUITS[card.ability.extra.suit_index] or YOMI_SUITS[1]
-        return { vars = { localize(suit, "suits_plural") } }
+        local suits = yomi_suits()
+        return { vars = { localize(yomi_suit_at(suits, card.ability.extra.suit_index),
+                                   "suits_plural") } }
     end,
 
     calculate = function(self, card, context)
-        local suit = YOMI_SUITS[card.ability.extra.suit_index] or YOMI_SUITS[1]
+        local suits = yomi_suits()
+        local suit = yomi_suit_at(suits, card.ability.extra.suit_index)
 
         if context.repetition and context.cardarea == G.play then
             if context.other_card:is_suit(suit) then
@@ -978,8 +1014,8 @@ SMODS.Joker {
         -- card evaluated during the end-of-round pass.
         if context.end_of_round and context.main_eval and not context.blueprint then
             card.ability.extra.suit_index =
-                (card.ability.extra.suit_index % #YOMI_SUITS) + 1
-            local next_suit = YOMI_SUITS[card.ability.extra.suit_index]
+                (card.ability.extra.suit_index % #suits) + 1
+            local next_suit = yomi_suit_at(suits, card.ability.extra.suit_index)
             return {
                 message = localize(next_suit, "suits_singular"),
                 colour = G.C.SUITS[next_suit],
