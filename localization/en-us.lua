@@ -1421,6 +1421,7 @@ return {
             celesta_plus_hand_size = "+1 Hand Size",
             celesta_plus_slot = "+1 Consumable Slot",
             celesta_plus_tag = "+1 Tag",
+            celesta_unmerged = "Unmerged!",
             celesta_sealed = "Sealed!",
             celesta_hearts = "All Hearts!",
             celesta_spades = "All Spades!",

@@ -153,7 +153,11 @@ function Bind.merge(host, absorbed)
     -- showing two faces, and the spec rules it out outright.
     host.cry_flipped = nil
 
-    -- One card now does two jobs, so it is worth what both were worth.
+    -- One card now does two jobs, so it is worth what both were worth. Each
+    -- half's own cost is kept, so a later unmerge can hand the survivor back
+    -- what it was worth rather than guessing at half the total.
+    host.ability.celesta_bind.host_sell_cost = host.sell_cost
+    host.ability.celesta_bind.sell_cost = absorbed.sell_cost
     host.sell_cost = (host.sell_cost or 0) + (absorbed.sell_cost or 0)
 
     Bind.invalidate_art(host)
@@ -525,6 +529,160 @@ special("j_celesta_bearthewitch", "j_celesta_moomerrily", {
 })
 
 --------------------------------------------------------------------------------
+-- Unmerging: when one half destroys itself
+--------------------------------------------------------------------------------
+--
+-- A Joker that removes itself - Gros Michel going extinct, Cavendish after it,
+-- Invisible Joker cashing in - does it to `self`, and on a merged card `self`
+-- is the whole card. Left alone that takes the other half with it, which is
+-- not what the player agreed to when they merged them. So a self-destruct on a
+-- merged card unmerges instead: the half that asked to go is dropped and the
+-- other carries on as an ordinary Joker.
+--
+-- Knowing WHICH half asked is the whole difficulty. None of them return
+-- anything that says so: they queue an event during their calculate, and the
+-- removal happens later from inside that event - or from an event that event
+-- queued, which is Gros Michel's shape exactly. So the acting half is recorded
+-- across the calculate AND across every event queued while it runs, however
+-- deeply nested.
+
+-- Which half of which card is running right now. Both are needed: a Joker
+-- destroying a DIFFERENT Joker is a normal thing to do, and only a card
+-- removing ITSELF should unmerge.
+local acting_card, acting_half = nil, nil
+
+--- Runs `fn` with `half` of `card` recorded as acting, and arranges for that
+--- record to be restored while any event queued during the run executes.
+---
+--- G.E_MANAGER.add_event is swapped only for the duration - during the
+--- calculate itself, and again inside each event it tagged - so outside those
+--- windows the queue is untouched. The wrapper re-enters this function, which
+--- is what carries the record down a chain of events that queue events.
+local function with_acting_half(card, half, fn, ...)
+    local saved_card, saved_half = acting_card, acting_half
+    acting_card, acting_half = card, half
+
+    local manager = G.E_MANAGER
+    local add_ref = manager and manager.add_event
+    if add_ref then
+        manager.add_event = function(mgr, event, ...)
+            if type(event) == "table" and type(event.func) == "function" then
+                local inner = event.func
+                event.func = function(...)
+                    return with_acting_half(card, half, inner, ...)
+                end
+            end
+            return add_ref(mgr, event, ...)
+        end
+    end
+
+    local ok, a, b = pcall(fn, ...)
+
+    if add_ref then manager.add_event = add_ref end
+    acting_card, acting_half = saved_card, saved_half
+
+    if not ok then error(a, 0) end
+    return a, b
+end
+
+Bind.with_acting_half = with_acting_half
+
+--- The index this card last sat at in the Joker row.
+--- Order matters in Balatro - it decides what Blueprint copies and the sequence
+--- everything scores in - so a card that is put back has to go back where it
+--- was, and by the time anything can be put back it has already been taken out.
+local celesta_bind_remove_card_ref = CardArea.remove_card
+function CardArea:remove_card(card, discarded_only)
+    if card and self == G.jokers then
+        for i, held in ipairs(self.cards) do
+            if held == card then card.celesta_bind_row_index = i break end
+        end
+    end
+    return celesta_bind_remove_card_ref(self, card, discarded_only)
+end
+
+--- Puts a card back in the Joker row at the position it was taken from.
+local function restore_to_row(card)
+    if not (G.jokers and G.jokers.cards) then return end
+    for _, held in ipairs(G.jokers.cards) do
+        if held == card then return end          -- never left
+    end
+
+    G.jokers:emplace(card)
+    local index = card.celesta_bind_row_index
+    if index and index >= 1 and index < #G.jokers.cards then
+        table.remove(G.jokers.cards, #G.jokers.cards)
+        table.insert(G.jokers.cards, index, card)
+    end
+    if G.jokers.set_ranks then G.jokers:set_ranks() end
+    G.jokers:align_cards()
+end
+
+--- Splits a merged card, dropping `losing` ("host" or "absorbed").
+--- Returns true when it actually unmerged.
+---
+--- The card object always survives; what changes is which centre it presents.
+--- Dropping the absorbed half is a matter of forgetting it. Dropping the host
+--- means the card has to BECOME the other Joker - centre, ability and sprite -
+--- because there is only ever one card and the survivor has to be it.
+function Bind.unmerge(card, losing)
+    if not Bind.is_merged(card) then return false end
+    local bound = card.ability.celesta_bind
+
+    if losing == "host" then
+        local center = Bind.partner_center(card)
+        if not center then return false end
+        local surviving_ability = bound.ability
+
+        -- Carried over rather than left behind: a merge inherits its halves'
+        -- stickers precisely so one cannot be laundered off, and unmerging
+        -- must not become the way to do it.
+        for _, sticker in ipairs({ "eternal", "perishable", "rental" }) do
+            if card.ability[sticker] then surviving_ability[sticker] = card.ability[sticker] end
+        end
+        if card.ability.perish_tally then
+            surviving_ability.perish_tally = card.ability.perish_tally
+        end
+
+        card.config.center = center
+        card.config.center_key = center.key
+        card.ability = surviving_ability
+        card.ability.celesta_bind = nil
+        card.sell_cost = bound.sell_cost
+            or math.max(1, math.floor((card.sell_cost or 2) / 2))
+        if card.set_sprites then card:set_sprites(center) end
+    else
+        card.ability.celesta_bind = nil
+        card.sell_cost = bound.host_sell_cost
+            or math.max(1, math.floor((card.sell_cost or 2) / 2))
+    end
+
+    Bind.invalidate_art(card)
+    card.ability_UIBox_table = nil          -- the two-panel description is stale
+    if card.juice_up then card:juice_up(0.4, 0.5) end
+    return true
+end
+
+-- Card:remove is where every self-destruct ends up, whichever route it took:
+-- vanilla's own extinction code calls G.jokers:remove_card(self) and then
+-- self:remove(), and SMODS.destroy_cards arrives here through start_dissolve.
+-- Catching it here rather than at each source means one place to be right.
+local celesta_bind_card_remove_ref = Card.remove
+function Card:remove()
+    if acting_card == self and acting_half and Bind.is_merged(self)
+        and not Bind.special_of(self) then
+        -- Removed from the row already, by the time anything can object.
+        if Bind.unmerge(self, acting_half) then
+            restore_to_row(self)
+            card_eval_status_text(self, "extra", nil, nil, nil,
+                { message = localize("celesta_unmerged"), colour = G.C.FILTER })
+            return
+        end
+    end
+    return celesta_bind_card_remove_ref(self)
+end
+
+--------------------------------------------------------------------------------
 -- Running both halves
 --------------------------------------------------------------------------------
 
@@ -569,7 +727,15 @@ end
 
 local celesta_bind_calculate_joker_ref = Card.calculate_joker
 function Card:calculate_joker(context, ...)
-    local effect, post = celesta_bind_calculate_joker_ref(self, context, ...)
+    -- The host's own centre runs inside a recorded window too: it is as
+    -- likely to be the half that destroys itself as the absorbed one.
+    local effect, post
+    if Bind.is_merged(self) and not running then
+        effect, post = with_acting_half(self, "host",
+            celesta_bind_calculate_joker_ref, self, context, ...)
+    else
+        effect, post = celesta_bind_calculate_joker_ref(self, context, ...)
+    end
 
     if running or not Bind.is_merged(self) then return effect, post end
 
@@ -603,7 +769,8 @@ function Card:calculate_joker(context, ...)
     local saved_center, saved_ability = self.config.center, self.ability
     self.config.center = center
     self.ability = self.ability.celesta_bind.ability
-    local ok, partner = pcall(center.calculate, center, self, context)
+    local ok, partner = pcall(with_acting_half, self, "absorbed",
+                              center.calculate, center, self, context)
     self.config.center, self.ability = saved_center, saved_ability
     running = false
 
