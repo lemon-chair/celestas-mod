@@ -54,6 +54,24 @@ SMODS.Suit {
     },
 }
 
+--- True when the run's deck holds at least one Star card.
+---
+--- Read off base.suit rather than through card:is_suit. is_suit routes through
+--- SMODS.smeared_check, so a Wild Card matches every suit and Arielle makes
+--- every card match every suit - either would report a Star in a deck that has
+--- none. This asks what is printed on the card, which is the question.
+---
+--- G.playing_cards is the whole run deck wherever its cards happen to be, so a
+--- Star in the discard pile or in hand counts as much as one in the draw pile.
+function CelestasMod.stars_in_deck()
+    for _, held in ipairs(G.playing_cards or {}) do
+        if held.base and held.base.suit == CelestasMod.STARS_SUIT then
+            return true
+        end
+    end
+    return false
+end
+
 --------------------------------------------------------------------------------
 -- Keeping Stars out of the starting deck
 --------------------------------------------------------------------------------

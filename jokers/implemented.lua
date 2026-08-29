@@ -961,19 +961,15 @@ local YOMI_BASE_SUITS = { "Clubs", "Spades", "Diamonds", "Hearts" }
 --- SMODS.smeared_check, and Arielle widens that to match everything, which
 --- would report Stars as present in every deck.
 local function yomi_suits()
-    for _, held in ipairs(G.playing_cards or {}) do
-        if held.base and held.base.suit == CelestasMod.STARS_SUIT then
-            -- Appended, not prepended: the four keep the positions a saved
-            -- suit_index already points at, so acquiring a Star card does not
-            -- jump a Yomi that is part-way through the rotation onto a
-            -- different suit. Stars are simply reached when it next wraps.
-            local with_stars = {}
-            for i, suit in ipairs(YOMI_BASE_SUITS) do with_stars[i] = suit end
-            with_stars[#with_stars + 1] = CelestasMod.STARS_SUIT
-            return with_stars
-        end
-    end
-    return YOMI_BASE_SUITS
+    if not CelestasMod.stars_in_deck() then return YOMI_BASE_SUITS end
+    -- Appended, not prepended: the four keep the positions a saved suit_index
+    -- already points at, so acquiring a Star card does not jump a Yomi that is
+    -- part-way through the rotation onto a different suit. Stars are simply
+    -- reached when it next wraps.
+    local with_stars = {}
+    for i, suit in ipairs(YOMI_BASE_SUITS) do with_stars[i] = suit end
+    with_stars[#with_stars + 1] = CelestasMod.STARS_SUIT
+    return with_stars
 end
 
 --- The suit at `index`, wrapped into range.
@@ -4754,6 +4750,21 @@ local function star_name_and_colour()
                or HEX(CelestasMod.STARS_COLOUR)
 end
 
+--- Keeps a Joker out of the pools until the deck holds a Star.
+---
+--- The same idea as vanilla's Golden Ticket, which sits out of the shop until
+--- a Gold card exists - except vanilla hangs that on `enhancement_gate`, and
+--- there is no suit equivalent to hang this on, so it goes through
+--- Steamodded's in_pool. Steamodded consults it from get_current_pool, so it
+--- covers the shop, packs and every other source rather than the shop alone.
+---
+--- Only for Jokers that can do NOTHING without a Star. Yomi is not one: it
+--- rotates through the four either way and merely gains a fifth suit once one
+--- exists, so it stays available.
+local function star_gated(self, args)
+    return CelestasMod.stars_in_deck()
+end
+
 --- True when a scored card counts as a Star.
 local function is_star(other_card)
     return other_card ~= nil and other_card.is_suit ~= nil
@@ -4773,6 +4784,8 @@ SMODS.Joker {
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { mult = 3 } },
+
+    in_pool = star_gated,
 
     loc_vars = function(self, info_queue, card)
         local name, colour = star_name_and_colour()
@@ -4815,6 +4828,8 @@ SMODS.Joker {
 
     config = { extra = { odds = 3, e_mult = 1.15 } },
 
+    in_pool = star_gated,
+
     loc_vars = function(self, info_queue, card)
         local numerator, denominator = SMODS.get_probability_vars(
             card, 1, card.ability.extra.odds, "celesta_vienna")
@@ -4850,6 +4865,8 @@ SMODS.Joker {
 
     config = { extra = { x_mult = 1.5 } },
 
+    in_pool = star_gated,
+
     loc_vars = function(self, info_queue, card)
         local name, colour = star_name_and_colour()
         return { vars = { card.ability.extra.x_mult, name, colours = { colour } } }
@@ -4876,6 +4893,8 @@ SMODS.Joker {
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { dollars = 1 } },
+
+    in_pool = star_gated,
 
     loc_vars = function(self, info_queue, card)
         local name, colour = star_name_and_colour()
@@ -4908,6 +4927,8 @@ SMODS.Joker {
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { chips = 0, chip_mod = 3 } },
+
+    in_pool = star_gated,
 
     loc_vars = function(self, info_queue, card)
         local name, colour = star_name_and_colour()
@@ -5006,6 +5027,8 @@ SMODS.Joker {
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { levels = 1 } },
+
+    in_pool = star_gated,
 
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.levels,
