@@ -25,7 +25,7 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
           "bind", "milk_bottle",
           # the Stars suit: a 13-cell rank row and its UI pip
           "suit_stars", "suit_stars_ui",
-          "star_fury"}   # not per-joker art
+          "star_fury", "raise"}   # not per-joker art
 
 # Auto title-casing cannot know how a creator styles their own name.
 # Add corrections here; anything absent falls back to the mechanical rule.
@@ -284,6 +284,14 @@ LOC_TAIL = '''        },
         },
 
         Spectral = {
+            c_celesta_raise = {
+                name = "Raise",
+                text = {
+                    "{C:attention}+#1#{} Ante, {C:attention}-#2#{} hand size",
+                    "{C:inactive}(+#3# Ante and -#4# hand size",
+                    "{C:inactive}after the first use)",
+                },
+            },
             c_celesta_bind = {
                 name = "Bind",
                 text = {
@@ -519,6 +527,7 @@ LOC_TAIL = '''        },
             celesta_plus_slot = "+1 Consumable Slot",
             celesta_plus_tag = "+1 Tag",
             celesta_unmerged = "Unmerged!",
+            celesta_raised = "Raised!",
             celesta_sealed = "Sealed!",
             celesta_hearts = "All Hearts!",
             celesta_spades = "All Spades!",

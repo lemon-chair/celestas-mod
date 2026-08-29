@@ -92,6 +92,9 @@ assert(SMODS.load_file('wear/tattered.lua'))()
 -- After the jokers exist, so a merged joker can run any of their centres.
 assert(SMODS.load_file('merge/bind.lua'))()
 
+-- Standalone consumables.
+assert(SMODS.load_file('consumables/raise.lua'))()
+
 --------------------------------------------------------------------------------
 -- Jokers — auto-loaded from jokers/.
 -- Sorted so atlases.lua always registers before vtubers.lua references it.
