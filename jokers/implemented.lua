@@ -4455,15 +4455,14 @@ function Card:get_id()
     local id = celesta_kael_get_id_ref(self)
     if kael_suppressed or not kael_active() then return id end
 
-    -- A Stone Card has no rank to convert, and get_id hands one back a large
-    -- negative number precisely so it matches nothing. Pareidolia calls it a
-    -- face card anyway; this does not follow it that far, because a Stone
-    -- Card that could pair with a King would be a stranger thing than a Stone
-    -- Card that cannot.
-    if SMODS.has_no_rank(self) then return id end
-
-    -- The face test, inlined rather than called - see above. Pareidolia makes
-    -- every card a face card, so under both this makes every card a 10.
+    -- The face test, inlined rather than called - see above. It is Pareidolia's
+    -- own test, and this follows it exactly rather than second-guessing it:
+    -- whatever Pareidolia calls a face card, Kael calls a 10.
+    --
+    -- That includes a Stone Card. On its own a Stone Card is untouched, since
+    -- get_id hands back a large negative number precisely so it matches
+    -- nothing - but Pareidolia short-circuits the rank check, so under both it
+    -- is a face card and therefore a 10. Which is what Pareidolia would do.
     if (id and id >= 11 and id <= 13) or next(find_joker("Pareidolia")) then
         return 10
     end
