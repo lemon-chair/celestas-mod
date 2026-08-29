@@ -69,6 +69,13 @@ SMODS.Atlas { key = 'limestone_tatter',  path = 'limestone_tatter.png',  px = 71
 SMODS.Atlas { key = 'frozen', path = 'frozen.png', px = 71, py = 95 }
 
 --------------------------------------------------------------------------------
+-- The Stars suit. Loaded before everything that reads suits, and before the
+-- Jokers, so CelestasMod.STARS_SUIT is resolved by the time anything asks.
+--------------------------------------------------------------------------------
+
+assert(SMODS.load_file('suits/stars.lua'))()
+
+--------------------------------------------------------------------------------
 -- Arena effects — screen-wide, round-scoped weather. Loaded before jokers
 -- because Aquwa and friends call into CelestasMod.Arena.
 --------------------------------------------------------------------------------

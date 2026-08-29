@@ -22,7 +22,9 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
           "frozen",
           # wear overlays, drawn on top of a playing card
           "tatter", "lucky_card_tatter", "limestone_tatter",
-          "bind", "milk_bottle"}   # not per-joker art
+          "bind", "milk_bottle",
+          # the Stars suit: a 13-cell rank row and its UI pip
+          "suit_stars", "suit_stars_ui"}   # not per-joker art
 
 # Auto title-casing cannot know how a creator styles their own name.
 # Add corrections here; anything absent falls back to the mechanical rule.

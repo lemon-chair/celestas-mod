@@ -24,6 +24,7 @@ BOOTSTRAP = '''
 jokers, seals, enhancements, blinds, atlases = {}, {}, {}, {}, {}
 consumables = {}
 sounds = {}
+suits = {}
 SMODS = {
   Atlas = function(t) atlases[t.key] = t end,
   Sound = function(t) sounds[t.key] = t end,
@@ -32,6 +33,9 @@ SMODS = {
   Seal  = function(t) seals[t.key] = t end,
   Enhancement = function(t) enhancements[t.key] = t end,
   Blind = function(t) blinds[t.key] = t end,
+  -- Suits carry their own loc_txt rather than a descriptions entry, so
+  -- they are only recorded here to keep main.lua loadable.
+  Suit = function(t) suits[t.key] = t end,
   Consumable = function(t) consumables[t.key] = t end,
   Back = function() end,
   ConsumableTypes = {},
