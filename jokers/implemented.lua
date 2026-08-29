@@ -5129,10 +5129,18 @@ SMODS.Joker {
 -- Yoka Siri [Rare] - pays the neighbour after a boss falls.
 --------------------------------------------------------------------------------
 
--- Numbers a Joker keeps in ability.extra that are not "values" in the sense
--- this multiplies. Odds get worse when multiplied rather than better, a
--- repetition count is a whole number of extra triggers, and a tally is
--- bookkeeping rather than a printed stat.
+-- Values live in TWO places, and a Joker that scales only one of them misses
+-- most of the game. Vanilla builds its ability table flat -
+--     self.ability = { mult = center.config.mult or 0, t_mult = ..., x_mult =
+--                      center.config.Xmult or 1, extra = copy_table(...) or nil }
+-- - so a Jolly Joker keeps its 8 in ability.t_mult and has no `extra` table at
+-- all, while modded Jokers conventionally keep everything in ability.extra.
+--
+-- The two are read differently. ability.extra belongs to whoever declared the
+-- Joker, so anything numeric in it is fair game bar a short blocklist. The
+-- flat table is vanilla's own and is full of things that are not values -
+-- `order` is the sort position, `h_size` and `d_size` are applied once as the
+-- Joker enters the deck - so that one is an allowlist.
 local YOKA_LEAVE_ALONE = {
     odds = true, repetitions = true, perma_repetitions = true,
     perish_tally = true, cry_prob = true,
@@ -5141,6 +5149,25 @@ local YOKA_LEAVE_ALONE = {
     needed = true, levels = true,
 }
 
+local YOKA_FLAT_VALUES = {
+    mult = true, t_mult = true, h_mult = true, perma_mult = true,
+    chips = true, t_chips = true, h_chips = true, perma_bonus = true,
+    x_mult = true, h_x_mult = true, x_chips = true, h_x_chips = true,
+    e_mult = true, e_chips = true,
+    p_dollars = true, h_dollars = true, dollars = true,
+}
+
+--- True for a multiplier sitting at its do-nothing value.
+---
+--- Vanilla gives EVERY Joker `x_mult = center.config.Xmult or 1`, so scaling a
+--- 1 here would hand X1.5 Mult to a Joker that never had a multiplier at all.
+--- Cryptid's misprintize refuses the same values for the same reason.
+local function yoka_neutral(key, value)
+    if value ~= 1 then return false end
+    return key:find("x_mult") ~= nil or key:find("x_chips") ~= nil
+        or key:find("e_mult") ~= nil or key:find("e_chips") ~= nil
+end
+
 --- Multiplies every printed number a Joker keeps, in place.
 ---
 --- Straight multiplication rather than Vedal's rule, which scales the excess
@@ -5148,16 +5175,33 @@ local YOKA_LEAVE_ALONE = {
 --- exists to stop a REDUCTION wiping a multiplier out; going up has no such
 --- problem, and "multiply the values by 1.5" plainly means X2 becomes X3.
 local function yoka_scale(target, scale)
-    local extra = target and target.ability and target.ability.extra
-    if type(extra) ~= "table" then return 0 end
+    local ability = target and target.ability
+    if type(ability) ~= "table" then return 0 end
 
     local changed = 0
-    for key, value in pairs(extra) do
-        if type(value) == "number" and not YOKA_LEAVE_ALONE[key] then
-            extra[key] = value * scale
+
+    local extra = ability.extra
+    if type(extra) == "table" then
+        for key, value in pairs(extra) do
+            if type(value) == "number" and not YOKA_LEAVE_ALONE[key]
+                and not yoka_neutral(key, value) then
+                extra[key] = value * scale
+                changed = changed + 1
+            end
+        end
+    end
+
+    -- Iterated over the allowlist rather than over the table, so a field
+    -- vanilla adds later cannot quietly start being scaled.
+    for key in pairs(YOKA_FLAT_VALUES) do
+        local value = ability[key]
+        if type(value) == "number" and value ~= 0
+            and not yoka_neutral(key, value) then
+            ability[key] = value * scale
             changed = changed + 1
         end
     end
+
     return changed
 end
 
