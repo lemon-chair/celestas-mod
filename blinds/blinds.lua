@@ -200,3 +200,54 @@ SMODS.Blind {
         ease_dollars(-CelestasMod.GREED_COST)
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Boss Blinds added to a run already in progress
+--------------------------------------------------------------------------------
+--
+-- G.GAME.bosses_used is built once, when a run starts, from the Blinds that
+-- exist at that moment. get_new_boss marks every eligible Blind with `true`,
+-- then replaces those marks with use counts by walking bosses_used:
+--
+--     for k, v in pairs(G.GAME.bosses_used) do
+--         if eligible_bosses[k] then eligible_bosses[k] = v ... end
+--     end
+--     for k, v in pairs(eligible_bosses) do
+--         if eligible_bosses[k] > min_use then eligible_bosses[k] = nil end
+--     end
+--
+-- A Blind the run has never heard of is not in bosses_used, so its mark stays
+-- `true` and the second loop compares a boolean with a number. That is a crash
+-- on picking a Blind, in any run that was started before the Blind was added -
+-- which is every run a player already has going when this mod updates.
+--
+-- Cryptid repairs the same thing and says so in a comment, but does it AFTER
+-- calling through, so the call it is protecting has already thrown. This runs
+-- before. Load order puts this mod ahead of Cryptid, so this wrapper is the
+-- one Cryptid captured and it goes first either way.
+--
+-- Zero is what the count would have been had the Blind existed at run start.
+
+local celesta_boss_backfill_ref = get_new_boss
+function get_new_boss(...)
+    if G.GAME and G.P_BLINDS then
+        -- Created rather than skipped when it is missing entirely. An empty
+        -- bosses_used is the same crash as a partial one: with no counts to
+        -- replace them, EVERY mark stays a boolean and the comparison throws
+        -- on the first Blind it reaches.
+        if type(G.GAME.bosses_used) ~= "table" then G.GAME.bosses_used = {} end
+        local added = 0
+        for key, center in pairs(G.P_BLINDS) do
+            if center.boss and G.GAME.bosses_used[key] == nil then
+                G.GAME.bosses_used[key] = 0
+                added = added + 1
+            end
+        end
+        if added > 0 then
+            CelestasMod.warn_once("boss_backfill",
+                ("Filled in bosses_used for %d Blind(s) this run had not seen")
+                    :format(added))
+        end
+    end
+    return celesta_boss_backfill_ref(...)
+end
