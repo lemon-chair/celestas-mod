@@ -1154,6 +1154,14 @@ return {
         },
 
         Tarot = {
+            c_celesta_star_fury = {
+                name = "Star Fury",
+                text = {
+                    "Converts up to",
+                    "{C:attention}#1#{} selected cards",
+                    "to {V:1}#2#{}",
+                },
+            },
             c_celesta_reforge = {
                 name = "Reforge",
                 text = {

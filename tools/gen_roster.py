@@ -24,7 +24,8 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
           "tatter", "lucky_card_tatter", "limestone_tatter",
           "bind", "milk_bottle",
           # the Stars suit: a 13-cell rank row and its UI pip
-          "suit_stars", "suit_stars_ui"}   # not per-joker art
+          "suit_stars", "suit_stars_ui",
+          "star_fury"}   # not per-joker art
 
 # Auto title-casing cannot know how a creator styles their own name.
 # Add corrections here; anything absent falls back to the mechanical rule.
@@ -256,6 +257,14 @@ EXAMPLE_KEYS = ["j_celesta_spark", "j_celesta_ledger", "j_celesta_tollkeeper"]
 LOC_TAIL = '''        },
 
         Tarot = {
+            c_celesta_star_fury = {
+                name = "Star Fury",
+                text = {
+                    "Converts up to",
+                    "{C:attention}#1#{} selected cards",
+                    "to {V:1}#2#{}",
+                },
+            },
             c_celesta_reforge = {
                 name = "Reforge",
                 text = {

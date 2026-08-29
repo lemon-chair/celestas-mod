@@ -97,3 +97,74 @@ function Game:start_run(args)
     if not ok then error(err, 0) end
     return
 end
+
+--------------------------------------------------------------------------------
+-- Star Fury - the Tarot that makes Star cards
+--------------------------------------------------------------------------------
+--
+-- The Stars analogue of vanilla's four suit Tarots: The Star, The Moon, The
+-- Sun and The World each turn up to three selected cards to one suit. Since
+-- Stars are never dealt, this is the deliberate route into them - the vanilla
+-- Spectrals that reach the suit (Sigil, Grim, Familiar, Incantation) all do it
+-- by chance rather than by choice.
+--
+-- Written out rather than leaning on vanilla's `effect = "Suit Conversion"`
+-- machinery: that path is reached by name in several places in card.lua, and
+-- SMODS.change_base is what every suit conversion in this mod already uses.
+
+SMODS.Atlas { key = "star_fury", path = "star_fury.png", px = 71, py = 95 }
+
+SMODS.Consumable {
+    key = "star_fury",
+    set = "Tarot",
+    atlas = "star_fury",
+    pos = { x = 0, y = 0 },
+
+    cost = 3,
+    unlocked = true,
+    discovered = true,
+
+    -- max_highlighted lives on the CENTRE: the game reads it from
+    -- ability.consumeable, which is this very table.
+    config = { max_highlighted = 3 },
+
+    loc_vars = function(self, info_queue, card)
+        -- G.C.SUITS is filled in when the suit registers its colours. Falling
+        -- back to the raw value keeps {V:1} substitutable rather than handing
+        -- localize a nil colour, which renders as a blank suit name.
+        local colour = (G.C.SUITS or {})[CelestasMod.STARS_SUIT]
+            or HEX(CelestasMod.STARS_COLOUR)
+        return {
+            vars = { self.config.max_highlighted,
+                     localize(CelestasMod.STARS_SUIT, "suits_plural") },
+            colours = { colour },
+        }
+    end,
+
+    can_use = function(self, card)
+        local picked = G.hand and G.hand.highlighted
+        return picked and #picked > 0
+            and #picked <= (self.config.max_highlighted or 3)
+    end,
+
+    use = function(self, card, area, copier)
+        -- Copied out first: the highlight is cleared before the events run.
+        local picked = {}
+        for i = 1, #G.hand.highlighted do picked[i] = G.hand.highlighted[i] end
+
+        for i, target in ipairs(picked) do
+            G.E_MANAGER:add_event(Event {
+                trigger = "after",
+                delay = 0.15,
+                func = function()
+                    -- change_base rather than poking base.suit: it keeps the
+                    -- sprite and the modded-suit bookkeeping in step.
+                    SMODS.change_base(target, CelestasMod.STARS_SUIT)
+                    target:juice_up(0.3, 0.3)
+                    play_sound("tarot1", 1.0 + 0.05 * i, 0.4)
+                    return true
+                end
+            })
+        end
+    end,
+}

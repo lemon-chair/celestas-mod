@@ -68,7 +68,11 @@ G = {
              NEW_ROUND=19, HAND_PLAYED=2, DRAW_TO_HAND=3, GAME_OVER=4,
              PLAY_TAROT=6, TAROT_PACK=9, PLANET_PACK=10, SPECTRAL_PACK=15,
              STANDARD_PACK=17, BUFFOON_PACK=18, SMODS_BOOSTER_OPENED=999 },
-  C = setmetatable({}, { __index = function() return 0 end }),
+  -- Colour lookups are one or two levels deep (G.C.MULT, but also
+  -- G.C.SUITS[key]), so a leaf has to be indexable as well.
+  C = setmetatable({}, { __index = function()
+        return setmetatable({}, { __index = function() return 0 end })
+      end }),
   UIT = {}, GAME = { round = 1 }, ASSET_ATLAS = {}, handlist = {},
   P_CARDS = setmetatable({}, { __index = function() return {} end }),
   P_CENTERS = setmetatable({}, { __index = function() return {} end }),
