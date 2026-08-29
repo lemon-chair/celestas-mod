@@ -3139,7 +3139,7 @@ SMODS.Joker {
 
     -- bank is the chips carried toward the next step, so a hand of 15 chips
     -- pays once and leaves 5 behind rather than throwing the remainder away.
-    config = { extra = { mult = 0, mult_gain = 10, chips_per_step = 10, bank = 0 } },
+    config = { extra = { mult = 0, mult_gain = 10, chips_per_step = 32, bank = 0 } },
 
     loc_vars = function(self, info_queue, card)
         local extra = card.ability.extra
