@@ -26,7 +26,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # larger than a card so it reads as overhanging the edges - masking either to
 # 71x95 corners would quietly destroy them.
 SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts", "frozen",
-          "enh_exo_frame", "fx_downpour", "fx_snowstorm"}
+          "enh_exo_frame", "fx_downpour", "fx_snowstorm",
+          # A suit sheet is thirteen card-sized cells in a row, not one card,
+          # and its UI pip is neither - masking either to a 71x95 silhouette
+          # would cut the whole row down to its first cell's corners.
+          "suit_stars", "suit_stars_ui", "suit_leaf", "suit_leaf_ui"}
 CARD_W, CARD_H = 71, 95
 
 # Transparent run inwards from the left edge, per row, for a 71x95 sprite.
