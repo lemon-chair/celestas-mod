@@ -27,9 +27,12 @@ CARD_W, CARD_H = 71, 95
 # inside the card's border rather than running into the rounded corners.
 INSET = 0.82
 
-# key -> absolute source path
+# key -> source path, relative to the home directory. Written this way
+# rather than absolutely because an absolute one carries whichever
+# account happened to run the script, and this file is committed.
 SOURCES = {
-    "milk_bottle": r"C:\Users\Matt Lee\Documents\VTuberTCG\assets\support\milk_bottle.png",
+    "milk_bottle": os.path.join("Documents", "VTuberTCG", "assets",
+                                "support", "milk_bottle.png"),
 }
 
 
@@ -58,6 +61,7 @@ def build(source_path, scale):
 def main():
     written = 0
     for key, source in sorted(SOURCES.items()):
+        source = os.path.join(os.path.expanduser("~"), source)
         if not os.path.exists(source):
             print(f"  MISSING {key}: {source}")
             continue

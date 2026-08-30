@@ -1609,7 +1609,7 @@ return {
             -- The Special Merges collection tab.
             celesta_special_merges = "Special Merges",
             celesta_merge_unknown = "Merge these two to find out",
-            celesta_any_joker = "any Joker from this mod",
+            celesta_any_joker = "Any",
             celesta_aces = "All Aces of Spades!",
             celesta_stored = "Stored!",
         },

@@ -41,7 +41,12 @@ local function joker_name(key)
     return tostring(key)
 end
 
---- "Arar + Jaws", or "x3Dustco + any Joker" for a wildcard.
+--- "Arar + Jaws", or "x3Dustco + Any" for a wildcard.
+---
+--- A wildcard is ONE row, not one per Joker it could pair with: x3Dustco takes
+--- any of this mod's 127, and listing those separately would bury the eighteen
+--- pairs that are actually distinct under a wall of near-identical entries
+--- saying the same thing.
 local function pair_title(def)
     local halves = def.halves or {}
     local first = joker_name(halves[1])
