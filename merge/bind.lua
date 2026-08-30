@@ -172,6 +172,8 @@ function Bind.merge(host, absorbed)
     -- the row, and Bind.apply_partner_passive above skips specials entirely.
     local def = Bind.special_of(host)
     if def then
+        Bind.mark_special_seen(def.key)
+
         -- Only a replacing pair takes the host's passive off; an additive one
         -- is keeping both halves, passives included.
         local center = Bind.replacing_special(host) and host.config.center
@@ -238,6 +240,9 @@ end
 --- remove_from_deck, so selling, debuffing and destroying the merge all work
 --- without either hook being involved.
 local function special(key_a, key_b, def)
+    -- Kept on the def so anything listing the pairs - the collection tab - can
+    -- name both halves without picking the joined key back apart.
+    def.halves = { key_a, key_b }
     Bind.SPECIALS[pair_key(key_a, key_b)] = def
 end
 
@@ -303,6 +308,46 @@ function Bind.wildcard_partner(card, def)
     local host, other = pair_keys(card)
     if def.anchor(host) and def.partner(other) then return other end
     return host
+end
+
+--------------------------------------------------------------------------------
+-- Which pairs the player has actually seen
+--------------------------------------------------------------------------------
+--
+-- Kept on the PROFILE rather than in the run, because that is the question:
+-- "has this player ever made this merge", not "is one in the row right now".
+-- Game:load_profile copies every key of the saved table back over the live
+-- one, so an unknown key of ours round-trips without anything else being
+-- written - and Game:save_progress serialises the whole profile, so marking
+-- one seen is a write plus a save.
+
+--- The per-profile set of pair keys the player has made, created on first use.
+--- nil before a profile is loaded, which is every moment before the main menu.
+local function seen_store()
+    local profile = G.PROFILES and G.SETTINGS
+        and G.PROFILES[G.SETTINGS.profile]
+    if type(profile) ~= "table" then return nil end
+    if type(profile.celesta_merges_seen) ~= "table" then
+        profile.celesta_merges_seen = {}
+    end
+    return profile.celesta_merges_seen
+end
+
+--- True once this profile has made that pair at least once.
+function Bind.special_seen(key)
+    local store = seen_store()
+    return (store and store[key]) and true or false
+end
+
+--- Records a pair as made, and saves. Writes only on the first sighting, so
+--- merging the same pair every run is not a save every time.
+function Bind.mark_special_seen(key)
+    if not key then return false end
+    local store = seen_store()
+    if not store or store[key] then return false end
+    store[key] = true
+    if G.save_progress then G:save_progress() end
+    return true
 end
 
 --- The pair's saved state, created from its config on first use.
@@ -851,6 +896,8 @@ local CELESTA_JOKER_PREFIX = "j_" .. PREFIX .. "_"
 
 wildcard {
     key = "x3dustco_any",
+    -- No second half to name, so the collection shows the anchor and says so.
+    halves = { X3DUSTCO },
 
     anchor = function(key) return key == X3DUSTCO end,
     partner = function(key)

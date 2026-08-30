@@ -82,6 +82,9 @@ G = {
         return setmetatable({}, { __index = function() return 0 end })
       end }),
   UIT = {}, GAME = { round = 1 }, ASSET_ATLAS = {}, handlist = {},
+  -- Real in the game; a mod adding a Collection tab defines entries in
+  -- it at load, which is not a runtime use of anything.
+  FUNCS = {},
   P_CARDS = setmetatable({}, { __index = function() return {} end }),
   P_CENTERS = setmetatable({}, { __index = function() return {} end }),
   P_SEALS = setmetatable({}, { __index = function() return {} end }),

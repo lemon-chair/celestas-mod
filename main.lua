@@ -98,6 +98,8 @@ assert(SMODS.load_file('editions/frozen.lua'))()
 assert(SMODS.load_file('wear/tattered.lua'))()
 -- After the jokers exist, so a merged joker can run any of their centres.
 assert(SMODS.load_file('merge/bind.lua'))()
+-- After bind.lua: it lists the pairs that file registers.
+assert(SMODS.load_file('merge/collection.lua'))()
 
 -- Standalone consumables.
 assert(SMODS.load_file('consumables/raise.lua'))()
