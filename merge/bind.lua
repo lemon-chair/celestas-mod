@@ -239,13 +239,54 @@ local function special(key_a, key_b, def)
     Bind.SPECIALS[pair_key(key_a, key_b)] = def
 end
 
---- The special governing this merge, if the pair has one.
-function Bind.special_of(card)
-    if not Bind.is_merged(card) then return nil end
+--- Specials that pair one Joker with a CLASS of partners rather than a named
+--- one. Ordered, because more than one could match and the first registered
+--- wins - though a named pair beats all of them.
+Bind.WILDCARDS = {}
+
+--- def = the same shape as a special, plus:
+---   anchor(key)  -> is this the Joker the wildcard is about?
+---   partner(key) -> does this one qualify as its other half?
+--- Both halves are offered to each in turn, so the merge order does not matter
+--- any more than it does for a named pair.
+local function wildcard(def)
+    Bind.WILDCARDS[#Bind.WILDCARDS + 1] = def
+end
+
+--- The two centre keys of a merge, host first.
+local function pair_keys(card)
     local host = card.config.center_key
         or (card.config.center and card.config.center.key)
+    return host, card.ability.celesta_bind.key
+end
+
+--- The special governing this merge, if the pair has one.
+---
+--- A named pair is looked up first and wins outright: a wildcard says "any
+--- Joker from this mod", and a pair that names both halves is by definition
+--- the more specific answer.
+function Bind.special_of(card)
+    if not Bind.is_merged(card) then return nil end
+    local host, other = pair_keys(card)
     if not host then return nil end
-    return Bind.SPECIALS[pair_key(host, card.ability.celesta_bind.key)]
+
+    local exact = Bind.SPECIALS[pair_key(host, other)]
+    if exact then return exact end
+
+    for _, def in ipairs(Bind.WILDCARDS) do
+        if (def.anchor(host) and def.partner(other))
+            or (def.anchor(other) and def.partner(host)) then
+            return def
+        end
+    end
+    return nil
+end
+
+--- The half of this merge that is NOT the wildcard's anchor.
+function Bind.wildcard_partner(card, def)
+    local host, other = pair_keys(card)
+    if def.anchor(host) and def.partner(other) then return other end
+    return host
 end
 
 --- The pair's saved state, created from its config on first use.
@@ -602,6 +643,90 @@ local function all_stars(cards)
     end
     return true
 end
+
+-- x3Dustco + anything of ours: the one pair that does not name its other half.
+--
+-- A wildcard rather than 126 named pairs, and the reason it can be one is that
+-- the effect does not care WHAT it was merged with - only that there was
+-- something, and that the something can be made again. That is exactly the
+-- shape Bind.wildcard_partner answers.
+--
+-- Excluding x3Dustco itself is not a special case for its own sake: two of
+-- them have nothing to copy but each other, and a Joker that duplicates itself
+-- every shop is a different card entirely.
+--
+-- Restricted to this mod's Jokers because that is what was asked, and because
+-- an arbitrary foreign Joker is the one thing a fresh copy cannot be trusted
+-- to survive - another mod's centre may keep state this knows nothing about.
+--
+-- Perkeo is the reference for the copy itself, beat for beat: on
+-- context.ending_shop, queue an event, build the card, set_edition negative
+-- BEFORE add_to_deck (the negative slot is granted by add_to_deck, so setting
+-- it afterwards gives a Joker that quietly eats a slot), then emplace.
+local X3DUSTCO = "j_celesta_x3dustco"
+local CELESTA_JOKER_PREFIX = "j_" .. PREFIX .. "_"
+
+wildcard {
+    key = "x3dustco_any",
+
+    anchor = function(key) return key == X3DUSTCO end,
+    partner = function(key)
+        return type(key) == "string" and key ~= X3DUSTCO
+            and key:sub(1, #CELESTA_JOKER_PREFIX) == CELESTA_JOKER_PREFIX
+    end,
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.ending_shop and not context.blueprint) then return end
+
+        local partner_key = Bind.wildcard_partner(card, def)
+        if not (partner_key and G.P_CENTERS[partner_key]) then return end
+
+        -- The half's own accumulated state, not a fresh one: a copy of a
+        -- Joker that has been growing all run should have grown. Stickers ride
+        -- along with it deliberately - a merge inherits them precisely so one
+        -- cannot be laundered off, and copying must not become the way round
+        -- that either.
+        local carried = card.ability.celesta_bind.ability
+        if card.config.center_key == partner_key then carried = card.ability end
+
+        G.E_MANAGER:add_event(Event {
+            func = function()
+                local copy = SMODS.create_card {
+                    key = partner_key,
+                    area = G.jokers,
+                    skip_materialize = true,
+                }
+                if not copy then return true end
+
+                if type(carried) == "table" then
+                    for k, v in pairs(carried) do
+                        -- celesta_bind on an unmerged card would make it claim
+                        -- to be half of a pair that does not exist.
+                        if k ~= "celesta_bind" then
+                            copy.ability[k] = type(v) == "table" and copy_table(v) or v
+                        end
+                    end
+                end
+
+                copy:set_edition({ negative = true }, true)
+                copy:add_to_deck()
+                G.jokers:emplace(copy)
+                copy:start_materialize()
+                return true
+            end
+        })
+
+        return {
+            message = localize("k_duplicated_ex"),
+            colour = G.C.DARK_EDITION,
+            card = card,
+        }
+    end,
+}
 
 -- CottontailVA + Deme: Cottontail hands out Star Seals, Deme grows on a
 -- condition. Together the seals are the condition.

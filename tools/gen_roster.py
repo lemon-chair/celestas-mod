@@ -419,6 +419,14 @@ LOC_TAIL = '''        },
                     "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
                 },
             },
+            celesta_bind_x3dustco_any = {
+                name = "x3Dustco + Anything",
+                text = {
+                    "At the end of the shop, creates",
+                    "a {C:dark_edition}Negative{} copy of the",
+                    "{C:attention}other{} merged Joker",
+                },
+            },
             celesta_bind_arar_jaws = {
                 name = "Arar + Jaws",
                 text = {
