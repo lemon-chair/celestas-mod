@@ -528,6 +528,71 @@ special("j_celesta_bearthewitch", "j_celesta_moomerrily", {
     end,
 })
 
+-- Aries Akana + Yoka Siri: Aries collects Chips off Stars one at a time, Yoka
+-- makes a Joker's numbers bigger. Together they stop counting cards and start
+-- multiplying, on the one hand that is nothing but Stars.
+--
+-- "Contains a flush" rather than "is a Flush": the hand named Straight Flush,
+-- Flush House and Flush Five all contain one, and there is no reason a better
+-- hand should pay less. context.poker_hands is the game's own answer to that
+-- question - it lists every hand the played cards make, not just the best -
+-- and its "Flush" entry holds the cards that make it, which is exactly what
+-- has to be all Stars.
+--
+-- Asked through is_suit, like every other Star Joker here, so a Wild Card
+-- counts and Arielle makes the whole hand count. That is what those are for.
+
+--- The cards forming a flush in this hand, or nil if there is not one.
+local function flush_cards(context)
+    local hands = context.poker_hands
+    local flush = hands and hands["Flush"]
+    return flush and flush[1] or nil
+end
+
+--- True when every card of that flush is a Star.
+local function all_stars(cards)
+    if not cards or #cards == 0 then return false end
+    for _, played in ipairs(cards) do
+        if not (played.is_suit and played:is_suit(CelestasMod.STARS_SUIT)) then
+            return false
+        end
+    end
+    return true
+end
+
+special("j_celesta_ariesakana", "j_celesta_yokasiri", {
+    key = "aries_yoka",
+    config = { x_chips = 1, x_chip_mod = 0.5 },
+
+    loc_vars = function(def, card, state)
+        local name, colour = CelestasMod.suit_name_and_colour(
+            CelestasMod.STARS_SUIT, CelestasMod.STARS_COLOUR, true)
+        return { vars = { state.x_chip_mod, state.x_chips, name,
+                          colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- context.before is the one pass that sees the whole hand before any
+        -- of it scores, so the growth happens once per hand and is already in
+        -- place by the time joker_main asks for the total.
+        if context.before and not context.blueprint then
+            if all_stars(flush_cards(context)) then
+                state.x_chips = state.x_chips + state.x_chip_mod
+                return {
+                    message = localize { type = "variable", key = "a_xchips",
+                                         vars = { state.x_chips } },
+                    colour = G.C.CHIPS,
+                    card = card,
+                }
+            end
+        end
+
+        if context.joker_main and state.x_chips > 1 then
+            return { x_chips = state.x_chips }
+        end
+    end,
+})
+
 --------------------------------------------------------------------------------
 -- Unmerging: when one half destroys itself
 --------------------------------------------------------------------------------

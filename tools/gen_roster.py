@@ -408,6 +408,15 @@ LOC_TAIL = '''        },
                     "{C:attention}#2#{} hands remain",
                 },
             },
+            celesta_bind_aries_yoka = {
+                name = "Aries Akana + Yoka Siri",
+                text = {
+                    "This Joker gains {X:chips,C:white}X#1#{} Chips if the",
+                    "played hand contains a {C:attention}Flush{}",
+                    "of {V:1}#3#{} cards",
+                    "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
+                },
+            },
             celesta_bind_arar_jaws = {
                 name = "Arar + Jaws",
                 text = {
