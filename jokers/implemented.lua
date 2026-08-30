@@ -1225,6 +1225,12 @@ SMODS.Joker {
 --------------------------------------------------------------------------------
 -- Shoomimi [Rare] - 1 in 6 per shop reroll to gain a consumable slot.
 --------------------------------------------------------------------------------
+--
+-- Declared beside the Joker that plays it rather than with the enhancement
+-- sounds, because nothing else uses it. Avoid the words music, stream and
+-- ambient in a sound key: Steamodded matches those to decide streaming vs
+-- static, and a one-second effect wants static.
+SMODS.Sound { key = "shoomimi_join", path = "shoomimi_join.ogg" }
 
 SMODS.Joker {
     key = "shoomimi",
@@ -1239,6 +1245,14 @@ SMODS.Joker {
     loc_vars = function(self, info_queue, card)
         local n, d = SMODS.get_probability_vars(card, 1, card.ability.extra.odds, "celesta_shoomimi")
         return { vars = { n, d } }
+    end,
+
+    -- Cryptid's Supercell announces itself the same way, and the from_debuff
+    -- guard is the reason it only does so once: add_to_deck is called again
+    -- every time a debuff is LIFTED - a Boss Blind ending, a Joker being
+    -- undebuffed - and without it the sound would replay on each of those.
+    add_to_deck = function(self, card, from_debuff)
+        if not from_debuff then play_sound("celesta_shoomimi_join") end
     end,
 
     calculate = function(self, card, context)
