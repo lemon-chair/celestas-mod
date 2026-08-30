@@ -483,8 +483,8 @@ return {
                 name = "ItsDeadlyBoop",
                 text = {
                     "{X:mult,C:white}X#1#{} Mult and {X:chips,C:white}X#2#{} Chips",
-                    "if played hand is a",
-                    "{C:attention}#3#{}",
+                    "if played hand contains",
+                    "a {C:attention}#3#{}",
                 },
             },
             j_celesta_jaws = {

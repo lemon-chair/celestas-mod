@@ -6534,14 +6534,17 @@ SMODS.Joker {
 -- ItsDeadlyBoop [Rare] - both halves of the score, on one hand.
 --------------------------------------------------------------------------------
 --
--- context.scoring_name is the hand the game NAMED, which is the strict reading
--- of "is a Full House". The looser one - context.poker_hands["Full House"] -
--- would also pay on a Flush House and a Five of a Kind, both of which contain
--- a full house, and neither of which the game calls one.
+-- context.poker_hands is every hand the played cards make, not only the one
+-- the game named, so this pays on anything CONTAINING a Full House - a Flush
+-- House, and a Five of a Kind, which registers one because its five same-rank
+-- cards satisfy both the three-of-a-rank and two-of-a-rank halves.
 --
--- Vanilla draws the same line in both directions and says which it means in
--- the text: The Duo reads "contains a Pair" and pays on anything holding one,
--- while Sly Joker names the hand. This one says "is".
+-- That is the same test The Duo and its siblings use for "contains a Pair",
+-- and the opposite of the one Sly Joker uses to name a hand outright.
+--
+-- Every entry in that table exists whether or not the hand was made - it is
+-- built with all eleven keys and left empty - so the question is whether the
+-- entry has anything in it, not whether it is there.
 --
 -- Both keys come back from a single return. Steamodded applies each scoring
 -- key it recognises off the same table, so there is nothing gained by
@@ -6563,8 +6566,11 @@ SMODS.Joker {
     end,
 
     calculate = function(self, card, context)
-        if context.joker_main
-            and context.scoring_name == card.ability.extra.hand then
+        if not context.joker_main then return end
+
+        local hands = context.poker_hands
+        local made = hands and hands[card.ability.extra.hand]
+        if made and next(made) then
             return {
                 x_mult = card.ability.extra.x_mult,
                 x_chips = card.ability.extra.x_chips,
