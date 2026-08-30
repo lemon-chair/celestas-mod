@@ -4706,9 +4706,17 @@ SMODS.Joker {
 
     -- Sold, or debuffed: the size it handed out goes back. Bought or
     -- un-debuffed mid-round, it hands out what the round has earned so far.
+    --
+    -- Only mid-round, though. discards_used is not cleared until new_round,
+    -- which runs when the NEXT round starts - so all the way through the
+    -- cash-out screen and the shop it still holds the last round's count, and
+    -- a Kairyu bought there would open the new round already holding hand size
+    -- for discards it never saw. G.GAME.facing_blind is vanilla's own "a round
+    -- is in progress": set at blind select, cleared before the cash-out.
     add_to_deck = function(self, card, from_debuff)
         local round = G.GAME and G.GAME.current_round
-        local used = round and round.discards_used or 0
+        local in_round = G.GAME and G.GAME.facing_blind
+        local used = (in_round and round and round.discards_used) or 0
         card.ability.extra.applied = 0
         self:celesta_resize(card, used * card.ability.extra.h_size)
     end,
