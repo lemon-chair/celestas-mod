@@ -69,6 +69,9 @@ SMODS.Atlas { key = 'limestone_tatter',  path = 'limestone_tatter.png',  px = 71
 -- Frozen is an overlay drawn on top of a card, not an edition (see
 -- editions/frozen.lua for why it cannot be one).
 SMODS.Atlas { key = 'frozen', path = 'frozen.png', px = 71, py = 95 }
+-- The same pane cut to a circle, for the Jokers whose art is one. See
+-- CelestasMod.ROUND_JOKERS in globals.lua.
+SMODS.Atlas { key = 'frozen_round', path = 'frozen_round.png', px = 71, py = 95 }
 
 --------------------------------------------------------------------------------
 -- The suits this mod adds. Loaded before everything that reads suits, and

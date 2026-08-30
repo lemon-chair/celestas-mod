@@ -19,6 +19,8 @@ CelestasMod.FROZEN_ROUNDS = 3
 CelestasMod.FROZEN_FAIL_ODDS = 2
 
 local FROZEN_ATLAS = SMODS.current_mod.prefix .. "_frozen"
+-- The same pane cut to a circle, for the Jokers whose art is one.
+local FROZEN_ROUND_ATLAS = SMODS.current_mod.prefix .. "_frozen_round"
 
 --------------------------------------------------------------------------------
 -- State
@@ -69,7 +71,18 @@ end
 -- Drawing: an overlay on top of whatever edition the card already has
 --------------------------------------------------------------------------------
 
-local frozen_sprite
+-- One sprite per shape, shared by every frozen card of that shape. Built on
+-- first use rather than at load: the atlases do not exist yet when this file
+-- runs.
+local frozen_sprites = {}
+
+local function frost_sprite(key)
+    if frozen_sprites[key] then return frozen_sprites[key] end
+    local atlas = G.ASSET_ATLAS[key]
+    if not atlas then return nil end
+    frozen_sprites[key] = Sprite(0, 0, G.CARD_W, G.CARD_H, atlas, { x = 0, y = 0 })
+    return frozen_sprites[key]
+end
 
 local card_draw_ref = Card.draw
 function Card:draw(layer)
@@ -78,13 +91,14 @@ function Card:draw(layer)
     if not CelestasMod.is_frozen(self) then return end
     if self.facing == "back" or layer == "shadow" then return end
 
-    local atlas = G.ASSET_ATLAS[FROZEN_ATLAS]
-    if not atlas then return end
-    if not frozen_sprite then
-        frozen_sprite = Sprite(0, 0, G.CARD_W, G.CARD_H, atlas, { x = 0, y = 0 })
-    end
-    frozen_sprite.role.draw_major = self
-    frozen_sprite:draw_shader("dissolve", nil, nil, nil, self.children.center)
+    -- The pane is drawn over the card, so it carries its own silhouette rather
+    -- than inheriting the sprite's. A card-shaped one around a round Joker
+    -- reads as frost hanging in mid-air.
+    local sprite = frost_sprite(CelestasMod.is_round_joker(self)
+        and FROZEN_ROUND_ATLAS or FROZEN_ATLAS)
+    if not sprite then return end
+    sprite.role.draw_major = self
+    sprite:draw_shader("dissolve", nil, nil, nil, self.children.center)
 end
 
 --------------------------------------------------------------------------------

@@ -6807,3 +6807,102 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Boosfer [Legendary] - retriggers Stars, and feeds on every retrigger.
+--------------------------------------------------------------------------------
+--
+-- The Mult is not limited to the retriggers Boosfer hands out itself. Mime,
+-- Sock and Buskin, a Red Seal, a second Boosfer - anything that makes a Star
+-- card score again feeds it, which is what makes it worth a Legendary slot.
+--
+-- Nothing raises a context that says "a repetition happened", so it is counted
+-- off the scoring pass instead. SMODS.score_card collects a card's repetitions
+-- once and then runs the whole individual pass once per repetition, so a Star
+-- retriggered N times raises context.individual N+1 times for that card: the
+-- first is the card scoring, and every one after it is a retrigger.
+--
+-- Telling those apart needs a mark, and the mark is cleared in context.before,
+-- which lands ahead of all scoring in the same hand. A mark can therefore
+-- never survive into a hand that would read it - and a debuffed Boosfer sets
+-- none, because it is not evaluated at all.
+
+--- Has this Joker already watched that card score this hand?
+--- Records the sighting as it answers. Keyed by the Joker's ID rather than a
+--- flag, so two Boosfers each count their own retriggers instead of one of
+--- them stealing the other's first sighting.
+local function boosfer_seen(target, joker)
+    local seen = target.celesta_boosfer_seen
+    if not seen then
+        seen = {}
+        target.celesta_boosfer_seen = seen
+    end
+    if seen[joker.ID] then return true end
+    seen[joker.ID] = true
+    return false
+end
+
+SMODS.Joker {
+    key = "boosfer",
+    atlas = "boosfer",
+    pos = { x = 0, y = 0 },
+    rarity = 4, cost = 20,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { repetitions = 1, x_mult = 1, x_mult_gain = 0.1 } },
+
+    in_pool = star_gated,
+
+    loc_vars = function(self, info_queue, card)
+        local name, colour = star_name_and_colour()
+        return { vars = { card.ability.extra.repetitions,
+                          card.ability.extra.x_mult_gain,
+                          card.ability.extra.x_mult,
+                          name, colours = { colour } } }
+    end,
+
+    calculate = function(self, card, context)
+        -- Ahead of any scoring in this hand: whatever the last hand saw is
+        -- forgotten before it can be mistaken for a retrigger.
+        if context.before and not context.blueprint then
+            for _, played in ipairs(context.full_hand or {}) do
+                if played.celesta_boosfer_seen then
+                    played.celesta_boosfer_seen[card.ID] = nil
+                end
+            end
+        end
+
+        if context.repetition and context.cardarea == G.play
+            and is_star(context.other_card) then
+            return {
+                message = localize("k_again_ex"),
+                repetitions = card.ability.extra.repetitions,
+                card = card,
+            }
+        end
+
+        -- Counting, not scoring. A copy is skipped on both halves: it must not
+        -- bank the gain, and marking on its behalf would make the real
+        -- Boosfer's own first sighting look like a retrigger.
+        if context.individual and context.cardarea == G.play
+            and not context.blueprint and is_star(context.other_card) then
+            if boosfer_seen(context.other_card, card) then
+                card.ability.extra.x_mult =
+                    card.ability.extra.x_mult + card.ability.extra.x_mult_gain
+                return {
+                    message = localize { type = "variable", key = "a_xmult",
+                                         vars = { card.ability.extra.x_mult } },
+                    colour = G.C.MULT,
+                    card = card,
+                }
+            end
+        end
+
+        -- joker_main runs after every played card has scored, so a retrigger
+        -- seen this hand is already in the number.
+        if context.joker_main and card.ability.extra.x_mult > 1 then
+            return { x_mult = card.ability.extra.x_mult }
+        end
+    end,
+}

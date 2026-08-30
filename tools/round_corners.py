@@ -30,7 +30,11 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
           # A suit sheet is thirteen card-sized cells in a row, not one card,
           # and its UI pip is neither - masking either to a 71x95 silhouette
           # would cut the whole row down to its first cell's corners.
-          "suit_stars", "suit_stars_ui", "suit_leaf", "suit_leaf_ui"}
+          "suit_stars", "suit_stars_ui", "suit_leaf", "suit_leaf_ui",
+          # Boosfer is a circle, not a card, and frozen_round is the frost pane
+          # cut to match it. The card silhouette would shave 1px off the widest
+          # point of both.
+          "boosfer", "frozen_round"}
 CARD_W, CARD_H = 71, 95
 
 # Transparent run inwards from the left edge, per row, for a 71x95 sprite.

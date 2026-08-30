@@ -1447,6 +1447,96 @@ special("j_celesta_ariesakana", "j_celesta_yokasiri", {
     end,
 })
 
+-- Deme + Boosfer: Deme's streak, at twice the rate, and Boosfer turns the lone
+-- card it is counting into three extra scorings of itself.
+--
+-- The streak is Deme's own shape - context.before sees the whole hand ahead of
+-- scoring, so a hand that extends the streak counts for itself - and the
+-- retrigger is asked in the same terms, off full_hand rather than off what the
+-- streak currently stands at. A single card played is retriggered whether or
+-- not the streak was already running; the reading is "hands played with
+-- exactly one card", once for each of the two things it does.
+special("j_celesta_demenishki", "j_celesta_boosfer", {
+    key = "deme_boosfer",
+    config = { x_mult = 1, x_mult_gain = 0.5, repetitions = 3 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, state.repetitions, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.before and not context.blueprint then
+            if #context.full_hand == 1 then
+                state.x_mult = state.x_mult + state.x_mult_gain
+                return {
+                    message = localize { type = "variable", key = "a_xmult",
+                                         vars = { state.x_mult } },
+                    colour = G.C.MULT, card = card,
+                }
+            elseif state.x_mult > 1 then
+                state.x_mult = 1
+                return { message = localize("k_reset"), colour = G.C.RED, card = card }
+            end
+        end
+
+        if context.repetition and context.cardarea == G.play
+            and context.full_hand and #context.full_hand == 1 then
+            return {
+                message = localize("k_again_ex"),
+                repetitions = state.repetitions,
+                card = card,
+            }
+        end
+
+        if context.joker_main and state.x_mult > 1 then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+-- Zentreya + Boosfer: Zentreya's Steel Cards, narrowed to Boosfer's suit and
+-- paid far better for it, and retriggered the way Boosfer retriggers Stars.
+--
+-- Narrower than either half on its own: Zentreya pays every Steel Card and
+-- Boosfer retriggers every Star, and this pays only where the two meet. That
+-- is what the X2 and the retrigger together are for.
+--- A scored card that is both halves' subject at once.
+local function star_steel(other)
+    return other ~= nil and other.is_suit ~= nil
+        and other:is_suit(CelestasMod.STARS_SUIT)
+        and SMODS.has_enhancement(other, "m_steel")
+end
+
+special("j_celesta_zentreya", "j_celesta_boosfer", {
+    key = "zentreya_boosfer",
+    config = { x_mult = 2, repetitions = 1 },
+
+    loc_vars = function(def, card, state)
+        local name, colour = CelestasMod.suit_name_and_colour(
+            CelestasMod.STARS_SUIT, CelestasMod.STARS_COLOUR, true)
+        return { vars = { state.x_mult, state.repetitions, name,
+                          colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- The two passes are separate on purpose: repetition decides how many
+        -- times the card scores, individual is what pays for each of them.
+        if context.repetition and context.cardarea == G.play
+            and star_steel(context.other_card) then
+            return {
+                message = localize("k_again_ex"),
+                repetitions = state.repetitions,
+                card = card,
+            }
+        end
+
+        if context.individual and context.cardarea == G.play
+            and star_steel(context.other_card) then
+            return { x_mult = state.x_mult, card = context.other_card }
+        end
+    end,
+})
+
 --------------------------------------------------------------------------------
 -- Unmerging: when one half destroys itself
 --------------------------------------------------------------------------------

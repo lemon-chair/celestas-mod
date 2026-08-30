@@ -9,6 +9,33 @@ G.C.CELESTA = {
     WHITE   = HEX("FFFFFF"),
 }
 
+--------------------------------------------------------------------------------
+-- Jokers that are not card-shaped
+--------------------------------------------------------------------------------
+--
+-- Boosfer's art is a circle floating in a transparent cell, which is all the
+-- vanilla editions need: foil, holo, polychrome and negative all end with
+-- `tex.a = min(tex.a, ...)`, so the shine is bounded by the sprite's own alpha
+-- and stops at the edge of the ball rather than filling a card-shaped rect.
+--
+-- Anything drawn OVER the card is the exception, because it brings its own
+-- alpha - this mod's frost pane is card-shaped and would hang in the air
+-- around the ball. Those overlays ask here and take the round shape instead.
+--
+-- Keys are written out rather than built from the prefix: this file is read
+-- during load, and hardcoding is what the rest of the mod does where a key has
+-- to exist before SMODS.current_mod is safe to touch.
+CelestasMod.ROUND_JOKERS = {
+    j_celesta_boosfer = true,
+}
+
+--- True for a card whose art is a circle rather than a card.
+function CelestasMod.is_round_joker(card)
+    local key = card and card.config
+        and (card.config.center_key or (card.config.center and card.config.center.key))
+    return (key and CelestasMod.ROUND_JOKERS[key]) and true or false
+end
+
 -- Hooks
 
 local loc_colour_ref = loc_colour

@@ -19,7 +19,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
-          "frozen",
+          "frozen", "frozen_round",
           # wear overlays, drawn on top of a playing card
           "tatter", "lucky_card_tatter", "limestone_tatter",
           "bind", "milk_bottle",
@@ -33,6 +33,7 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
 # Add corrections here; anything absent falls back to the mechanical rule.
 DISPLAY_NAMES = {
     "auteru": "Auteru",
+    "boosfer": "Boosfer",
     "ben": "Ben",
     "rynxryn": "RYNxRYN",
     "smittenseraph": "SmittenSeraph",
@@ -628,6 +629,23 @@ LOC_TAIL = '''        },
                     "{X:mult,C:white}X0.25{} Mult, or {X:mult,C:white}X0.5{} if {C:dark_edition}Foil{},",
                     "{X:mult,C:white}X0.75{} if {C:dark_edition}Holographic{}, {X:mult,C:white}X1{} if {C:dark_edition}Polychrome{}",
                     "{C:inactive}(Currently {X:mult,C:white}X#1#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_deme_boosfer = {
+                name = "Deme + Boosfer",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult per consecutive",
+                    "hand played with exactly {C:attention}1{} card, and",
+                    "retriggers that card {C:attention}#2#{} additional times",
+                    "{C:inactive}(Currently {X:mult,C:white}X#3#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_zentreya_boosfer = {
+                name = "Zentreya + Boosfer",
+                text = {
+                    "{V:1}#3#{} suit {C:attention}Steel Cards{} in the played hand",
+                    "give {X:mult,C:white}X#1#{} Mult when scored, and are",
+                    "retriggered {C:attention}#2#{} additional time",
                 },
             },
             celesta_ectoplast_seal = {

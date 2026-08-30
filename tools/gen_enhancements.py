@@ -23,7 +23,7 @@ Two things worth knowing about how Balatro draws these:
 import os
 import sys
 
-from PIL import Image
+from PIL import Image, ImageChops
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import round_corners
@@ -59,6 +59,24 @@ def shape_corners(img):
         mask = mask.resize(img.size, Image.NEAREST)
     alpha = Image.composite(img.split()[3], Image.new("L", img.size, 0), mask)
     out = img.copy()
+    out.putalpha(alpha)
+    return out
+
+
+def round_frost(frost, scale):
+    """The frost pane cut to the round-joker silhouette instead of the card's.
+
+    Frozen is drawn OVER whatever it lands on, so on a joker whose art is a
+    circle the card-shaped pane hangs in the air around it. The shape is taken
+    from Boosfer's own alpha rather than a circle drawn here, so the pane and
+    the sprite it covers cannot drift apart.
+    """
+    art = Image.open(os.path.join(ROOT, "assets", "%dx" % scale,
+                                  "boosfer.png")).convert("RGBA")
+    if art.size != frost.size:
+        sys.exit("boosfer is %s, frost is %s" % (art.size, frost.size))
+    alpha = ImageChops.multiply(frost.split()[3], art.split()[3])
+    out = frost.copy()
     out.putalpha(alpha)
     return out
 
@@ -103,6 +121,9 @@ def main():
     fsmall, fbig = load_pair("frozen.png", "frozen2.png", CARD[0], CARD[1])
     save(shape_corners(fsmall), "frozen", "1x")
     save(shape_corners(fbig), "frozen", "2x")
+    # ...and again for the jokers that are a circle rather than a card.
+    save(round_frost(fsmall, 1), "frozen_round", "1x")
+    save(round_frost(fbig, 2), "frozen_round", "2x")
 
     small, big = load_pair(EXO[0], EXO[1], EXO[2][0], EXO[2][1])
     for scale, folder in ((1, "1x"), (2, "2x")):

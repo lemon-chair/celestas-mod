@@ -102,6 +102,29 @@ function fake_card(obj)
   return { ability = ability, config = { center = obj }, base = {} }
 end
 
+--- How many vars a merged pair's loc_vars supplies.
+---
+--- A pair describes itself in place of both halves, so its text has the same
+--- #n# contract as any other object's - but its loc_vars takes (def, card,
+--- state) rather than (self, info_queue, card), and its state is a copy of the
+--- pair's own config rather than anything on the card. Same failure either
+--- way: a missing var and localize indexes a nil.
+function count_pair_vars(def)
+  if type(def.loc_vars) ~= "function" then return -1 end
+  local state = {}
+  for k, v in pairs(def.config or {}) do state[k] = v end
+  local card = { ability = { extra = {}, celesta_bind = { special = state } },
+                 config = { center = {} }, base = {} }
+  local ok, res = pcall(def.loc_vars, def, card, state)
+  if not ok then return -2, tostring(res) end
+  if type(res) ~= "table" or type(res.vars) ~= "table" then return 0 end
+  local n = #res.vars
+  for i = 1, n do
+    if res.vars[i] == nil then return -3, tostring(i) end
+  end
+  return n, res.vars.colours and #res.vars.colours or 0
+end
+
 function count_vars(obj)
   if type(obj.loc_vars) ~= "function" then return -1 end
   local ok, res = pcall(function()
@@ -235,7 +258,49 @@ def main():
         table_ = dict(loc.descriptions).get(set_name)
         targets.append(("Consumable", key, "c_celesta_" + key, obj, table_))
 
+    # Merged pairs. A pair's text replaces BOTH halves' descriptions, so a
+    # placeholder it does not fill is as fatal as any other - and nothing else
+    # here would ever look at them, because they are not registered objects.
+    bind = g.CelestasMod.Bind
+    pair_defs = {}
+    for _, d in dict(bind.SPECIALS).items():
+        pair_defs[d.key] = d
+    for _, d in dict(bind.WILDCARDS).items():
+        pair_defs[d.key] = d
+
     problems, checked = [], 0
+    count_pair_vars = g.count_pair_vars
+    for key in sorted(pair_defs):
+        def_ = pair_defs[key]
+        loc_key = "celesta_bind_" + key
+        entry = dict(loc.descriptions.Other).get(loc_key)
+        if entry is None:
+            problems.append("Merge %s: no localization entry %s" % (key, loc_key))
+            continue
+        text = " ".join(dict(entry.text).values())
+        needed = max((int(n) for n in re.findall(r"#(\d+)#", text)), default=0)
+        needed_colours = max((int(n) for n in re.findall(r"\{V:(\d+)", text)),
+                             default=0)
+        got = count_pair_vars(def_)
+        got_colours = 0
+        err = ""
+        if isinstance(got, tuple):
+            got, err = got[0], str(got[1]) if len(got) > 1 else ""
+            if got >= 0:
+                got_colours = int(err or 0)
+        checked += 1
+        if got == -2:
+            problems.append("Merge %s: loc_vars raised an error: %s" % (key, err))
+        elif got == -3:
+            problems.append("Merge %s: loc_vars returns nil for var #%s - the "
+                            "card will print \"nil\"" % (key, err))
+        elif needed > max(got, 0):
+            problems.append("Merge %s: text needs #%d# but loc_vars returns "
+                            "%d var(s)" % (key, needed, max(got, 0)))
+        elif needed_colours > got_colours:
+            problems.append("Merge %s: text uses {V:%d} but loc_vars supplies "
+                            "%d colour(s)" % (key, needed_colours, got_colours))
+
     for kind, key, loc_key, obj, table_ in sorted(targets):
         if table_ is None:
             problems.append("%s %s: no descriptions block for its set" % (kind, key))
