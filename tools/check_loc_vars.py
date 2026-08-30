@@ -201,7 +201,13 @@ end
 '''
 
 
-def main():
+def load_mod():
+    """The whole mod, loaded against the stubs above. Returns the Lua runtime.
+
+    Split out so anything else that needs every registered object in one place
+    - rather than one Joker sliced out of a file - can borrow the same
+    bootstrap instead of growing a second one that drifts from it.
+    """
     lupa = importlib.import_module("lupa.luajit21")
     lua = lupa.LuaRuntime(unpack_returned_tuples=True)
     lua.execute(BOOTSTRAP)
@@ -219,6 +225,11 @@ def main():
     lua.globals().SMODS.load_file = load_file
     lua.globals().NFS = lua.table_from({"getDirectoryItems": dir_items})
     compile_(open(os.path.join(ROOT, "main.lua"), encoding="utf-8").read(), "main.lua")()
+    return lua
+
+
+def main():
+    lua = load_mod()
 
     loc_src = open(os.path.join(ROOT, "localization", "en-us.lua"), encoding="utf-8").read()
     loc = lua.eval('function(s) return assert((loadstring or load)(s,"loc"))() end')(loc_src)

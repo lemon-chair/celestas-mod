@@ -1899,8 +1899,12 @@ SMODS.Joker {
     end,
 
     calculate = function(self, card, context)
-        -- The held-in-hand pass, which runs while a hand is being played.
-        if context.individual and context.cardarea == G.hand then
+        -- The held-in-hand pass, which runs while a hand is being played -
+        -- and not the one at the end of the round, or the payout lands a
+        -- second time on the cash-out screen. See AxialMatt for why that pass
+        -- reaches a modded Joker at all.
+        if context.individual and context.cardarea == G.hand
+            and not context.end_of_round then
             local other = context.other_card
             if other and SMODS.has_enhancement(other, CelestasMod.ENHANCEMENT_KEYS.Limestone)
                 and SMODS.pseudorandom_probability(
@@ -2727,7 +2731,7 @@ SMODS.Joker {
         -- commit. Reacting to the leftmost held card there is both the right
         -- moment and the last one that counts.
         if context.individual and context.cardarea == G.hand
-            and not mintfantome_scoring then
+            and not context.end_of_round and not mintfantome_scoring then
             local target = G.hand and G.hand.cards and G.hand.cards[1]
             if not target or context.other_card ~= target then return end
             -- A debuffed card scores nothing, the same as in the played hand.
@@ -2857,7 +2861,15 @@ SMODS.Joker {
         -- The held-in-hand pass, and h_mult rather than mult, because that is
         -- where Raised Fist lives: the Mult pops on the raised card as the
         -- hand is read rather than with the joker row afterwards.
-        if context.individual and context.cardarea == G.hand then
+        --
+-- Vanilla reaches its held-in-hand block through an if/elseif chain whose
+-- end_of_round branch comes FIRST, so Raised Fist, Baron and Shoot the Moon
+-- are all structurally barred from firing at the cash-out. A modded Joker gets
+-- no such guard: SMODS raises context.individual over G.hand again at the end
+-- of the round, for the Gold cards paying out, and anything reading only
+-- `individual + G.hand` triggers there too.
+        if context.individual and context.cardarea == G.hand
+            and not context.end_of_round then
             local raised, nominal = axialmatt_raised()
             if raised == context.other_card then
                 -- A debuffed card is still eligible to be raised, and then
@@ -4371,6 +4383,7 @@ SMODS.Joker {
         -- eval_card above has counted it - so the count is already correct
         -- for the trigger being paid for.
         if context.individual and context.other_card
+            and not context.end_of_round
             and (context.cardarea == G.play or context.cardarea == G.hand) then
             if trigger_count(context.other_card) > 1 then
                 return {

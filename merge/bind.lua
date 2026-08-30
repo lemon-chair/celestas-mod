@@ -840,7 +840,11 @@ special("j_celesta_zentreya", "j_celesta_zentreya", {
     end,
 
     calculate = function(def, card, context, state)
+        -- not end_of_round: SMODS raises the held-in-hand individual pass
+        -- again at the cash-out, where there is no score for the Mult to join
+        -- and the X2 would pop on every held Steel Card for nothing.
         if context.individual and context.other_card
+            and not context.end_of_round
             and (context.cardarea == G.play or context.cardarea == G.hand)
             and SMODS.has_enhancement(context.other_card, "m_steel") then
             return { x_mult = state.x_mult, card = card }
@@ -2014,14 +2018,56 @@ local function combine(primary, secondary)
     return primary
 end
 
+--- Runs `fn` with the host centre's `hook` hidden, so vanilla's own dispatch
+--- skips it.
+---
+--- Bind.merge takes the host centre's passive off the moment a REPLACING pair
+--- forms - the pair speaks for the card now - and it does that by calling the
+--- centre directly, which never touches added_to_deck. Vanilla still believes
+--- the passive is on, so it takes it off a SECOND time when the card is sold
+--- or debuffed: a merge hosted by HeavenlyFather leaves the run two booster
+--- slots short of where it started, and a debuff leaves it short until the
+--- debuff lifts. test_bind_passives.py has the sequence.
+---
+--- The hook is nilled on the centre rather than swapped behind a proxy table
+--- because config.center is compared by IDENTITY all over the game -
+--- `c.config.center == G.P_CENTERS.c_base` and its like - and a stand-in would
+--- fail every one of those. The window is a single synchronous call.
+local function without_center_hook(card, hook, fn)
+    local center = card.config and card.config.center
+    local hide = type(center) == "table" and type(center[hook]) == "function"
+        and Bind.replacing_special(card) and true or false
+    if not hide then return fn() end
+
+    local saved = center[hook]
+    center[hook] = nil
+    -- Two returns, because calculate_joker answers with (effect, post).
+    local ok, a, b = pcall(fn)
+    center[hook] = saved
+    if not ok then error(a, 0) end
+    return a, b
+end
+
 local celesta_bind_calculate_joker_ref = Card.calculate_joker
 function Card:calculate_joker(context, ...)
     -- The host's own centre runs inside a recorded window too: it is as
     -- likely to be the half that destroys itself as the absorbed one.
+    --
+    -- Under a REPLACING pair the host's centre must not run at all, rather
+    -- than run and have its answer thrown away. A calculate is not only its
+    -- return value: Arar's queues the event that enhances a card, so Arar +
+    -- HeavenlyFather enhanced TWO - one for the host's own pass, one for the
+    -- pair's, each skipping the other's because of the claim flag they share.
+    --
+    -- Only the centre's own calculate is hidden, not the ref, so frozen rolls,
+    -- tattered counting and every other mod's wrapper still see the
+    -- evaluation - which is the reason the ref is called first at all.
     local effect, post
     if Bind.is_merged(self) and not running then
-        effect, post = with_acting_half(self, "host",
-            celesta_bind_calculate_joker_ref, self, context, ...)
+        effect, post = without_center_hook(self, "calculate", function()
+            return with_acting_half(self, "host",
+                celesta_bind_calculate_joker_ref, self, context)
+        end)
     else
         effect, post = celesta_bind_calculate_joker_ref(self, context, ...)
     end
@@ -2164,35 +2210,6 @@ end
 -- Compound Interest raises its own rate here and never touches `calculate`.
 -- Without this an absorbed one pays nothing and sits frozen at its opening
 -- rate for the rest of the run.
---- Runs `fn` with the host centre's `hook` hidden, so vanilla's own dispatch
---- skips it.
----
---- Bind.merge takes the host centre's passive off the moment a REPLACING pair
---- forms - the pair speaks for the card now - and it does that by calling the
---- centre directly, which never touches added_to_deck. Vanilla still believes
---- the passive is on, so it takes it off a SECOND time when the card is sold
---- or debuffed: a merge hosted by HeavenlyFather leaves the run two booster
---- slots short of where it started, and a debuff leaves it short until the
---- debuff lifts. test_bind_passives.py has the sequence.
----
---- The hook is nilled on the centre rather than swapped behind a proxy table
---- because config.center is compared by IDENTITY all over the game -
---- `c.config.center == G.P_CENTERS.c_base` and its like - and a stand-in would
---- fail every one of those. The window is a single synchronous call.
-local function without_center_hook(card, hook, fn)
-    local center = card.config and card.config.center
-    local hide = type(center) == "table" and type(center[hook]) == "function"
-        and Bind.replacing_special(card) and true or false
-    if not hide then return fn() end
-
-    local saved = center[hook]
-    center[hook] = nil
-    local ok, ret = pcall(fn)
-    center[hook] = saved
-    if not ok then error(ret, 0) end
-    return ret
-end
-
 --- The pair's own passive, for a special whose ability is not a calculate.
 ---
 --- Declared the same way a Joker declares one and run from the same two
