@@ -375,6 +375,28 @@ end
 
 --------------------------------------------------------------------------------
 
+--- Is there room for one more consumable? consumeable_buffer is vanilla's own
+--- reservation: a slot claimed now and filled by an event later still counts
+--- as taken, which is what stops two cards racing for one slot.
+local function bind_consumable_room()
+    if not (G.consumeables and G.consumeables.config) then return false end
+    return #G.consumeables.cards + (G.GAME.consumeable_buffer or 0)
+        < G.consumeables.config.card_limit
+end
+
+--- X1 plus the gain per Star Seal in the run's deck.
+---
+--- Read off card.seal, which holds the PREFIXED key, and counted live rather
+--- than accrued - converting the last sealed card away costs the Mult back.
+local function cottontail_crelly_mult(state)
+    local star = (CelestasMod.SEAL_KEYS or {}).Star
+    local sealed = 0
+    for _, held in ipairs((G and G.playing_cards) or {}) do
+        if held.seal == star then sealed = sealed + 1 end
+    end
+    return 1 + state.x_mult_gain * sealed
+end
+
 -- Arar + Jaws: the cards that missed out get something out of the hand anyway.
 special("j_celesta_arar", "j_celesta_jaws", {
     key = "arar_jaws",
@@ -1067,6 +1089,277 @@ special("j_celesta_neuro", "j_celesta_vedal", {
                     card = card,
                 }
             end
+        end
+
+        if context.joker_main and state.x_mult > 1 then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+-- CottontailVA + Crelly: Cottontail hands out Star Seals; this counts them
+-- wherever they ended up. Live off the deck, like Fufu - converting the last
+-- sealed card away costs the Mult back rather than leaving it banked.
+special("j_celesta_cottontail", "j_celesta_crelly", {
+    key = "cottontail_crelly",
+    config = { x_mult_gain = 0.2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, cottontail_crelly_mult(state) } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.joker_main then
+            local total = cottontail_crelly_mult(state)
+            if total > 1 then return { x_mult = total } end
+        end
+    end,
+})
+
+-- FroggyLoch + PapaMutt: PapaMutt makes a Tarot on a Three of a Kind and
+-- FroggyLoch rolls for a second go at things, so this rolls for a second Tarot.
+--
+-- Room is asked for TWICE, once per card, because the first one takes a slot
+-- the second may then not have. consumeable_buffer is vanilla's way of
+-- reserving that slot across the events that fill it.
+special("j_celesta_froggyloch", "j_celesta_papamutt", {
+    key = "froggy_papa",
+    config = { odds = 2 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_froggy_papa")
+        return { vars = { localize("Three of a Kind", "poker_hands"), n, d } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.before and not context.blueprint
+                and context.scoring_name == "Three of a Kind") then return end
+
+        local wanted = 1
+        if SMODS.pseudorandom_probability(card, "celesta_bind_froggy_papa",
+                1, state.odds, "celesta_bind_froggy_papa") then
+            wanted = 2
+        end
+
+        local made = 0
+        for _ = 1, wanted do
+            if not bind_consumable_room() then break end
+            made = made + 1
+            G.GAME.consumeable_buffer = (G.GAME.consumeable_buffer or 0) + 1
+            G.E_MANAGER:add_event(Event {
+                trigger = "before", delay = 0.0,
+                func = function()
+                    local card_made = SMODS.add_card {
+                        set = "Tarot", key_append = "celesta_bind_froggy_papa" }
+                    if card_made then card_made:juice_up(0.3, 0.5) end
+                    G.GAME.consumeable_buffer =
+                        math.max(0, (G.GAME.consumeable_buffer or 1) - 1)
+                    return true
+                end
+            })
+        end
+
+        if made > 0 then
+            return { message = localize("k_plus_tarot"), colour = G.C.PURPLE,
+                     card = card }
+        end
+    end,
+})
+
+-- Radical Mari + PapaMutt: PapaMutt's Three of a Kind, but the card it makes
+-- is any consumable rather than a Tarot.
+--
+-- The set is picked from the run's own consumable types rather than a fixed
+-- three, so a type another mod adds is reachable - which is the difference
+-- between "any consumable" and "one of the three vanilla ones".
+special("j_celesta_radicalmari", "j_celesta_papamutt", {
+    key = "mari_papa",
+
+    loc_vars = function(def, card, state)
+        return { vars = { localize("Three of a Kind", "poker_hands") } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.before and not context.blueprint
+                and context.scoring_name == "Three of a Kind") then return end
+        if not bind_consumable_room() then return end
+
+        local sets = {}
+        for key in pairs(SMODS.ConsumableTypes or {}) do sets[#sets + 1] = key end
+        table.sort(sets)
+        if #sets == 0 then sets = { "Tarot", "Planet", "Spectral" } end
+        local set = pseudorandom_element(sets, pseudoseed("celesta_bind_mari_papa"))
+
+        G.GAME.consumeable_buffer = (G.GAME.consumeable_buffer or 0) + 1
+        G.E_MANAGER:add_event(Event {
+            trigger = "before", delay = 0.0,
+            func = function()
+                local made = SMODS.add_card {
+                    set = set, key_append = "celesta_bind_mari_papa" }
+                if made then made:juice_up(0.3, 0.5) end
+                G.GAME.consumeable_buffer =
+                    math.max(0, (G.GAME.consumeable_buffer or 1) - 1)
+                return true
+            end
+        })
+
+        return { message = localize("celesta_plus_consumable"), colour = G.C.PURPLE,
+                 card = card }
+    end,
+})
+
+-- HeavenlyFather + Baddaboom: HeavenlyFather adds booster slots, Baddaboom
+-- grows on things being spent. This grows on the packs you WALK PAST.
+--
+-- context.skipping_booster is raised once per pack skipped, which is the whole
+-- of it.
+special("j_celesta_heavenlyfather", "j_celesta_baddaboom", {
+    key = "heavenly_boom",
+    config = { x_mult = 1, x_mult_gain = 0.1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.skipping_booster and not context.blueprint then
+            state.x_mult = state.x_mult + state.x_mult_gain
+            return {
+                message = localize { type = "variable", key = "a_xmult",
+                                     vars = { state.x_mult } },
+                colour = G.C.MULT,
+                card = card,
+            }
+        end
+
+        if context.joker_main and state.x_mult > 1 then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+-- Rosedoodle + BuffPup: Rosedoodle's coin flip, on BuffPup's suit.
+--
+-- Rolled per card, so a hand of five Leaves gets five rolls - the same shape
+-- Vienna uses for Stars.
+special("j_celesta_rosedoodle", "j_celesta_buffpup", {
+    key = "rose_buff",
+    config = { odds = 2, x_mult = 1.5 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_rose_buff")
+        local name, colour = CelestasMod.suit_name_and_colour(
+            CelestasMod.LEAF_SUIT, CelestasMod.LEAF_COLOUR, true)
+        return { vars = { n, d, state.x_mult, name, colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.individual and context.cardarea == G.play
+            and context.other_card and context.other_card.is_suit
+            and context.other_card:is_suit(CelestasMod.LEAF_SUIT) then
+            if SMODS.pseudorandom_probability(card, "celesta_bind_rose_buff",
+                    1, state.odds, "celesta_bind_rose_buff") then
+                return { x_mult = state.x_mult, card = card }
+            end
+        end
+    end,
+})
+
+-- Arar + Arielle: Arar enhances one card a round and Arielle makes every card
+-- count as everything, so together every card gets one.
+special("j_celesta_arar", "j_celesta_arielle", {
+    key = "arar_arielle",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.first_hand_drawn and not context.blueprint) then return end
+        if not (G.hand and G.hand.cards) then return end
+
+        local touched = 0
+        for _, held in ipairs(G.hand.cards) do
+            if held.config and held.config.center == G.P_CENTERS.c_base then
+                -- Rolled per card rather than once for the hand: "a random
+                -- enhancement" to each, not one enhancement to all of them.
+                local enhancement = SMODS.poll_enhancement {
+                    key = "celesta_bind_arar_arielle",
+                    guaranteed = true,
+                }
+                if enhancement and G.P_CENTERS[enhancement] then
+                    local target = held
+                    touched = touched + 1
+                    G.E_MANAGER:add_event(Event {
+                        func = function()
+                            target:set_ability(G.P_CENTERS[enhancement], nil, true)
+                            target:juice_up(0.3, 0.5)
+                            return true
+                        end
+                    })
+                end
+            end
+        end
+
+        if touched > 0 then
+            return { message = localize("k_plus_enhancement"),
+                     colour = G.C.SECONDARY_SET.Enhanced, card = card }
+        end
+    end,
+})
+
+-- Camila + Neuro, and Camila + Vedal.
+--
+-- Neither reimplements Camila. They are `additive`, so Camila's own calculate
+-- still runs and does all of the work; each pair is a flag Camila reads off
+-- CelestasMod.Bind.special_of(card) while it runs. That is why the flags live
+-- on the def and not in `config`: they are read, never written, and a merge
+-- cannot misprint what it does not store.
+special("j_celesta_camila", "j_celesta_neuro", {
+    key = "camila_neuro",
+    additive = true,
+    camila_any_count = true,
+
+    loc_vars = function(def, card, state) return { vars = {} } end,
+    calculate = function(def, card, context, state) end,
+})
+
+special("j_celesta_camila", "j_celesta_vedal", {
+    key = "camila_vedal",
+    additive = true,
+    camila_edition = "e_polychrome",
+
+    loc_vars = function(def, card, state) return { vars = {} } end,
+    calculate = function(def, card, context, state) end,
+})
+
+-- Crelly + Vedal: Crelly eats a consumable at the end of the shop for X0.2;
+-- Vedal upgrades things. The meal is worth a great deal more.
+special("j_celesta_crelly", "j_celesta_vedal", {
+    key = "crelly_vedal",
+    config = { x_mult = 1, x_mult_gain = 1.5 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.ending_shop and not context.blueprint then
+            if #G.consumeables.cards == 0 then return end
+            local target = pseudorandom_element(G.consumeables.cards,
+                pseudoseed("celesta_bind_crelly_vedal"))
+
+            state.x_mult = state.x_mult + state.x_mult_gain
+            -- Respects eternal and undestroyable stickers, and animates it.
+            SMODS.destroy_cards(target)
+            return {
+                message = localize { type = "variable", key = "a_xmult",
+                                     vars = { state.x_mult } },
+                colour = G.C.MULT,
+                card = card,
+            }
         end
 
         if context.joker_main and state.x_mult > 1 then

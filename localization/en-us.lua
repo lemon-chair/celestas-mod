@@ -1358,6 +1358,79 @@ return {
                     "{C:attention}other{} merged Joker",
                 },
             },
+            celesta_bind_arar_arielle = {
+                name = "Arar + Arielle",
+                text = {
+                    "At the start of each round, adds a random",
+                    "{C:attention}enhancement{} to every unenhanced",
+                    "card held in hand",
+                },
+            },
+            celesta_bind_camila_neuro = {
+                name = "Camila + Neuro",
+                text = {
+                    "Destroys the {C:attention}first hand{} played each round",
+                    "and returns every card next round with",
+                    "its {C:dark_edition}edition{} upgraded one step",
+                },
+            },
+            celesta_bind_camila_vedal = {
+                name = "Camila + Vedal",
+                text = {
+                    "Destroys the {C:attention}first hand{} played each round",
+                    "if it is a single card, and returns it next",
+                    "round as {C:dark_edition}Polychrome{}",
+                },
+            },
+            celesta_bind_cottontail_crelly = {
+                name = "CottontailVA + Crelly",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult for each",
+                    "{C:attention}Star Seal{} card in your {C:attention}full deck{}",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_crelly_vedal = {
+                name = "Crelly + Vedal",
+                text = {
+                    "At the end of the shop, consumes a random",
+                    "held {C:attention}consumable{} and gains {X:mult,C:white}X#1#{} Mult",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_froggy_papa = {
+                name = "FroggyLoch + PapaMutt",
+                text = {
+                    "Creates a random {C:tarot}Tarot{} card if the played",
+                    "hand contains a {C:attention}#1#{}, with a {C:green}#2# in #3#{}",
+                    "chance to create a second",
+                    "{C:inactive}(Must have room)",
+                },
+            },
+            celesta_bind_heavenly_boom = {
+                name = "HeavenlyFather + Baddaboom",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult for each",
+                    "{C:attention}Booster Pack{} skipped",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_mari_papa = {
+                name = "Radical Mari + PapaMutt",
+                text = {
+                    "Creates a random {C:attention}consumable{} if the",
+                    "played hand contains a {C:attention}#1#{}",
+                    "{C:inactive}(Must have room)",
+                },
+            },
+            celesta_bind_rose_buff = {
+                name = "Rosedoodle + BuffPup",
+                text = {
+                    "Played {V:1}#4#{} cards have a {C:green}#1# in #2#{}",
+                    "chance to give {X:mult,C:white}X#3#{} Mult",
+                    "when scored",
+                },
+            },
             celesta_bind_arar_heavenly = {
                 name = "Arar + HeavenlyFather",
                 text = {
@@ -1612,6 +1685,7 @@ return {
             celesta_any_joker = "Any",
             celesta_aces = "All Aces of Spades!",
             celesta_stored = "Stored!",
+            celesta_plus_consumable = "+Consumable",
         },
     },
 }

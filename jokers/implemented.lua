@@ -3421,6 +3421,24 @@ CelestasMod.EDITION_LADDER = {
     e_polychrome = "e_polychrome",
 }
 
+--- Appends a snapshot to whatever is already stored, and returns the list.
+---
+--- Tolerates a bare snapshot as the existing value, because that is the shape
+--- older saves hold: Camila kept exactly one card until a merge could widen it
+--- to the whole hand, and a run in progress must not lose the card it is owed.
+function CelestasMod.store_snapshot(existing, snapshot)
+    local list = CelestasMod.stored_list(existing)
+    list[#list + 1] = snapshot
+    return list
+end
+
+--- Whatever is stored, as a list. A bare snapshot becomes a list of one.
+function CelestasMod.stored_list(stored)
+    if type(stored) ~= "table" then return {} end
+    if stored.suit then return { stored } end
+    return stored
+end
+
 --- Everything needed to rebuild a playing card, as plain strings.
 --- Stored on the joker and therefore serialized into the save, so it has to
 --- survive a reload with no live references in it.
@@ -3459,6 +3477,15 @@ SMODS.Joker {
     end,
 
     calculate = function(self, card, context)
+        -- Two Bind pairs change what this does rather than replacing it, and
+        -- they say so on their own def rather than reimplementing the body:
+        -- camila_any_count widens "a single card" to any number, and
+        -- camila_edition names what the card comes back as. Read here so
+        -- neither depends on which half of the merge ran first.
+        local pair = CelestasMod.Bind and CelestasMod.Bind.special_of
+            and CelestasMod.Bind.special_of(card)
+        local any_count = pair and pair.camila_any_count
+
         -- Taken on the destroy pass rather than before scoring. A card pulled
         -- out from under evaluate_play mid-hand leaves the scoring loop
         -- holding a card that is no longer there; the destroy pass exists
@@ -3467,14 +3494,19 @@ SMODS.Joker {
         if context.destroying_card and context.cardarea == G.play
             and not context.blueprint
             and G.GAME.current_round.hands_played == 0
-            and context.full_hand and #context.full_hand == 1
-            and context.destroying_card == context.full_hand[1] then
+            and context.full_hand
+            and (any_count
+                 or (#context.full_hand == 1
+                     and context.destroying_card == context.full_hand[1])) then
             local doomed = context.destroying_card
             -- Eternal cards refuse destruction, and taking one would strand
             -- the snapshot forever.
             if SMODS.is_eternal and SMODS.is_eternal(doomed) then return end
 
-            card.ability.extra.stored = CelestasMod.snapshot_card(doomed)
+            -- A list, because a widened pair takes every card of the hand and
+            -- the destroy pass asks about them one at a time.
+            card.ability.extra.stored = CelestasMod.store_snapshot(
+                card.ability.extra.stored, CelestasMod.snapshot_card(doomed))
             return {
                 remove = true,
                 message = localize("celesta_taken"),
@@ -3486,9 +3518,10 @@ SMODS.Joker {
         -- Handed back when the next blind is picked.
         if context.setting_blind and card.ability.extra.stored
             and not (context.blueprint_card or card).getting_sliced then
-            local stored = card.ability.extra.stored
+            local held = CelestasMod.stored_list(card.ability.extra.stored)
             card.ability.extra.stored = nil
 
+            for _, stored in ipairs(held) do
             G.E_MANAGER:add_event(Event {
                 func = function()
                     local front = front_for(stored.suit, stored.value)
@@ -3501,7 +3534,10 @@ SMODS.Joker {
                         { front = front, center = center },
                         G.play, nil, nil, { G.C.SECONDARY_SET.Enhanced })
 
-                    local upgraded = CelestasMod.EDITION_LADDER[stored.edition or "none"]
+                    -- A pair may name the edition outright; otherwise the
+                    -- card climbs one rung from whatever it was.
+                    local upgraded = (pair and pair.camila_edition)
+                        or CelestasMod.EDITION_LADDER[stored.edition or "none"]
                     if upgraded then restored:set_edition(upgraded, true, true) end
                     if stored.seal then restored:set_seal(stored.seal, true) end
 
@@ -3521,6 +3557,7 @@ SMODS.Joker {
                     return true
                 end
             })
+            end
         end
     end,
 }
