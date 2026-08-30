@@ -172,7 +172,9 @@ function Bind.merge(host, absorbed)
     -- the row, and Bind.apply_partner_passive above skips specials entirely.
     local def = Bind.special_of(host)
     if def then
-        local center = host.config.center
+        -- Only a replacing pair takes the host's passive off; an additive one
+        -- is keeping both halves, passives included.
+        local center = Bind.replacing_special(host) and host.config.center
         if type(center) == "table" and type(center.remove_from_deck) == "function" then
             pcall(center.remove_from_deck, center, host, false)
         end
@@ -279,6 +281,20 @@ function Bind.special_of(card)
             return def
         end
     end
+    return nil
+end
+
+--- The special governing this merge, but only when it REPLACES both halves.
+---
+--- Most do: the pair's ability stands in for both, so neither half's calculate
+--- runs, neither half's passives are applied, and a self-destruct cannot
+--- unmerge because there are no halves left to be one of. A special marked
+--- `additive` is the other kind - it adds to what both halves already do - so
+--- everything that asks "has this been replaced" has to ask through here
+--- rather than through special_of.
+function Bind.replacing_special(card)
+    local def = Bind.special_of(card)
+    if def and not def.additive then return def end
     return nil
 end
 
@@ -643,6 +659,127 @@ local function all_stars(cards)
     end
     return true
 end
+
+-- Arar + HeavenlyFather: Arar's enhancement, and then the card it landed on
+-- again. Arar's own body is written out rather than borrowed, because a
+-- replacing pair has no halves left to borrow from - and because the copy has
+-- to be made from the SAME card Arar picked, which means picking it here.
+special("j_celesta_arar", "j_celesta_heavenlyfather", {
+    key = "arar_heavenly",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.first_hand_drawn and not context.blueprint) then return end
+        if not (G.hand and G.hand.cards) then return end
+
+        local candidates = {}
+        for _, c in ipairs(G.hand.cards) do
+            if c.config.center == G.P_CENTERS.c_base
+                and not c.celesta_arar_claimed then
+                candidates[#candidates + 1] = c
+            end
+        end
+        if #candidates == 0 then return end
+
+        local target = pseudorandom_element(candidates,
+            pseudoseed("celesta_bind_arar_heavenly"))
+        local enhancement = SMODS.poll_enhancement {
+            key = "celesta_bind_arar_heavenly_enh",
+            guaranteed = true,
+        }
+        if not (enhancement and G.P_CENTERS[enhancement]) then return end
+
+        target.celesta_arar_claimed = true
+        G.E_MANAGER:add_event(Event {
+            func = function()
+                target:set_ability(G.P_CENTERS[enhancement], nil, true)
+                target:juice_up(0.3, 0.5)
+                target.celesta_arar_claimed = nil
+
+                -- Copied AFTER the enhancement lands, in the same event, so
+                -- the copy is of the enhanced card rather than the bare one it
+                -- was a moment ago. Duplication sequence lifted from vanilla
+                -- DNA, emplaced into G.deck the way the Star Seal's is: the
+                -- copy joins the full deck rather than the current hand.
+                G.playing_card = (G.playing_card and G.playing_card + 1) or 1
+                local copy = copy_card(target, nil, nil, G.playing_card)
+                if not copy then return true end
+                copy:add_to_deck()
+                G.deck.config.card_limit = G.deck.config.card_limit + 1
+                table.insert(G.playing_cards, copy)
+                G.deck:emplace(copy)
+                copy.states.visible = nil
+                G.E_MANAGER:add_event(Event {
+                    func = function() copy:start_materialize() return true end
+                })
+                playing_card_joker_effects({ copy })
+                return true
+            end
+        })
+
+        return {
+            message = localize("k_copied_ex"),
+            colour = G.C.SECONDARY_SET.Enhanced,
+            card = card,
+        }
+    end,
+})
+
+-- Kumi + HeavenlyFather: the first pair that ADDS instead of replacing.
+--
+-- Both halves keep working - Kumi still eats Gold for money, HeavenlyFather
+-- still hands out booster slots - and the pair puts those packs on sale. So it
+-- is marked `additive`, which is what tells Bind to keep running both centres
+-- and to keep applying both passives.
+--
+-- The price is not a calculate at all. A booster's cost is decided in
+-- Card:set_cost, and vanilla has no per-type discount to move: G.GAME.discount
+-- _percent is every shop item at once. So set_cost is wrapped further down,
+-- and this half of the pair is only the number it reads.
+special("j_celesta_kumi", "j_celesta_heavenlyfather", {
+    key = "kumi_heavenly",
+    additive = true,
+    config = { discount = 0.5 },
+
+    loc_vars = function(def, card, state)
+        local kumi = G.P_CENTERS.j_celesta_kumi
+        local extra = kumi and kumi.config and kumi.config.extra or {}
+        local numerator, denominator = SMODS.get_probability_vars(
+            card, 1, extra.odds or 4, "celesta_kumi")
+        local father = G.P_CENTERS.j_celesta_heavenlyfather
+        local slots = father and father.config and father.config.extra
+            and father.config.extra.slots or 2
+        return { vars = { numerator, denominator, extra.dollars or 20, slots } }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+-- Zentreya + Zentreya: one Zentreya pays for Steel that scores. Two pay for
+-- Steel wherever it is, and pay more.
+--
+-- context.individual fires in both areas - cardarea is G.play for the scoring
+-- pass and G.hand for the held-in-hand one - so naming both is the whole of
+-- "played hand and held in hand".
+special("j_celesta_zentreya", "j_celesta_zentreya", {
+    key = "zentreya_zentreya",
+    config = { x_mult = 3 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.individual and context.other_card
+            and (context.cardarea == G.play or context.cardarea == G.hand)
+            and SMODS.has_enhancement(context.other_card, "m_steel") then
+            return { x_mult = state.x_mult, card = card }
+        end
+    end,
+})
 
 -- x3Dustco + anything of ours: the one pair that does not name its other half.
 --
@@ -1077,7 +1214,7 @@ end
 local celesta_bind_card_remove_ref = Card.remove
 function Card:remove()
     if acting_card == self and acting_half and Bind.is_merged(self)
-        and not Bind.special_of(self) then
+        and not Bind.replacing_special(self) then
         -- Removed from the row already, by the time anything can object.
         if Bind.unmerge(self, acting_half) then
             restore_to_row(self)
@@ -1151,18 +1288,23 @@ function Card:calculate_joker(context, ...)
     -- rolls, tattered counting and every other mod's hook still see the
     -- evaluation - but its result is dropped in favour of the pair's.
     local def = Bind.special_of(self)
+    local special_effect = nil
     if def then
         if running then return effect, post end
         running = true
         local state = Bind.special_state(self, def)
-        local ok, special_effect = pcall(def.calculate, def, self, context, state)
+        local ok, ret = pcall(def.calculate, def, self, context, state)
         running = false
         if not ok then
             CelestasMod.warn_once("bind_special_" .. tostring(def.key),
-                ("Bind pair %s failed: %s"):format(tostring(def.key), tostring(special_effect)))
-            return nil, post
+                ("Bind pair %s failed: %s"):format(tostring(def.key), tostring(ret)))
+            return (def.additive and effect or nil), post
         end
-        return special_effect, post
+        -- A replacing pair is the whole answer. An additive one is one more
+        -- voice, so it falls through and is combined with both halves below.
+        if not def.additive then return ret, post end
+        special_effect = ret
+        effect = combine(effect, special_effect)
     end
 
     local center = Bind.partner_center(self)
@@ -1204,6 +1346,37 @@ end
 --------------------------------------------------------------------------------
 -- The hooks that are not part of the calculate pass
 --------------------------------------------------------------------------------
+
+--- The first card in the Joker row governed by the special `key`, if any.
+function Bind.find_special(key)
+    for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
+        local def = Bind.special_of(held)
+        if def and def.key == key then return held, def end
+    end
+    return nil
+end
+
+-- Booster prices, for Kumi + HeavenlyFather.
+--
+-- A booster's cost is decided in Card:set_cost and nowhere else, and vanilla
+-- has no per-type discount to move - G.GAME.discount_percent is every shop
+-- item at once, and the voucher that moves it is not what was asked for. So
+-- the price is adjusted after the fact, at the one place that sets it.
+--
+-- Rounded up and floored at 1, matching what set_cost does to every other
+-- price: a free booster is a different card, and math.floor would make the
+-- cheapest packs free by accident.
+local celesta_bind_set_cost_ref = Card.set_cost
+function Card:set_cost()
+    celesta_bind_set_cost_ref(self)
+    if not (self.ability and self.ability.set == "Booster") then return end
+
+    local holder, def = Bind.find_special("kumi_heavenly")
+    if not holder then return end
+
+    local discount = Bind.special_state(holder, def).discount or 0.5
+    self.cost = math.max(1, math.ceil(self.cost * discount))
+end
 --
 -- `calculate` is dispatched through Card:calculate_joker, which is wrapped
 -- above, so both halves are asked. The rest of a centre's hooks are dispatched
@@ -1220,8 +1393,9 @@ end
 --- passes straight through instead of recursing.
 local function with_partner(card, hook, fn)
     if not Bind.is_merged(card) then return nil end
-    -- A special pair replaces both halves, so neither half's hooks run.
-    if Bind.special_of(card) then return nil end
+    -- A special pair replaces both halves, so neither half's hooks run - but
+    -- an additive one keeps them, which is the whole of what it is.
+    if Bind.replacing_special(card) then return nil end
 
     local center = Bind.partner_center(card)
     if not (center and type(center[hook]) == "function") then return nil end

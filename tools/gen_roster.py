@@ -419,12 +419,29 @@ LOC_TAIL = '''        },
                     "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
                 },
             },
+            celesta_bind_zentreya_zentreya = {
+                name = "Zentreya + Zentreya",
+                text = {
+                    "{C:attention}Steel Cards{} in the played hand",
+                    "and held in hand give",
+                    "{X:mult,C:white}X#1#{} Mult when scored",
+                },
+            },
             celesta_bind_x3dustco_any = {
                 name = "x3Dustco + Anything",
                 text = {
                     "At the end of the shop, creates",
                     "a {C:dark_edition}Negative{} copy of the",
                     "{C:attention}other{} merged Joker",
+                },
+            },
+            celesta_bind_arar_heavenly = {
+                name = "Arar + HeavenlyFather",
+                text = {
+                    "At the start of each round, adds a",
+                    "random {C:attention}enhancement{} to a random",
+                    "unenhanced card held in hand, then adds",
+                    "a copy of that card to your deck",
                 },
             },
             celesta_bind_arar_jaws = {
@@ -481,6 +498,15 @@ LOC_TAIL = '''        },
                     "Destroys scoring {C:attention}7s of Spades{},",
                     "{C:green}#1# in #2#{} chance to earn {C:money}$#3#{} each",
                     "and {C:green}#4# in #5#{} chance to earn {C:money}$#6#{} each",
+                },
+            },
+            celesta_bind_kumi_heavenly = {
+                name = "Kumi + HeavenlyFather",
+                text = {
+                    "Destroys all scoring {C:attention}Gold Cards{}, with a",
+                    "{C:green}#1# in #2#{} chance to earn {C:money}$#3#{} per card destroyed",
+                    "{C:attention}+#4#{} booster pack slots",
+                    "Booster packs cost {C:attention}half{} as much",
                 },
             },
             celesta_bind_kumi_maya = {
