@@ -141,6 +141,13 @@ return {
                     "card with a {C:red}Red Seal{}",
                 },
             },
+            j_celesta_ben = {
+                name = "Ben",
+                text = {
+                    "{C:attention}+#1#{} hand size",
+                    "during {C:attention}Boss Blinds{}",
+                },
+            },
             j_celesta_beribug = {
                 name = "BeriBug",
                 text = {

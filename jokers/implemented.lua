@@ -273,11 +273,6 @@ SMODS.Joker {
 -- KokoNuts [Common]
 -- At the start of each round, add a Lucky 7 of Spades to the deck.
 --------------------------------------------------------------------------------
---
--- Declared beside the Joker that plays it, like Shoomimi's. Avoid the words
--- music, stream and ambient in a sound key: Steamodded matches those to decide
--- streaming vs static, and a short effect wants static.
-SMODS.Sound { key = "kokonuts_join", path = "kokonuts_join.ogg" }
 
 SMODS.Joker {
     key = "kokonuts",
@@ -298,7 +293,8 @@ SMODS.Joker {
 
     -- Cryptid's Supercell shape, same as Shoomimi's: the from_debuff guard is
     -- what keeps it to once, because add_to_deck runs again every time a
-    -- debuff is LIFTED rather than only when the Joker arrives.
+    -- debuff is LIFTED rather than only when the Joker arrives. The sound
+    -- itself is declared in jokers/sounds.lua.
     add_to_deck = function(self, card, from_debuff)
         if not from_debuff then play_sound("celesta_kokonuts_join") end
     end,
@@ -1237,12 +1233,6 @@ SMODS.Joker {
 --------------------------------------------------------------------------------
 -- Shoomimi [Rare] - 1 in 6 per shop reroll to gain a consumable slot.
 --------------------------------------------------------------------------------
---
--- Declared beside the Joker that plays it rather than with the enhancement
--- sounds, because nothing else uses it. Avoid the words music, stream and
--- ambient in a sound key: Steamodded matches those to decide streaming vs
--- static, and a one-second effect wants static.
-SMODS.Sound { key = "shoomimi_join", path = "shoomimi_join.ogg" }
 
 SMODS.Joker {
     key = "shoomimi",
@@ -1263,6 +1253,7 @@ SMODS.Joker {
     -- guard is the reason it only does so once: add_to_deck is called again
     -- every time a debuff is LIFTED - a Boss Blind ending, a Joker being
     -- undebuffed - and without it the sound would replay on each of those.
+    -- The sound itself is declared in jokers/sounds.lua.
     add_to_deck = function(self, card, from_debuff)
         if not from_debuff then play_sound("celesta_shoomimi_join") end
     end,
@@ -6650,6 +6641,100 @@ SMODS.Joker {
                 repetitions = card.ability.extra.repetitions,
                 card = card,
             }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Ben [Uncommon] - a bigger hand, but only against the Boss.
+--------------------------------------------------------------------------------
+--
+-- Hand size is a running total on G.hand, not a value anything recomputes, so
+-- a Joker that changes it for a while has to give back exactly what it took.
+-- The Manacle is the closest thing in the game - it does G.hand:change_size(-1)
+-- when the Blind is set and change_size(1) again in Blind:defeat and
+-- Blind:disable - and everything below is the same idea reached through the
+-- hooks a Joker actually gets.
+--
+-- The flag is the whole of the safety. Every path goes through ben_hold, which
+-- does nothing unless the answer is changing, so no route can double-apply and
+-- none can give back twice. The routes are:
+--
+--   setting_blind     the Blind just became (or stopped being) a Boss
+--   end_of_round      the round is over, whoever won
+--   add_to_deck       bought or un-debuffed - possibly mid-Boss
+--   remove_from_deck  sold, destroyed or debuffed - possibly mid-Boss
+--
+-- add_to_deck and remove_from_deck cover debuffing for free, because that is
+-- how vanilla implements it: Card:set_debuff calls remove_from_deck(true) and
+-- add_to_deck(true). Which is also why the SOUND checks from_debuff and the
+-- hand size does not - a debuffed Ben should stop working, but it has not
+-- arrived again.
+--
+-- A disabled Boss Blind - Luchador, Chicot - still counts. It is still the
+-- Boss Blind; it just is not doing anything.
+
+--- True while the run is on a Boss Blind.
+local function ben_boss_blind()
+    local blind = G.GAME and G.GAME.blind
+    return (blind and blind.boss) and true or false
+end
+
+--- Applies or removes the bonus, and only ever on a change.
+local function ben_hold(card, wanted)
+    local extra = card.ability and card.ability.extra
+    if not extra then return end
+    if (extra.applied == true) == (wanted == true) then return end
+
+    extra.applied = wanted or nil
+    if G.hand and G.hand.change_size then
+        G.hand:change_size(wanted and extra.h_size or -extra.h_size)
+    end
+end
+
+SMODS.Joker {
+    key = "ben",
+    atlas = "ben",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    -- Hand size belongs to this card and is given back by its own hooks;
+    -- there is no scoring effect for a copier to repeat.
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { h_size = 4, applied = nil } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.h_size } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        if not from_debuff then play_sound("celesta_ben_join") end
+        ben_hold(card, ben_boss_blind())
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        ben_hold(card, false)
+    end,
+
+    calculate = function(self, card, context)
+        if context.setting_blind then
+            ben_hold(card, ben_boss_blind())
+            if card.ability.extra.applied then
+                -- a_handsize is vanilla's own "+N Hand Size", so the number
+                -- shown is the one actually applied rather than a fixed
+                -- string that would lie if h_size ever changed.
+                return {
+                    message = localize { type = "variable", key = "a_handsize",
+                                         vars = { card.ability.extra.h_size } },
+                    colour = G.C.FILTER,
+                    card = card,
+                }
+            end
+        end
+
+        if context.end_of_round then
+            ben_hold(card, false)
         end
     end,
 }
