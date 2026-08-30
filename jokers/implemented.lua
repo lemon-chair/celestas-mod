@@ -6529,3 +6529,46 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- ItsDeadlyBoop [Rare] - both halves of the score, on one hand.
+--------------------------------------------------------------------------------
+--
+-- context.scoring_name is the hand the game NAMED, which is the strict reading
+-- of "is a Full House". The looser one - context.poker_hands["Full House"] -
+-- would also pay on a Flush House and a Five of a Kind, both of which contain
+-- a full house, and neither of which the game calls one.
+--
+-- Vanilla draws the same line in both directions and says which it means in
+-- the text: The Duo reads "contains a Pair" and pays on anything holding one,
+-- while Sly Joker names the hand. This one says "is".
+--
+-- Both keys come back from a single return. Steamodded applies each scoring
+-- key it recognises off the same table, so there is nothing gained by
+-- answering twice.
+
+SMODS.Joker {
+    key = "itsdeadlyboop",
+    atlas = "itsdeadlyboop",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { x_mult = 2, x_chips = 2, hand = "Full House" } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.x_mult, card.ability.extra.x_chips,
+                          localize(card.ability.extra.hand, "poker_hands") } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.joker_main
+            and context.scoring_name == card.ability.extra.hand then
+            return {
+                x_mult = card.ability.extra.x_mult,
+                x_chips = card.ability.extra.x_chips,
+            }
+        end
+    end,
+}

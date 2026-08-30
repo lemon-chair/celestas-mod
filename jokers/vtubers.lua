@@ -19,7 +19,6 @@ local ROSTER = {
     { key = "giwi", rarity = 1, cost = 4, mult = 4 },
     { key = "glassesjournal", rarity = 1, cost = 4, mult = 4 },
     { key = "huntressspectre", rarity = 1, cost = 4, mult = 4 },
-    { key = "itsdeadlyboop", rarity = 1, cost = 4, mult = 4 },
     { key = "juniperactias", rarity = 1, cost = 4, mult = 4 },
     { key = "kiri", rarity = 1, cost = 4, mult = 4 },
     { key = "lucypyre", rarity = 1, cost = 4, mult = 4 },

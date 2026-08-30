@@ -482,7 +482,9 @@ return {
             j_celesta_itsdeadlyboop = {
                 name = "ItsDeadlyBoop",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{X:mult,C:white}X#1#{} Mult and {X:chips,C:white}X#2#{} Chips",
+                    "if played hand is a",
+                    "{C:attention}#3#{}",
                 },
             },
             j_celesta_jaws = {
