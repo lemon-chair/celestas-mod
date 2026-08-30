@@ -5815,7 +5815,7 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Maple Chicken [Uncommon] - every Leaf goes round twice.
+-- MapleChicken [Uncommon] - every Leaf goes round twice.
 --------------------------------------------------------------------------------
 --
 -- Two cardareas, because a Leaf card can be doing either job: G.play is the

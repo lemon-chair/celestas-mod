@@ -40,7 +40,7 @@ DISPLAY_NAMES = {
     "shiabun": "Shiabun",
     "pipi": "Pipi",
     "buffpup": "BuffPup",
-    "maplechicken": "Maple Chicken",
+    "maplechicken": "MapleChicken",
     "fufu": "Fufu",
     "isaa": "Isaa",
     "occi": "Occi",
@@ -498,6 +498,14 @@ LOC_TAIL = '''        },
                     "Destroys scoring {C:attention}7s of Spades{},",
                     "{C:green}#1# in #2#{} chance to earn {C:money}$#3#{} each",
                     "and {C:green}#4# in #5#{} chance to earn {C:money}$#6#{} each",
+                },
+            },
+            celesta_bind_lime_ray = {
+                name = "Limealicious + Ray",
+                text = {
+                    "Retriggers {C:attention}Bloodstone{}, {C:attention}Rough Gem{},",
+                    "{C:attention}Onyx Agate{}, {C:attention}Arrowhead{}, {C:attention}Vienna{}",
+                    "and {C:attention}MapleChicken{} #1# additional time",
                 },
             },
             celesta_bind_kumi_heavenly = {

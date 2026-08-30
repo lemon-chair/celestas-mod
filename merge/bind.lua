@@ -781,6 +781,52 @@ special("j_celesta_zentreya", "j_celesta_zentreya", {
     end,
 })
 
+-- Limealicious + Ray: Limealicious makes Limestone, Ray makes suit Jokers go
+-- again. Together they go again for the Jokers that care what a card is made
+-- of as much as what suit it is.
+--
+-- The four vanilla stones, plus the two of ours that belong with them: Vienna,
+-- which is the Star suit's chance-based one, and MapleChicken, which
+-- retriggers the Leaf suit. Ray's own list is the four suit Jokers and their
+-- Star and Leaf equivalents; this is the other half of that family.
+--
+-- Same shape as Ray: retrigger_joker_check is asked of every Joker about every
+-- other one, so the answer has to name who it is being asked about, and it
+-- must refuse itself or it would retrigger its own answer.
+local LIME_RAY_TARGETS = {
+    j_bloodstone = true,     -- Hearts
+    j_rough_gem = true,      -- Diamonds
+    j_onyx_agate = true,     -- Clubs
+    j_arrowhead = true,      -- Spades
+    j_celesta_vienna = true,
+    j_celesta_maplechicken = true,
+}
+
+special("j_celesta_limealicious", "j_celesta_ray", {
+    key = "lime_ray",
+    config = { repetitions = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.repetitions } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.retrigger_joker_check and context.other_card
+            and context.other_card ~= card then
+            local config = context.other_card.config
+            local key = config and (config.center_key
+                or (config.center and config.center.key))
+            if key and LIME_RAY_TARGETS[key] then
+                return {
+                    message = localize("k_again_ex"),
+                    repetitions = state.repetitions,
+                    card = card,
+                }
+            end
+        end
+    end,
+})
+
 -- x3Dustco + anything of ours: the one pair that does not name its other half.
 --
 -- A wildcard rather than 126 named pairs, and the reason it can be one is that
