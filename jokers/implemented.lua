@@ -273,6 +273,11 @@ SMODS.Joker {
 -- KokoNuts [Common]
 -- At the start of each round, add a Lucky 7 of Spades to the deck.
 --------------------------------------------------------------------------------
+--
+-- Declared beside the Joker that plays it, like Shoomimi's. Avoid the words
+-- music, stream and ambient in a sound key: Steamodded matches those to decide
+-- streaming vs static, and a short effect wants static.
+SMODS.Sound { key = "kokonuts_join", path = "kokonuts_join.ogg" }
 
 SMODS.Joker {
     key = "kokonuts",
@@ -289,6 +294,13 @@ SMODS.Joker {
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_lucky
         return {}
+    end,
+
+    -- Cryptid's Supercell shape, same as Shoomimi's: the from_debuff guard is
+    -- what keeps it to once, because add_to_deck runs again every time a
+    -- debuff is LIFTED rather than only when the Joker arrives.
+    add_to_deck = function(self, card, from_debuff)
+        if not from_debuff then play_sound("celesta_kokonuts_join") end
     end,
 
     calculate = function(self, card, context)
