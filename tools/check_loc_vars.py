@@ -22,7 +22,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 BOOTSTRAP = '''
 jokers, seals, enhancements, blinds, atlases = {}, {}, {}, {}, {}
-consumables = {}
+consumables, backs = {}, {}
 sounds = {}
 suits = {}
 SMODS = {
@@ -37,7 +37,7 @@ SMODS = {
   -- they are only recorded here to keep main.lua loadable.
   Suit = function(t) suits[t.key] = t end,
   Consumable = function(t) consumables[t.key] = t end,
-  Back = function() end,
+  Back = function(t) backs[t.key] = t end,
   ConsumableTypes = {},
   current_mod = { path = "", name = "M", prefix = "celesta", config = {} },
 }
@@ -210,6 +210,13 @@ def main():
     # that whole table and rewrites it, so an entry added to en-us.lua by hand
     # survives exactly until the next regeneration - which is how Bind and the
     # Milk Bottle both ended up in the shop with a blank description box.
+    # A Back's loc_vars has the same shape as everything else's, and its text
+    # can carry the same #n# placeholders - Founder's Deck has two. They were
+    # skipped here until the Plaid Deck added a third, which is exactly the
+    # sort of gap this file exists to close.
+    for key, obj in dict(g.backs).items():
+        targets.append(("Back", key, "b_celesta_" + key, obj,
+                        loc.descriptions.Back))
     for key, obj in dict(g.consumables).items():
         set_name = obj.set or "Tarot"
         table_ = dict(loc.descriptions).get(set_name)

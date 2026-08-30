@@ -1414,6 +1414,21 @@ return {
         },
 
         Back = {
+            b_celesta_ecstasy = {
+                name = "Ecstasy Deck",
+                text = {
+                    "Only {C:attention}Celesta's Mod{}",
+                    "Jokers appear",
+                },
+            },
+            b_celesta_plaid = {
+                name = "Plaid Deck",
+                text = {
+                    "Start with a full set of",
+                    "all {C:attention}#1#{} suits",
+                    "{C:inactive}(#2# cards)",
+                },
+            },
             b_celesta_founders = {
                 name = "Founder's Deck",
                 text = {

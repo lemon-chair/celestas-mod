@@ -127,6 +127,31 @@ end
 -- Grim, Familiar and Incantation all pick from SMODS.Suits, which includes
 -- them.
 
+--- The prototypes currently lifted out, while a start_run is inside the hide.
+--- nil at every other moment, including after CelestasMod.deal_conversion_suits
+--- has put them back early.
+local hidden_now = nil
+
+--- Puts the conversion-only suits back into G.P_CARDS immediately, for a deck
+--- that wants them dealt after all.
+---
+--- The seam exists because of WHEN a deck gets to speak. Game:start_run picks
+--- the back, applies it (Back:apply_to_run, and so this mod's `apply`), and
+--- only then builds the starting deck by walking G.P_CARDS - all inside the
+--- one call this file wraps. So a deck cannot be consulted before the hide
+--- goes up, but it can lift it once its own apply runs, which is still well
+--- before the deck is built.
+---
+--- Returns true if it actually put anything back, so a caller can tell the
+--- difference between "done" and "there was nothing hidden" - the second means
+--- a save was being loaded, where the prototypes were never hidden at all.
+function CelestasMod.deal_conversion_suits()
+    if not hidden_now then return false end
+    for key, proto in pairs(hidden_now) do G.P_CARDS[key] = proto end
+    hidden_now = nil
+    return true
+end
+
 local celesta_suits_start_run_ref = Game.start_run
 function Game:start_run(args)
     -- A save is restored from the card list it stores, not from P_CARDS, in a
@@ -142,13 +167,18 @@ function Game:start_run(args)
         if CelestasMod.CONVERSION_SUITS[proto.suit] then hidden[key] = proto end
     end
     for key in pairs(hidden) do G.P_CARDS[key] = nil end
+    hidden_now = hidden
 
     -- pcall so a failure anywhere in start_run cannot leave the suits missing
     -- for the rest of the session: without the restore, every later conversion
     -- into one would look up a prototype that is not there.
     local ok, err = pcall(celesta_suits_start_run_ref, self, args)
 
+    -- Unconditional, and safe to have already happened: deal_conversion_suits
+    -- writes back the same prototypes under the same keys, so a deck that
+    -- lifted the hide early just makes this a no-op.
     for key, proto in pairs(hidden) do G.P_CARDS[key] = proto end
+    hidden_now = nil
 
     if not ok then error(err, 0) end
     return
