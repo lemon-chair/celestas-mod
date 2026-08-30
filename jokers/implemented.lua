@@ -5824,7 +5824,7 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Fufu [Uncommon] - paid for a varied deck.
+-- Fufu [Rare] - paid for a varied deck.
 --------------------------------------------------------------------------------
 --
 -- Live-counted rather than accrued: "for each unique suit in your full deck"
@@ -5846,7 +5846,7 @@ SMODS.Joker {
     key = "fufu",
     atlas = "fufu",
     pos = { x = 0, y = 0 },
-    rarity = 2, cost = 7,
+    rarity = 3, cost = 8,
     unlocked = true, discovered = true,
     blueprint_compat = true, eternal_compat = true,
 
