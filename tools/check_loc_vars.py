@@ -61,6 +61,14 @@ SMODS.Rank = { obj_buffer = {} }
 SMODS.Ranks = {}
 SMODS.smeared_check = function() return false end
 SMODS.find_card = function() return {} end
+-- Vanilla's starting values, which a Back's loc_vars may add its own deltas
+-- to rather than restating them.
+function get_starting_params()
+  return { dollars = 4, hand_size = 8, discards = 3, hands = 4,
+           reroll_cost = 5, joker_slots = 5, ante_scaling = 1,
+           consumable_slots = 2, no_faces = false,
+           erratic_suits_and_ranks = false }
+end
 CardArea = {}; function CardArea:emplace() end
 love = { graphics = {} }
 G = {

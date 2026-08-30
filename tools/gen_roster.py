@@ -507,11 +507,21 @@ LOC_TAIL = '''        },
                     "Jokers appear",
                 },
             },
+            b_celesta_hell = {
+                name = "Hell Deck",
+                text = {
+                    "{C:attention}#1#{} hand, {C:attention}#2#{} discards",
+                    "{C:red}-#3#{} hand size, {C:red}-#4#{} Joker slot",
+                    "{C:red}-#5#{} consumable slot",
+                    "Earn no {C:attention}interest{}",
+                },
+            },
             b_celesta_plaid = {
                 name = "Plaid Deck",
                 text = {
                     "Start with a full set of",
                     "all {C:attention}#1#{} suits",
+                    "{C:attention}+#3#{} hand size",
                     "{C:inactive}(#2# cards)",
                 },
             },

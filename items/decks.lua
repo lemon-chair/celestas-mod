@@ -4,7 +4,7 @@
 --- reroll_cost, ante_scaling, no_faces, ... Use `apply` for anything else.
 ---
 --- The `decks` atlas is one row of card-sized cells, in this order:
----     0 Founder's   1 Plaid   2 Ecstasy
+---     0 Founder's   1 Plaid   2 Ecstasy   3 Hell
 
 SMODS.Back {
     key = 'founders',
@@ -62,13 +62,13 @@ SMODS.Back {
     unlocked = true,
     discovered = true,
 
-    config = {},
+    config = { hand_size = 2 },
 
     loc_vars = function(self, info_queue, back)
         local suits, ranks = 0, 0
         for _ in pairs(SMODS.Suits or {}) do suits = suits + 1 end
         for _ in pairs(SMODS.Ranks or {}) do ranks = ranks + 1 end
-        return { vars = { suits, suits * ranks } }
+        return { vars = { suits, suits * ranks, self.config.hand_size } }
     end,
 
     apply = function(self, back)
@@ -121,5 +121,50 @@ SMODS.Back {
                 G.GAME.banned_keys[key] = true
             end
         end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Hell Deck - everything at once, and less of all of it.
+--------------------------------------------------------------------------------
+--
+-- Every line of this is a vanilla starting param, so there is no `apply`:
+-- Back:apply_to_run reads each key off the config itself. They are DELTAS
+-- against get_starting_params(), which is why the numbers below are negative
+-- and why the description does not repeat them - it adds them to the same
+-- defaults the game would, so changing a number here changes the text with it
+-- rather than leaving it to say something that used to be true.
+--
+-- The displayed hand and discard counts are the base-stake ones. From Gold
+-- stake up the game takes a further discard before any deck is applied, so the
+-- real number is one lower - which is true of every vanilla deck's description
+-- too, and is left reading the same way they do.
+
+SMODS.Back {
+    key = 'hell',
+    atlas = 'decks',
+    pos = { x = 3, y = 0 },
+
+    unlocked = true,
+    discovered = true,
+
+    config = {
+        hands = -3,            -- 4 -> 1
+        discards = -1,         -- 3 -> 2
+        hand_size = -1,        -- 8 -> 7
+        joker_slot = -1,       -- 5 -> 4
+        consumable_slot = -1,  -- 2 -> 1
+        no_interest = true,
+    },
+
+    loc_vars = function(self, info_queue, back)
+        local base = get_starting_params()
+        return { vars = {
+            base.hands + self.config.hands,
+            base.discards + self.config.discards,
+            math.abs(self.config.hand_size),
+            math.abs(self.config.joker_slot),
+            math.abs(self.config.consumable_slot),
+        } }
     end,
 }
