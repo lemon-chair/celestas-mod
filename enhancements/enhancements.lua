@@ -379,7 +379,7 @@ function CelestasMod.sinder_active()
     return false
 end
 
-CelestasMod.DRIFTWOOD_ODDS = 6
+CelestasMod.DRIFTWOOD_ODDS = 2
 
 SMODS.Enhancement {
     key = "driftwood",
