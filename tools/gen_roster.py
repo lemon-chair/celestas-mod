@@ -648,6 +648,64 @@ LOC_TAIL = '''        },
                     "retriggered {C:attention}#2#{} additional time",
                 },
             },
+            celesta_bind_koko_camila = {
+                name = "KokoNuts + Camila",
+                text = {
+                    "At the start of each round, adds a",
+                    "{C:attention}Lucky 7 of Spades{} with a random",
+                    "{C:dark_edition}edition{} to your deck",
+                },
+            },
+            celesta_bind_koko_maya = {
+                name = "KokoNuts + Maya",
+                text = {
+                    "At the start of each round, adds a",
+                    "{C:attention}Lucky 7 of Spades{} to your deck, with a",
+                    "{C:green}#1# in #2#{} chance to add {C:attention}#3#{} more",
+                },
+            },
+            celesta_bind_heavenly_nostro = {
+                name = "HeavenlyFather + Nostro",
+                text = {
+                    "{C:attention}+#1#{} Booster Pack slots and",
+                    "{C:attention}+#2#{} Voucher slot",
+                    "available in the shop",
+                },
+            },
+            celesta_bind_kumi_deja = {
+                name = "Kumi + Dejavudea",
+                text = {
+                    "Worn-out cards become",
+                    "{C:money}Gold Cards{} instead",
+                    "of {C:attention}Tattered{}",
+                },
+            },
+            celesta_bind_arar_deja = {
+                name = "Arar + Dejavudea",
+                text = {
+                    "At the start of each round, adds a random",
+                    "{C:dark_edition}edition{} to a random card held in",
+                    "hand that has none",
+                },
+            },
+            celesta_bind_zentreya_ruben = {
+                name = "Zentreya + Ruben Sargasm",
+                text = {
+                    "At the end of each round, earn money",
+                    "equal to the total {C:attention}sell value{} of",
+                    "every Joker you own",
+                    "{C:inactive}(Currently {C:money}+$#1#{C:inactive})",
+                },
+            },
+            celesta_bind_boosfer_boosfer = {
+                name = "Boosfer + Boosfer",
+                text = {
+                    "Each scored {C:attention}Ace{} of {V:1}#3#{} has a",
+                    "{C:green}#1# in #2#{} chance to create",
+                    "{C:spectral}The Soul{}",
+                    "{C:inactive}(Must have room)",
+                },
+            },
             celesta_ectoplast_seal = {
                 name = "Ectoplast Seal",
                 text = {
@@ -751,6 +809,7 @@ LOC_TAIL = '''        },
             celesta_broke = "Broke!",
             celesta_tattered = "Tattered!",
             celesta_repaired = "Repaired!",
+            celesta_gilded = "Gold!",
             celesta_taken = "Taken!",
             celesta_returned = "Returned!",
             celesta_cracked = "Cracked!",

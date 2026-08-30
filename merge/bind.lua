@@ -1537,6 +1537,275 @@ special("j_celesta_zentreya", "j_celesta_boosfer", {
     end,
 })
 
+-- KokoNuts's card, made `count` times.
+--
+-- Built in G.play so the player watches it appear and then animated into the
+-- deck, which is vanilla Marble Joker's shape and what KokoNuts itself is
+-- built on. Shared by the two pairs below because they differ only in how
+-- many are made and whether they arrive with an edition.
+local function koko_sevens(card, count, seed, editioned)
+    if count <= 0 then return end
+    G.E_MANAGER:add_event(Event {
+        func = function()
+            local made = {}
+            for i = 1, count do
+                local seven = create_playing_card(
+                    { front = G.P_CARDS.S_7, center = G.P_CENTERS.m_lucky },
+                    G.play, nil, nil, { G.C.SECONDARY_SET.Enhanced })
+                if editioned then
+                    -- Guaranteed, and never Negative: a Negative playing card
+                    -- does nothing in vanilla, so rolling one would read as
+                    -- the Joker having failed rather than as an edition.
+                    local edition = poll_edition(seed .. "_ed" .. i, nil, true, true)
+                    if edition then seven:set_edition(edition, true) end
+                end
+                made[#made + 1] = seven
+            end
+
+            SMODS.calculate_effect({
+                message = localize("celesta_plus_seven"),
+                colour = G.C.SECONDARY_SET.Enhanced,
+            }, card)
+
+            G.E_MANAGER:add_event(Event {
+                func = function()
+                    -- One call per card: draw_card moves a single card.
+                    for _ = 1, count do draw_card(G.play, G.deck, 90, "up", nil) end
+                    return true
+                end
+            })
+
+            -- Lets other Jokers react to the new playing cards existing.
+            playing_card_joker_effects(made)
+            return true
+        end
+    })
+end
+
+-- KokoNuts + Camila: KokoNuts's Lucky 7 of Spades, and Camila hands editions
+-- to the cards it touches. The seven arrives wearing one.
+special("j_celesta_kokonuts", "j_celesta_camila", {
+    key = "koko_camila",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- The getting_sliced guard is KokoNuts's own: a Joker destroyed this
+        -- frame must not still be making cards.
+        if context.setting_blind and not context.blueprint
+            and not (context.blueprint_card or card).getting_sliced then
+            koko_sevens(card, 1, "celesta_bind_koko_camila", true)
+        end
+    end,
+})
+
+-- KokoNuts + Maya: KokoNuts's seven, and Maya's coin flip decides whether two
+-- more come with it.
+special("j_celesta_kokonuts", "j_celesta_maya", {
+    key = "koko_maya",
+    config = { odds = 2, extra_cards = 2 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_koko_maya")
+        return { vars = { n, d, state.extra_cards } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.setting_blind and not context.blueprint
+            and not (context.blueprint_card or card).getting_sliced then
+            local count = 1
+            if SMODS.pseudorandom_probability(card, "celesta_bind_koko_maya",
+                    1, state.odds, "celesta_bind_koko_maya") then
+                count = count + state.extra_cards
+            end
+            koko_sevens(card, count, "celesta_bind_koko_maya", false)
+        end
+    end,
+})
+
+-- HeavenlyFather + Nostro: more of the shop, in both directions.
+--
+-- This is a passive, not a calculate, so it is declared the way a Joker
+-- declares one: add_to_deck grants and remove_from_deck gives back, and
+-- selling the merge, debuffing it and destroying it all go through vanilla's
+-- own machinery. on_merge covers the one moment vanilla cannot see - the pair
+-- coming into existence on a card that is already in the row - and on_unmerge
+-- its mirror.
+special("j_celesta_heavenlyfather", "j_celesta_nostro", {
+    key = "heavenly_nostro",
+    config = { boosters = 3, vouchers = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.boosters, state.vouchers } }
+    end,
+
+    add_to_deck = function(def, card, state, from_debuff)
+        SMODS.change_booster_limit(state.boosters)
+        SMODS.change_voucher_limit(state.vouchers)
+    end,
+
+    remove_from_deck = function(def, card, state, from_debuff)
+        SMODS.change_booster_limit(-state.boosters)
+        SMODS.change_voucher_limit(-state.vouchers)
+    end,
+
+    on_merge = function(def, card, state)
+        def.add_to_deck(def, card, state, false)
+    end,
+
+    on_unmerge = function(def, card, state)
+        def.remove_from_deck(def, card, state, false)
+    end,
+})
+
+-- Kumi + Dejavudea: Dejavudea saves cards from wearing out and Kumi wants Gold
+-- ones. Wear turns into Gold instead of into tatters.
+--
+-- No calculate at all: wear is counted in wear/tattered.lua, and that is where
+-- the question has to be asked, at the moment a card crosses its threshold.
+-- CelestasMod.Tattered.gilds() looks for this pair the same way the wear delay
+-- looks for Sansin.
+special("j_celesta_kumi", "j_celesta_dejavudea", {
+    key = "kumi_deja",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+    end,
+})
+
+-- Arar + Dejavudea: Arar's start-of-round gift, in editions rather than
+-- enhancements.
+special("j_celesta_arar", "j_celesta_dejavudea", {
+    key = "arar_deja",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.first_hand_drawn and not context.blueprint) then return end
+        if not (G.hand and G.hand.cards) then return end
+
+        local candidates = {}
+        for _, held in ipairs(G.hand.cards) do
+            -- The claim flag is Arar's: set_edition is deferred into an event,
+            -- so a copy evaluating in the same pass would still see the card
+            -- as bare and could waste itself re-picking it.
+            if not held.edition and not held.celesta_arar_deja_claimed then
+                candidates[#candidates + 1] = held
+            end
+        end
+        if #candidates == 0 then return end
+
+        local target = pseudorandom_element(candidates,
+            pseudoseed("celesta_bind_arar_deja"))
+        if not target then return end
+        local edition = poll_edition("celesta_bind_arar_deja_ed", nil, true, true)
+        if not edition then return end
+
+        target.celesta_arar_deja_claimed = true
+        G.E_MANAGER:add_event(Event {
+            func = function()
+                target:set_edition(edition, true)
+                target:juice_up(0.3, 0.5)
+                target.celesta_arar_deja_claimed = nil
+                return true
+            end
+        })
+
+        return { message = localize("k_upgrade_ex"),
+                 colour = G.C.DARK_EDITION, card = card }
+    end,
+})
+
+-- Zentreya + Ruben Sargasm: Ruben is worth more the fuller the row is, and
+-- this cashes that reading out across every Joker in it.
+--
+-- Paid through calc_dollar_bonus rather than an end_of_round calculate,
+-- because that is the hook vanilla pays reward money through: the amount gets
+-- its own line on the cash-out screen instead of arriving as a floating
+-- message. Bind dispatches it to the pair the same way it dispatches the
+-- halves'.
+
+--- Every Joker in the row, this one included.
+local function row_sell_total()
+    local total = 0
+    for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
+        total = total + (held.sell_cost or 0)
+    end
+    return total
+end
+
+special("j_celesta_zentreya", "j_celesta_rubensargasm", {
+    key = "zentreya_ruben",
+
+    loc_vars = function(def, card, state)
+        return { vars = { row_sell_total() } }
+    end,
+
+    calc_dollar_bonus = function(def, card, state)
+        local total = row_sell_total()
+        if total <= 0 then return end
+        return total
+    end,
+
+    calculate = function(def, card, context, state)
+    end,
+})
+
+-- Boosfer + Boosfer: two of them, and the Aces of its own suit start giving
+-- up Legendaries.
+special("j_celesta_boosfer", "j_celesta_boosfer", {
+    key = "boosfer_boosfer",
+    config = { odds = 20 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_boosfer_boosfer")
+        local name, colour = CelestasMod.suit_name_and_colour(
+            CelestasMod.STARS_SUIT, CelestasMod.STARS_COLOUR, true)
+        return { vars = { n, d, name, colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play
+                and not context.blueprint) then return end
+
+        local other = context.other_card
+        if not (other and other.is_suit and other:is_suit(CelestasMod.STARS_SUIT)
+                and other.get_id and other:get_id() == 14) then return end
+
+        -- Rolled before the room is asked for, so a full tray costs the roll
+        -- rather than banking it for the next Ace.
+        if not SMODS.pseudorandom_probability(card, "celesta_bind_boosfer_boosfer",
+                1, state.odds, "celesta_bind_boosfer_boosfer") then return end
+        if not bind_consumable_room() then return end
+
+        G.GAME.consumeable_buffer = (G.GAME.consumeable_buffer or 0) + 1
+        G.E_MANAGER:add_event(Event {
+            trigger = "before", delay = 0.0,
+            func = function()
+                -- By key, because The Soul is `hidden` and never comes out of
+                -- the Spectral pool on its own.
+                local made = SMODS.add_card { set = "Spectral", key = "c_soul" }
+                if made then made:juice_up(0.3, 0.5) end
+                G.GAME.consumeable_buffer =
+                    math.max(0, (G.GAME.consumeable_buffer or 1) - 1)
+                return true
+            end
+        })
+
+        return { message = localize("k_plus_spectral"), colour = G.C.SECONDARY_SET.Spectral,
+                 card = card }
+    end,
+})
+
 --------------------------------------------------------------------------------
 -- Unmerging: when one half destroys itself
 --------------------------------------------------------------------------------
@@ -1895,12 +2164,78 @@ end
 -- Compound Interest raises its own rate here and never touches `calculate`.
 -- Without this an absorbed one pays nothing and sits frozen at its opening
 -- rate for the rest of the run.
+--- Runs `fn` with the host centre's `hook` hidden, so vanilla's own dispatch
+--- skips it.
+---
+--- Bind.merge takes the host centre's passive off the moment a REPLACING pair
+--- forms - the pair speaks for the card now - and it does that by calling the
+--- centre directly, which never touches added_to_deck. Vanilla still believes
+--- the passive is on, so it takes it off a SECOND time when the card is sold
+--- or debuffed: a merge hosted by HeavenlyFather leaves the run two booster
+--- slots short of where it started, and a debuff leaves it short until the
+--- debuff lifts. test_bind_passives.py has the sequence.
+---
+--- The hook is nilled on the centre rather than swapped behind a proxy table
+--- because config.center is compared by IDENTITY all over the game -
+--- `c.config.center == G.P_CENTERS.c_base` and its like - and a stand-in would
+--- fail every one of those. The window is a single synchronous call.
+local function without_center_hook(card, hook, fn)
+    local center = card.config and card.config.center
+    local hide = type(center) == "table" and type(center[hook]) == "function"
+        and Bind.replacing_special(card) and true or false
+    if not hide then return fn() end
+
+    local saved = center[hook]
+    center[hook] = nil
+    local ok, ret = pcall(fn)
+    center[hook] = saved
+    if not ok then error(ret, 0) end
+    return ret
+end
+
+--- The pair's own passive, for a special whose ability is not a calculate.
+---
+--- Declared the same way a Joker declares one and run from the same two
+--- moments, so selling the merge, debuffing it and destroying it all work
+--- through vanilla's machinery instead of needing a hook each. on_merge is
+--- still needed for the one moment vanilla cannot see: the pair coming into
+--- existence on a card that is already in the deck.
+local function special_passive(card, hook, from_debuff)
+    local def = Bind.replacing_special(card)
+    if not (def and type(def[hook]) == "function") then return end
+    local ok, err = pcall(def[hook], def, card,
+                          Bind.special_state(card, def), from_debuff)
+    if not ok then
+        CelestasMod.warn_once("bind_passive_" .. tostring(def.key),
+            ("Bind pair %s failed its %s: %s"):format(
+                tostring(def.key), hook, tostring(err)))
+    end
+end
+
 local celesta_bind_dollar_ref = Card.calculate_dollar_bonus
-function Card:calculate_dollar_bonus(...)
-    local own = celesta_bind_dollar_ref(self, ...)
+function Card:calculate_dollar_bonus()
+    -- The host's own payout is muffled under a replacing pair for the same
+    -- reason its passive is: the pair stands in for both halves, and a pair
+    -- that pays at the end of the round must not pay twice.
+    local own = without_center_hook(self, "calc_dollar_bonus", function()
+        return celesta_bind_dollar_ref(self)
+    end)
     -- Vanilla returns before paying anything when debuffed; the absorbed half
     -- is debuffed by exactly the same token.
     if self.debuff then return own end
+
+    local def = Bind.replacing_special(self)
+    if def and type(def.calc_dollar_bonus) == "function" then
+        local ok, mine = pcall(def.calc_dollar_bonus, def, self,
+                               Bind.special_state(self, def))
+        if not ok then
+            CelestasMod.warn_once("bind_dollar_" .. tostring(def.key),
+                ("Bind pair %s failed to pay: %s"):format(
+                    tostring(def.key), tostring(mine)))
+        elseif type(mine) == "number" and mine ~= 0 then
+            own = (own or 0) + mine
+        end
+    end
 
     local theirs = with_partner(self, "calc_dollar_bonus", function(center, card)
         return center:calc_dollar_bonus(card)
@@ -1918,8 +2253,11 @@ end
 local celesta_bind_add_ref = Card.add_to_deck
 function Card:add_to_deck(from_debuff)
     local first = not self.added_to_deck
-    celesta_bind_add_ref(self, from_debuff)
+    without_center_hook(self, "add_to_deck", function()
+        celesta_bind_add_ref(self, from_debuff)
+    end)
     if not first then return end
+    special_passive(self, "add_to_deck", from_debuff)
     with_partner(self, "add_to_deck", function(center, card)
         center:add_to_deck(card, from_debuff)
     end)
@@ -1928,8 +2266,11 @@ end
 local celesta_bind_remove_ref = Card.remove_from_deck
 function Card:remove_from_deck(from_debuff)
     local was_added = self.added_to_deck
-    celesta_bind_remove_ref(self, from_debuff)
+    without_center_hook(self, "remove_from_deck", function()
+        celesta_bind_remove_ref(self, from_debuff)
+    end)
     if not was_added then return end
+    special_passive(self, "remove_from_deck", from_debuff)
     with_partner(self, "remove_from_deck", function(center, card)
         center:remove_from_deck(card, from_debuff)
     end)

@@ -140,15 +140,51 @@ function Tattered.repair(card)
     return false
 end
 
---- Counts one scoring and reports whether the card just wore out.
+--- True while a merge that turns wear into Gold is in the Joker row.
+---
+--- Asked here rather than answered by a calculate, because wear is not a
+--- scoring effect: it is counted below, at the moment a card crosses its
+--- threshold, and there is no context for a Joker to answer in. The wear delay
+--- looks for Sansin the same way, debuff check included - a debuffed Joker
+--- does nothing.
+function Tattered.gilds()
+    local Bind = CelestasMod.Bind
+    if not (Bind and Bind.find_special) then return false end
+    local holder = Bind.find_special("kumi_deja")
+    return (holder and not holder.debuff) and true or false
+end
+
+--- Turns a card Gold in place of wearing it out, and protects it from wearing
+--- again. Deferred the way every other enhancement change in this mod is:
+--- set_ability mid-scoring would change the card the pass is still reading.
+local function gild(card)
+    card.ability.celesta_tatter_immune = true
+    card.ability.celesta_scored = 0
+    G.E_MANAGER:add_event(Event {
+        func = function()
+            card:set_ability(G.P_CENTERS.m_gold, nil, true)
+            card:juice_up(0.3, 0.5)
+            return true
+        end
+    })
+end
+
+--- Counts one scoring and reports whether the card just wore out, and how:
+--- "tatter" for the usual way, "gild" when a merge turned it Gold instead.
 function Tattered.record_score(card)
     if not is_playing_card(card) or Tattered.is_tattered(card) then return false end
     if Tattered.is_immune(card) then return false end
     local count = (card.ability.celesta_scored or 0) + 1
     card.ability.celesta_scored = count
     if count < threshold(card) * Tattered.wear_delay() then return false end
+
+    if Tattered.gilds() then
+        gild(card)
+        return true, "gild"
+    end
+
     card.ability.celesta_tattered = true
-    return true
+    return true, "tatter"
 end
 
 --------------------------------------------------------------------------------
@@ -233,10 +269,14 @@ function eval_card(card, context)
 
     if context and context.main_scoring and context.cardarea == G.play
         and not context.extra_enhancement then
-        if Tattered.record_score(card) then
+        local wore, how = Tattered.record_score(card)
+        if wore then
+            -- A gilded card is not tattered, so Tattered.word would name the
+            -- wear it did not get.
             card_eval_status_text(card, "extra", nil, nil, nil, {
-                message = localize("celesta_" .. Tattered.word(card)),
-                colour = G.C.FILTER,
+                message = localize(how == "gild" and "celesta_gilded"
+                    or ("celesta_" .. Tattered.word(card))),
+                colour = how == "gild" and G.C.MONEY or G.C.FILTER,
             })
         end
     end

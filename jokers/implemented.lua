@@ -6333,6 +6333,15 @@ function Card:update(dt)
     if self.ability and self.ability.set == "Joker" and self.area == G.jokers
         and self.config and self.config.center_key == RUBEN_KEY then
         local want = ruben_extra_value(self)
+        -- A merged card keeps the HOST's centre key, so this hook still finds
+        -- Ruben when Ruben was the left-hand half - and would not when it was
+        -- the right, which would make the sell value depend on the order the
+        -- player happened to highlight them in. A replacing pair speaks for
+        -- both halves, so the answer is the same either way: none of it.
+        if CelestasMod and CelestasMod.Bind and CelestasMod.Bind.replacing_special
+            and CelestasMod.Bind.replacing_special(self) then
+            want = 0
+        end
         if (self.ability.extra_value or 0) ~= want then
             self.ability.extra_value = want
             self:set_cost()
