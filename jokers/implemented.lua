@@ -5865,56 +5865,69 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Isaa [Rare] - the hand is played, and then played again.
+-- Isaa [Rare] - the first hand of the round comes back.
 --------------------------------------------------------------------------------
 --
--- Two halves, and each one copies something that already exists.
+-- Played cards go to the discard pile from exactly one place: an event queued
+-- by play_cards_from_highlighted calls G.FUNCS.draw_from_play_to_discard, and
+-- nothing else in the game calls it. That single caller is the seam, so this
+-- wraps it rather than trying to intercept the cards somewhere later.
 --
--- The cost is Troubadour's, which is the only Joker in the game that changes
--- how many hands a round gets: it adds to G.GAME.round_resets.hands in
--- add_to_deck and takes the same back in remove_from_deck. round_resets is the
--- per-round starting value, so the change lands from the next round on rather
--- than mid-blind, and selling Isaa gives the hand back.
+-- The other half is already written, and by the base game: vanilla ships
+-- G.FUNCS.draw_from_play_to_hand, which walks the play area the same way its
+-- discard twin does and skips the cards that were destroyed or shattered while
+-- scoring. Nothing in vanilla calls it - it is left over from an earlier design
+-- - but it is exactly this, so it is used as-is rather than reimplemented.
 --
--- The second scoring is G.FUNCS.evaluate_play run again. That function is
--- self-contained and synchronous: it names the poker hand off G.play.cards,
--- computes the whole score inline and queues only the display, so calling it a
--- second time from context.after - which is raised at the very end of the
--- first pass, before the cards leave G.play - scores the same hand again and
--- queues its events behind the first pass's. Nothing about the first pass is
--- undone; the second score is added on top.
+-- "The first played hand" and "once per round" are one condition, not two:
+-- current_round.hands_played is incremented immediately after the discard call,
+-- so it is 0 for the first hand of the round and never 0 again until the round
+-- resets and rebuilds current_round. No flag to set, and none to forget to
+-- clear.
 --
--- Two things it has to get right:
---   * Re-entry. The second pass raises context.after too, and so would every
---     pass after that. The flag below is why there are two scorings and not a
---     stack overflow. A second Isaa still adds its own extra pass, because it
---     is reached from the FIRST pass's after-loop, after the flag is down.
---   * Cards the first pass destroyed. A Glass Card that broke is flagged and
---     queued to dissolve, but it is still sitting in G.play.cards, so a second
---     pass would score it again and roll to break it a second time - two
---     dissolves for one card. They are lifted out for the rescore and put
---     back, because draw_from_play_to_discard walks the same list afterwards
---     and skips them by the same flags.
+-- Known interaction: The Serpent draws exactly three cards after a hand
+-- whatever the hand already holds, so returning five to a full hand and then
+-- drawing three leaves it over its limit for that round. The cards squeeze up
+-- and nothing breaks; it is left alone rather than special-cased, because a
+-- Joker that quietly stops working under one Boss is worse than a crowded hand.
 
---- Raised while the extra scoring pass is running.
-local isaa_rescoring = false
+--- True when a Joker in the row is an undebuffed Isaa.
+local function isaa_in_play()
+    return next(SMODS.find_card("j_celesta_isaa")) ~= nil
+end
 
---- Runs `fn` over G.play.cards with the already-destroyed cards taken out.
-local function isaa_without_destroyed(fn)
-    local play = G.play
-    if not (play and play.cards) then return fn() end
+--- Whether this hand is the one Isaa gets back.
+local function isaa_returns_this_hand()
+    local round = G.GAME and G.GAME.current_round
+    if not round or (round.hands_played or 0) ~= 0 then return false end
+    if not (G.play and G.play.cards and #G.play.cards > 0) then return false end
+    return isaa_in_play()
+end
 
-    local full, kept = play.cards, {}
-    for _, held in ipairs(full) do
-        if not (held.destroyed or held.shattered) then kept[#kept + 1] = held end
+-- The wrap is installed at load if there is anything to wrap, and whether it
+-- was is remembered rather than reported here. A missing hook is only worth
+-- saying out loud to someone who actually has the Joker, so add_to_deck says
+-- it - and a file that talks at load time is a file that cannot be loaded by
+-- anything but the game.
+local celesta_isaa_hooked = false
+local celesta_isaa_to_discard_ref = G.FUNCS and G.FUNCS.draw_from_play_to_discard
+
+if celesta_isaa_to_discard_ref then
+    celesta_isaa_hooked = true
+    G.FUNCS.draw_from_play_to_discard = function(e)
+        if isaa_returns_this_hand() and G.FUNCS.draw_from_play_to_hand then
+            for _, isaa in ipairs(SMODS.find_card("j_celesta_isaa")) do
+                card_eval_status_text(isaa, "extra", nil, nil, nil,
+                    { message = localize("celesta_returned"), colour = G.C.FILTER })
+            end
+            -- Copied out: draw_card moves cards between areas as it goes, and
+            -- G.play.cards is the list being mutated.
+            local played = {}
+            for i, held in ipairs(G.play.cards) do played[i] = held end
+            return G.FUNCS.draw_from_play_to_hand(played)
+        end
+        return celesta_isaa_to_discard_ref(e)
     end
-    -- Nothing was destroyed, so there is nothing to protect from.
-    if #kept == #full then return fn() end
-
-    play.cards = kept
-    local ok, err = pcall(fn)
-    play.cards = full
-    if not ok then error(err, 0) end
 end
 
 SMODS.Joker {
@@ -5923,53 +5936,20 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
     unlocked = true, discovered = true,
-    -- An extra scoring pass cannot be credited to a copier: the whole hand
-    -- scores again, and the hand it costs is Isaa's alone. A Blueprint would
-    -- be getting the effect without the price.
+    -- There is no calculate to copy: the effect is in where the cards go
+    -- afterwards, which happens once for the hand however many Isaas are out.
     blueprint_compat = false, eternal_compat = true,
 
-    config = { extra = { hands = 1 } },
-
     loc_vars = function(self, info_queue, card)
-        return { vars = { card.ability.extra.hands } }
+        return {}
     end,
 
-    -- Recorded rather than assumed: if the deck is down to its last hand the
-    -- full cost is not taken, and remove_from_deck has to give back exactly
-    -- what was taken or the count drifts every time Isaa changes hands.
     add_to_deck = function(self, card, from_debuff)
-        local resets = G.GAME and G.GAME.round_resets
-        if not resets then return end
-        local take = math.min(card.ability.extra.hands,
-                              math.max(0, (resets.hands or 0) - 1))
-        card.ability.extra.taken = take
-        resets.hands = resets.hands - take
-    end,
-
-    remove_from_deck = function(self, card, from_debuff)
-        local resets = G.GAME and G.GAME.round_resets
-        if not resets then return end
-        resets.hands = resets.hands + (card.ability.extra.taken or 0)
-        card.ability.extra.taken = 0
-    end,
-
-    calculate = function(self, card, context)
-        if context.after and not context.blueprint and not isaa_rescoring
-            and G.play and G.play.cards and #G.play.cards > 0
-            and G.FUNCS and G.FUNCS.evaluate_play then
-
-            -- Said before the second pass rather than returned after it: a
-            -- returned message is queued behind everything the rescore adds,
-            -- which reads as the hand announcing itself once it is over.
-            card_eval_status_text(card, "extra", nil, nil, nil,
-                { message = localize("k_again_ex"), colour = G.C.RED })
-
-            isaa_rescoring = true
-            local ok, err = pcall(isaa_without_destroyed, function()
-                G.FUNCS.evaluate_play()
-            end)
-            isaa_rescoring = false
-            if not ok then error(err, 0) end
+        if not celesta_isaa_hooked then
+            CelestasMod.warn_once("isaa_no_discard_hook",
+                "Isaa returns the first hand of the round by wrapping "
+                .. "G.FUNCS.draw_from_play_to_discard, which was not present "
+                .. "when this mod loaded; the Joker will do nothing")
         end
     end,
 }

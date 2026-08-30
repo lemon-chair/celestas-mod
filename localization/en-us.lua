@@ -474,9 +474,9 @@ return {
             j_celesta_isaa = {
                 name = "Isaa",
                 text = {
-                    "Scores the played hand",
-                    "a second time",
-                    "{C:red}-#1#{} Hand",
+                    "The {C:attention}first{} hand played",
+                    "each round is returned",
+                    "to your hand",
                 },
             },
             j_celesta_itsdeadlyboop = {
