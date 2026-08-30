@@ -603,6 +603,123 @@ local function all_stars(cards)
     return true
 end
 
+-- CottontailVA + Deme: Cottontail hands out Star Seals, Deme grows on a
+-- condition. Together the seals are the condition.
+--
+-- Asked per scoring card rather than once per hand, so five sealed cards are
+-- five gains. card.seal holds the PREFIXED key - CelestasMod.SEAL_KEYS.Star,
+-- not "Star" - because that is what set_seal was given and what a save keeps.
+special("j_celesta_cottontail", "j_celesta_demenishki", {
+    key = "cottontail_deme",
+    config = { x_mult = 1, x_mult_gain = 0.25 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.individual and context.cardarea == G.play
+            and not context.blueprint and context.other_card
+            and context.other_card.seal == (CelestasMod.SEAL_KEYS or {}).Star then
+            state.x_mult = state.x_mult + state.x_mult_gain
+            return {
+                message = localize { type = "variable", key = "a_xmult",
+                                     vars = { state.x_mult } },
+                colour = G.C.MULT,
+                card = card,
+            }
+        end
+
+        if context.joker_main and state.x_mult > 1 then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+-- KokoNuts + Kumi: KokoNuts keeps making 7s of Spades, Kumi eats cards for
+-- money. This eats those, enhanced or not - what Crelly + KokoNuts wants is a
+-- LUCKY 7 of Spades, and this wants the rank and suit alone.
+--
+-- Two rolls, not one outcome of two: the small payout and the large one are
+-- independent, so a card can hit both and pay $87. Written as two calls to
+-- pseudorandom_probability with different identifiers, or they would share a
+-- seed and the rare one would only ever land on cards the common one did.
+special("j_celesta_kokonuts", "j_celesta_kumi", {
+    key = "koko_kumi",
+    config = { odds = 2, dollars = 17, rare_odds = 17, rare_dollars = 70 },
+
+    loc_vars = function(def, card, state)
+        local n1, d1 = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_koko_kumi")
+        local n2, d2 = SMODS.get_probability_vars(
+            card, 1, state.rare_odds, "celesta_bind_koko_kumi_rare")
+        return { vars = { n1, d1, state.dollars, n2, d2, state.rare_dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.destroying_card and context.cardarea == G.play
+            and not context.blueprint then
+            local target = context.destroying_card
+            if not (target.get_id and target:get_id() == 7
+                and target.is_suit and target:is_suit("Spades")) then return end
+            -- calculate_destroying_cards acts on `remove` without checking
+            -- whether the card can actually go, so eternals are refused here
+            -- or the row keeps a card that was told to leave.
+            if SMODS.is_eternal and SMODS.is_eternal(target) then return end
+
+            -- `remove` and `dollars` are both other_calculation_keys, so one
+            -- table can destroy the card and pay out at once.
+            local effect = { remove = true, card = card }
+            local paid = 0
+            if SMODS.pseudorandom_probability(card, "celesta_bind_koko_kumi",
+                    1, state.odds, "celesta_bind_koko_kumi") then
+                paid = paid + state.dollars
+            end
+            if SMODS.pseudorandom_probability(card, "celesta_bind_koko_kumi_rare",
+                    1, state.rare_odds, "celesta_bind_koko_kumi_rare") then
+                paid = paid + state.rare_dollars
+            end
+            if paid > 0 then effect.dollars = paid end
+            return effect
+        end
+    end,
+})
+
+-- Neuro + Vedal: paid for the wreckage, whoever caused it.
+--
+-- remove_playing_cards fires once after the destroy pass with every card that
+-- died, which is where vanilla Caino counts its face cards. Counting there
+-- rather than hooking any particular destroyer means it catches a Glass Card
+-- shattering, a Gash breaking and another Joker eating something, all the same
+-- way.
+special("j_celesta_neuro", "j_celesta_vedal", {
+    key = "neuro_vedal",
+    config = { x_mult = 1, x_mult_gain = 1.5 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.remove_playing_cards and not context.blueprint then
+            local gone = #(context.removed or {})
+            if gone > 0 then
+                state.x_mult = state.x_mult + state.x_mult_gain * gone
+                return {
+                    message = localize { type = "variable", key = "a_xmult",
+                                         vars = { state.x_mult } },
+                    colour = G.C.MULT,
+                    card = card,
+                }
+            end
+        end
+
+        if context.joker_main and state.x_mult > 1 then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
 -- Maya + Ben: Maya retriggers Steel Cards held in hand on a coin flip, Ben
 -- makes room to hold more of them. Together the coin flip goes away and the
 -- room is permanent rather than only against the Boss.

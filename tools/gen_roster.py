@@ -442,6 +442,14 @@ LOC_TAIL = '''        },
                     "{C:attention}Joker{} #1# time",
                 },
             },
+            celesta_bind_cottontail_deme = {
+                name = "CottontailVA + Deme",
+                text = {
+                    "Played cards with a {C:attention}Star Seal{}",
+                    "give this Joker {X:mult,C:white}X#1#{} Mult",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
             celesta_bind_crelly_koko = {
                 name = "Crelly + KokoNuts",
                 text = {
@@ -457,6 +465,14 @@ LOC_TAIL = '''        },
                     "for each {C:attention}Stone{} or {C:attention}Limestone{}",
                     "card scored",
                     "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_koko_kumi = {
+                name = "KokoNuts + Kumi",
+                text = {
+                    "Destroys scoring {C:attention}7s of Spades{},",
+                    "{C:green}#1# in #2#{} chance to earn {C:money}$#3#{} each",
+                    "and {C:green}#4# in #5#{} chance to earn {C:money}$#6#{} each",
                 },
             },
             celesta_bind_kumi_maya = {
@@ -480,6 +496,14 @@ LOC_TAIL = '''        },
                 text = {
                     "Retriggers {C:attention}Lucky Cards{}",
                     "{C:attention}#1#{} additional time",
+                },
+            },
+            celesta_bind_neuro_vedal = {
+                name = "Neuro + Vedal",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult",
+                    "for each card destroyed",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
                 },
             },
             celesta_bind_deme_camila = {
