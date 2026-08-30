@@ -198,20 +198,86 @@ end
 -- The button
 --------------------------------------------------------------------------------
 
-SMODS.current_mod.custom_collection_tabs = function()
+--- How many pairs there are, and how many this profile has made.
+local function tally()
     local list = all_pairs()
     local seen = 0
     for _, def in ipairs(list) do
         if Bind.special_seen(def.key) then seen = seen + 1 end
     end
+    return seen, #list
+end
 
-    return {
-        UIBox_button {
-            button = "celesta_special_merges",
-            label = { localize("celesta_special_merges") },
-            count = { tally = seen, of = #list },
-            minw = 5,
-            id = "celesta_special_merges",
-        },
+local function collection_button()
+    local seen, total = tally()
+    return UIBox_button {
+        button = "celesta_special_merges",
+        label = { localize("celesta_special_merges") },
+        count = { tally = seen, of = total },
+        minw = 5,
+        id = "celesta_special_merges",
     }
+end
+
+-- Steamodded's sanctioned home for a mod's collection tab: the "Other" page.
+SMODS.current_mod.custom_collection_tabs = function()
+    return { collection_button() }
+end
+
+--------------------------------------------------------------------------------
+-- ...and on the Collection's own front page
+--------------------------------------------------------------------------------
+--
+-- The Other page is where Steamodded puts a mod tab, and it is one click
+-- further in than anyone looks. So the button is also spliced into the front
+-- page, next to the ones it belongs with.
+--
+-- Spliced by finding a button already there rather than by index: the column
+-- this lands in is vanilla's, Steamodded appends to it, and any mod may append
+-- again, so a position counted from the top is wrong the moment anything else
+-- loads. A named neighbour is not.
+--
+-- If neither neighbour is found the page is returned untouched and the tab is
+-- still reachable through Other, which is why this is a warn and not an error.
+
+--- Inserts `made` directly after the button called `target`, anywhere in the
+--- tree. UIBox_button wraps its button one level down, so the node to compare
+--- is the child's config and the node to insert beside is the parent.
+local function insert_after_button(node, target, made)
+    if type(node) ~= "table" or type(node.nodes) ~= "table" then return false end
+
+    for i, child in ipairs(node.nodes) do
+        local inner = type(child) == "table" and type(child.nodes) == "table"
+            and child.nodes[1]
+        local key = type(inner) == "table" and inner.config and inner.config.button
+        if key == target then
+            table.insert(node.nodes, i + 1, made)
+            return true
+        end
+    end
+
+    for _, child in ipairs(node.nodes) do
+        if insert_after_button(child, target, made) then return true end
+    end
+    return false
+end
+
+if create_UIBox_your_collection then
+    local celesta_collection_ref = create_UIBox_your_collection
+    function create_UIBox_your_collection(...)
+        local root = celesta_collection_ref(...)
+        if type(root) ~= "table" then return root end
+
+        local button = collection_button()
+        -- Vouchers first: it is the bottom of the left column, above the
+        -- Consumables block, and that column is the shorter of the two.
+        if not insert_after_button(root, "your_collection_vouchers", button)
+            and not insert_after_button(root, "your_collection_other_gameobjects", button)
+            and not insert_after_button(root, "your_collection_blinds", button) then
+            CelestasMod.warn_once("merge_tab_frontpage",
+                "Could not place Special Merges on the Collection's front page; "
+                .. "it is still under Other")
+        end
+        return root
+    end
 end

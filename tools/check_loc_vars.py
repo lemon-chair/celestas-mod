@@ -69,6 +69,8 @@ function get_starting_params()
            consumable_slots = 2, no_faces = false,
            erratic_suits_and_ranks = false }
 end
+-- Wrapped by a mod adding a button to the Collection's front page.
+function create_UIBox_your_collection() return { nodes = {} } end
 CardArea = {}; function CardArea:emplace() end
 love = { graphics = {} }
 G = {
