@@ -166,6 +166,22 @@ function Bind.merge(host, absorbed)
     -- the calculate pass; looked up here at call time.
     Bind.apply_partner_passive(host)
 
+    -- Both halves announce themselves, if they have anything to announce.
+    --
+    -- Merging is the one arrival that does not go through add_to_deck - the
+    -- host was already in the row and the absorbed half is leaving it - so
+    -- neither Joker's own hook fires and this is the only place that can say
+    -- so. Played back to back with no delay, which is to say together.
+    --
+    -- Two of the same Joker get one playback rather than two: the sound
+    -- manager restarts a source rather than layering it over itself. Two
+    -- copies of one clip in perfect sync would only have sounded louder.
+    if CelestasMod.play_join_sound then
+        CelestasMod.play_join_sound(host.config.center_key
+            or (host.config.center and host.config.center.key))
+        CelestasMod.play_join_sound(host.ability.celesta_bind.key)
+    end
+
     absorbed.ability.eternal = nil       -- or it refuses to leave the row
     absorbed:start_dissolve(nil, true)
     return true

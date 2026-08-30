@@ -11,6 +11,11 @@
 
 --- Builds an add_to_deck that announces the Joker's arrival, once.
 ---
+--- Takes the JOKER's key rather than the sound's, because jokers/sounds.lua
+--- holds the one map from one to the other - and merge/bind.lua reads that
+--- same map when two Jokers become one, so a merge can play both halves'
+--- sounds without knowing anything about either Joker.
+---
 --- Cryptid's Supercell is the pattern, and the from_debuff guard is the whole
 --- of it: add_to_deck runs again every time a debuff is LIFTED - a Boss Blind
 --- ending, a Joker being un-debuffed - so without it the sound replays on each
@@ -19,9 +24,9 @@
 --- The sounds themselves are declared in jokers/sounds.lua, not here: this
 --- file is compiled against stubs by the test harnesses, so it cannot call
 --- SMODS.Sound at load.
-local function announces(sound_key)
+local function announces(joker_key)
     return function(self, card, from_debuff)
-        if not from_debuff then play_sound(sound_key) end
+        if not from_debuff then CelestasMod.play_join_sound(joker_key) end
     end
 end
 
@@ -47,7 +52,7 @@ SMODS.Joker {
         return {}
     end,
 
-    add_to_deck = announces("celesta_arar_join"),
+    add_to_deck = announces("j_celesta_arar"),
 
     calculate = function(self, card, context)
         -- Fires once per round, right after the opening hand is dealt.
@@ -183,7 +188,7 @@ SMODS.Joker {
         return { vars = { numerator, denominator, card.ability.extra.dollars } }
     end,
 
-    add_to_deck = announces("celesta_kumi_join"),
+    add_to_deck = announces("j_celesta_kumi"),
 
     calculate = function(self, card, context)
         -- destroying_card is only set for cards that are both in G.play and
@@ -234,7 +239,7 @@ SMODS.Joker {
         return { vars = { numerator, denominator, card.ability.extra.repetitions } }
     end,
 
-    add_to_deck = announces("celesta_maya_join"),
+    add_to_deck = announces("j_celesta_maya"),
 
     calculate = function(self, card, context)
         -- Held-in-hand repetition pass: cardarea is G.hand and other_card is
@@ -313,7 +318,7 @@ SMODS.Joker {
         return {}
     end,
 
-    add_to_deck = announces("celesta_kokonuts_join"),
+    add_to_deck = announces("j_celesta_kokonuts"),
 
     calculate = function(self, card, context)
         -- Same shape as vanilla Marble Joker: build the card in G.play so the
@@ -1265,7 +1270,7 @@ SMODS.Joker {
         return { vars = { n, d } }
     end,
 
-    add_to_deck = announces("celesta_shoomimi_join"),
+    add_to_deck = announces("j_celesta_shoomimi"),
 
     calculate = function(self, card, context)
         if context.reroll_shop and not context.blueprint then
@@ -6721,7 +6726,7 @@ SMODS.Joker {
     -- from_debuff that must silence the sound must NOT skip the hand size,
     -- since a debuffed Ben should stop working.
     add_to_deck = function(self, card, from_debuff)
-        if not from_debuff then play_sound("celesta_ben_join") end
+        if not from_debuff then CelestasMod.play_join_sound("j_celesta_ben") end
         ben_hold(card, ben_boss_blind())
     end,
 
