@@ -1239,6 +1239,30 @@ return {
                     "to {V:1}#2#{}",
                 },
             },
+            c_celesta_citrus = {
+                name = "The Citrus",
+                text = {
+                    "Enhances up to {C:attention}#1#{}",
+                    "selected card into a",
+                    "{C:attention}Limestone Card",
+                },
+            },
+            c_celesta_miracle_matter = {
+                name = "The Miracle Matter",
+                text = {
+                    "Enhances up to {C:attention}#1#{}",
+                    "selected card into an",
+                    "{C:attention}Exo Card",
+                },
+            },
+            c_celesta_knife = {
+                name = "The Knife",
+                text = {
+                    "Enhances up to {C:attention}#1#{}",
+                    "selected card into a",
+                    "{C:attention}Gash Card",
+                },
+            },
             c_celesta_reforge = {
                 name = "Reforge",
                 text = {

@@ -27,7 +27,9 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
           "suit_stars", "suit_stars_ui",
           "suit_leaf", "suit_leaf_ui",
           # the consumables that make them, and the rest of the standalones
-          "star_fury", "tree", "raise"}   # not per-joker art
+          "star_fury", "tree", "raise",
+          # the three Tarots that hand out this mod's enhancements
+          "citrus", "miracle_matter", "knife"}   # not per-joker art
 
 # Auto title-casing cannot know how a creator styles their own name.
 # Add corrections here; anything absent falls back to the mechanical rule.
@@ -306,6 +308,30 @@ LOC_TAIL = '''        },
                     "Converts up to",
                     "{C:attention}#1#{} selected cards",
                     "to {V:1}#2#{}",
+                },
+            },
+            c_celesta_citrus = {
+                name = "The Citrus",
+                text = {
+                    "Enhances up to {C:attention}#1#{}",
+                    "selected card into a",
+                    "{C:attention}Limestone Card",
+                },
+            },
+            c_celesta_miracle_matter = {
+                name = "The Miracle Matter",
+                text = {
+                    "Enhances up to {C:attention}#1#{}",
+                    "selected card into an",
+                    "{C:attention}Exo Card",
+                },
+            },
+            c_celesta_knife = {
+                name = "The Knife",
+                text = {
+                    "Enhances up to {C:attention}#1#{}",
+                    "selected card into a",
+                    "{C:attention}Gash Card",
                 },
             },
             c_celesta_reforge = {

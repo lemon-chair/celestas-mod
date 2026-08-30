@@ -104,8 +104,10 @@ assert(SMODS.load_file('merge/bind.lua'))()
 -- After bind.lua: it lists the pairs that file registers.
 assert(SMODS.load_file('merge/collection.lua'))()
 
--- Standalone consumables.
+-- Standalone consumables. After enhancements/, which is where the keys the
+-- enhancement Tarots hand out are resolved.
 assert(SMODS.load_file('consumables/raise.lua'))()
+assert(SMODS.load_file('consumables/enhancers.lua'))()
 
 --------------------------------------------------------------------------------
 -- Jokers — auto-loaded from jokers/.
