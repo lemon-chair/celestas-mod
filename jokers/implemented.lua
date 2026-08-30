@@ -6660,7 +6660,7 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Ben [Uncommon] - a bigger hand, but only against the Boss.
+-- Ben [Rare] - a bigger hand, but only against the Boss.
 --------------------------------------------------------------------------------
 --
 -- Hand size is a running total on G.hand, not a value anything recomputes, so
@@ -6694,10 +6694,25 @@ local function ben_boss_blind()
     return (blind and blind.boss) and true or false
 end
 
+--- True when a Bind pair ability has taken this card over. A special replaces
+--- both halves, so Ben's own conditional hand size must let go - two claims on
+--- one number is how a hand ends up permanently bigger.
+---
+--- Letting go itself needs no help from the pair. Both routes into a merge run
+--- Ben's own remove_from_deck: Bind.merge calls the host centre's directly
+--- when a special forms, and the absorbed card dissolves through Card:remove,
+--- which calls remove_from_deck on its way out. This only has to make sure it
+--- does not come straight back.
+local function ben_superseded(card)
+    local bind = CelestasMod.Bind
+    return bind and bind.special_of and bind.special_of(card) and true or false
+end
+
 --- Applies or removes the bonus, and only ever on a change.
 local function ben_hold(card, wanted)
     local extra = card.ability and card.ability.extra
     if not extra then return end
+    if ben_superseded(card) then wanted = false end
     if (extra.applied == true) == (wanted == true) then return end
 
     extra.applied = wanted or nil
@@ -6710,7 +6725,7 @@ SMODS.Joker {
     key = "ben",
     atlas = "ben",
     pos = { x = 0, y = 0 },
-    rarity = 2, cost = 6,
+    rarity = 3, cost = 8,
     unlocked = true, discovered = true,
     -- Hand size belongs to this card and is given back by its own hooks;
     -- there is no scoring effect for a copier to repeat.

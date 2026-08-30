@@ -166,6 +166,25 @@ function Bind.merge(host, absorbed)
     -- the calculate pass; looked up here at call time.
     Bind.apply_partner_passive(host)
 
+    -- A special REPLACES both halves, so a passive either of them applied when
+    -- it entered the deck has to come off - the pair speaks for the card now.
+    -- Only the host's: the absorbed half's was already taken back when it left
+    -- the row, and Bind.apply_partner_passive above skips specials entirely.
+    local def = Bind.special_of(host)
+    if def then
+        local center = host.config.center
+        if type(center) == "table" and type(center.remove_from_deck) == "function" then
+            pcall(center.remove_from_deck, center, host, false)
+        end
+        if type(def.on_merge) == "function" then
+            local ok, err = pcall(def.on_merge, def, host, Bind.special_state(host, def))
+            if not ok then
+                CelestasMod.warn_once("bind_merge_" .. tostring(def.key),
+                    ("Bind pair %s failed to form: %s"):format(tostring(def.key), tostring(err)))
+            end
+        end
+    end
+
     -- Both halves announce themselves, if they have anything to announce.
     --
     -- Merging is the one arrival that does not go through add_to_deck - the
@@ -205,9 +224,17 @@ local function pair_key(a, b)
     return a .. "|" .. b
 end
 
---- def = { key, config, calculate, loc_vars }
+--- def = { key, config, calculate, loc_vars, on_merge, on_unmerge }
 --- `config` is the pair's own mutable state; it is copied onto the card the
 --- first time the pair is evaluated and serialized with it thereafter.
+---
+--- on_merge and on_unmerge are for a pair whose ability is not a calculate at
+--- all - a passive, a slot, a hand size. They are called once each, with
+--- (def, card, state), at the two moments the pair comes into and goes out of
+--- existence. Everything in between is the card's own: a passive written onto
+--- card.ability is applied and removed by vanilla's own add_to_deck and
+--- remove_from_deck, so selling, debuffing and destroying the merge all work
+--- without either hook being involved.
 local function special(key_a, key_b, def)
     Bind.SPECIALS[pair_key(key_a, key_b)] = def
 end
@@ -576,6 +603,52 @@ local function all_stars(cards)
     return true
 end
 
+-- Maya + Ben: Maya retriggers Steel Cards held in hand on a coin flip, Ben
+-- makes room to hold more of them. Together the coin flip goes away and the
+-- room is permanent rather than only against the Boss.
+--
+-- The hand size is the interesting half, because it is not a calculate at all.
+-- It goes on card.ability.h_size, which is vanilla's OWN field: Card:add_to_deck
+-- applies it and remove_from_deck takes it back, so selling the merge,
+-- debuffing it and destroying it are all handled without another hook here.
+-- The one thing vanilla cannot do is notice the field appearing on a card that
+-- is already in the deck, which is what on_merge's change_size is for.
+special("j_celesta_maya", "j_celesta_ben", {
+    key = "maya_ben",
+    config = { h_size = 4, repetitions = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.h_size, state.repetitions } }
+    end,
+
+    on_merge = function(def, card, state)
+        -- Ben's own conditional hand size is already gone by now, by both
+        -- routes: Bind.merge takes the host centre's passive off when a
+        -- special forms, and an absorbed card dissolves through Card:remove,
+        -- which calls remove_from_deck on its way out. So this only adds.
+        card.ability.h_size = (card.ability.h_size or 0) + state.h_size
+        if G.hand then G.hand:change_size(state.h_size) end
+    end,
+
+    on_unmerge = function(def, card, state)
+        card.ability.h_size = (card.ability.h_size or 0) - state.h_size
+        if G.hand then G.hand:change_size(-state.h_size) end
+    end,
+
+    calculate = function(def, card, context, state)
+        -- Maya's own pass, with the coin flip taken out.
+        if context.repetition and context.cardarea == G.hand
+            and context.other_card
+            and SMODS.has_enhancement(context.other_card, "m_steel") then
+            return {
+                message = localize("k_again_ex"),
+                repetitions = state.repetitions,
+                card = card,
+            }
+        end
+    end,
+})
+
 special("j_celesta_ariesakana", "j_celesta_yokasiri", {
     key = "aries_yoka",
     config = { x_chips = 1, x_chip_mod = 0.5 },
@@ -709,6 +782,17 @@ end
 function Bind.unmerge(card, losing)
     if not Bind.is_merged(card) then return false end
     local bound = card.ability.celesta_bind
+
+    -- Undone while the pair still exists, because special_of stops answering
+    -- the moment celesta_bind is cleared.
+    local def = Bind.special_of(card)
+    if def and type(def.on_unmerge) == "function" then
+        local ok, err = pcall(def.on_unmerge, def, card, Bind.special_state(card, def))
+        if not ok then
+            CelestasMod.warn_once("bind_unmerge_" .. tostring(def.key),
+                ("Bind pair %s failed to part: %s"):format(tostring(def.key), tostring(err)))
+        end
+    end
 
     if losing == "host" then
         local center = Bind.partner_center(card)

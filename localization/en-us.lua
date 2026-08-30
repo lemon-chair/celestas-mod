@@ -1390,6 +1390,14 @@ return {
                     "to earn {C:money}$#3#{} per card destroyed",
                 },
             },
+            celesta_bind_maya_ben = {
+                name = "Maya + Ben",
+                text = {
+                    "{C:attention}+#1#{} hand size",
+                    "Retriggers each {C:attention}Steel Card{}",
+                    "held in hand {C:attention}#2#{} times",
+                },
+            },
             celesta_bind_nagzz_chibidoki = {
                 name = "Nagzz + Chibidoki",
                 text = {
