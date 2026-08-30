@@ -6578,3 +6578,52 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- RYNxRYN [Rare] - every Gold Card goes round twice.
+--------------------------------------------------------------------------------
+--
+-- Two cardareas, because a Gold Card has two jobs and they pay in different
+-- passes. G.play is Sock and Buskin's retrigger, and re-scores the card's
+-- chips. G.hand is Mime's, and that is where the $3 lives: a Gold Card pays
+-- for being HELD, at the end of the round, not for being played.
+--
+-- That end-of-round pass is a third context wearing the second one's clothes -
+-- it arrives as repetition + cardarea == G.hand with end_of_round set - so
+-- naming G.hand covers it without naming it, exactly as Mime does.
+--
+-- Mime carries a guard this does not need. It checks context.card_effects for
+-- something worth repeating, because a card held in hand during SCORING often
+-- has no held-in-hand effect at all and retriggering it would announce
+-- "Again!" over nothing. Steamodded already refuses to ask the question in
+-- that case - calculate_repetitions runs there only `if flags.calculated` -
+-- so the guard would be dead code here. The end-of-round pass has no such
+-- gate, which is right: that is the one where the money is.
+
+SMODS.Joker {
+    key = "rynxryn",
+    atlas = "rynxryn",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { repetitions = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_gold
+        return { vars = { card.ability.extra.repetitions } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.repetition and context.other_card
+            and (context.cardarea == G.play or context.cardarea == G.hand)
+            and SMODS.has_enhancement(context.other_card, "m_gold") then
+            return {
+                message = localize("k_again_ex"),
+                repetitions = card.ability.extra.repetitions,
+                card = card,
+            }
+        end
+    end,
+}

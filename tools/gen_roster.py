@@ -33,6 +33,7 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
 # Add corrections here; anything absent falls back to the mechanical rule.
 DISPLAY_NAMES = {
     "auteru": "Auteru",
+    "rynxryn": "RYNxRYN",
     "smittenseraph": "SmittenSeraph",
     "kourra": "Kourra",
     "shiabun": "Shiabun",

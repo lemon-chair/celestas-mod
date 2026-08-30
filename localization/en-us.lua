@@ -936,9 +936,11 @@ return {
                 },
             },
             j_celesta_rynxryn = {
-                name = "Rynxryn",
+                name = "RYNxRYN",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Retriggers each {C:attention}Gold Card{},",
+                    "scored or held in hand,",
+                    "{C:attention}#1#{} additional time",
                 },
             },
             j_celesta_saiiren = {
