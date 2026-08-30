@@ -556,7 +556,8 @@ return {
             j_celesta_kourra = {
                 name = "Kourra",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:mult}+#1#{} Mult for every",
+                    "{C:chips}#2#{} Chips scored so far",
                 },
             },
             j_celesta_kumi = {
@@ -836,7 +837,9 @@ return {
             j_celesta_pipi = {
                 name = "Pipi",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "If the played hand has {C:attention}#1#{} cards,",
+                    "both are scored and",
+                    "retriggered",
                 },
             },
             j_celesta_pomatomaster = {
@@ -973,7 +976,7 @@ return {
             j_celesta_shiabun = {
                 name = "Shiabun",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:attention}+#1#{} card selection limit",
                 },
             },
             j_celesta_shoomimi = {
@@ -1015,9 +1018,10 @@ return {
                 },
             },
             j_celesta_smittenseraph = {
-                name = "Smittenseraph",
+                name = "SmittenSeraph",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:attention}+#1#{} Joker slots",
+                    "{C:attention}+#2#{} consumable slot",
                 },
             },
             j_celesta_smugalana = {

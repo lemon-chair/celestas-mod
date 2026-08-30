@@ -6288,3 +6288,244 @@ SMODS.Joker {
 
     config = { extra = { per_joker = 2 } },
 }
+
+--------------------------------------------------------------------------------
+-- Kourra [Common] - paid by the chips already on the board.
+--------------------------------------------------------------------------------
+--
+-- `hand_chips` is a global that G.FUNCS.evaluate_play keeps the running chip
+-- total in - Steamodded reads and writes the same one, as _G.hand_chips - so
+-- reading it during joker_main is reading the score as it stands right now.
+--
+-- Which means POSITION MATTERS, and that is the card. Jokers score left to
+-- right, so Kourra counts the played cards' chips plus whatever any Joker to
+-- its LEFT has added, and nothing from its right. Sliding it one place along
+-- the row is a real decision.
+--
+-- The awkward part is Talisman. Once the numbers get big it replaces them with
+-- its own objects, and math.floor on one of those is not arithmetic. So the
+-- value is asked for a plain Lua number first, and only when it is too large
+-- to be one does this fall back to Talisman's own arithmetic - dropping the
+-- floor there, because at that magnitude the fraction it would remove is
+-- smaller than the number can represent anyway.
+
+--- A plain Lua number for `value`, whether it is one already or one of
+--- Talisman's. Returns nil when it cannot be one - too large, or not a number
+--- at all - so the caller can tell that apart from a genuine zero.
+local function plain_number(value)
+    if type(value) == "number" then
+        -- nan is the only value that is not equal to itself.
+        if value ~= value or value == math.huge or value == -math.huge then
+            return nil
+        end
+        return value
+    end
+    if type(value) == "table" and type(value.to_number) == "function" then
+        local ok, n = pcall(value.to_number, value)
+        if ok and type(n) == "number" and n == n
+            and n ~= math.huge and n ~= -math.huge then
+            return n
+        end
+    end
+    return nil
+end
+
+SMODS.Joker {
+    key = "kourra",
+    atlas = "kourra",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { mult = 2, per_chips = 50 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.mult, card.ability.extra.per_chips } }
+    end,
+
+    calculate = function(self, card, context)
+        if not context.joker_main then return end
+
+        local per = card.ability.extra.per_chips
+        local gain = card.ability.extra.mult
+        local chips = hand_chips or 0
+
+        local plain = plain_number(chips)
+        if plain then
+            local steps = math.floor(plain / per)
+            if steps <= 0 then return end
+            return { mult = steps * gain }
+        end
+
+        -- Past what a Lua number holds, Talisman's arithmetic is the only
+        -- thing that can still answer.
+        if to_big then
+            return { mult = to_big(chips) / per * gain }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- SmittenSeraph [Rare] - room for everything.
+--------------------------------------------------------------------------------
+--
+-- Slots are held on the CardArea, not in starting_params, and the one thing in
+-- vanilla that changes them mid-run is the Negative edition:
+--     G.jokers.config.card_limit = G.jokers.config.card_limit + 1
+--     G.consumeables.config.card_limit = G.consumeables.config.card_limit + 1
+-- in Card:add_to_deck, undone in remove_from_deck. This is that, with bigger
+-- numbers.
+--
+-- It has to give its own slot back. add_to_deck runs while the Joker is being
+-- placed, so the row it is joining is already one card fuller than the limit
+-- it had - the +3 covers that and leaves two free.
+
+SMODS.Joker {
+    key = "smittenseraph",
+    atlas = "smittenseraph",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 9,
+    unlocked = true, discovered = true,
+    -- Nothing to copy: the slots belong to this card, and they are given and
+    -- taken back by its own add_to_deck and remove_from_deck.
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { joker_slots = 3, consumable_slots = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.joker_slots,
+                          card.ability.extra.consumable_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        if G.jokers then
+            G.jokers.config.card_limit =
+                G.jokers.config.card_limit + card.ability.extra.joker_slots
+        end
+        if G.consumeables then
+            G.consumeables.config.card_limit =
+                G.consumeables.config.card_limit + card.ability.extra.consumable_slots
+        end
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        if G.jokers then
+            G.jokers.config.card_limit =
+                G.jokers.config.card_limit - card.ability.extra.joker_slots
+        end
+        if G.consumeables then
+            G.consumeables.config.card_limit =
+                G.consumeables.config.card_limit - card.ability.extra.consumable_slots
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Shiabun [Uncommon] - one more card in hand can be picked.
+--------------------------------------------------------------------------------
+--
+-- The selection limit is Steamodded's, not vanilla's: SMODS.change_play_limit
+-- and SMODS.change_discard_limit keep G.GAME.starting_params.play_limit and
+-- discard_limit, then set G.hand.config.highlighted_limit to the larger of the
+-- two. Cryptid's Grappling Hook voucher moves both by the same amount, which is
+-- what "card selection limit" means in one number, and this does the same.
+--
+-- Both, not one: moving only the play limit would let you select six cards to
+-- play and then find you could not select six to discard.
+--
+-- Unhighlighting on the way out is Cryptid's too, and it matters - without it
+-- a hand that already had six cards picked keeps them selected after the limit
+-- has dropped back to five.
+
+SMODS.Joker {
+    key = "shiabun",
+    atlas = "shiabun",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { limit = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.limit } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        if not (SMODS.change_play_limit and SMODS.change_discard_limit) then
+            CelestasMod.warn_once("shiabun_no_limit_api",
+                "Shiabun raises the card selection limit through "
+                .. "SMODS.change_play_limit, which this Steamodded does not "
+                .. "have; the Joker will do nothing")
+            return
+        end
+        SMODS.change_play_limit(card.ability.extra.limit)
+        SMODS.change_discard_limit(card.ability.extra.limit)
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        if not (SMODS.change_play_limit and SMODS.change_discard_limit) then return end
+        SMODS.change_play_limit(-card.ability.extra.limit)
+        SMODS.change_discard_limit(-card.ability.extra.limit)
+        -- A selection made under the old limit would otherwise survive it.
+        if G.hand and G.hand.unhighlight_all then G.hand:unhighlight_all() end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Pipi [Uncommon] - two cards, both counted, both twice.
+--------------------------------------------------------------------------------
+--
+-- Two separate contexts, because they are two separate questions.
+--
+-- "Score both" is the one Splash answers, and Unnamed above answers it the same
+-- way: modify_scoring_hand is asked about every played card in turn, and
+-- add_to_hand is the supported way to say yes. It is needed because a two-card
+-- hand is not always two scoring cards - a Pair scores both, but a High Card
+-- scores one and leaves the other sitting there.
+--
+-- "Retrigger both" is context.repetition in G.play, which is Sock and Buskin's
+-- shape. It is asked once per scoring card, so returning one repetition each
+-- gives two triggers apiece - and it is asked AFTER the scoring hand has been
+-- widened, so the card the first half added gets retriggered too.
+
+--- How many cards were played, whichever context is asking.
+local function pipi_played_count(context)
+    local hand = context.full_hand or (G.play and G.play.cards)
+    return hand and #hand or 0
+end
+
+SMODS.Joker {
+    key = "pipi",
+    atlas = "pipi",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    -- Widening the scoring hand is a yes/no answer; a copy cannot say yes
+    -- harder, and the retrigger it could copy is not worth the confusion of
+    -- half the Joker being copyable.
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { cards = 2, repetitions = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.cards } }
+    end,
+
+    calculate = function(self, card, context)
+        if pipi_played_count(context) ~= card.ability.extra.cards then return end
+
+        if context.modify_scoring_hand and context.other_card then
+            return { add_to_hand = true }
+        end
+
+        if context.repetition and context.cardarea == G.play then
+            return {
+                message = localize("k_again_ex"),
+                repetitions = card.ability.extra.repetitions,
+                card = card,
+            }
+        end
+    end,
+}

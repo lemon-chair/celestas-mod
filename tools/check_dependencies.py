@@ -32,6 +32,9 @@ FOREIGN = {
     "e_mult": "Talisman",
     "emult": "Talisman",
     "get_chip_e_mult": "Talisman",
+    # to_big IS a global of Talisman's, and the one way to do arithmetic on a
+    # score that has outgrown a Lua number.
+    "to_big": "Talisman",
 }
 
 # Reached only from behind a `type(x) == ...` check, and never declared.
