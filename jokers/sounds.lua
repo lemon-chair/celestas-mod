@@ -16,9 +16,14 @@
 --- Steamodded matches those to decide streaming vs static, and a one-second
 --- effect wants static.
 ---
---- Each of these is played from its Joker's add_to_deck, guarded on
---- `not from_debuff` - see any of them for why.
+--- Each of these is played from its Joker's add_to_deck. All but Ben's go
+--- through the `announces` helper at the top of implemented.lua, which carries
+--- the `not from_debuff` guard and the reason for it; Ben has its own because
+--- it also holds a hand-size bonus that debuffing SHOULD take away.
 
+SMODS.Sound { key = "arar_join",     path = "arar_join.ogg" }
 SMODS.Sound { key = "ben_join",      path = "ben_join.ogg" }
 SMODS.Sound { key = "kokonuts_join", path = "kokonuts_join.ogg" }
+SMODS.Sound { key = "kumi_join",     path = "kumi_join.ogg" }
+SMODS.Sound { key = "maya_join",     path = "maya_join.ogg" }
 SMODS.Sound { key = "shoomimi_join", path = "shoomimi_join.ogg" }

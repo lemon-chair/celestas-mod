@@ -107,7 +107,14 @@ SMODS.Back {
     unlocked = true,
     discovered = true,
 
-    config = {},
+    -- `consumables` is a vanilla starting param, handled by Back:apply_to_run
+    -- itself. It passes each key to create_card as a FORCED key with the type
+    -- hardcoded to 'Tarot', which sounds like it would refuse a Spectral - but
+    -- create_card corrects itself from the centre it was handed:
+    --     _type = (center.set ~= 'Default' and center.set or _type)
+    -- so a Bind arrives as a Bind. Steamodded runs this deck's own `apply`
+    -- before any of that, which is why banning the Jokers cannot interfere.
+    config = { consumables = { CelestasMod.BIND_KEY } },
 
     loc_vars = function(self, info_queue, back)
         return { vars = {} }

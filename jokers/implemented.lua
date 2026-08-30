@@ -9,6 +9,22 @@
 --- Their localization in localization/en-us.lua is preserved across
 --- regeneration too - the generator only ever appends missing entries.
 
+--- Builds an add_to_deck that announces the Joker's arrival, once.
+---
+--- Cryptid's Supercell is the pattern, and the from_debuff guard is the whole
+--- of it: add_to_deck runs again every time a debuff is LIFTED - a Boss Blind
+--- ending, a Joker being un-debuffed - so without it the sound replays on each
+--- of those rather than only when the Joker turns up.
+---
+--- The sounds themselves are declared in jokers/sounds.lua, not here: this
+--- file is compiled against stubs by the test harnesses, so it cannot call
+--- SMODS.Sound at load.
+local function announces(sound_key)
+    return function(self, card, from_debuff)
+        if not from_debuff then play_sound(sound_key) end
+    end
+end
+
 --------------------------------------------------------------------------------
 -- Arar [Common]
 -- At the start of each round, add a random enhancement to a random
@@ -30,6 +46,8 @@ SMODS.Joker {
     loc_vars = function(self, info_queue, card)
         return {}
     end,
+
+    add_to_deck = announces("celesta_arar_join"),
 
     calculate = function(self, card, context)
         -- Fires once per round, right after the opening hand is dealt.
@@ -165,6 +183,8 @@ SMODS.Joker {
         return { vars = { numerator, denominator, card.ability.extra.dollars } }
     end,
 
+    add_to_deck = announces("celesta_kumi_join"),
+
     calculate = function(self, card, context)
         -- destroying_card is only set for cards that are both in G.play and
         -- part of the scoring hand, so this is already "scoring cards" only.
@@ -213,6 +233,8 @@ SMODS.Joker {
             card, 1, card.ability.extra.odds, "celesta_maya")
         return { vars = { numerator, denominator, card.ability.extra.repetitions } }
     end,
+
+    add_to_deck = announces("celesta_maya_join"),
 
     calculate = function(self, card, context)
         -- Held-in-hand repetition pass: cardarea is G.hand and other_card is
@@ -291,13 +313,7 @@ SMODS.Joker {
         return {}
     end,
 
-    -- Cryptid's Supercell shape, same as Shoomimi's: the from_debuff guard is
-    -- what keeps it to once, because add_to_deck runs again every time a
-    -- debuff is LIFTED rather than only when the Joker arrives. The sound
-    -- itself is declared in jokers/sounds.lua.
-    add_to_deck = function(self, card, from_debuff)
-        if not from_debuff then play_sound("celesta_kokonuts_join") end
-    end,
+    add_to_deck = announces("celesta_kokonuts_join"),
 
     calculate = function(self, card, context)
         -- Same shape as vanilla Marble Joker: build the card in G.play so the
@@ -1249,14 +1265,7 @@ SMODS.Joker {
         return { vars = { n, d } }
     end,
 
-    -- Cryptid's Supercell announces itself the same way, and the from_debuff
-    -- guard is the reason it only does so once: add_to_deck is called again
-    -- every time a debuff is LIFTED - a Boss Blind ending, a Joker being
-    -- undebuffed - and without it the sound would replay on each of those.
-    -- The sound itself is declared in jokers/sounds.lua.
-    add_to_deck = function(self, card, from_debuff)
-        if not from_debuff then play_sound("celesta_shoomimi_join") end
-    end,
+    add_to_deck = announces("celesta_shoomimi_join"),
 
     calculate = function(self, card, context)
         if context.reroll_shop and not context.blueprint then
@@ -6708,6 +6717,9 @@ SMODS.Joker {
         return { vars = { card.ability.extra.h_size } }
     end,
 
+    -- Its own rather than announces(), because it has a second job: the same
+    -- from_debuff that must silence the sound must NOT skip the hand size,
+    -- since a debuffed Ben should stop working.
     add_to_deck = function(self, card, from_debuff)
         if not from_debuff then play_sound("celesta_ben_join") end
         ben_hold(card, ben_boss_blind())
