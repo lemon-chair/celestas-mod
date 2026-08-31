@@ -6240,12 +6240,41 @@ SMODS.Joker {
             or (context.skip_blind and card.ability.extra.skip_gain)
 
         if gain and not context.blueprint then
+            -- The raise for the round this shop follows is not owed to a Joker
+            -- that was bought DURING it. See add_to_deck below.
+            if context.ending_shop and card.ability.extra.bought_in_shop then
+                card.ability.extra.bought_in_shop = nil
+                return
+            end
+
             card.ability.extra.dollars = card.ability.extra.dollars + gain
             return {
                 message = localize("k_upgrade_ex"),
                 colour = G.C.MONEY,
                 card = card,
             }
+        end
+    end,
+
+    -- "after each round" is counted off context.ending_shop, which fires for
+    -- every Joker in the row as the shop closes - including one bought in that
+    -- same shop, moments earlier. So buying it raised the payout immediately,
+    -- for the round it was not there for, exactly as Kairyu handed out hand
+    -- size for discards it never saw.
+    --
+    -- The raise cannot simply move to end_of_round instead: that lands before
+    -- the cash-out reads calc_dollar_bonus, so the round just played would pay
+    -- the raised amount and the first round would never pay the printed $1.
+    -- Skipping the one shop it was bought in keeps both readings.
+    --
+    -- G.GAME.facing_blind is vanilla's own "a round is in progress": set at
+    -- select_blind, cleared before the cash-out, so it is false for exactly
+    -- the window where a Joker can be bought. from_debuff is excluded because
+    -- a debuff cycle is not an arrival.
+    add_to_deck = function(self, card, from_debuff)
+        if from_debuff then return end
+        if not (G.GAME and G.GAME.facing_blind) then
+            card.ability.extra.bought_in_shop = true
         end
     end,
 }
