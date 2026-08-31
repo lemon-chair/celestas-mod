@@ -3962,6 +3962,35 @@ SMODS.Joker {
 --- the event evaluate_play is itself running inside blocks the queue for the
 --- rest of this one. So a queued conversion misses the hand that triggered it
 --- entirely; it would only be seen by the next one.
+--- Changes a PLAYED card's base without letting the Blind re-judge whether it
+--- was played before.
+---
+--- Card:set_base ends with `G.GAME.blind:debuff_card(self)`, and The Pillar
+--- debuffs anything carrying ability.played_this_ante - a flag every card in
+--- the hand was given moments earlier, in G.FUNCS.play_cards_from_highlighted,
+--- before evaluate_play had run at all. Vanilla never re-judges a card during
+--- the hand it is being played in, so it never notices; converting one does,
+--- and the whole hand went dead mid-scoring against that Blind.
+---
+--- Only that one flag is hidden, and only across the call. Every other rule a
+--- Blind has - a debuffed suit, rank, face or enhancement - is still judged,
+--- and judged against the NEW base, which is exactly what should happen to a
+--- card converted into the suit the Blind is punishing. The flag goes back
+--- immediately, so the card is still debuffed at the next Blind, which is what
+--- The Pillar is actually for.
+---
+--- Used by Occi as well, which rewrites the same cards to Aces of Spades.
+local function convert_played_base(played, suit, rank)
+    -- A card with no ability table has no flag to hide, and nothing to put
+    -- back. Guarded rather than assumed: every real playing card has one, but
+    -- this runs against whatever is in the scoring hand.
+    local ability = played.ability
+    local flag = ability and ability.played_this_ante
+    if ability then ability.played_this_ante = nil end
+    SMODS.change_base(played, suit, rank)
+    if ability then ability.played_this_ante = flag end
+end
+
 local function convert_scoring_to(context, suit)
     local scoring = context.scoring_hand
     if type(scoring) ~= "table" then return 0 end
@@ -3972,7 +4001,7 @@ local function convert_scoring_to(context, suit)
         -- report through has_no_suit, and changing their base would hand them
         -- one they are not supposed to have.
         if not SMODS.has_no_suit(played) and not played:is_suit(suit) then
-            SMODS.change_base(played, suit)
+            convert_played_base(played, suit)
             converted = converted + 1
 
             local target = played
@@ -6089,7 +6118,7 @@ SMODS.Joker {
                 local already = base.suit == "Spades" and base.value == "Ace"
                 if not (SMODS.has_no_suit(played) and SMODS.has_no_rank(played))
                     and not already then
-                    SMODS.change_base(played, "Spades", "Ace")
+                    convert_played_base(played, "Spades", "Ace")
                     changed = changed + 1
                     local target = played
                     G.E_MANAGER:add_event(Event {
