@@ -978,7 +978,7 @@ SMODS.Joker {
 -- Yomi Quinnely [Uncommon] - retriggers one suit, rotating each round.
 --------------------------------------------------------------------------------
 
-local YOMI_BASE_SUITS = { "Clubs", "Spades", "Diamonds", "Hearts" }
+local ROTATION_BASE_SUITS = { "Clubs", "Spades", "Diamonds", "Hearts" }
 
 --- The suits Yomi rotates through.
 ---
@@ -990,7 +990,7 @@ local YOMI_BASE_SUITS = { "Clubs", "Spades", "Diamonds", "Hearts" }
 --- CelestasMod.suit_in_deck reads base.suit rather than going through is_suit:
 --- is_suit routes through SMODS.smeared_check, and Arielle widens that to
 --- match everything, which would report every suit as present in every deck.
-local function yomi_suits()
+local function rotation_suits()
     -- Appended in registration order, never prepended: the four vanilla suits
     -- keep the positions a saved suit_index already points at, so acquiring a
     -- Star card does not jump a Yomi part-way through the rotation onto a
@@ -1005,19 +1005,20 @@ local function yomi_suits()
         if CelestasMod.suit_in_deck(suit) then
             if not suits then
                 suits = {}
-                for i, base in ipairs(YOMI_BASE_SUITS) do suits[i] = base end
+                for i, base in ipairs(ROTATION_BASE_SUITS) do suits[i] = base end
             end
             suits[#suits + 1] = suit
         end
     end
-    return suits or YOMI_BASE_SUITS
+    return suits or ROTATION_BASE_SUITS
 end
 
 --- The suit at `index`, wrapped into range.
+--- Shared with Saiiren, which walks the same rotation on its own index.
 --- The list changes length when the first Star card arrives or the last one
 --- leaves, so a saved index can point past the end; wrapping keeps it inside
 --- the list rather than silently resetting the rotation to Clubs.
-local function yomi_suit_at(suits, index)
+local function rotation_suit_at(suits, index)
     return suits[((index - 1) % #suits) + 1]
 end
 
@@ -1032,17 +1033,17 @@ SMODS.Joker {
     config = { extra = { suit_index = 1 } },
 
     loc_vars = function(self, info_queue, card)
-        local suits = yomi_suits()
+        local suits = rotation_suits()
         -- Singular: the name qualifies "cards", so it reads "Heart cards" the
         -- way vanilla's suit Jokers do - and the Leaf suit's plural is
         -- "Leaves", which would not read at all.
-        return { vars = { localize(yomi_suit_at(suits, card.ability.extra.suit_index),
+        return { vars = { localize(rotation_suit_at(suits, card.ability.extra.suit_index),
                                    "suits_singular") } }
     end,
 
     calculate = function(self, card, context)
-        local suits = yomi_suits()
-        local suit = yomi_suit_at(suits, card.ability.extra.suit_index)
+        local suits = rotation_suits()
+        local suit = rotation_suit_at(suits, card.ability.extra.suit_index)
 
         if context.repetition and context.cardarea == G.play then
             if context.other_card:is_suit(suit) then
@@ -1055,7 +1056,7 @@ SMODS.Joker {
         if context.end_of_round and context.main_eval and not context.blueprint then
             card.ability.extra.suit_index =
                 (card.ability.extra.suit_index % #suits) + 1
-            local next_suit = yomi_suit_at(suits, card.ability.extra.suit_index)
+            local next_suit = rotation_suit_at(suits, card.ability.extra.suit_index)
             return {
                 message = localize(next_suit, "suits_singular"),
                 colour = G.C.SUITS[next_suit],
@@ -7023,6 +7024,87 @@ SMODS.Joker {
         -- seen this hand is already in the number.
         if context.joker_main and card.ability.extra.x_mult > 1 then
             return { x_mult = card.ability.extra.x_mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Saiiren [Common] - one card a hand, and it moves every round.
+--------------------------------------------------------------------------------
+--
+-- Walks the same rotation Yomi Quinnely does, on its own index: the four
+-- vanilla suits, plus Stars and Leaves once the deck holds any. See
+-- rotation_suits above for why the added suits are appended rather than
+-- slotted in.
+--
+-- "The last scored card" is read off context.scoring_hand, which is the cards
+-- the poker hand actually scores, in the order they were played. Reading
+-- G.play.cards instead would count a card that is in the hand but not part of
+-- it, and pay for one that never scored.
+
+--- The last card of `suit` in the scoring hand, or nil.
+---
+--- Asked through is_suit rather than base.suit, which is what SCORING means by
+--- a suit: a Wild Card is every suit, and so is everything while Arielle is
+--- out. That makes a Wild Card the last card of whatever the rotation is on
+--- whenever it is played last, which is what Wild is for.
+local function saiiren_target(context, suit)
+    local hand = context.scoring_hand
+    if type(hand) ~= "table" then return nil end
+    local last = nil
+    for _, scored in ipairs(hand) do
+        if scored.is_suit and scored:is_suit(suit) then last = scored end
+    end
+    return last
+end
+
+SMODS.Joker {
+    key = "saiiren",
+    atlas = "saiiren",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { x_mult = 2, suit_index = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        local suits = rotation_suits()
+        local suit = rotation_suit_at(suits, card.ability.extra.suit_index)
+        -- Singular, because the name qualifies "card" - and the Leaf suit's
+        -- plural is "Leaves", which would not read at all.
+        return {
+            vars = { card.ability.extra.x_mult,
+                     localize(suit, "suits_singular"),
+                     colours = { G.C.SUITS[suit] } },
+        }
+    end,
+
+    calculate = function(self, card, context)
+        local suits = rotation_suits()
+        local suit = rotation_suit_at(suits, card.ability.extra.suit_index)
+
+        -- cardarea == G.play is the scoring-card pass; an unscored card
+        -- arrives as 'unscored' instead, and the end-of-round pass over the
+        -- hand is G.hand, so neither reaches this.
+        if context.individual and context.cardarea == G.play then
+            if context.other_card == saiiren_target(context, suit) then
+                return { x_mult = card.ability.extra.x_mult,
+                         card = context.other_card }
+            end
+        end
+
+        -- main_eval keeps the rotation to once per round rather than once per
+        -- card evaluated during the end-of-round pass.
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            card.ability.extra.suit_index =
+                (card.ability.extra.suit_index % #suits) + 1
+            local next_suit = rotation_suit_at(suits, card.ability.extra.suit_index)
+            return {
+                message = localize(next_suit, "suits_singular"),
+                colour = G.C.SUITS[next_suit],
+                card = card,
+            }
         end
     end,
 }

@@ -29,7 +29,6 @@ local ROSTER = {
     { key = "obkatiekat", rarity = 1, cost = 4, mult = 4 },
     { key = "rainhoe", rarity = 1, cost = 4, mult = 4 },
     { key = "rainyrentyn", rarity = 1, cost = 4, mult = 4 },
-    { key = "saiiren", rarity = 1, cost = 4, mult = 4 },
     { key = "shaoanvt", rarity = 1, cost = 4, mult = 4 },
     { key = "smuggiess", rarity = 1, cost = 4, mult = 4 },
     { key = "snapscube", rarity = 1, cost = 4, mult = 4 },

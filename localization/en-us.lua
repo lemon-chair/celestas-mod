@@ -962,7 +962,9 @@ return {
             j_celesta_saiiren = {
                 name = "Saiiren",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "The {C:attention}last{} scored {V:1}#2#{} card",
+                    "gives {X:mult,C:white}X#1#{} Mult",
+                    "{C:inactive}(suit changes each round)",
                 },
             },
             j_celesta_sansin = {
