@@ -6259,52 +6259,50 @@ SMODS.Joker {
                           card.ability.extra.skip_gain } }
     end,
 
+    -- What THIS round pays, which is not what the Joker will be worth once the
+    -- round is over.
+    --
+    -- The raise happens in the end_of_round pass, and the cash-out screen reads
+    -- this afterwards - end_round() runs the Joker pass at state_events.lua:101
+    -- and the payout is not collected until the round-evaluation UI is built,
+    -- at :1176. Without a value fixed before the raise, the round just finished
+    -- would collect the raise it had only just earned, and the first round
+    -- would never pay the printed amount even once.
     calc_dollar_bonus = function(self, card)
-        local dollars = card.ability.extra.dollars
+        local dollars = card.ability.extra.paid or card.ability.extra.dollars
         if dollars <= 0 then return end
         return dollars
     end,
 
     calculate = function(self, card, context)
-        local gain = (context.ending_shop and card.ability.extra.round_gain)
-            or (context.skip_blind and card.ability.extra.skip_gain)
-
-        if gain and not context.blueprint then
-            -- The raise for the round this shop follows is not owed to a Joker
-            -- that was bought DURING it. See add_to_deck below.
-            if context.ending_shop and card.ability.extra.bought_in_shop then
-                card.ability.extra.bought_in_shop = nil
-                return
-            end
-
-            card.ability.extra.dollars = card.ability.extra.dollars + gain
+        -- "after each round" is the end of the round, not the end of the shop.
+        -- context.ending_shop is a whole screen later, and reads as the Joker
+        -- upgrading on the way out of the shop rather than for the round it
+        -- was paid for.
+        --
+        -- It also settles who is owed the raise without a flag: a Joker bought
+        -- in the shop after a round was not in the row for that round's
+        -- end_of_round pass, so it simply does not get it.
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            card.ability.extra.paid = card.ability.extra.dollars
+            card.ability.extra.dollars =
+                card.ability.extra.dollars + card.ability.extra.round_gain
             return {
                 message = localize("k_upgrade_ex"),
                 colour = G.C.MONEY,
                 card = card,
             }
         end
-    end,
 
-    -- "after each round" is counted off context.ending_shop, which fires for
-    -- every Joker in the row as the shop closes - including one bought in that
-    -- same shop, moments earlier. So buying it raised the payout immediately,
-    -- for the round it was not there for, exactly as Kairyu handed out hand
-    -- size for discards it never saw.
-    --
-    -- The raise cannot simply move to end_of_round instead: that lands before
-    -- the cash-out reads calc_dollar_bonus, so the round just played would pay
-    -- the raised amount and the first round would never pay the printed $1.
-    -- Skipping the one shop it was bought in keeps both readings.
-    --
-    -- G.GAME.facing_blind is vanilla's own "a round is in progress": set at
-    -- select_blind, cleared before the cash-out, so it is false for exactly
-    -- the window where a Joker can be bought. from_debuff is excluded because
-    -- a debuff cycle is not an arrival.
-    add_to_deck = function(self, card, from_debuff)
-        if from_debuff then return end
-        if not (G.GAME and G.GAME.facing_blind) then
-            card.ability.extra.bought_in_shop = true
+        -- A skipped Blind ends no round, so there is no payout to fix first.
+        if context.skip_blind and not context.blueprint then
+            card.ability.extra.dollars =
+                card.ability.extra.dollars + card.ability.extra.skip_gain
+            return {
+                message = localize("k_upgrade_ex"),
+                colour = G.C.MONEY,
+                card = card,
+            }
         end
     end,
 }
