@@ -67,6 +67,11 @@ function Bind.can_bind(card)
     if not (card and card.ability and card.config and card.config.center) then return false end
     if card.ability.set ~= "Joker" then return false end
     if Bind.is_merged(card) then return false end
+    -- A centre may refuse outright. The Blank Joker does: its face is built
+    -- from up to five layers at runtime, and there is no answer to what that
+    -- looks like cut corner to corner, nor to what the pair's description says
+    -- about properties it cannot know in advance.
+    if card.config.center.celesta_no_bind then return false end
     return true
 end
 

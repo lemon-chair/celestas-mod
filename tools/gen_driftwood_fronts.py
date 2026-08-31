@@ -79,7 +79,11 @@ def main():
     archive = zipfile.ZipFile(BALATRO)
 
     for scale, folder in ((1, "1x"), (2, "2x")):
-        name = "resources/textures/%s/8BitDeck.png" % folder
+        # _opt2 is Balatro's high-contrast deck - the sheet the colourblind
+        # option switches to. Driftwood's pip is read from it so the suit is
+        # legible on art that is already busy, and so it matches the pips the
+        # Blank Joker wears.
+        name = "resources/textures/%s/8BitDeck_opt2.png" % folder
         deck = Image.open(io.BytesIO(archive.read(name))).convert("RGBA")
         cw, ch = CARD_W * scale, CARD_H * scale
 

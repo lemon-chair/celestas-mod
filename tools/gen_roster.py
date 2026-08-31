@@ -29,7 +29,10 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
           # the consumables that make them, and the rest of the standalones
           "star_fury", "tree", "raise",
           # the three Tarots that hand out this mod's enhancements
-          "citrus", "miracle_matter", "knife"}   # not per-joker art
+          "citrus", "miracle_matter", "knife",
+          # eighteen cells in a row, not a card. blank_joker itself is an
+          # ordinary Joker face and stays in the roster.
+          "blank_joker_layers"}   # not per-joker art
 
 # Auto title-casing cannot know how a creator styles their own name.
 # Add corrections here; anything absent falls back to the mechanical rule.
@@ -147,24 +150,35 @@ def collect():
 
 
 def implemented_keys():
-    """Keys defined by hand in jokers/implemented.lua.
+    """Keys defined by hand anywhere in jokers/, vtubers.lua aside.
 
-    Two sources, unioned:
-      * `SMODS.Joker {` followed by `key = "..."` - which is why that file
-        keeps `key` as the first field of every literal definition.
+    Every .lua in the folder is read rather than implemented.lua alone: a Joker
+    that carries enough machinery to want its own file - the Blank Joker does -
+    is still a hand-written one, and a roster that cannot see it would register
+    it a second time as a placeholder AND drop its localization on the next
+    regeneration.
+
+    Two sources per file, unioned:
+      * `SMODS.Joker {` followed by `key = "..."` - which is why those files
+        keep `key` as the first field of every literal definition.
       * `--- IMPLEMENTED: a, b, c` comment lines, for jokers registered from a
         loop where the key is a variable and cannot be read statically.
 
     Missing a key here is not silent: it stays in the generated roster and
     registers a second time, which the load test catches as a duplicate.
     """
-    p = os.path.join(ROOT, "jokers", "implemented.lua")
-    if not os.path.exists(p):
-        return set()
-    src = open(p, encoding="utf-8").read()
-    keys = set(re.findall(r'SMODS\.Joker\s*\{\s*key\s*=\s*["\']([^"\']+)["\']', src))
-    for line in re.findall(r'^---\s*IMPLEMENTED:\s*(.+)$', src, re.MULTILINE):
-        keys.update(k.strip() for k in line.split(",") if k.strip())
+    keys = set()
+    d = os.path.join(ROOT, "jokers")
+    if not os.path.isdir(d):
+        return keys
+    for name in sorted(os.listdir(d)):
+        if not name.endswith(".lua") or name == "vtubers.lua":
+            continue
+        src = open(os.path.join(d, name), encoding="utf-8").read()
+        keys.update(re.findall(
+            r'SMODS\.Joker\s*\{\s*key\s*=\s*["\']([^"\']+)["\']', src))
+        for line in re.findall(r'^---\s*IMPLEMENTED:\s*(.+)$', src, re.MULTILINE):
+            keys.update(k.strip() for k in line.split(",") if k.strip())
     return keys
 
 
@@ -836,6 +850,7 @@ LOC_TAIL = '''        },
             celesta_tattered = "Tattered!",
             celesta_repaired = "Repaired!",
             celesta_gilded = "Gold!",
+            celesta_blank_nothing = "nothing yet",
             celesta_taken = "Taken!",
             celesta_returned = "Returned!",
             celesta_cracked = "Cracked!",

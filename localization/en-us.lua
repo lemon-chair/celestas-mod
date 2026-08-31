@@ -170,6 +170,15 @@ return {
                     "{C:inactive}(#3# remaining)",
                 },
             },
+            j_celesta_blank_joker = {
+                name = "Blank Joker",
+                text = {
+                    "Use a {C:tarot}Tarot{} on this Joker to teach",
+                    "it that card property, then it {C:attention}retriggers",
+                    "scored cards which have it",
+                    "{C:inactive}(#1#)",
+                },
+            },
             j_celesta_bluto = {
                 name = "Bluto",
                 text = {
@@ -1767,6 +1776,7 @@ return {
             celesta_tattered = "Tattered!",
             celesta_repaired = "Repaired!",
             celesta_gilded = "Gold!",
+            celesta_blank_nothing = "nothing yet",
             celesta_taken = "Taken!",
             celesta_returned = "Returned!",
             celesta_cracked = "Cracked!",
