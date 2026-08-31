@@ -6280,6 +6280,45 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
+-- Reading the run's money
+--------------------------------------------------------------------------------
+--
+-- G.GAME.dollars is not always a Lua number. With Talisman installed it becomes
+-- one of its big-number tables once the run's money outgrows a double - and
+-- Talisman also replaces math.max with one that returns a big whenever EITHER
+-- argument is one, so even a debt of nothing can arrive as a table.
+--
+-- That is not a display problem. Lua 5.1 consults __lt only when BOTH operands
+-- are tables, so `dollars > 0` against a big is not a slow comparison, it is a
+-- hard error - "attempt to compare number with table" - and it took the run
+-- down mid-hand. Every comparison against money therefore goes through here.
+
+--- The run's money, defaulting to nothing before a run exists.
+local function money()
+    return (G.GAME and G.GAME.dollars) or 0
+end
+
+--- a < b, whichever kind of number either side is.
+--- to_big is only reached when one of them is already one of Talisman's, and
+--- only Talisman makes those, so it is present whenever this branch is.
+local function money_lt(a, b)
+    if type(a) == "table" or type(b) == "table" then
+        return to_big(a) < to_big(b)
+    end
+    return a < b
+end
+
+--- a == b, on the same terms. Lua 5.1 will not reach __eq across types either;
+--- it merely answers false rather than erroring, which is worse - the card
+--- silently stops working instead of saying so.
+local function money_eq(a, b)
+    if type(a) == "table" or type(b) == "table" then
+        return to_big(a) == to_big(b)
+    end
+    return a == b
+end
+
+--------------------------------------------------------------------------------
 -- Pristine Zero [Uncommon] - broke, exactly.
 --------------------------------------------------------------------------------
 --
@@ -6301,7 +6340,7 @@ SMODS.Joker {
     end,
 
     calculate = function(self, card, context)
-        if context.joker_main and G.GAME and G.GAME.dollars == 0 then
+        if context.joker_main and money_eq(money(), 0) then
             return { x_mult = card.ability.extra.x_mult }
         end
     end,
@@ -6316,8 +6355,25 @@ SMODS.Joker {
 -- it is worth nothing at all.
 
 --- How far below zero the player is, never negative.
+---
+--- A plain number wherever one will do, and one of Talisman's only once the
+--- debt has outgrown one - so the ordinary case never pays for the unusual.
+--- math.max is deliberately not used on the big path: Talisman's returns a big
+--- whichever way the comparison went, which is what made `debt > 0` a crash.
 local function minikomew_debt()
-    return math.max(0, -((G.GAME and G.GAME.dollars) or 0))
+    local dollars = money()
+    if type(dollars) ~= "table" then
+        return math.max(0, -dollars)
+    end
+    local debt = to_big(0) - to_big(dollars)
+    return money_lt(0, debt) and debt or 0
+end
+
+--- True when there is any debt at all. The helper above returns a table only
+--- when it has already established the debt is positive, so a table IS debt.
+local function minikomew_in_debt(debt)
+    if type(debt) == "table" then return true end
+    return debt > 0
 end
 
 SMODS.Joker {
@@ -6331,14 +6387,19 @@ SMODS.Joker {
     config = { extra = { mult = 2 } },
 
     loc_vars = function(self, info_queue, card)
-        return { vars = { card.ability.extra.mult,
-                          card.ability.extra.mult * minikomew_debt() } }
+        -- Arithmetic across the two kinds is fine - Lua 5.1 reaches __mul
+        -- whichever side is the table - but the RESULT would print as
+        -- "table: 0x..." on the card. number_format is vanilla's, and
+        -- Talisman wraps it to render its own numbers.
+        local shown = card.ability.extra.mult * minikomew_debt()
+        if type(shown) == "table" then shown = number_format(shown) end
+        return { vars = { card.ability.extra.mult, shown } }
     end,
 
     calculate = function(self, card, context)
         if context.joker_main then
             local debt = minikomew_debt()
-            if debt > 0 then
+            if minikomew_in_debt(debt) then
                 return { mult = card.ability.extra.mult * debt }
             end
         end
