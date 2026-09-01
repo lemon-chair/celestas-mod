@@ -132,7 +132,11 @@ local function entry_node(def)
 
     return {
         n = G.UIT.R,
-        config = { align = "cl", padding = 0.06, r = 0.1, colour = G.C.BLACK,
+        -- A pair this profile has made is lifted out of the black the locked
+        -- ones sit in, so the page reads at a glance as what is found and what
+        -- is not - rather than only by the text being greyed.
+        config = { align = "cl", padding = 0.06, r = 0.1,
+                   colour = seen and lighten(G.C.BLACK, 0.2) or G.C.BLACK,
                    emboss = 0.05, minw = 5.6, minh = 0.9 },
         nodes = { { n = G.UIT.C, config = { align = "cl", padding = 0.04 },
                     nodes = rows } },
@@ -200,6 +204,18 @@ end
 --- rows, and the page is cheap to build.
 G.FUNCS.celesta_merges_page = function(args)
     page = (args and args.cycle_config and args.cycle_config.current_option) or 1
+
+    -- G.FUNCS.overlay_menu does not take down the overlay it replaces: it
+    -- assigns G.OVERLAY_MENU a fresh UIBox over the old one
+    -- (button_callbacks.lua:1345). Nothing else in the game notices, because
+    -- nothing else opens an overlay from inside one - but a page turn does,
+    -- and every turn left the previous page's UIBox alive and still drawing,
+    -- orphaned at the screen origin. That is the stack of titles that built up
+    -- in the corner.
+    if G.OVERLAY_MENU then
+        G.OVERLAY_MENU:remove()
+        G.OVERLAY_MENU = nil
+    end
     G.FUNCS.overlay_menu { definition = build() }
 end
 
