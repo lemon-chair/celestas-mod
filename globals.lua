@@ -203,6 +203,43 @@ function CelestasMod.scalable_vars(set, key)
     return marked
 end
 
+--- Every loc_var a centre prints, marked the same way - not only the ones
+--- written in a value colour.
+---
+--- Vedal's rule is every numerical value on this mod's Jokers, so the markup
+--- filter above is the wrong question for it: a count of cards and a chance
+--- are numbers a Joker gives too. This marks all of them.
+---
+--- The one exclusion is a printed CHANCE - both halves of "#1# in #2#".
+--- Scaling both leaves the odds exactly where they were while making the card
+--- claim they moved; scaling the numerator alone would be right, except that
+--- a chance is already scaled a layer down, in mod_probability, which is what
+--- both the roll and the number loc_vars asks for come through. Touching it
+--- again here would show one chance and roll another.
+function CelestasMod.numeric_vars(set, key)
+    local descriptions = G.localization and G.localization.descriptions
+    local block = descriptions and set and descriptions[set]
+    local entry = block and key and block[key]
+    if not (entry and entry.text) then return nil end
+
+    local marked, chances = nil, {}
+    for _, line in ipairs(entry.text) do
+        for index in string.gmatch(line, "#(%d+)#") do
+            marked = marked or {}
+            marked[tonumber(index)] = "add"
+        end
+        -- "#1# in #2#", however it is coloured in between.
+        for first, second in string.gmatch(
+                line, "#(%d+)#[^#]-%f[%a]in%f[%A][^#]-#(%d+)#") do
+            chances[tonumber(first)] = true
+            chances[tonumber(second)] = true
+        end
+    end
+    if not marked then return nil end
+    for index in pairs(chances) do marked[index] = nil end
+    return next(marked) and marked or nil
+end
+
 --- A copy of `vars` with the marked entries scaled.
 ---
 --- `multiplier_excess` selects how a multiplier is scaled, and must match how

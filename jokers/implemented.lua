@@ -2425,20 +2425,20 @@ SMODS.Joker {
 
 CelestasMod.VEDAL_SCALE = 1.5
 
--- Additive values are scaled directly: +4 Mult becomes +6 Mult.
-local VEDAL_ADDITIVE = {
-    "chips", "h_chips", "chip_mod",
-    "mult", "h_mult", "mult_mod",
-}
-
--- Multiplicative values have the multiplier itself scaled, so X3 Mult becomes
--- X4.5 Mult. Talisman exponential keys are here too, which makes Vedal
--- enormous in a Talisman run - that is the reading of "all values", but it is
--- the one list to cut from if it turns out to be too much.
-local VEDAL_MULTIPLICATIVE = {
-    "x_chips", "xchips", "Xchip_mod",
-    "x_mult", "Xmult", "xmult", "x_mult_mod", "Xmult_mod",
-    "e_mult", "emult", "e_chips", "echips",
+-- EVERY number a Joker hands back is scaled - Mult, Chips, multipliers,
+-- Talisman's exponents, dollars, hand size, repetitions, the lot. There is no
+-- list of blessed keys any more: keeping one meant Vedal quietly ignored
+-- whatever it had not been told about, which is most of what a Joker can give.
+--
+-- Two keys are held out, and only these two.
+local VEDAL_NEVER = {
+    -- The divisor of a chance. "1 in 5" is one number, not two: scaling both
+    -- leaves the odds exactly where they were. The numerator is scaled through
+    -- mod_probability instead, where it moves the roll AND the text together.
+    denominator = true,
+    -- Scaled in the same place, for the same reason. Doing it here as well
+    -- would apply X1.5 twice to a chance that came back through an effect.
+    numerator = true,
 }
 
 --- True when a Vedal is in play and not debuffed.
@@ -2454,15 +2454,15 @@ end
 --- and this hook sits on the hottest path in the game - the same path that
 --- once locked the game up mid-score.
 local function vedal_has_target(effect)
-    for _, key in ipairs(VEDAL_ADDITIVE) do
-        local v = effect[key]
-        if type(v) == "number" and v ~= 0 then return true end
-    end
-    for _, key in ipairs(VEDAL_MULTIPLICATIVE) do
-        local v = effect[key]
-        -- 1 is the identity for a multiplier. Scaling it would conjure X1.5
-        -- out of a joker that was explicitly contributing nothing.
-        if type(v) == "number" and v > 1 then return true end
+    for key, v in pairs(effect) do
+        -- Zero is left out because scaling it changes nothing; a multiplier
+        -- sitting at 1 is NOT, because that is where every scaling Joker in
+        -- this mod starts. Leaving those alone made Vedal look broken on a
+        -- fresh board - the numbers a player checks first were exactly the
+        -- ones it was refusing to touch.
+        if type(v) == "number" and v ~= 0 and not VEDAL_NEVER[key] then
+            return true
+        end
     end
     return false
 end
@@ -2491,15 +2491,13 @@ function Card:calculate_joker(context, ...)
     -- own ability table, and scaling that would permanently inflate its stats
     -- instead of this one trigger.
     local scaled = {}
-    for k, v in pairs(effect) do scaled[k] = v end
     local mult = CelestasMod.VEDAL_SCALE
-    for _, key in ipairs(VEDAL_ADDITIVE) do
-        local v = scaled[key]
-        if type(v) == "number" and v ~= 0 then scaled[key] = v * mult end
-    end
-    for _, key in ipairs(VEDAL_MULTIPLICATIVE) do
-        local v = scaled[key]
-        if type(v) == "number" and v > 1 then scaled[key] = v * mult end
+    for k, v in pairs(effect) do
+        if type(v) == "number" and v ~= 0 and not VEDAL_NEVER[k] then
+            scaled[k] = v * mult
+        else
+            scaled[k] = v
+        end
     end
     return scaled, post
 end
@@ -2549,7 +2547,10 @@ function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges,
                                          card, ...)
     end
 
-    local marked = CelestasMod.scalable_vars(_c.set, _c.key)
+    -- numeric_vars, not scalable_vars: Vedal scales every number on one of
+    -- this mod's Jokers, so the value-colour filter the Tattered wear uses is
+    -- the wrong question here. A count and a chance are numbers too.
+    local marked = CelestasMod.numeric_vars(_c.set, _c.key)
     if marked then
         local copy = {}
         for k, v in pairs(specific_vars) do copy[k] = v end
@@ -2576,6 +2577,30 @@ SMODS.Joker {
 
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.x_value } }
+    end,
+
+    -- An odds is a value too, and this is the one place it can be scaled for
+    -- REAL rather than only on the card face: SMODS asks every Joker to modify
+    -- a probability both before rolling it and before printing it
+    -- (utils.lua:2728), so one answer here moves the chance and the text that
+    -- advertises it together, and they cannot drift apart.
+    --
+    -- Answered from Vedal's own calculate rather than from the hook above
+    -- because a debuffed Joker is never asked at all - the debuff check is
+    -- vanilla's, at the top of Card:calculate_joker - so this inherits it.
+    calculate = function(self, card, context)
+        if not context.mod_probability then return end
+
+        -- Whoever is about to roll. Jokers from this mod only, which is the
+        -- same rule the scaling follows: a Driftwood card's break chance is
+        -- this mod's too, but it is not a Joker and the card does not claim it.
+        local roller = context.trigger_obj
+        local center = roller and roller.config and roller.config.center
+        if not (center and CelestasMod.is_ours(center)) then return end
+        if center.key == "j_celesta_vedal" then return end
+        if not (roller.ability and roller.ability.set == "Joker") then return end
+
+        return { numerator = (context.numerator or 0) * CelestasMod.VEDAL_SCALE }
     end,
 }
 

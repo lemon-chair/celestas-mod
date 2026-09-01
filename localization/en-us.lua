@@ -1162,8 +1162,8 @@ return {
                 text = {
                     "Every time another {C:attention}Joker",
                     "{C:attention}from this mod{} triggers,",
-                    "multiplies every value it",
-                    "gives by {X:mult,C:white}X#1#{}",
+                    "multiplies every value and",
+                    "{C:green}chance{} it has by {X:mult,C:white}X#1#{}",
                     "{C:inactive}(Cannot be copied)",
                 },
             },
