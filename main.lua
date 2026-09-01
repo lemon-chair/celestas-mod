@@ -45,6 +45,7 @@ SMODS.Atlas { key = 'enh_gash', path = 'enh_gash.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'enh_eutrophic', path = 'enh_eutrophic.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'enh_limestone', path = 'enh_limestone.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'enh_driftwood', path = 'enh_driftwood.png', px = 71, py = 95 }
+SMODS.Atlas { key = 'enh_sandstone', path = 'enh_sandstone.png', px = 71, py = 95 }
 -- Ace fronts with the rank glyph stripped, for Driftwood (tools/gen_driftwood_fronts.py).
 SMODS.Atlas { key = 'driftwood_fronts', path = 'driftwood_fronts.png', px = 71, py = 95 }
 
@@ -108,6 +109,7 @@ assert(SMODS.load_file('merge/collection.lua'))()
 -- enhancement Tarots hand out are resolved.
 assert(SMODS.load_file('consumables/raise.lua'))()
 assert(SMODS.load_file('consumables/enhancers.lua'))()
+assert(SMODS.load_file('consumables/occult.lua'))()
 
 --------------------------------------------------------------------------------
 -- Jokers — auto-loaded from jokers/.

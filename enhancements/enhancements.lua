@@ -15,6 +15,7 @@ CelestasMod.ENHANCEMENT_KEYS = {
     Eutrophic = "m_" .. SMODS.current_mod.prefix .. "_eutrophic",
     Limestone = "m_" .. SMODS.current_mod.prefix .. "_limestone",
     Driftwood = "m_" .. SMODS.current_mod.prefix .. "_driftwood",
+    Sandstone = "m_" .. SMODS.current_mod.prefix .. "_sandstone",
 }
 
 -- Shared so Saruei can target this exact roll through fix_probability, and so
@@ -362,6 +363,68 @@ SMODS.Enhancement {
         if context.main_scoring and context.cardarea == G.play then
             play_scoring_sound(CelestasMod.ENHANCEMENT_SOUNDS.Limestone)
         end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Sandstone — Stone, weathered into something less predictable.
+--------------------------------------------------------------------------------
+--
+-- What Polish turns a Stone Card into, so it is shaped like one: it IS the
+-- card, has no rank or suit, and scores whether or not it is part of the poker
+-- hand. Limestone is the same silhouette for the same reason.
+--
+-- Its two lines are ONE roll, not two. The rare branch is rolled and the
+-- common one is whatever that is not, which is why the description works out
+-- the 4 rather than stating it: a Joker that moves the odds - Oops! All 6s -
+-- would otherwise leave the card claiming two chances that do not add up.
+
+CelestasMod.SANDSTONE_ODDS = 5
+CelestasMod.SANDSTONE_CHIPS = 80
+CelestasMod.SANDSTONE_E_CHIPS = 1.15
+CelestasMod.SANDSTONE_ROLL_ID = "celesta_sandstone"
+
+SMODS.Enhancement {
+    key = "sandstone",
+    atlas = "enh_sandstone",
+    pos = { x = 0, y = 0 },
+    discovered = true,
+
+    -- Same shape as vanilla m_stone and this mod's Limestone.
+    replace_base_card = true,
+    no_rank = true,
+    no_suit = true,
+    always_scores = true,
+
+    loc_vars = function(self, info_queue, card)
+        local n, d = SMODS.get_probability_vars(
+            card, 1, CelestasMod.SANDSTONE_ODDS, CelestasMod.SANDSTONE_ROLL_ID)
+        return { vars = { d - n, d, CelestasMod.SANDSTONE_CHIPS,
+                          n, d, CelestasMod.SANDSTONE_E_CHIPS } }
+    end,
+
+    calculate = function(self, card, context)
+        if not (context.main_scoring and context.cardarea == G.play) then return end
+
+        if not SMODS.pseudorandom_probability(
+                card, CelestasMod.SANDSTONE_ROLL_ID, 1,
+                CelestasMod.SANDSTONE_ODDS) then
+            return { chips = CelestasMod.SANDSTONE_CHIPS }
+        end
+
+        -- ^Chips is Talisman's arithmetic. Talisman is a declared dependency,
+        -- so this should never be reached - but a card the player is holding
+        -- must not silently score nothing if it is, so the common branch is
+        -- paid instead. Arielle + Ironmouse returns nothing in the same spot
+        -- because ^Mult is the entirety of that pair; here it is one branch in
+        -- five of a card that otherwise still works.
+        if Card.get_chip_e_chips == nil then
+            CelestasMod.warn_once("sandstone_no_talisman",
+                "Sandstone's ^Chips needs Talisman; without it that roll pays "
+                .. "its ordinary Chips instead")
+            return { chips = CelestasMod.SANDSTONE_CHIPS }
+        end
+        return { e_chips = CelestasMod.SANDSTONE_E_CHIPS }
     end,
 }
 

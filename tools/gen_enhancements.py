@@ -40,6 +40,10 @@ SOURCES = {
     "eutrophic": ("eutrophic.png", "eutrophic2.png", CARD, False),
     "limestone": ("limestone.png", "limestone2.png", CARD, False),
     "driftwood": ("driftwood.png", "driftwood2.png", CARD, False),
+    # Sandstone was drawn at both sizes already, so neither is halved from the
+    # other, and it is full-card art like the rest of the stones - no base to
+    # composite underneath.
+    "sandstone": ("sandstone_card1x.png", "sandstone_card2x.png", CARD, False),
 }
 
 # Exo is handled separately: its frame is drawn oversized rather than squashed

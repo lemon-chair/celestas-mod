@@ -28,8 +28,8 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
           "suit_leaf", "suit_leaf_ui",
           # the consumables that make them, and the rest of the standalones
           "star_fury", "tree", "raise",
-          # the three Tarots that hand out this mod's enhancements
-          "citrus", "miracle_matter", "knife",
+          # the Tarots that hand out this mod's enhancements, and Occult
+          "citrus", "miracle_matter", "knife", "polish", "occult",
           # eighteen cells in a row, not a card. blank_joker itself is an
           # ordinary Joker face and stays in the roster.
           "blank_joker_layers"}   # not per-joker art
@@ -358,6 +358,23 @@ LOC_TAIL = '''        },
                     "{C:attention}Gash Card",
                 },
             },
+            c_celesta_polish = {
+                name = "Polish",
+                text = {
+                    "Converts up to {C:attention}#1#{}",
+                    "selected {C:attention}Stone Card",
+                    "into a {C:attention}Sandstone Card",
+                },
+            },
+            c_celesta_occult = {
+                name = "Occult",
+                text = {
+                    "Creates the last",
+                    "{C:spectral}Spectral{} card used",
+                    "during this run",
+                    "{C:inactive}(Must have room)",
+                },
+            },
             c_celesta_reforge = {
                 name = "Reforge",
                 text = {
@@ -431,6 +448,14 @@ LOC_TAIL = '''        },
                 name = "Limestone Card",
                 text = {
                     "{C:mult}+#1#{} Mult",
+                    "{C:inactive}no rank or suit",
+                },
+            },
+            m_celesta_sandstone = {
+                name = "Sandstone Card",
+                text = {
+                    "{C:green}#1# in #2#{} chance for {C:chips}+#3#{} Chips",
+                    "{C:green}#4# in #5#{} chance for {X:chips,C:white}^#6#{} Chips",
                     "{C:inactive}no rank or suit",
                 },
             },

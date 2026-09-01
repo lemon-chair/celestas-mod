@@ -1,10 +1,12 @@
 --- THE ENHANCEMENT TAROTS
 ---
 --- One Tarot per enhancement this mod adds that a player would otherwise have
---- to wait for: Limestone, Exo and Gash. The same job vanilla's Magician,
---- Empress, Hierophant and friends do for Lucky, Mult, Bonus and the rest.
+--- to wait for: Limestone, Exo, Gash and Sandstone. The same job vanilla's
+--- Magician, Empress, Hierophant and friends do for Lucky, Mult, Bonus and the
+--- rest. Polish is the odd one only in that it demands a Stone Card to work
+--- on; what it then does is what the others do.
 ---
---- All three are `mod_conv` cards and nothing more. That is not shorthand - it
+--- All four are `mod_conv` cards and nothing more. That is not shorthand - it
 --- is the whole implementation, and deliberately so:
 ---
 ---   * vanilla's Card:use_consumeable already handles mod_conv, with the full
@@ -27,17 +29,33 @@
 SMODS.Atlas { key = "citrus",         path = "citrus.png",         px = 71, py = 95 }
 SMODS.Atlas { key = "miracle_matter", path = "miracle_matter.png", px = 71, py = 95 }
 SMODS.Atlas { key = "knife",          path = "knife.png",          px = 71, py = 95 }
+SMODS.Atlas { key = "polish",         path = "polish.png",         px = 71, py = 95 }
 
 --- How many cards may be selected. One each, as asked.
 local SELECTED = 1
 
---- Shared by all three: at least one card highlighted, and no more than the
---- card allows. Shaped like Tree's, which is the other Tarot in this mod that
---- acts on the selection.
-local function can_use(self, card)
-    local picked = G.hand and G.hand.highlighted
-    return picked and #picked > 0
-        and #picked <= (self.config.max_highlighted or SELECTED)
+--- Shared: at least one card highlighted, and no more than the card allows.
+--- Shaped like Tree's, which is the other Tarot in this mod that acts on the
+--- selection.
+---
+--- `requires` is Polish's alone. Polish does not enhance a card, it weathers a
+--- Stone one, so every card picked has to already BE a Stone Card - and the
+--- check has to be here rather than in `use`, because there is no use of ours
+--- to check in: the conversion is vanilla's mod_conv path, which acts on
+--- whatever was highlighted without asking.
+local function can_use_with(requires)
+    return function(self, card)
+        local picked = G.hand and G.hand.highlighted
+        if not (picked and #picked > 0
+                and #picked <= (self.config.max_highlighted or SELECTED)) then
+            return false
+        end
+        if not requires then return true end
+        for _, chosen in ipairs(picked) do
+            if not SMODS.has_enhancement(chosen, requires) then return false end
+        end
+        return true
+    end
 end
 
 --- The three are identical apart from which enhancement they hand out and
@@ -47,6 +65,12 @@ local ENHANCERS = {
     { key = "citrus",         atlas = "citrus",         enhancement = "Limestone" },
     { key = "miracle_matter", atlas = "miracle_matter", enhancement = "Exo" },
     { key = "knife",          atlas = "knife",          enhancement = "Gash" },
+    -- Vanilla's Stone Card only. This mod's Limestone is also a stone and is
+    -- deliberately NOT accepted: converting it would quietly throw away an
+    -- enhancement the player chose, and Polish reads as an upgrade to the
+    -- plain one.
+    { key = "polish",         atlas = "polish",         enhancement = "Sandstone",
+      requires = "m_stone" },
 }
 
 for _, entry in ipairs(ENHANCERS) do
@@ -67,10 +91,15 @@ for _, entry in ipairs(ENHANCERS) do
         config = { mod_conv = center_key, max_highlighted = SELECTED },
 
         loc_vars = function(self, info_queue, card)
+            -- What it needs before what it gives, which is the order the
+            -- player meets them in.
+            if entry.requires then
+                info_queue[#info_queue + 1] = G.P_CENTERS[entry.requires]
+            end
             info_queue[#info_queue + 1] = G.P_CENTERS[center_key]
             return { vars = { self.config.max_highlighted } }
         end,
 
-        can_use = can_use,
+        can_use = can_use_with(entry.requires),
     }
 end
