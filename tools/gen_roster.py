@@ -781,8 +781,10 @@ LOC_TAIL = '''        },
             b_celesta_ecstasy = {
                 name = "Ecstasy Deck",
                 text = {
-                    "Only {C:attention}Celesta's Mod{}",
-                    "Jokers appear",
+                    "Only {C:attention}Celesta's Mod{} Jokers appear",
+                    "Start with a {C:spectral}Bind{}",
+                    "{C:green}1 in #1#{} chance for a {C:spectral}Bind{} and",
+                    "{C:green}1 in #2#{} for {C:spectral}The Soul{} in the shop",
                 },
             },
             b_celesta_hell = {

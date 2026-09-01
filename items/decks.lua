@@ -117,7 +117,9 @@ SMODS.Back {
     config = { consumables = { CelestasMod.BIND_KEY } },
 
     loc_vars = function(self, info_queue, back)
-        return { vars = {} }
+        info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.BIND_KEY]
+        return { vars = { CelestasMod.ECSTASY_SHOP[1].odds,
+                          CelestasMod.ECSTASY_SHOP[2].odds } }
     end,
 
     apply = function(self, back)
@@ -130,6 +132,61 @@ SMODS.Back {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- ...and the two cards it slips into the shop
+--------------------------------------------------------------------------------
+--
+-- Neither can reach a shop on its own. Bind is a Spectral, and the shop only
+-- rolls Spectrals at all once a Voucher has opened that rate up; The Soul is
+-- `hidden = true`, which is what keeps it out of every pool by design - it is
+-- meant to arrive from a pack. So rather than widening a pool, the card a shop
+-- slot was about to hold is replaced.
+--
+-- create_card_for_shop is the one place a shop card is made
+-- (UI_definitions.lua:742 - the shop being built, a reroll, and Buffoon-pack
+-- overflow all come through it), and it already has a branch that returns a
+-- forced card for the tutorial. Returning one here is a shape it supports.
+
+--- The forced shop cards, in the order they are rolled for. `odds` is a
+--- denominator: 100 is 1 in 100. Read by the deck's own loc_vars above, so the
+--- printed numbers cannot drift from the rolled ones.
+CelestasMod.ECSTASY_SHOP = {
+    { key = CelestasMod.BIND_KEY, odds = 100, seed = 'celesta_ecstasy_bind' },
+    { key = 'c_soul',             odds = 200, seed = 'celesta_ecstasy_soul' },
+}
+
+local ECSTASY_KEY = 'b_' .. SMODS.current_mod.prefix .. '_ecstasy'
+
+--- True while the run is being played on the Ecstasy Deck.
+--- The same chain vanilla's own deck checks walk (misc_functions.lua:1086).
+local function on_ecstasy()
+    local back = G.GAME and G.GAME.selected_back
+    return back and back.effect and back.effect.center
+        and back.effect.center.key == ECSTASY_KEY
+end
+
+local celesta_ecstasy_shop_ref = create_card_for_shop
+function create_card_for_shop(area)
+    -- Rolled per card offered, and only on this deck - so no other run's shop
+    -- has its random stream shifted by the two extra pulls.
+    if area == G.shop_jokers and on_ecstasy() then
+        for _, entry in ipairs(CelestasMod.ECSTASY_SHOP) do
+            local center = G.P_CENTERS[entry.key]
+            if center and pseudorandom(pseudoseed(entry.seed)) < 1 / entry.odds then
+                -- A forced key goes straight to the centre and never consults a
+                -- pool, which is what gets a hidden card into a shop at all.
+                local card = create_card(center.set, area, nil, nil, nil, nil,
+                                         entry.key, 'sho')
+                if card then
+                    create_shop_card_ui(card, center.set, area)
+                    return card
+                end
+            end
+        end
+    end
+    return celesta_ecstasy_shop_ref(area)
+end
 
 --------------------------------------------------------------------------------
 -- Hell Deck - everything at once, and less of all of it.
