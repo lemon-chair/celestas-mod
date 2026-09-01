@@ -45,6 +45,7 @@ DISPLAY_NAMES = {
     "rainhoe": "Rainhoe",
     "trickywi": "Trickywi",
     "shaoanvt": "Grandpaw Shao",
+    "yoclesh": "Yoclesh",
     "saiiren": "Saiiren",
     "blank_joker": "Blank Joker",
     "boosfer": "Boosfer",

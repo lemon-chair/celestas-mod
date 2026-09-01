@@ -1019,6 +1019,15 @@ end
 --- leaves, so a saved index can point past the end; wrapping keeps it inside
 --- the list rather than silently resetting the rotation to Clubs.
 local function rotation_suit_at(suits, index)
+    -- Yoclesh pins every rotating suit to Hearts. Answered here rather than in
+    -- each Joker because this is the one place either of them asks what the
+    -- rotation is currently on - the description reads it through here too, so
+    -- the card says Hearts as well as meaning it. The index still advances
+    -- underneath, so selling the Yoclesh resumes the rotation where it got to
+    -- rather than restarting it.
+    if CelestasMod.yoclesh_active and CelestasMod.yoclesh_active() then
+        return "Hearts"
+    end
     return suits[((index - 1) % #suits) + 1]
 end
 
@@ -7556,5 +7565,102 @@ SMODS.Joker {
 
     loc_vars = function(self, info_queue, card)
         return {}
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Yoclesh [Rare] - the wandering suits stop wandering.
+--------------------------------------------------------------------------------
+--
+-- Some Jokers name a suit that MOVES: vanilla's Ancient Joker, Castle and The
+-- Idol pick a new one every round, and this mod's Yomi Quinnely and Saiiren
+-- walk a rotation. Yoclesh pins all of them to Hearts. Jokers that name a fixed
+-- suit - Greedy Joker, Auteru - are not what this is about and are left alone.
+--
+-- Two levers, because the two families keep the answer in different places.
+--
+-- This mod's pair both read rotation_suit_at, so that function answers Hearts
+-- and both are covered at once - description included.
+--
+-- Vanilla's three keep theirs on G.GAME.current_round.<x>_card.suit, rewritten
+-- by a global reset_<x>_card() at the start of every round. Wrapping those
+-- three is the whole of it: whatever they roll, the suit is put back to Hearts
+-- afterwards. The Idol names a rank as well and keeps it - only the suit half
+-- of it is a suit.
+
+local YOCLESH_KEY = "j_celesta_yoclesh"
+
+--- True while a Yoclesh is in the row and able to act.
+--- Asked at the moment the answer is wanted rather than cached: it can be
+--- bought, sold or debuffed between one round and the next.
+function CelestasMod.yoclesh_active()
+    for _, joker in ipairs(SMODS.find_card(YOCLESH_KEY)) do
+        if not joker.debuff then return true end
+    end
+    return false
+end
+
+-- Which round-scoped table each vanilla reset writes its suit into.
+local ROTATING_RESETS = {
+    reset_ancient_card = "ancient_card",
+    reset_castle_card = "castle_card",
+    reset_idol_card = "idol_card",
+}
+
+--- Puts every wandering suit onto Hearts, if a Yoclesh is out.
+--- Safe to call at any time: it only ever writes a field the game itself keeps
+--- there, and does nothing at all when no Yoclesh is in play.
+function CelestasMod.yoclesh_pin()
+    if not CelestasMod.yoclesh_active() then return false end
+    local round = G.GAME and G.GAME.current_round
+    if not round then return false end
+    local pinned = false
+    for _, field in pairs(ROTATING_RESETS) do
+        local target = round[field]
+        if type(target) == "table" and target.suit ~= "Hearts" then
+            target.suit = "Hearts"
+            pinned = true
+        end
+    end
+    return pinned
+end
+
+for name in pairs(ROTATING_RESETS) do
+    local ref = _G[name]
+    if type(ref) == "function" then
+        _G[name] = function(...)
+            local out = ref(...)
+            CelestasMod.yoclesh_pin()
+            return out
+        end
+    end
+end
+
+SMODS.Joker {
+    key = "yoclesh",
+    atlas = "yoclesh",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    -- A passive that other Jokers read, not a trigger; there is nothing to
+    -- copy, and pinning a pinned suit twice is still Hearts.
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        -- Bought mid-run, the round's suits were rolled before it arrived; the
+        -- wrappers above only catch the NEXT roll.
+        CelestasMod.yoclesh_pin()
+    end,
+
+    calculate = function(self, card, context)
+        -- ...and again as each blind is chosen, which covers a Yoclesh that
+        -- was debuffed when the round began and is not any more.
+        if context.setting_blind and not context.blueprint then
+            CelestasMod.yoclesh_pin()
+        end
     end,
 }

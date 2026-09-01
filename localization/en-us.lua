@@ -1200,7 +1200,8 @@ return {
             j_celesta_yoclesh = {
                 name = "Yoclesh",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "Jokers whose target {C:attention}suit{} changes",
+                    "always target {C:hearts}Hearts{} instead",
                 },
             },
             j_celesta_yokasiri = {
