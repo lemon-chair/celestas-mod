@@ -441,7 +441,7 @@ special("j_celesta_arar", "j_celesta_jaws", {
 
         if touched > 0 then
             return {
-                message = localize("k_plus_enhancement"),
+                message = localize("celesta_plus_enhancement"),
                 colour = G.C.SECONDARY_SET.Enhanced,
                 card = card,
             }
@@ -1313,7 +1313,7 @@ special("j_celesta_arar", "j_celesta_arielle", {
         end
 
         if touched > 0 then
-            return { message = localize("k_plus_enhancement"),
+            return { message = localize("celesta_plus_enhancement"),
                      colour = G.C.SECONDARY_SET.Enhanced, card = card }
         end
     end,
@@ -1924,7 +1924,7 @@ special("j_celesta_arielle", "j_celesta_ironmouse", {
             and not context.blueprint then
             state.e_mult = state.e_mult + state.e_mult_gain
             return {
-                message = localize { type = "variable", key = "a_powmult",
+                message = localize { type = "variable", key = "celesta_powmult",
                                      vars = { state.e_mult } },
                 colour = G.C.MULT, card = card,
             }

@@ -4338,7 +4338,7 @@ SMODS.Joker {
 
             if converted > 0 then
                 return {
-                    message = localize("k_plus_enhancement"),
+                    message = localize("celesta_plus_enhancement"),
                     colour = G.C.SECONDARY_SET.Enhanced,
                     card = card,
                 }
@@ -7294,9 +7294,12 @@ SMODS.Joker {
             card.ability.extra_value = (card.ability.extra_value or 0)
                 + card.ability.extra.dollars * died
             if card.set_cost then card:set_cost() end
+            -- What went up is what this card SELLS for, not the player's
+            -- money, and "Value Up!" is what the game says for that - the same
+            -- message vanilla's Egg uses for the same move (card.lua:2989).
+            -- A +$n here would read as cash that never arrived.
             return {
-                message = localize { type = "variable", key = "a_dollars",
-                                     vars = { card.ability.extra.dollars * died } },
+                message = localize("k_val_up"),
                 colour = G.C.MONEY,
                 card = card,
             }
@@ -7515,13 +7518,12 @@ SMODS.Joker {
         SMODS.destroy_cards(target)
         if payout <= 0 then return end
 
-        ease_dollars(payout)
-        return {
-            message = localize { type = "variable", key = "a_dollars",
-                                 vars = { payout } },
-            colour = G.C.MONEY,
-            card = card,
-        }
+        -- Handed back as `dollars` rather than eased here and captioned by
+        -- hand: SMODS pays it, juices the card, writes the +$n itself, and
+        -- raises money_altered so anything watching the player's money sees
+        -- this (utils.lua:1239). A bare ease_dollars is silent on that last
+        -- one.
+        return { dollars = payout, card = card }
     end,
 }
 

@@ -910,6 +910,19 @@ LOC_TAIL = '''        },
             celesta_aces = "All Aces of Spades!",
             celesta_stored = "Stored!",
             celesta_plus_consumable = "+Consumable",
+            celesta_plus_enhancement = "+Enhancement",
+        },
+        -- Substituted messages. localize hands back the literal 'ERROR' for a
+        -- key no loaded dictionary has (misc_functions.lua:1726), and that
+        -- goes straight into the floating text over the Joker, so anything
+        -- this mod says has to be a key this mod ships.
+        --
+        -- ^Mult is Talisman's arithmetic but not Talisman's text - the entry
+        -- that spells it lives in Cryptid, which is not a dependency, so
+        -- borrowing a_powmult from it meant the message read ERROR for anyone
+        -- without Cryptid installed.
+        v_dictionary = {
+            celesta_powmult = "^#1# Mult",
         },
     },
 }
