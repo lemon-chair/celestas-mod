@@ -97,7 +97,22 @@ local function description_nodes(def)
             ("The Special Merges tab could not describe %s"):format(tostring(def.key)))
         return nil
     end
-    return aut.main
+
+    -- aut.main is a list of RAW rows - each is a list of text parts, not a UI
+    -- node - and every consumer in the game turns them into nodes before
+    -- drawing them (desc_from_rows, UI_definitions.lua:1126). Splicing them
+    -- straight in left each row without an `n`, so UIElement's colour
+    -- defaulting, which keys off the node type, matched nothing and left
+    -- config.colour nil; ui.lua:691 indexes that unconditionally.
+    --
+    -- Wrapped by hand rather than through desc_from_rows because that one also
+    -- puts a white card-description panel around the lot, which is not what a
+    -- row inside this page's own black entry should look like.
+    local rows = {}
+    for _, row in ipairs(aut.main) do
+        rows[#rows + 1] = { n = G.UIT.R, config = { align = "cl" }, nodes = row }
+    end
+    return rows
 end
 
 local function entry_node(def)
