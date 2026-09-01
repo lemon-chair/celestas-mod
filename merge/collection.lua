@@ -71,6 +71,71 @@ local function text_row(str, colour, scale)
     }
 end
 
+-- A card description is written to be read off the white panel the game draws
+-- one on, so every part of one that was not given a colour of its own comes
+-- back G.C.UI.TEXT_DARK - HEX("4F6367"), a near-black slate. This page puts
+-- them on the entry's own dark box instead, where that is all but invisible.
+--
+-- So the dark default, and only the dark default, is swapped for a light grey.
+-- Anything the description coloured on purpose - an {C:attention} highlight, a
+-- red X-Mult chip - is left exactly as written, because those are the parts
+-- carrying the meaning and they read fine already.
+local DESC_GREY = { 0.77, 0.80, 0.82, 1 }
+
+--- Is this the unstyled default rather than a colour someone chose?
+--- loc_colour hands back G.C.UI.TEXT_DARK itself, so identity catches it; the
+--- value check is there for a copy made by another mod's hook.
+local function is_default_dark(colour)
+    local dark = G.C.UI.TEXT_DARK
+    -- Checked before the identity test: were both nil, nil == nil would call
+    -- every uncoloured node dark and repaint the whole page.
+    if type(dark) ~= "table" then return false end
+    if colour == dark then return true end
+    if type(colour) ~= "table" then return false end
+    for i = 1, 4 do
+        local got, want = colour[i], dark[i]
+        -- Not every table reaching here is a colour: a description part can
+        -- carry any table a mod put in it, and subtracting a string errors.
+        if type(got) ~= "number" or type(want) ~= "number" then return false end
+        if math.abs(got - want) > 0.001 then return false end
+    end
+    return true
+end
+
+--- Walks one description part and recolours the default dark wherever it sits.
+--- Never mutates a shared colour table - the reference is replaced, so
+--- G.C.UI.TEXT_DARK is left alone for the rest of the game.
+local function lighten_text(node)
+    if type(node) ~= "table" then return end
+
+    local config = node.config
+    if type(config) == "table" then
+        if node.n == G.UIT.T and is_default_dark(config.colour) then
+            config.colour = DESC_GREY
+        end
+        -- A {E:_} part is a DynaText, which reads its colours table at draw
+        -- time rather than baking them in, so swapping an entry is enough.
+        local object = config.object
+        if type(object) == "table" and type(object.colours) == "table" then
+            for i, colour in ipairs(object.colours) do
+                if is_default_dark(colour) then object.colours[i] = DESC_GREY end
+            end
+        end
+    end
+
+    -- A part that brings its own background - an {X:mult} chip is a coloured
+    -- container round its text - is not sitting on the dark box, so its text
+    -- is left to read against the colour picked for it, exactly as the game
+    -- draws the same chip everywhere else.
+    if type(config) == "table" and node.n == G.UIT.C and config.colour then
+        return
+    end
+
+    if type(node.nodes) == "table" then
+        for _, child in ipairs(node.nodes) do lighten_text(child) end
+    end
+end
+
 --- The pair's own description, as the game would draw it anywhere else.
 ---
 --- Built through generate_card_ui, the same call merge/bind.lua uses for the
@@ -88,6 +153,21 @@ local function description_nodes(def)
             vars = res.vars
         end
     end
+
+    -- no_name is not cosmetic here, it is the whole of a leak.
+    --
+    -- generate_card_ui builds the card's NAME as well as its description
+    -- (common_events.lua:2436), and a name is built out of DynaText, which
+    -- puts itself into G.I.MOVEABLE the moment it is constructed
+    -- (text.lua:60). Game:draw then draws every MOVEABLE that has no parent,
+    -- at the room origin (game.lua:2767).
+    --
+    -- This page wants the description and nothing else, so it dropped the name
+    -- on the floor - and a dropped name is never parented and never removed.
+    -- One per described pair per build meant every page turn painted another
+    -- copy of the pair's title into the corner of the screen, on top of the
+    -- last, for the rest of the session. Asking for no name never builds it.
+    vars.no_name = true
 
     local ok, aut = pcall(generate_card_ui,
         { set = "Other", key = "celesta_bind_" .. tostring(def.key) },
@@ -110,6 +190,7 @@ local function description_nodes(def)
     -- row inside this page's own black entry should look like.
     local rows = {}
     for _, row in ipairs(aut.main) do
+        for _, part in ipairs(row) do lighten_text(part) end
         rows[#rows + 1] = { n = G.UIT.R, config = { align = "cl" }, nodes = row }
     end
     return rows
@@ -205,17 +286,10 @@ end
 G.FUNCS.celesta_merges_page = function(args)
     page = (args and args.cycle_config and args.cycle_config.current_option) or 1
 
-    -- G.FUNCS.overlay_menu does not take down the overlay it replaces: it
-    -- assigns G.OVERLAY_MENU a fresh UIBox over the old one
-    -- (button_callbacks.lua:1345). Nothing else in the game notices, because
-    -- nothing else opens an overlay from inside one - but a page turn does,
-    -- and every turn left the previous page's UIBox alive and still drawing,
-    -- orphaned at the screen origin. That is the stack of titles that built up
-    -- in the corner.
-    if G.OVERLAY_MENU then
-        G.OVERLAY_MENU:remove()
-        G.OVERLAY_MENU = nil
-    end
+    -- The previous page's UIBox is not taken down here: G.FUNCS.overlay_menu
+    -- already removes whatever it is replacing (button_callbacks.lua:1331).
+    -- The titles that used to pile up in the corner were never the old page
+    -- still drawing - see the note on no_name in description_nodes.
     G.FUNCS.overlay_menu { definition = build() }
 end
 
