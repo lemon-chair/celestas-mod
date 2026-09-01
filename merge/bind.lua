@@ -1591,25 +1591,6 @@ local function koko_sevens(card, count, seed, editioned)
     })
 end
 
--- KokoNuts + Camila: KokoNuts's Lucky 7 of Spades, and Camila hands editions
--- to the cards it touches. The seven arrives wearing one.
-special("j_celesta_kokonuts", "j_celesta_camila", {
-    key = "koko_camila",
-
-    loc_vars = function(def, card, state)
-        return { vars = {} }
-    end,
-
-    calculate = function(def, card, context, state)
-        -- The getting_sliced guard is KokoNuts's own: a Joker destroyed this
-        -- frame must not still be making cards.
-        if context.setting_blind and not context.blueprint
-            and not (context.blueprint_card or card).getting_sliced then
-            koko_sevens(card, 1, "celesta_bind_koko_camila", true)
-        end
-    end,
-})
-
 -- KokoNuts + Maya: KokoNuts's seven, and Maya's coin flip decides whether two
 -- more come with it.
 special("j_celesta_kokonuts", "j_celesta_maya", {
@@ -1812,6 +1793,152 @@ special("j_celesta_boosfer", "j_celesta_boosfer", {
 
         return { message = localize("k_plus_spectral"), colour = G.C.SECONDARY_SET.Spectral,
                  card = card }
+    end,
+})
+
+-- Camila + KokoNuts: KokoNuts deals in Sevens of Spades and Camila hands
+-- editions back. A hand that is all Spades and adds up to seventeen becomes
+-- Lucky and Polychrome, every card of it.
+--
+-- Seventeen is read off base.nominal - the card's CHIP value, so an Ace is 11
+-- and a face is 10 - which is what "sum" means for a hand of cards and what
+-- AxialMatt already reads a rank as. Seven and Ten, or two Sevens and a Three.
+
+--- The sum of a scoring hand, or nil when it is not all one suit.
+local function spade_total(scoring, suit)
+    if type(scoring) ~= "table" or #scoring == 0 then return nil end
+    local total = 0
+    for _, played in ipairs(scoring) do
+        if not (played.is_suit and played:is_suit(suit)) then return nil end
+        total = total + ((played.base and played.base.nominal) or 0)
+    end
+    return total
+end
+
+special("j_celesta_camila", "j_celesta_kokonuts", {
+    key = "camila_koko",
+    config = { total = 17 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.total } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.before and not context.blueprint) then return end
+        if spade_total(context.scoring_hand, "Spades") ~= state.total then return end
+
+        local touched = 0
+        for _, played in ipairs(context.scoring_hand) do
+            local target = played
+            touched = touched + 1
+            G.E_MANAGER:add_event(Event {
+                func = function()
+                    -- Card:set_ability ends with G.GAME.blind:debuff_card, and
+                    -- The Pillar debuffs anything already played this Ante -
+                    -- which every card in this hand was, moments ago. Without
+                    -- this the reward would kill the hand it rewarded.
+                    CelestasMod.unjudged(target, function()
+                        target:set_ability(G.P_CENTERS.m_lucky, nil, true)
+                    end)
+                    target:set_edition({ polychrome = true }, true)
+                    target:juice_up(0.3, 0.5)
+                    return true
+                end
+            })
+        end
+
+        if touched > 0 then
+            return { message = localize("k_upgrade_ex"),
+                     colour = G.C.SECONDARY_SET.Enhanced, card = card }
+        end
+    end,
+})
+
+-- SonneFlower + Birdyovo: SonneFlower is the Leaf suit's, Birdyovo counts
+-- scored cards. This counts Leaves, and keeps counting only while they keep
+-- coming.
+--
+-- The streak is per HAND, not per card: a hand with no Leaf in it resets the
+-- whole thing, and a hand with three adds three lots. Read in context.before,
+-- which sees the scoring hand whole and lands before any of it scores, so a
+-- hand that extends the streak is paid for itself.
+special("j_celesta_sonneflower", "j_celesta_birdyovo", {
+    key = "sonne_birdy",
+    config = { x_mult = 1, x_mult_gain = 0.7 },
+
+    loc_vars = function(def, card, state)
+        local name, colour = CelestasMod.suit_name_and_colour(
+            CelestasMod.LEAF_SUIT, CelestasMod.LEAF_COLOUR, true)
+        return { vars = { state.x_mult_gain, state.x_mult, name,
+                          colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.before and not context.blueprint then
+            local leaves = 0
+            for _, played in ipairs(context.scoring_hand or {}) do
+                if played.is_suit and played:is_suit(CelestasMod.LEAF_SUIT) then
+                    leaves = leaves + 1
+                end
+            end
+
+            if leaves == 0 then
+                if state.x_mult <= 1 then return end
+                state.x_mult = 1
+                return { message = localize("k_reset"), colour = G.C.RED,
+                         card = card }
+            end
+
+            state.x_mult = state.x_mult + state.x_mult_gain * leaves
+            return {
+                message = localize { type = "variable", key = "a_xmult",
+                                     vars = { state.x_mult } },
+                colour = G.C.MULT, card = card,
+            }
+        end
+
+        if context.joker_main and state.x_mult > 1 then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+-- Arielle + Ironmouse: every card counts as every suit, and every card counts.
+--
+-- ^Mult, so it needs Talisman, and the check is made at score time rather than
+-- at load for the reason Vienna gives - mods load in priority order, and
+-- Talisman may not have run when this file did. Card.get_chip_e_mult is the
+-- method Talisman adds and nothing else does.
+special("j_celesta_arielle", "j_celesta_ironmouse", {
+    key = "arielle_ironmouse",
+    config = { e_mult = 1, e_mult_gain = 0.03 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.e_mult_gain, state.e_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- Counted per scored card. An unscored card arrives as 'unscored', and
+        -- the end-of-round pass over the hand is G.hand, so neither reaches it.
+        if context.individual and context.cardarea == G.play
+            and not context.blueprint then
+            state.e_mult = state.e_mult + state.e_mult_gain
+            return {
+                message = localize { type = "variable", key = "a_powmult",
+                                     vars = { state.e_mult } },
+                colour = G.C.MULT, card = card,
+            }
+        end
+
+        if context.joker_main and state.e_mult > 1 then
+            if Card.get_chip_e_mult == nil then
+                CelestasMod.warn_once("arielle_ironmouse_no_talisman",
+                    "Arielle + Ironmouse scores ^Mult, which needs Talisman; "
+                    .. "without it the pair does nothing")
+                return
+            end
+            return { e_mult = state.e_mult }
+        end
     end,
 })
 

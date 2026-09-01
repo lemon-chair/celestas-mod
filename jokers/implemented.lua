@@ -3981,14 +3981,9 @@ SMODS.Joker {
 ---
 --- Used by Occi as well, which rewrites the same cards to Aces of Spades.
 local function convert_played_base(played, suit, rank)
-    -- A card with no ability table has no flag to hide, and nothing to put
-    -- back. Guarded rather than assumed: every real playing card has one, but
-    -- this runs against whatever is in the scoring hand.
-    local ability = played.ability
-    local flag = ability and ability.played_this_ante
-    if ability then ability.played_this_ante = nil end
-    SMODS.change_base(played, suit, rank)
-    if ability then ability.played_this_ante = flag end
+    CelestasMod.unjudged(played, function()
+        SMODS.change_base(played, suit, rank)
+    end)
 end
 
 local function convert_scoring_to(context, suit)
@@ -7186,5 +7181,380 @@ SMODS.Joker {
                 card = card,
             }
         end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- JuniperActias [Common] - grows on every Star that joins the deck.
+--------------------------------------------------------------------------------
+--
+-- Counted rather than surveyed: this is about cards ARRIVING, not about how
+-- many the deck holds, so converting a Heart into a Star with a Tarot does not
+-- pay - nothing was added. context.playing_card_added is raised once per batch
+-- with the cards in context.cards (misc_functions.lua:1582), which is where
+-- vanilla Hologram counts the same event.
+--
+-- base.suit rather than is_suit, for the reason CelestasMod.suit_in_deck gives:
+-- is_suit routes through SMODS.smeared_check, and Arielle widens that to match
+-- everything, which would pay for every card added to every deck.
+
+SMODS.Joker {
+    key = "juniperactias",
+    atlas = "juniperactias",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { x_chips = 1, x_chip_gain = 0.1 } },
+
+    in_pool = star_gated,
+
+    loc_vars = function(self, info_queue, card)
+        local name, colour = star_name_and_colour()
+        return { vars = { card.ability.extra.x_chip_gain,
+                          card.ability.extra.x_chips,
+                          name, colours = { colour } } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.playing_card_added and not context.blueprint
+            and not card.getting_sliced then
+            local added = 0
+            for _, new_card in ipairs(context.cards or {}) do
+                local base = new_card.base
+                if base and base.suit == CelestasMod.STARS_SUIT then
+                    added = added + 1
+                end
+            end
+            if added == 0 then return end
+
+            card.ability.extra.x_chips = card.ability.extra.x_chips
+                + card.ability.extra.x_chip_gain * added
+            return {
+                message = localize { type = "variable", key = "a_xchips",
+                                     vars = { card.ability.extra.x_chips } },
+                colour = G.C.CHIPS,
+                card = card,
+            }
+        end
+
+        if context.joker_main and card.ability.extra.x_chips > 1 then
+            return { x_chips = card.ability.extra.x_chips }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Nekrolina [Common] - worth more for every card that dies.
+--------------------------------------------------------------------------------
+--
+-- Sell value is not returned from a calculate; it is read off the card. Vanilla
+-- computes it in Card:set_cost as
+--     self.sell_cost = math.max(1, math.floor(self.cost/2)) + (self.ability.extra_value or 0)
+-- so extra_value is the supported field, the one Egg and Gift Card both write.
+-- Ruben Sargasm uses it too, but for a value it recomputes every frame; this
+-- one is banked, so it is written when the cards die and set_cost called there
+-- and then.
+
+SMODS.Joker {
+    key = "nekrolina",
+    atlas = "nekrolina",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    -- The value belongs to this card; a copy has nothing to add to it.
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { dollars = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.dollars,
+                          card.ability.extra_value or 0 } }
+    end,
+
+    calculate = function(self, card, context)
+        -- remove_playing_cards is raised once after the destroy pass with every
+        -- card that died, which is where vanilla Caino counts its face cards.
+        -- Counting here catches a death however it happened - eaten, broken,
+        -- shattered - rather than one route into it.
+        if context.remove_playing_cards and not context.blueprint then
+            local died = #(context.removed or {})
+            if died == 0 then return end
+
+            card.ability.extra_value = (card.ability.extra_value or 0)
+                + card.ability.extra.dollars * died
+            if card.set_cost then card:set_cost() end
+            return {
+                message = localize { type = "variable", key = "a_dollars",
+                                     vars = { card.ability.extra.dollars * died } },
+                colour = G.C.MONEY,
+                card = card,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Rainhoe [Uncommon] - interest, tripled, on a wet round.
+--------------------------------------------------------------------------------
+--
+-- Interest is not a Joker effect. The cash-out reads G.GAME.interest_amount
+-- directly (state_events.lua:1192), so the only way to change a round's
+-- interest is to have changed that number before the screen is built.
+--
+-- Applied in the end_of_round pass rather than at setting_blind, which is when
+-- the Downpour starts. That is not tidiness: Aquwa raises the Downpour from its
+-- OWN setting_blind, so whether Rainhoe saw it would depend on which of the two
+-- sat further left in the row. By the end of the round the question has one
+-- answer - and the Arena is still up, because it is cleared on entering the
+-- shop, not at the cash-out.
+--
+-- Taken back at ending_shop, which is after the payout and before the next
+-- round, so the multiplier cannot compound across rounds.
+
+--- Brings the interest bonus in line with whether it should be applied.
+--- Written as a difference against what this card has already added, the way
+--- Kairyu's hand size is: every path in and out goes through here, so the card
+--- can be sold, debuffed and reloaded without the number drifting.
+local function rainhoe_hold(card, on)
+    local extra = card.ability.extra
+    local applied = extra.applied or 0
+    if not G.GAME then return false end
+
+    if on then
+        if applied > 0 then return false end
+        local add = (G.GAME.interest_amount or 0) * (extra.scale - 1)
+        if add <= 0 then return false end
+        G.GAME.interest_amount = G.GAME.interest_amount + add
+        extra.applied = add
+        return true
+    end
+
+    if applied <= 0 then return false end
+    G.GAME.interest_amount = (G.GAME.interest_amount or 0) - applied
+    extra.applied = 0
+    return true
+end
+
+SMODS.Joker {
+    key = "rainhoe",
+    atlas = "rainhoe",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    -- A copy would triple the interest a second time, off one round.
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { scale = 3, applied = 0 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.scale } }
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        rainhoe_hold(card, false)
+    end,
+
+    calculate = function(self, card, context)
+        -- main_eval is the once-per-round Joker pass.
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            local wet = CelestasMod.Arena and CelestasMod.Arena.is_active("downpour")
+            if rainhoe_hold(card, wet and true or false) then
+                return {
+                    message = localize("celesta_downpour"),
+                    colour = G.C.BLUE,
+                    card = card,
+                }
+            end
+        end
+
+        if context.ending_shop and not context.blueprint then
+            rainhoe_hold(card, false)
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Nyanners [Common] - paid by the company it keeps.
+--------------------------------------------------------------------------------
+--
+-- Counted live off the row rather than banked, the way Bricky counts the deck:
+-- "for each owned Joker" is a question about the row as it is NOW, so selling
+-- one takes the Chips back rather than leaving them earned.
+--
+-- A merged Joker counts twice. It is two Jokers in one slot, which is the whole
+-- of what Bind does, and counting it once would make merging a way to lose
+-- Chips.
+
+--- How many Jokers the row is worth, merges counted double.
+local function nyanners_count()
+    local total = 0
+    for _, joker in ipairs((G.jokers and G.jokers.cards) or {}) do
+        total = total + 1
+        if CelestasMod.Bind and CelestasMod.Bind.is_merged(joker) then
+            total = total + 1
+        end
+    end
+    return total
+end
+
+SMODS.Joker {
+    key = "nyanners",
+    atlas = "nyanners",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { chips = 15 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.chips,
+                          card.ability.extra.chips * 2,
+                          card.ability.extra.chips * nyanners_count() } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.joker_main then
+            local total = card.ability.extra.chips * nyanners_count()
+            if total > 0 then return { chips = total } end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- ObKatieKat [Rare] - paid for leaving no room.
+--------------------------------------------------------------------------------
+--
+-- ^Chips, which only Talisman can score. Asked at score time rather than at
+-- load for the reason Vienna gives: mods load in priority order, and Talisman
+-- may not have run when this file does.
+
+SMODS.Joker {
+    key = "obkatiekat",
+    atlas = "obkatiekat",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { e_chips = 1.2 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.e_chips } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.joker_main then
+            local row = G.jokers
+            if not (row and row.cards and row.config) then return end
+            -- A Negative Joker raises card_limit with it, so "full" stays the
+            -- honest question rather than a fixed five.
+            if #row.cards < (row.config.card_limit or 0) then return end
+            if not exponential_supported() then return end
+            return { e_chips = card.ability.extra.e_chips }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Trickywi [Common] - eats its neighbour on the way out of the shop.
+--------------------------------------------------------------------------------
+--
+-- The one to its LEFT, so the choice is a placement: sliding Trickywi along the
+-- row picks a different victim, and putting it leftmost feeds it nothing.
+--
+-- Paid before the meal, because sell_cost is read off the card and a card that
+-- has been removed is not one to read anything off. SMODS.destroy_cards is what
+-- does the removing: it respects eternal and undestroyable stickers and plays
+-- the dissolve, so an eternal neighbour is refused rather than eaten - and the
+-- payout is withheld with it, since nothing was destroyed.
+
+SMODS.Joker {
+    key = "trickywi",
+    atlas = "trickywi",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    -- A copy would eat a second Joker, and the row this reads is position, not
+    -- an effect worth repeating.
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { scale = 2 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.scale } }
+    end,
+
+    calculate = function(self, card, context)
+        if not (context.ending_shop and not context.blueprint) then return end
+
+        local row = G.jokers and G.jokers.cards
+        if not row then return end
+        local index
+        for i, joker in ipairs(row) do
+            if joker == card then index = i break end
+        end
+        local target = index and row[index - 1]
+        if not target or target == card then return end
+        -- Asked before destroying, so an eternal neighbour costs nothing: the
+        -- same question SMODS.destroy_cards is about to answer for itself.
+        if SMODS.is_eternal(target) then return end
+
+        local payout = (target.sell_cost or 0) * card.ability.extra.scale
+        SMODS.destroy_cards(target)
+        if payout <= 0 then return end
+
+        ease_dollars(payout)
+        return {
+            message = localize { type = "variable", key = "a_dollars",
+                                 vars = { payout } },
+            colour = G.C.MONEY,
+            card = card,
+        }
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Grandpaw Shao [Uncommon] - every number is an Ace.
+--------------------------------------------------------------------------------
+--
+-- Rank equivalence has one gate, and it is Card:get_id. evaluate_poker_hand
+-- reads every card through it (misc_functions.lua:555 and :598), and so does
+-- every Joker that asks what a card is, so widening it there covers pairs,
+-- Five of a Kind, Baron, the lot from one place - the same shape Arielle uses
+-- for suits through SMODS.smeared_check.
+--
+-- Number cards are 2 through 10. Faces and Aces are already what they are, and
+-- a Stone Card answers with a large negative number rather than a rank, so the
+-- range check leaves it alone without having to know about it.
+--
+-- What this does NOT change is what a card is worth: chips come from
+-- base.nominal, so a Two still scores two. This makes hands, not Chips.
+
+local SHAO_KEY = "j_celesta_shaoanvt"
+
+local celesta_shao_get_id_ref = Card.get_id
+function Card:get_id()
+    local id = celesta_shao_get_id_ref(self)
+    if type(id) == "number" and id >= 2 and id <= 10
+        and next(SMODS.find_card(SHAO_KEY)) then
+        return 14
+    end
+    return id
+end
+
+SMODS.Joker {
+    key = "shaoanvt",
+    atlas = "shaoanvt",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    -- A passive the rank lookup reads, not a trigger; there is nothing to copy.
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
     end,
 }

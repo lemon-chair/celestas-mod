@@ -36,6 +36,36 @@ function CelestasMod.is_round_joker(card)
     return (key and CelestasMod.ROUND_JOKERS[key]) and true or false
 end
 
+--------------------------------------------------------------------------------
+-- Rewriting a card that is being played
+--------------------------------------------------------------------------------
+
+--- Runs `fn` without letting the Blind re-judge `card` as one already played
+--- this Ante.
+---
+--- Card:set_base and Card:set_ability BOTH end with
+--- `G.GAME.blind:debuff_card(self)` (card.lua:143 and :365), and The Pillar
+--- debuffs anything carrying ability.played_this_ante - a flag every card in
+--- the hand is given before evaluate_play has run at all
+--- (state_events.lua:481). Vanilla never re-judges a card during the hand it
+--- is being played in, so nothing in the base game trips over it; anything
+--- that converts or enhances a played card does, and the whole hand goes dead.
+---
+--- Only that one flag is hidden, and only across the call. Every other rule a
+--- Blind has - a debuffed suit, rank, face or enhancement - is still applied,
+--- and applied to the card as it now IS, which is what should happen to a card
+--- rewritten into the thing the Blind is punishing. The flag goes straight
+--- back, so the card is still debuffed at the next Blind, which is what The
+--- Pillar is for.
+function CelestasMod.unjudged(card, fn)
+    local ability = card and card.ability
+    local flag = ability and ability.played_this_ante
+    if ability then ability.played_this_ante = nil end
+    local ok, err = pcall(fn)
+    if ability then ability.played_this_ante = flag end
+    if not ok then error(err, 0) end
+end
+
 -- Hooks
 
 local loc_colour_ref = loc_colour

@@ -537,9 +537,11 @@ return {
                 },
             },
             j_celesta_juniperactias = {
-                name = "Juniperactias",
+                name = "Juniper Actias",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "This Joker gains {X:chips,C:white}X#1#{} Chips for",
+                    "each {V:1}#3#{} card added to your deck",
+                    "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
                 },
             },
             j_celesta_kael = {
@@ -770,7 +772,9 @@ return {
             j_celesta_nekrolina = {
                 name = "Nekrolina",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "This Joker gains {C:money}$#1#{} of sell",
+                    "value for each card {C:attention}destroyed{}",
+                    "{C:inactive}(Currently {C:money}+$#2#{C:inactive})",
                 },
             },
             j_celesta_neuro = {
@@ -806,13 +810,16 @@ return {
             j_celesta_nyanners = {
                 name = "Nyanners",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:chips}+#1#{} Chips for each Joker you own,",
+                    "or {C:chips}+#2#{} for each {C:attention}merged{} Joker",
+                    "{C:inactive}(Currently {C:chips}+#3#{C:inactive} Chips)",
                 },
             },
             j_celesta_obkatiekat = {
-                name = "Obkatiekat",
+                name = "ObKatieKat",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{X:chips,C:white}^#1#{} Chips if every",
+                    "{C:attention}Joker{} slot is filled",
                 },
             },
             j_celesta_occi = {
@@ -910,7 +917,8 @@ return {
             j_celesta_rainhoe = {
                 name = "Rainhoe",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:attention}X#1#{} interest at end of round",
+                    "if a {C:blue}Downpour{} was active",
                 },
             },
             j_celesta_rainyrentyn = {
@@ -991,9 +999,10 @@ return {
                 },
             },
             j_celesta_shaoanvt = {
-                name = "Shaoanvt",
+                name = "Grandpaw Shao",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "All {C:attention}number cards{} are",
+                    "considered {C:attention}Aces{}",
                 },
             },
             j_celesta_shenpai = {
@@ -1124,7 +1133,9 @@ return {
             j_celesta_trickywi = {
                 name = "Trickywi",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "At the end of the shop, destroys the",
+                    "Joker to the {C:attention}left{} and earns",
+                    "{C:attention}#1#X{} its {C:money}sell value{}",
                 },
             },
             j_celesta_unnamed = {
@@ -1614,14 +1625,6 @@ return {
                     "retriggered {C:attention}#2#{} additional time",
                 },
             },
-            celesta_bind_koko_camila = {
-                name = "KokoNuts + Camila",
-                text = {
-                    "At the start of each round, adds a",
-                    "{C:attention}Lucky 7 of Spades{} with a random",
-                    "{C:dark_edition}edition{} to your deck",
-                },
-            },
             celesta_bind_koko_maya = {
                 name = "KokoNuts + Maya",
                 text = {
@@ -1670,6 +1673,31 @@ return {
                     "{C:green}#1# in #2#{} chance to create",
                     "{C:spectral}The Soul{}",
                     "{C:inactive}(Must have room)",
+                },
+            },
+            celesta_bind_camila_koko = {
+                name = "Camila + KokoNuts",
+                text = {
+                    "If every scoring card is a {C:spades}Spade{} and",
+                    "they total {C:attention}#1#{}, they become {C:attention}Lucky{}",
+                    "and {C:dark_edition}Polychrome{}",
+                },
+            },
+            celesta_bind_sonne_birdy = {
+                name = "SonneFlower + Birdyovo",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult per",
+                    "consecutively scored {V:1}#3#{} card",
+                    "{C:inactive}Resets if a hand scores none",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_arielle_ironmouse = {
+                name = "Arielle + Ironmouse",
+                text = {
+                    "This Joker gains {X:mult,C:white}^#1#{} Mult",
+                    "each time a card is scored",
+                    "{C:inactive}(Currently {X:mult,C:white}^#2#{C:inactive} Mult)",
                 },
             },
             celesta_ectoplast_seal = {

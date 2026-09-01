@@ -38,6 +38,15 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
 # Add corrections here; anything absent falls back to the mechanical rule.
 DISPLAY_NAMES = {
     "auteru": "Auteru",
+    "juniperactias": "Juniper Actias",
+    "obkatiekat": "ObKatieKat",
+    "nekrolina": "Nekrolina",
+    "nyanners": "Nyanners",
+    "rainhoe": "Rainhoe",
+    "trickywi": "Trickywi",
+    "shaoanvt": "Grandpaw Shao",
+    "saiiren": "Saiiren",
+    "blank_joker": "Blank Joker",
     "boosfer": "Boosfer",
     "ben": "Ben",
     "rynxryn": "RYNxRYN",
@@ -688,14 +697,6 @@ LOC_TAIL = '''        },
                     "retriggered {C:attention}#2#{} additional time",
                 },
             },
-            celesta_bind_koko_camila = {
-                name = "KokoNuts + Camila",
-                text = {
-                    "At the start of each round, adds a",
-                    "{C:attention}Lucky 7 of Spades{} with a random",
-                    "{C:dark_edition}edition{} to your deck",
-                },
-            },
             celesta_bind_koko_maya = {
                 name = "KokoNuts + Maya",
                 text = {
@@ -744,6 +745,31 @@ LOC_TAIL = '''        },
                     "{C:green}#1# in #2#{} chance to create",
                     "{C:spectral}The Soul{}",
                     "{C:inactive}(Must have room)",
+                },
+            },
+            celesta_bind_camila_koko = {
+                name = "Camila + KokoNuts",
+                text = {
+                    "If every scoring card is a {C:spades}Spade{} and",
+                    "they total {C:attention}#1#{}, they become {C:attention}Lucky{}",
+                    "and {C:dark_edition}Polychrome{}",
+                },
+            },
+            celesta_bind_sonne_birdy = {
+                name = "SonneFlower + Birdyovo",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult per",
+                    "consecutively scored {V:1}#3#{} card",
+                    "{C:inactive}Resets if a hand scores none",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_arielle_ironmouse = {
+                name = "Arielle + Ironmouse",
+                text = {
+                    "This Joker gains {X:mult,C:white}^#1#{} Mult",
+                    "each time a card is scored",
+                    "{C:inactive}(Currently {X:mult,C:white}^#2#{C:inactive} Mult)",
                 },
             },
             celesta_ectoplast_seal = {
