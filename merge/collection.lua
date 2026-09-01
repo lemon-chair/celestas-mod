@@ -290,7 +290,26 @@ G.FUNCS.celesta_merges_page = function(args)
     -- already removes whatever it is replacing (button_callbacks.lua:1331).
     -- The titles that used to pile up in the corner were never the old page
     -- still drawing - see the note on no_name in description_nodes.
-    G.FUNCS.overlay_menu { definition = build() }
+    --
+    -- Opened flat, and without the shake.
+    --
+    -- An overlay defaults to being placed ten units low and then retargeted to
+    -- the middle, so it slides up as it appears, and it bumps G.ROOM.jiggle on
+    -- the way (button_callbacks.lua:1339 and :1352). That reads as the menu
+    -- arriving, which is right when it is arriving - the tab opening below
+    -- keeps both. A page turn is not an arrival: the same box is still there
+    -- with different rows in it, and flying it up from the bottom every time
+    -- an arrow is pressed is a lot of movement to read a list through.
+    --
+    -- A zero offset means the box is built where it belongs, and since a
+    -- Moveable starts with its visible transform equal to its real one
+    -- (moveable.lua:20), there is nothing left to ease.
+    local jiggle = G.ROOM and G.ROOM.jiggle
+    G.FUNCS.overlay_menu {
+        definition = build(),
+        config = { offset = { x = 0, y = 0 } },
+    }
+    if G.ROOM and jiggle then G.ROOM.jiggle = jiggle end
 end
 
 G.FUNCS.celesta_special_merges = function(e)
