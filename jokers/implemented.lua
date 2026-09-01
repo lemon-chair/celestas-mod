@@ -2564,37 +2564,103 @@ end
 -- it, and the game crashes indexing a nil card on the next hover. Everything
 -- past the arguments actually used is forwarded untouched, so another one
 -- appearing cannot break this again.
+-- A modded Joker's numbers do NOT arrive here.
+--
+-- specific_vars is what Card:generate_UIBox_ability_table worked out, and that
+-- function only knows vanilla Jokers - it is a chain of `elseif
+-- self.ability.name == 'Blueprint'` and friends. A modded centre matches none
+-- of them, so it passes nil, and the real numbers are fetched a layer deeper:
+-- generate_card_ui hands the centre to SMODS.Center:generate_ui, which calls
+-- the centre's OWN loc_vars and reads res.vars (game_object.lua:1194).
+--
+-- So this used to require specific_vars.vars to be a table, which for one of
+-- this mod's Jokers it never is. The whole display half was dead - on merged
+-- cards and unmerged ones alike - and the suite did not notice because its
+-- stand-in for generate_UIBox_ability_table invented the shape the real one
+-- does not produce.
+--
+-- The fix has to sit where the numbers actually are, so the centre's loc_vars
+-- is lent a scaling wrapper for exactly the length of this call and put back
+-- afterwards. Lent rather than replaced for good: another mod may hold a
+-- reference to it, and a Vedal sold mid-run has to stop mattering at once.
+
 local celesta_vedal_card_ui_ref = generate_card_ui
+
+-- Centres currently wearing the wrapper, so a nested describe - the info_queue
+-- pass re-enters generate_card_ui - cannot scale the same numbers twice.
+local vedal_scaling = setmetatable({}, { __mode = "k" })
+
+-- LuaJIT's global, table's in 5.4. The game is the former; the suites run the
+-- latter, and a wrapper that only compiles under one of them is a wrapper the
+-- tests cannot reach.
+local celesta_unpack = unpack or table.unpack
+
 function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges,
                           hide_desc, main_start, main_end, card, ...)
+    -- Captured rather than closed over: Lua will not let a nested function
+    -- read the enclosing one's `...`, and everything past `card` still has to
+    -- reach the real generate_card_ui untouched.
+    local rest = { n = select("#", ...), ... }
+    local function plain()
+        return celesta_vedal_card_ui_ref(_c, full_UI_table, specific_vars,
+                                         card_type, badges, hide_desc,
+                                         main_start, main_end, card,
+                                         celesta_unpack(rest, 1, rest.n))
+    end
+
     -- Only Jokers actually in the row: one in the shop is not owned yet, and
     -- advertising a boost it will not get until bought would be a lie.
     if not (card and card.area == G.jokers
         and type(_c) == "table" and _c.set == "Joker"
         and _c.key ~= "j_celesta_vedal"
+        and not vedal_scaling[_c]
         and CelestasMod.is_ours(_c)
-        and type(specific_vars) == "table" and type(specific_vars.vars) == "table"
         and vedal_active()) then
-        return celesta_vedal_card_ui_ref(_c, full_UI_table, specific_vars, card_type,
-                                         badges, hide_desc, main_start, main_end,
-                                         card, ...)
+        return plain()
     end
 
     -- numeric_vars, not scalable_vars: Vedal scales every number on one of
     -- this mod's Jokers, so the value-colour filter the Tattered wear uses is
-    -- the wrong question here. A count and a chance are numbers too.
+    -- the wrong question here. A count is a number too.
     local marked = CelestasMod.numeric_vars(_c.set, _c.key)
-    if marked then
+    if not marked then return plain() end
+
+    local scale = CelestasMod.VEDAL_SCALE
+
+    -- The vanilla-shaped path, kept: a caller that DOES pass vars in is still
+    -- answered, and this is the one that carries a debuffed card's flags.
+    if type(specific_vars) == "table" and type(specific_vars.vars) == "table" then
         local copy = {}
         for k, v in pairs(specific_vars) do copy[k] = v end
-        copy.vars = CelestasMod.scale_vars(specific_vars.vars, marked,
-                                           CelestasMod.VEDAL_SCALE)
+        copy.vars = CelestasMod.scale_vars(specific_vars.vars, marked, scale)
         specific_vars = copy
     end
 
-    return celesta_vedal_card_ui_ref(_c, full_UI_table, specific_vars, card_type,
-                                     badges, hide_desc, main_start, main_end,
-                                     card, ...)
+    local loc_vars_ref = _c.loc_vars
+    if type(loc_vars_ref) ~= "function" then return plain() end
+
+    vedal_scaling[_c] = true
+    _c.loc_vars = function(self, info_queue, target, ...)
+        local res = loc_vars_ref(self, info_queue, target, ...)
+        if type(res) == "table" and type(res.vars) == "table" then
+            -- Copied, not scaled in place: several loc_vars hand back a list
+            -- built straight off the card's ability, and scaling that would
+            -- change the real thing every time the card was hovered.
+            res.vars = CelestasMod.scale_vars(res.vars, marked, scale)
+        end
+        return res
+    end
+
+    local ok, out, post = pcall(plain)
+
+    -- Put back before anything else, including on the way out of an error:
+    -- leaving a Joker's loc_vars permanently wrapped would scale its numbers
+    -- again on the next hover, and again after that.
+    _c.loc_vars = loc_vars_ref
+    vedal_scaling[_c] = nil
+
+    if not ok then error(out, 0) end
+    return out, post
 end
 
 SMODS.Joker {
