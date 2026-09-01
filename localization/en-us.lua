@@ -1160,9 +1160,10 @@ return {
             j_celesta_vedal = {
                 name = "Vedal",
                 text = {
-                    "Multiplies every value other",
-                    "{C:attention}Jokers from this mod{} give",
-                    "by {X:mult,C:white}X#1#{}",
+                    "Every time another {C:attention}Joker",
+                    "{C:attention}from this mod{} triggers,",
+                    "multiplies every value it",
+                    "gives by {X:mult,C:white}X#1#{}",
                     "{C:inactive}(Cannot be copied)",
                 },
             },
