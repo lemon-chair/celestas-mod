@@ -2503,6 +2503,39 @@ function Card:calculate_joker(context, ...)
 end
 
 --------------------------------------------------------------------------------
+-- The payout that never goes through calculate
+--------------------------------------------------------------------------------
+--
+-- Every other trigger a Joker has - in a round, in the shop, at blind select,
+-- on sale, on a booster opening - arrives at Card:calculate_joker, because
+-- Steamodded rewrote each of those loops into SMODS.calculate_context and that
+-- ends up here (utils.lua:1902). The hook above therefore covers all of them
+-- already; there is no "only while scoring" to fix.
+--
+-- One thing does not come that way. A Joker that pays at the cash-out does it
+-- from Card:calculate_dollar_bonus (card.lua:1655), which returns a bare
+-- number and never builds an effect table at all - so the hook above cannot
+-- see it, and "every value" quietly meant "every value except the money",
+-- which is the one a player actually counts.
+--
+-- Wrapped here rather than folded into the hook above because it is a
+-- different function with a different shape: no context, no table, and a
+-- debuffed card answers nil rather than an empty effect.
+
+local celesta_vedal_dollar_ref = Card.calculate_dollar_bonus
+function Card:calculate_dollar_bonus(...)
+    local dollars = celesta_vedal_dollar_ref(self, ...)
+
+    if type(dollars) ~= "number" or dollars == 0 then return dollars end
+    if self.ability.set ~= "Joker" then return dollars end
+    if self.config.center.key == "j_celesta_vedal" then return dollars end
+    if not CelestasMod.is_ours(self.config.center) then return dollars end
+    if not vedal_active() then return dollars end
+
+    return dollars * CelestasMod.VEDAL_SCALE
+end
+
+--------------------------------------------------------------------------------
 -- Showing the boost on the Jokers it boosts
 --------------------------------------------------------------------------------
 
