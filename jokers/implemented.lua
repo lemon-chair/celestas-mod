@@ -5411,25 +5411,18 @@ end
 ---
 --- The fallback below is what runs without Cryptid, and only has to be right
 --- about base-game Jokers.
-local function yoka_scale(target, scale)
-    local ability = target and target.ability
+--- Multiplies the numbers in one ability table, in place.
+--- `deny` is consulted on top of YOKA_LEAVE_ALONE, for the fields a caller
+--- knows are not per-hand values.
+local function yoka_scale_ability(ability, scale, deny)
     if type(ability) ~= "table" then return false end
-    if not yoka_may_change(target) then return false end
-
-    if type(Cryptid) == "table" and type(Cryptid.manipulate) == "function" then
-        local ok = pcall(Cryptid.manipulate, target, { value = scale })
-        if ok then return true end
-        CelestasMod.warn_once("yoka_manipulate",
-            "Yoka Siri could not use Cryptid.manipulate; scaling by hand instead")
-    end
-
     local changed = 0
 
     local extra = ability.extra
     if type(extra) == "table" then
         for key, value in pairs(extra) do
             if type(value) == "number" and not YOKA_LEAVE_ALONE[key]
-                and not yoka_neutral(key, value) then
+                and not (deny and deny[key]) and not yoka_neutral(key, value) then
                 extra[key] = value * scale
                 changed = changed + 1
             end
@@ -5441,13 +5434,73 @@ local function yoka_scale(target, scale)
     for key in pairs(YOKA_FLAT_VALUES) do
         local value = ability[key]
         if type(value) == "number" and value ~= 0
-            and not yoka_neutral(key, value) then
+            and not (deny and deny[key]) and not yoka_neutral(key, value) then
             ability[key] = value * scale
             changed = changed + 1
         end
     end
 
     return changed > 0
+end
+
+--- A merged pair's own numbers are read every evaluation, the same as a
+--- Joker's, with these exceptions: they are handed out ONCE, by on_merge or by
+--- the pair's add_to_deck, and nothing reads them again. Scaling one would not
+--- give the player anything - it would only make the description claim more
+--- than the card is doing.
+local YOKA_PAIR_LEAVE_ALONE = {
+    h_size = true,      -- Maya + Ben, applied at merge
+    boosters = true,    -- HeavenlyFather + Nostro
+    vouchers = true,    -- ...and its other half
+    discount = true,    -- Kumi + HeavenlyFather, read by Card:set_cost
+}
+
+local function yoka_scale(target, scale)
+    local ability = target and target.ability
+    if type(ability) ~= "table" then return false end
+    if not yoka_may_change(target) then return false end
+
+    local changed = false
+
+    -- The host half. Cryptid does this job better than the fallback below -
+    -- misprintize_caps, big numbers, its own fused Jokers - so it is asked
+    -- first when it is here.
+    if type(Cryptid) == "table" and type(Cryptid.manipulate) == "function" then
+        local ok = pcall(Cryptid.manipulate, target, { value = scale })
+        if ok then
+            changed = true
+        else
+            CelestasMod.warn_once("yoka_manipulate",
+                "Yoka Siri could not use Cryptid.manipulate; scaling by hand instead")
+            changed = yoka_scale_ability(ability, scale)
+        end
+    else
+        changed = yoka_scale_ability(ability, scale)
+    end
+
+    -- ...and the rest of a merged card, which nothing above can reach. The
+    -- absorbed half keeps a whole ability table of its own under celesta_bind,
+    -- and a special pair keeps its state beside it - neither is on the card
+    -- Cryptid was handed, and Bind deliberately hides them from anything that
+    -- walks card.ability one level down (see Bind.special_state).
+    --
+    -- Both are scaled whichever kind of merge it is. A replacing pair's halves
+    -- never run, so scaling them changes nothing; an additive one's do, and so
+    -- does its state. Working out which would buy nothing over doing both.
+    local bound = ability.celesta_bind
+    if type(bound) == "table" then
+        if yoka_scale_ability(bound.ability, scale) then changed = true end
+        if type(bound.special) == "table" then
+            -- The pair's state has no `extra` of its own; its numbers sit
+            -- directly on it, the way a config does.
+            if yoka_scale_ability({ extra = bound.special }, scale,
+                                  YOKA_PAIR_LEAVE_ALONE) then
+                changed = true
+            end
+        end
+    end
+
+    return changed
 end
 
 SMODS.Joker {
