@@ -116,8 +116,12 @@ SMODS.Back {
     -- before any of that, which is why banning the Jokers cannot interfere.
     config = { consumables = { CelestasMod.BIND_KEY } },
 
+    -- No info_queue, whatever the parameter list here suggests: a Back's
+    -- loc_vars is called as `back_config:loc_vars()`, with nothing after self
+    -- (Back:generate_UI, back.lua:73, and Steamodded's lovely/back.toml:157).
+    -- Pointing a tooltip at Bind from here indexed a nil and took the
+    -- deck-select screen down.
     loc_vars = function(self, info_queue, back)
-        info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.BIND_KEY]
         return { vars = { CelestasMod.ECSTASY_SHOP[1].odds,
                           CelestasMod.ECSTASY_SHOP[2].odds } }
     end,

@@ -125,10 +125,22 @@ function count_pair_vars(def)
   return n, res.vars.colours and #res.vars.colours or 0
 end
 
-function count_vars(obj)
+--- Calls loc_vars the way the GAME calls it for that kind of object.
+---
+--- A Back is the odd one out: Back:generate_UI does `back_config:loc_vars()`
+--- with nothing after self (back.lua:73, and Steamodded's
+--- lovely/back.toml:157), so a Back never receives an info_queue. Handing one
+--- to it here would let a deck that indexes info_queue pass this check and
+--- then crash on the deck-select screen - which is exactly what happened.
+function call_loc_vars(obj, kind)
+  if kind == "Back" then return obj:loc_vars() end
+  return obj:loc_vars({}, fake_card(obj))
+end
+
+function count_vars(obj, kind)
   if type(obj.loc_vars) ~= "function" then return -1 end
   local ok, res = pcall(function()
-    return obj:loc_vars({}, fake_card(obj))
+    return call_loc_vars(obj, kind)
   end)
   if not ok then return -2, tostring(res) end
   if type(res) ~= "table" or type(res.vars) ~= "table" then return 0 end
@@ -186,10 +198,10 @@ end
 -- silently dropped and {V:n} then indexes a nil - which crashes on hover
 -- rather than merely rendering wrong. Returning -4 flags exactly that mistake,
 -- because it is the one worth naming.
-function count_colours(obj)
+function count_colours(obj, kind)
   if type(obj.loc_vars) ~= "function" then return 0 end
   local ok, res = pcall(function()
-    return obj:loc_vars({}, fake_card(obj))
+    return call_loc_vars(obj, kind)
   end)
   if not ok or type(res) ~= "table" then return 0 end
   if type(res.vars) == "table" and type(res.vars.colours) == "table" then
@@ -338,8 +350,8 @@ def main():
                             "out forever - vanilla's chain of name checks ends "
                             "in `return false` and a modded key matches none "
                             "of them" % (kind, key))
-        got = count_vars(obj)
-        got_colours = count_colours(obj)
+        got = count_vars(obj, kind)
+        got_colours = count_colours(obj, kind)
         # Blinds alone have a second text hook for the popup.
         got_collection = count_collection_vars(obj) if kind == "Blind" else None
         if isinstance(got_collection, tuple):
