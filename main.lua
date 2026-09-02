@@ -111,6 +111,9 @@ assert(SMODS.load_file('merge/collection.lua'))()
 assert(SMODS.load_file('consumables/raise.lua'))()
 assert(SMODS.load_file('consumables/enhancers.lua'))()
 assert(SMODS.load_file('consumables/occult.lua'))()
+-- Gene hands out a seal rather than an enhancement; it reads the seal's key at
+-- use time, so it does not need seals/seals.lua to have loaded first.
+assert(SMODS.load_file('consumables/gene.lua'))()
 
 --------------------------------------------------------------------------------
 -- Jokers — auto-loaded from jokers/.

@@ -31,8 +31,9 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
           "suit_leaf", "suit_leaf_ui",
           # the consumables that make them, and the rest of the standalones
           "star_fury", "tree", "raise",
-          # the Tarots that hand out this mod's enhancements, and Occult
-          "citrus", "miracle_matter", "knife", "polish", "occult",
+          # the Tarots that hand out this mod's enhancements, Occult, and Gene
+          # (which hands out a seal rather than an enhancement)
+          "citrus", "miracle_matter", "knife", "polish", "occult", "gene",
           # eighteen cells in a row, not a card. blank_joker itself is an
           # ordinary Joker face and stays in the roster.
           "blank_joker_layers"}   # not per-joker art
@@ -367,6 +368,13 @@ LOC_TAIL = '''        },
                     "Enhances up to {C:attention}#1#{}",
                     "selected card into a",
                     "{C:attention}Gash Card",
+                },
+            },
+            c_celesta_gene = {
+                name = "Gene",
+                text = {
+                    "Adds a {C:attention}Gene Seal{} to",
+                    "up to {C:attention}#1#{} selected card",
                 },
             },
             c_celesta_polish = {
@@ -832,6 +840,13 @@ LOC_TAIL = '''        },
                     "{C:attention}2{} extra times",
                 },
             },
+            celesta_gene_seal = {
+                name = "Gene Seal",
+                text = {
+                    "This card is always",
+                    "{C:attention}dealt first",
+                },
+            },
             celesta_rose_seal = {
                 name = "Rose Seal",
                 text = {
@@ -908,6 +923,7 @@ LOC_TAIL = '''        },
             celesta_chipped = "Chipped",
             celesta_ectoplast_seal = "Ectoplast Seal",
             celesta_foppy_seal = "Foppy Seal",
+            celesta_gene_seal = "Gene Seal",
             celesta_rose_seal = "Rose Seal",
             celesta_star_seal = "Star Seal",
         },

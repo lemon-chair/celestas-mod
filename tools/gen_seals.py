@@ -32,6 +32,7 @@ ANCHOR_X, ANCHOR_Y = 27.5, 28.5
 SEALS = [
     ("Ectoplast", "ectoplast_seal.png", 32),   # 96 -> 32, integer /3
     ("Foppy",     "foppy_seal.png",     32),   # 16 -> 32, integer x2
+    ("Gene",      "gene_seal.png",      36),   # 36 -> 36, untouched at 1x
     ("Rose",      "rose_seal.png",      32),   # 16 -> 32, integer x2
     ("Star",      "star_seal.png",      40),   # 20 -> 40, integer x2
 ]

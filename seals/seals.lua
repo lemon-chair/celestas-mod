@@ -17,8 +17,35 @@
 CelestasMod.SEAL_KEYS = {
     Ectoplast = SMODS.current_mod.prefix .. "_Ectoplast",
     Foppy     = SMODS.current_mod.prefix .. "_Foppy",
+    Gene      = SMODS.current_mod.prefix .. "_Gene",
     Rose      = SMODS.current_mod.prefix .. "_Rose",
     Star      = SMODS.current_mod.prefix .. "_Star",
+}
+
+--------------------------------------------------------------------------------
+-- Gene — this card is dealt before every other card.
+--------------------------------------------------------------------------------
+--
+-- There is no `calculate` here and there is not meant to be. A seal's
+-- calculate answers a scoring pass, and this seal never scores: it decides
+-- what reaches the hand in the first place, which happens in
+-- G.FUNCS.draw_from_deck_to_hand, before any card is a scoring card.
+--
+-- So the behaviour lives with the other thing in this mod that reorders the
+-- deck for a deal — GlassesJournal, in jokers/implemented.lua — because the
+-- two have to agree on one order. Two independent sorts of the same table
+-- would mean whichever ran last silently won, and "always drawn first" cannot
+-- be true of a rule another rule is allowed to overwrite. That sort reads
+-- CelestasMod.SEAL_KEYS.Gene, which is why the key above is the only thing
+-- this section really has to get right.
+
+SMODS.Seal {
+    key = "Gene",
+    atlas = "seals",
+    pos = { x = 2, y = 0 },
+    badge_colour = HEX("9333A6"),
+    discovered = true,
+    unlocked = true,
 }
 
 --------------------------------------------------------------------------------
@@ -28,7 +55,7 @@ CelestasMod.SEAL_KEYS = {
 SMODS.Seal {
     key = "Star",
     atlas = "seals",
-    pos = { x = 3, y = 0 },
+    pos = { x = 4, y = 0 },
     badge_colour = HEX("F3A0BE"),
     discovered = true,
     unlocked = true,
@@ -146,7 +173,7 @@ SMODS.Seal {
 SMODS.Seal {
     key = "Rose",
     atlas = "seals",
-    pos = { x = 2, y = 0 },
+    pos = { x = 3, y = 0 },
     badge_colour = HEX("8C2A7A"),
     discovered = true,
     unlocked = true,

@@ -1303,6 +1303,13 @@ return {
                     "{C:attention}Gash Card",
                 },
             },
+            c_celesta_gene = {
+                name = "Gene",
+                text = {
+                    "Adds a {C:attention}Gene Seal{} to",
+                    "up to {C:attention}#1#{} selected card",
+                },
+            },
             c_celesta_polish = {
                 name = "Polish",
                 text = {
@@ -1766,6 +1773,13 @@ return {
                     "{C:attention}2{} extra times",
                 },
             },
+            celesta_gene_seal = {
+                name = "Gene Seal",
+                text = {
+                    "This card is always",
+                    "{C:attention}dealt first",
+                },
+            },
             celesta_rose_seal = {
                 name = "Rose Seal",
                 text = {
@@ -1842,6 +1856,7 @@ return {
             celesta_chipped = "Chipped",
             celesta_ectoplast_seal = "Ectoplast Seal",
             celesta_foppy_seal = "Foppy Seal",
+            celesta_gene_seal = "Gene Seal",
             celesta_rose_seal = "Rose Seal",
             celesta_star_seal = "Star Seal",
         },

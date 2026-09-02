@@ -8149,8 +8149,16 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- GlassesJournal [Uncommon] - Steel first, then Aces.
+-- GlassesJournal [Uncommon] - Steel first, then Aces - and the deal order
+-- generally, which the Gene Seal also has a claim on.
 --------------------------------------------------------------------------------
+--
+-- ONE sort, not one per rule. The Gene Seal (seals/seals.lua) says its card is
+-- always dealt first, and GlassesJournal says Steel is; two hooks on the same
+-- function would each reorder G.deck.cards and whichever ran last would
+-- silently win, which makes "always" untrue of whichever lost. So both are
+-- ranks in the single pass below, and the precedence between them is written
+-- down once, here, where it can be read.
 --
 -- Cards are dealt off the END of G.deck.cards. Vanilla draws without naming
 -- one and CardArea:remove_card hands back _cards[#_cards] for a deck;
@@ -8182,25 +8190,46 @@ local function glasses_active()
     return false
 end
 
-local function glasses_reorder()
-    if not glasses_active() then return end
+--- Where a card goes in the deal, low to high; the highest is dealt first.
+---
+--- 3 is the Gene Seal's and outranks the Joker's two, because the seal is put
+--- on one named card by spending a Tarot on it and the Joker is a standing
+--- rule over a whole category. A player who paid to move one card to the front
+--- should see it there.
+---
+--- seals/seals.lua loads after this file, so the key is read here at call time
+--- rather than captured at load - it does not exist yet when this runs.
+local function deal_rank(card, glasses)
+    local gene = CelestasMod.SEAL_KEYS and CelestasMod.SEAL_KEYS.Gene
+    if gene and card.seal == gene then return 3 end
+    if glasses then
+        if SMODS.has_enhancement(card, "m_steel") then return 2 end
+        if card.get_id and card:get_id() == 14 then return 1 end
+    end
+    return 0
+end
+
+local function deal_reorder()
     local deck = G.deck and G.deck.cards
     if not deck or #deck < 2 then return end
 
-    local rest, aces, steel = {}, {}, {}
+    local glasses = glasses_active()
+    -- One bucket per rank, filled in deck order, so the sort is stable within
+    -- a rank without needing a comparator that can tie.
+    local buckets = { [0] = {}, {}, {}, {} }
+    local ranked = false
     for _, card in ipairs(deck) do
-        local group = rest
-        if SMODS.has_enhancement(card, "m_steel") then
-            group = steel
-        elseif card.get_id and card:get_id() == 14 then
-            group = aces
-        end
-        group[#group + 1] = card
+        local rank = deal_rank(card, glasses)
+        if rank > 0 then ranked = true end
+        local bucket = buckets[rank]
+        bucket[#bucket + 1] = card
     end
+    -- Nothing has a claim: leave the shuffle exactly as it was found.
+    if not ranked then return end
 
     local i = 0
-    for _, group in ipairs({ rest, aces, steel }) do
-        for _, card in ipairs(group) do
+    for rank = 0, 3 do
+        for _, card in ipairs(buckets[rank]) do
             i = i + 1
             deck[i] = card
         end
@@ -8216,10 +8245,10 @@ if type(celesta_glasses_draw_ref) == "function" then
         -- Guarded so a fault in the sort cannot stop the deal. A hand that
         -- comes out in the wrong order is a disappointment; a hand that never
         -- comes out is the end of the run.
-        local ok, err = pcall(glasses_reorder)
+        local ok, err = pcall(deal_reorder)
         if not ok then
-            CelestasMod.warn_once("glasses_reorder",
-                "GlassesJournal could not reorder the deck: " .. tostring(err))
+            CelestasMod.warn_once("deal_reorder",
+                "could not reorder the deck for the deal: " .. tostring(err))
         end
         return celesta_glasses_draw_ref(...)
     end
