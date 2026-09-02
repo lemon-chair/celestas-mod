@@ -2423,7 +2423,7 @@ SMODS.Joker {
 -- copied.
 --------------------------------------------------------------------------------
 
-CelestasMod.VEDAL_SCALE = 1.5
+CelestasMod.VEDAL_SCALE = 1.1
 
 -- EVERY number a Joker hands back is scaled - Mult, Chips, multipliers,
 -- Talisman's exponents, dollars, hand size, repetitions, the lot. There is no
@@ -2771,13 +2771,18 @@ SMODS.Joker {
     -- The one joker in the mod that opts out of copying, per its own text.
     blueprint_compat = false, eternal_compat = true,
 
-    -- `total` is what it multiplies by NOW, compounded by x_value on every
-    -- trigger it boosts. Kept on the card so selling it takes the growth with
-    -- it, and so a save carries it.
-    config = { extra = { x_value = 1.5, total = 1 } },
+    -- `total` is what it multiplies by NOW, compounded on every trigger it
+    -- boosts. Kept on the card so selling it takes the growth with it, and so
+    -- a save carries it.
+    --
+    -- The per-trigger step is NOT kept here. backfill_config only fills in
+    -- what a card is missing, so a copy of it stored on an existing Vedal
+    -- would survive a change to the constant and leave the card advertising
+    -- the old step while growing by the new one.
+    config = { extra = { total = 1 } },
 
     loc_vars = function(self, info_queue, card)
-        return { vars = { card.ability.extra.x_value,
+        return { vars = { CelestasMod.VEDAL_SCALE,
                           card.ability.extra.total or 1 } }
     end,
 
