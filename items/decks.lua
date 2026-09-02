@@ -283,7 +283,6 @@ SMODS.Back {
     config = {
         hands = -3,            -- 4 -> 1
         discards = -1,         -- 3 -> 2
-        hand_size = -1,        -- 8 -> 7
         joker_slot = -1,       -- 5 -> 4
         consumable_slot = -1,  -- 2 -> 1
         no_interest = true,
@@ -294,7 +293,6 @@ SMODS.Back {
         return { vars = {
             base.hands + self.config.hands,
             base.discards + self.config.discards,
-            math.abs(self.config.hand_size),
             math.abs(self.config.joker_slot),
             math.abs(self.config.consumable_slot),
         } }

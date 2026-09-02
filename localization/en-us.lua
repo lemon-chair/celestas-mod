@@ -1796,8 +1796,7 @@ return {
                 name = "Hell Deck",
                 text = {
                     "{C:attention}#1#{} hand, {C:attention}#2#{} discards",
-                    "{C:red}-#3#{} hand size, {C:red}-#4#{} Joker slot",
-                    "{C:red}-#5#{} consumable slot",
+                    "{C:red}-#3#{} Joker slot, {C:red}-#4#{} consumable slot",
                     "Earn no {C:attention}interest{}",
                 },
             },
