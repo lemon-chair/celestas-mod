@@ -31,7 +31,10 @@ local ADMIN_JOKERS = {
 
 local ADMIN_CONSUMABLES = {
     'c_celesta_occult',
-    'c_hierophant',
+    -- Balatro's own spelling. The Hierophant's key is misspelled in the base
+    -- game and has been since release, so the correct spelling is the one that
+    -- does not exist.
+    'c_heirophant',
     'c_celesta_knife',
 }
 
@@ -55,13 +58,24 @@ SMODS.Back {
     -- Runs once at the start of a run using this deck.
     apply = function(self, back)
         G.E_MANAGER:add_event(Event { func = function()
-            for _, key in ipairs(ADMIN_JOKERS) do
-                local made = SMODS.add_card { key = key }
+            -- Checked before it is asked for. create_card indexes the centre a
+            -- forced key names without looking first (common_events.lua:2446),
+            -- so one key that does not exist does not mean one missing card -
+            -- it means the run does not start.
+            local function deal(key, area)
+                if not (G.P_CENTERS and G.P_CENTERS[key]) then
+                    CelestasMod.warn_once("admin_deck_" .. tostring(key),
+                        ("The Admin Deck cannot deal %s: no such centre")
+                            :format(tostring(key)))
+                    return
+                end
+                local made = SMODS.add_card { key = key, area = area }
                 if made then made:start_materialize() end
             end
+
+            for _, key in ipairs(ADMIN_JOKERS) do deal(key) end
             for _, key in ipairs(ADMIN_CONSUMABLES) do
-                local made = SMODS.add_card { key = key, area = G.consumeables }
-                if made then made:start_materialize() end
+                deal(key, G.consumeables)
             end
 
             -- Every card in the deck, turned into the one the ritual wants.
