@@ -17,6 +17,9 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import round_corners  # noqa: E402  (needs the path set above)
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
           "frozen", "frozen_round",
@@ -971,6 +974,20 @@ LOC_TAIL = '''        },
 
 
 def main():
+    # Card art is masked to Balatro's silhouette FIRST, every run, before
+    # anything else looks at it.
+    #
+    # Art does not always arrive shaped - Evil Neuro's came with the bottom
+    # corners cut and the top two square - and a card with square shoulders
+    # sitting next to a row of rounded ones is obvious the moment it is in a
+    # hand. Doing it here rather than remembering to run the other tool means
+    # no sprite can reach the game unshaped: the mask is binary and idempotent,
+    # so re-running it on already-masked art changes nothing, and
+    # round_corners keeps its own list of the sheets that are not card faces.
+    shaped = round_corners.main(quiet=True)
+    if shaped:
+        print("corners: %d image(s) masked" % shaped)
+
     stems = collect()
     done = implemented_keys()
     placeholders = [s for s in stems if s not in done]

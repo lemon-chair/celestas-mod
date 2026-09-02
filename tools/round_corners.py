@@ -86,13 +86,13 @@ def targets(scale):
             yield os.path.join(d, f)
 
 
-def main():
-    check = "--check" in sys.argv
-    if "--reference" in sys.argv:
-        ref = sys.argv[sys.argv.index("--reference") + 1]
-        print("measured profile:", derive_profile(ref))
-        return
+def main(check=False, quiet=False):
+    """Mask every card face in assets/. Returns how many needed it.
 
+    `check` and `quiet` are arguments rather than argv reads because
+    gen_roster.py calls this at the top of its own run - argv there belongs to
+    gen_roster, and a tool that reads someone else's flags is a tool that will
+    one day do the wrong thing quietly."""
     total = changed = skipped = 0
     for scale in (1, 2):
         mask = build_mask(scale)
@@ -113,9 +113,16 @@ def main():
                 im.putalpha(new)
                 im.save(p)
 
-    verb = "need masking" if check else "masked"
-    print("%d images: %d %s, %d already correct" % (total, changed, verb, skipped))
+    if not quiet:
+        verb = "need masking" if check else "masked"
+        print("%d images: %d %s, %d already correct"
+              % (total, changed, verb, skipped))
+    return changed
 
 
 if __name__ == "__main__":
-    main()
+    if "--reference" in sys.argv:
+        print("measured profile:",
+              derive_profile(sys.argv[sys.argv.index("--reference") + 1]))
+    else:
+        main(check="--check" in sys.argv)
