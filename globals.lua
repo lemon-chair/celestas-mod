@@ -252,7 +252,14 @@ end
 --- ability in some cases, and scaling that would change the real thing every
 --- time the card was hovered.
 function CelestasMod.scale_vars(vars, marked, scale, multiplier_excess)
+    -- Every key first, not just the numbered ones. A loc_vars list carries
+    -- named fields alongside its numbered slots - `colours` above all, which
+    -- is what a {V:1} placeholder reads its colour out of - and rebuilding the
+    -- table from ipairs alone dropped them, leaving localize to index a nil
+    -- `colours` and take the game down on hover (misc_functions.lua:2048).
     local out = {}
+    for k, v in pairs(vars) do out[k] = v end
+
     for i, v in ipairs(vars) do
         local kind = marked[i]
         -- Only numbers. Several jokers pass a STRING built with

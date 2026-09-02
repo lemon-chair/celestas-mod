@@ -2659,7 +2659,16 @@ function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges,
     _c.loc_vars = loc_vars_ref
     vedal_scaling[_c] = nil
 
-    if not ok then error(out, 0) end
+    if not ok then
+        -- A boost is cosmetic; a crash on hover is not. Whatever went wrong
+        -- with the scaled numbers, the honest thing is to draw the card the
+        -- way it would have been drawn without Vedal and leave a line in the
+        -- log, rather than take the run down over a tooltip.
+        CelestasMod.warn_once("vedal_describe_" .. tostring(_c.key),
+            ("Vedal could not scale %s's description, showing it unscaled: %s")
+                :format(tostring(_c.key), tostring(out)))
+        return plain()
+    end
     return out, post
 end
 
