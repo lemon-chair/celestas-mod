@@ -2441,12 +2441,56 @@ local VEDAL_NEVER = {
     numerator = true,
 }
 
---- True when a Vedal is in play and not debuffed.
-local function vedal_active()
+--- Every Vedal in play and able to act.
+--- Asked at the moment the answer is wanted rather than cached: one can be
+--- bought, sold or debuffed between one trigger and the next.
+local function vedal_cards()
+    local out = {}
     for _, joker in ipairs(SMODS.find_card("j_celesta_vedal")) do
-        if not joker.debuff then return true end
+        if not joker.debuff then out[#out + 1] = joker end
     end
-    return false
+    return out
+end
+
+local function vedal_active()
+    return next(vedal_cards()) ~= nil
+end
+
+--- Talisman's, when it is there. The multiplier compounds by half again on
+--- every trigger, so it leaves what a Lua number can hold within a few rounds
+--- and would quietly become inf - which reads on the card as a broken Joker
+--- rather than a big one.
+local function vedal_big(x)
+    return to_big and to_big(x) or x
+end
+
+--- What every Vedal in play multiplies by between them, right now.
+local function vedal_multiplier()
+    local total = nil
+    for _, joker in ipairs(vedal_cards()) do
+        local mine = joker.ability and joker.ability.extra
+            and joker.ability.extra.total
+        if mine then total = total and total * mine or mine end
+    end
+    return total
+end
+
+--- Compounds every Vedal in play, and answers with what they now multiply by.
+---
+--- Called once per trigger it actually boosts - which is what "each time one
+--- triggers" means - and never from the description path: a card sitting under
+--- the cursor is not a Joker going off, and counting hovers would run the
+--- number away without anything happening on the board.
+local function vedal_grow()
+    local total = nil
+    for _, joker in ipairs(vedal_cards()) do
+        local extra = joker.ability and joker.ability.extra
+        if extra then
+            extra.total = vedal_big(extra.total or 1) * CelestasMod.VEDAL_SCALE
+            total = total and total * extra.total or extra.total
+        end
+    end
+    return total
 end
 
 --- Cheap pre-check, so the common case costs a handful of table lookups.
@@ -2490,8 +2534,10 @@ function Card:calculate_joker(context, ...)
     -- Scaled onto a copy rather than in place: a joker is free to return its
     -- own ability table, and scaling that would permanently inflate its stats
     -- instead of this one trigger.
+    local mult = vedal_grow()
+    if not mult then return effect, post end
+
     local scaled = {}
-    local mult = CelestasMod.VEDAL_SCALE
     for k, v in pairs(effect) do
         if type(v) == "number" and v ~= 0 and not VEDAL_NEVER[k] then
             scaled[k] = v * mult
@@ -2530,9 +2576,10 @@ function Card:calculate_dollar_bonus(...)
     if self.ability.set ~= "Joker" then return dollars end
     if self.config.center.key == "j_celesta_vedal" then return dollars end
     if not CelestasMod.is_ours(self.config.center) then return dollars end
-    if not vedal_active() then return dollars end
+    local mult = vedal_grow()
+    if not mult then return dollars end
 
-    return dollars * CelestasMod.VEDAL_SCALE
+    return dollars * mult
 end
 
 --------------------------------------------------------------------------------
@@ -2625,7 +2672,9 @@ function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges,
     local marked = CelestasMod.numeric_vars(_c.set, _c.key)
     if not marked then return plain() end
 
-    local scale = CelestasMod.VEDAL_SCALE
+    -- Read, never grown. Hovering a card is not a Joker triggering.
+    local scale = vedal_multiplier()
+    if not scale then return plain() end
 
     -- The vanilla-shaped path, kept: a caller that DOES pass vars in is still
     -- answered, and this is the one that carries a debuffed card's flags.
@@ -2681,10 +2730,14 @@ SMODS.Joker {
     -- The one joker in the mod that opts out of copying, per its own text.
     blueprint_compat = false, eternal_compat = true,
 
-    config = { extra = { x_value = 1.5 } },
+    -- `total` is what it multiplies by NOW, compounded by x_value on every
+    -- trigger it boosts. Kept on the card so selling it takes the growth with
+    -- it, and so a save carries it.
+    config = { extra = { x_value = 1.5, total = 1 } },
 
     loc_vars = function(self, info_queue, card)
-        return { vars = { card.ability.extra.x_value } }
+        return { vars = { card.ability.extra.x_value,
+                          card.ability.extra.total or 1 } }
     end,
 
     -- An odds is a value too, and this is the one place it can be scaled for
@@ -2698,6 +2751,22 @@ SMODS.Joker {
     -- vanilla's, at the top of Card:calculate_joker - so this inherits it.
     calculate = function(self, card, context)
         if not context.mod_probability then return end
+        -- from_roll marks the ask that is about to become a die roll. The same
+        -- context is raised to work out the number a card PRINTS, and growing
+        -- there would run the multiplier away on hovers alone.
+        if not context.from_roll then
+            local showing = vedal_multiplier()
+            if not showing then return end
+            local roller_c = context.trigger_obj and context.trigger_obj.config
+            local center_c = roller_c and roller_c.center
+            if not (center_c and CelestasMod.is_ours(center_c)
+                and center_c.key ~= "j_celesta_vedal"
+                and context.trigger_obj.ability
+                and context.trigger_obj.ability.set == "Joker") then
+                return
+            end
+            return { numerator = (context.numerator or 0) * showing }
+        end
 
         -- Whoever is about to roll. Jokers from this mod only, which is the
         -- same rule the scaling follows: a Driftwood card's break chance is
@@ -2708,7 +2777,9 @@ SMODS.Joker {
         if center.key == "j_celesta_vedal" then return end
         if not (roller.ability and roller.ability.set == "Joker") then return end
 
-        return { numerator = (context.numerator or 0) * CelestasMod.VEDAL_SCALE }
+        local mult = vedal_grow()
+        if not mult then return end
+        return { numerator = (context.numerator or 0) * mult }
     end,
 }
 
