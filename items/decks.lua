@@ -69,8 +69,12 @@ SMODS.Back {
                             :format(tostring(key)))
                     return
                 end
-                local made = SMODS.add_card { key = key, area = area }
-                if made then made:start_materialize() end
+                -- No start_materialize. It throws a burst of particles in the
+                -- card's set colour - purple for a Tarot - and five of them
+                -- going off at once on the first frame of a run is a screenful
+                -- of confetti over cards the player has not even seen yet.
+                -- These are the starting board, not a reward.
+                SMODS.add_card { key = key, area = area }
             end
 
             for _, key in ipairs(ADMIN_JOKERS) do deal(key) end
