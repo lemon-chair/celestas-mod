@@ -439,13 +439,15 @@ return {
             j_celesta_giwi = {
                 name = "Giwi",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:attention}Queens{} held in hand",
+                    "give {X:chips,C:white}X#1#{} Chips",
                 },
             },
             j_celesta_glassesjournal = {
                 name = "Glassesjournal",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:attention}Steel Cards{}, and then {C:attention}Aces{},",
+                    "are dealt before other cards",
                 },
             },
             j_celesta_glowypumpkin = {
@@ -924,7 +926,9 @@ return {
             j_celesta_rainyrentyn = {
                 name = "Rainyrentyn",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:green}#1# in #2#{} chance to start",
+                    "a {C:blue}Downpour{} at the start",
+                    "of each round",
                 },
             },
             j_celesta_ray = {
@@ -1081,7 +1085,9 @@ return {
             j_celesta_snapscube = {
                 name = "Snapscube",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "This Joker gains {C:mult}+#1#{} Mult if the",
+                    "played hand has exactly {C:attention}#2#{} cards",
+                    "{C:inactive}(Currently {C:mult}+#3#{C:inactive} Mult)",
                 },
             },
             j_celesta_sonneflower = {

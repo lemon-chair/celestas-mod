@@ -2307,7 +2307,7 @@ SMODS.Joker {
     key = "amalee",
     atlas = "amalee",
     pos = { x = 0, y = 0 },
-    rarity = 3, cost = 8,
+    rarity = 2, cost = 6,
     unlocked = true, discovered = true,
     blueprint_compat = true, eternal_compat = true,
 
@@ -7968,5 +7968,235 @@ SMODS.Joker {
         if not (G.GAME and G.GAME.round_resets) then return end
         G.GAME.round_resets.hands =
             G.GAME.round_resets.hands - card.ability.extra.h_plays
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- RainyRentyn [Uncommon] - sometimes it rains.
+--------------------------------------------------------------------------------
+--
+-- setting_blind, not end_of_round: it is the moment the Blind is chosen,
+-- before any card is dealt, so the Downpour is up for the whole round rather
+-- than arriving partway through it. The Arena clears itself on the way back to
+-- Blind Select, so there is nothing to stop.
+
+CelestasMod.RAINYRENTYN_ODDS = 4
+
+SMODS.Joker {
+    key = "rainyrentyn",
+    atlas = "rainyrentyn",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        local n, d = SMODS.get_probability_vars(
+            card, 1, CelestasMod.RAINYRENTYN_ODDS, "celesta_rainyrentyn")
+        return { vars = { n, d } }
+    end,
+
+    calculate = function(self, card, context)
+        if not (context.setting_blind and not context.blueprint) then return end
+        -- Rolled only when there is something to start. A Downpour already up
+        -- cannot be started twice, and rolling anyway would burn a pull from
+        -- the stream for nothing.
+        if CelestasMod.Arena.is_active("downpour") then return end
+        if not SMODS.pseudorandom_probability(
+                card, "celesta_rainyrentyn", 1,
+                CelestasMod.RAINYRENTYN_ODDS) then
+            return
+        end
+
+        CelestasMod.Arena.start("downpour")
+        return {
+            message = localize("celesta_downpour"),
+            colour = G.C.BLUE,
+            card = card,
+        }
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- SnapsCube [Common] - paid for playing exactly four.
+--------------------------------------------------------------------------------
+--
+-- context.before is where full_hand exists, and it lands ahead of scoring, so
+-- the hand that earns the Mult is also the hand that scores it - the same
+-- ordering Deme relies on.
+--
+-- full_hand is every played card, not only the scoring ones: "exactly 4 cards"
+-- is about what was played, not about what the poker hand happened to use.
+--
+-- Nothing resets it. This one only ever climbs.
+
+SMODS.Joker {
+    key = "snapscube",
+    atlas = "snapscube",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { gain = 4, size = 4, mult = 0 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.gain, card.ability.extra.size,
+                          card.ability.extra.mult } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.before and not context.blueprint then
+            if #context.full_hand == card.ability.extra.size then
+                card.ability.extra.mult =
+                    card.ability.extra.mult + card.ability.extra.gain
+                return {
+                    message = localize { type = "variable", key = "a_mult",
+                                         vars = { card.ability.extra.mult } },
+                    colour = G.C.MULT, card = card,
+                }
+            end
+        end
+
+        if context.joker_main and card.ability.extra.mult > 0 then
+            return { mult = card.ability.extra.mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- GlassesJournal [Uncommon] - Steel first, then Aces.
+--------------------------------------------------------------------------------
+--
+-- Cards are dealt off the END of G.deck.cards. Vanilla draws without naming
+-- one and CardArea:remove_card hands back _cards[#_cards] for a deck;
+-- Steamodded replaces that loop with one that walks the deck backwards
+-- (lovely/card_limit.toml). Both ends agree, so "dealt first" means "sorted
+-- last" and the priority order goes into the array reversed: the rest, then
+-- Aces, then Steel.
+--
+-- Reordered rather than drawn differently. Every route that puts a card in
+-- hand - the opening deal, the draw after a hand, the three The Serpent
+-- allows - goes through that one function, so moving the deck under it covers
+-- all of them without touching how any of them draw.
+--
+-- STABLE within each group: cards keep the order the shuffle gave them, so
+-- this decides which cards come first and nothing about which of the equals
+-- does. And it runs per deal rather than once, because a card can become Steel
+-- or stop being one between two of them.
+--
+-- Rank is asked through get_id, the way every rank question in this mod is, so
+-- Grandpaw Shao - who makes every number card an Ace - hands this a much
+-- larger set to prioritise. That is the same answer he gives everything else.
+
+local GLASSES_KEY = "j_celesta_glassesjournal"
+
+local function glasses_active()
+    for _, joker in ipairs(SMODS.find_card(GLASSES_KEY)) do
+        if not joker.debuff then return true end
+    end
+    return false
+end
+
+local function glasses_reorder()
+    if not glasses_active() then return end
+    local deck = G.deck and G.deck.cards
+    if not deck or #deck < 2 then return end
+
+    local rest, aces, steel = {}, {}, {}
+    for _, card in ipairs(deck) do
+        local group = rest
+        if SMODS.has_enhancement(card, "m_steel") then
+            group = steel
+        elseif card.get_id and card:get_id() == 14 then
+            group = aces
+        end
+        group[#group + 1] = card
+    end
+
+    local i = 0
+    for _, group in ipairs({ rest, aces, steel }) do
+        for _, card in ipairs(group) do
+            i = i + 1
+            deck[i] = card
+        end
+    end
+end
+
+-- G.FUNCS is built when state_events.lua loads at boot, long before any mod,
+-- so this is always here in the game. Read defensively anyway: wrapping a nil
+-- would swap a Joker that does nothing for a mod that will not load at all.
+local celesta_glasses_draw_ref = G.FUNCS and G.FUNCS.draw_from_deck_to_hand
+if type(celesta_glasses_draw_ref) == "function" then
+    G.FUNCS.draw_from_deck_to_hand = function(...)
+        -- Guarded so a fault in the sort cannot stop the deal. A hand that
+        -- comes out in the wrong order is a disappointment; a hand that never
+        -- comes out is the end of the run.
+        local ok, err = pcall(glasses_reorder)
+        if not ok then
+            CelestasMod.warn_once("glasses_reorder",
+                "GlassesJournal could not reorder the deck: " .. tostring(err))
+        end
+        return celesta_glasses_draw_ref(...)
+    end
+end
+-- No `else`, and no warning in one: the branch is unreachable in the game, and
+-- the only callers that can take it are the test harnesses, which slice this
+-- file to its end and build a G of their own. A warn_once at load time would
+-- be a line of unreachable noise that any of them could trip over.
+
+SMODS.Joker {
+    key = "glassesjournal",
+    atlas = "glassesjournal",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    -- A passive the deal reads, not a trigger; there is nothing to copy.
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_steel
+        return {}
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Giwi [Rare] - Queens are worth holding.
+--------------------------------------------------------------------------------
+--
+-- `not context.end_of_round` is the guard every held-in-hand Joker in this mod
+-- carries. Vanilla reaches its held-in-hand block through an if/elseif chain
+-- whose end_of_round branch comes first, so Baron and Raised Fist are
+-- structurally barred from firing at the cash-out; a modded Joker gets no such
+-- guard, and SMODS raises individual over G.hand again there for the Gold
+-- cards paying out.
+--
+-- x_chips rather than an h_ key: SMODS's effect keys for a multiplier are
+-- x_chips and x_mult, and neither has a held-in-hand spelling
+-- (utils.lua:1444). What makes this held in hand is the pass it answers.
+
+SMODS.Joker {
+    key = "giwi",
+    atlas = "giwi",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { x_chips = 1.5 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.x_chips } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.individual and context.cardarea == G.hand
+            and not context.end_of_round then
+            local held = context.other_card
+            if held and not held.debuff
+                and held.get_id and held:get_id() == 12 then
+                return { x_chips = card.ability.extra.x_chips, card = held }
+            end
+        end
     end,
 }
