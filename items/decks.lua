@@ -4,7 +4,36 @@
 --- reroll_cost, ante_scaling, no_faces, ... Use `apply` for anything else.
 ---
 --- The `decks` atlas is one row of card-sized cells, in this order:
----     0 Founder's   1 Plaid   2 Ecstasy   3 Hell
+---     0 Admin   1 Plaid   2 Ecstasy   3 Hell
+
+--------------------------------------------------------------------------------
+-- Admin Deck - the bench.
+--------------------------------------------------------------------------------
+--
+-- Not a deck to win with; a deck to test with. It deals the exact board Evil
+-- Neuro's ritual asks for and hands over the cards that reach the rest of it,
+-- so the recipe, the funnel and everything the Blank Joker can learn are one
+-- run away instead of twenty.
+--
+-- Fifty-two Steel Kings of Hearts with Red Seals. The conversion is queued
+-- rather than done in `apply`, because `apply` runs BEFORE the starting deck
+-- is built - the Plaid Deck below leans on the same ordering from the other
+-- side - so there is nothing to convert yet at the moment this is called.
+--
+-- The consumable slot is raised by one because the three cards it starts with
+-- do not fit in two, and a starting card that silently never arrives is worse
+-- than no starting card.
+
+local ADMIN_JOKERS = {
+    'j_celesta_blank_joker',
+    'j_celesta_neuro',
+}
+
+local ADMIN_CONSUMABLES = {
+    'c_celesta_occult',
+    'c_hierophant',
+    'c_celesta_knife',
+}
 
 SMODS.Back {
     key = 'founders',
@@ -15,21 +44,38 @@ SMODS.Back {
     discovered = true,
 
     config = {
-        dollars = 10,     -- +$10 on top of the usual $4
-        joker_slot = -1,  -- ...but one fewer Joker slot
+        -- Three starting consumables need three slots.
+        consumable_slot = 1,
     },
 
     loc_vars = function(self, info_queue, back)
-        return { vars = { self.config.dollars, math.abs(self.config.joker_slot) } }
+        return { vars = { #ADMIN_JOKERS + #ADMIN_CONSUMABLES } }
     end,
 
     -- Runs once at the start of a run using this deck.
     apply = function(self, back)
         G.E_MANAGER:add_event(Event { func = function()
-            -- Was j_celesta_spark; that placeholder is disabled, so this now
-            -- hands out a real Joker instead.
-            local joker = SMODS.add_card { key = 'j_celesta_arar' }
-            if joker then joker:start_materialize() end
+            for _, key in ipairs(ADMIN_JOKERS) do
+                local made = SMODS.add_card { key = key }
+                if made then made:start_materialize() end
+            end
+            for _, key in ipairs(ADMIN_CONSUMABLES) do
+                local made = SMODS.add_card { key = key, area = G.consumeables }
+                if made then made:start_materialize() end
+            end
+
+            -- Every card in the deck, turned into the one the ritual wants.
+            -- Silent and immediate on all three: this is the deck being built,
+            -- not fifty-two things happening to the player.
+            for _, card in ipairs(G.playing_cards or {}) do
+                if G.P_CARDS and G.P_CARDS.H_K then
+                    card:set_base(G.P_CARDS.H_K)
+                end
+                if G.P_CENTERS and G.P_CENTERS.m_steel then
+                    card:set_ability(G.P_CENTERS.m_steel, nil, true)
+                end
+                if card.set_seal then card:set_seal('Red', true, true) end
+            end
             return true
         end })
     end,

@@ -1811,11 +1811,12 @@ return {
                 },
             },
             b_celesta_founders = {
-                name = "Founder's Deck",
+                name = "Admin Deck",
                 text = {
-                    "Start with an extra {C:money}$#1#{}",
-                    "and an {C:attention}Arar{}",
-                    "{C:red}-#2#{} Joker slot",
+                    "Every card is a {C:attention}Steel King of Hearts{}",
+                    "with a {C:red}Red Seal{}",
+                    "Start with {C:attention}#1#{} Jokers and consumables",
+                    "{C:attention}+1{} consumable slot",
                 },
             },
         },
