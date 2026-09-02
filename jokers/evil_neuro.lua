@@ -2,8 +2,7 @@
 ---
 --- Not in any pool. She is not bought, found or rolled - the only way to a
 --- copy is the recipe below, so putting her in the shop would give the ritual
---- away and make it pointless. That also means she needs no art of her own to
---- be found by accident; she borrows Neuro's sheet until she has some.
+--- away and make it pointless.
 ---
 --- THE RECIPE
 ---   * a Steel King of Hearts with a Red Seal, highlighted in hand
@@ -345,8 +344,7 @@ end
 
 SMODS.Joker {
     key = "evil_neuro",
-    -- Borrowed until she has a sheet of her own.
-    atlas = "neuro",
+    atlas = "evil_neuro",
     pos = { x = 0, y = 0 },
     rarity = 4, cost = 20,
     unlocked = true, discovered = true,

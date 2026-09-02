@@ -315,10 +315,13 @@ SEED_BLOCKS = {
 
 EXAMPLE_KEYS = ["j_celesta_spark", "j_celesta_ledger", "j_celesta_tollkeeper"]
 
-# Jokers that have no art file of their own. The Joker section is built
-# from what is in assets/, so one that borrows another's sheet is invisible
-# to that walk and has to be named here or it gets no description at all.
-ARTLESS_KEYS = ["j_celesta_evil_neuro"]
+# Jokers with no art file of their own. The Joker section is built from what is
+# in assets/, so one that borrows another sheet is invisible to that walk and
+# gets no description at all unless it is named here.
+#
+# Anything listed here MUST NOT also have art: the two sources are concatenated
+# and a key in both is written into the file twice.
+ARTLESS_KEYS = []
 
 LOC_TAIL = '''        },
 
@@ -990,8 +993,9 @@ def main():
     existing = existing_loc_blocks()
     kept = added = 0
     parts = []
-    for key in (EXAMPLE_KEYS + ["j_celesta_" + s for s in stems]
-                + ARTLESS_KEYS):
+    artless = [k for k in ARTLESS_KEYS
+               if k[len("j_celesta_"):] not in stems]
+    for key in EXAMPLE_KEYS + ["j_celesta_" + s for s in stems] + artless:
         if key in existing:
             parts.append(existing[key])
             kept += 1

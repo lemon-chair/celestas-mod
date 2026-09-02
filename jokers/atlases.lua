@@ -303,6 +303,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "evil_neuro",
+    path = "evil_neuro.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "fefe",
     path = "fefe.png",
     px = 71,

@@ -364,6 +364,15 @@ return {
                     "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
                 },
             },
+            j_celesta_evil_neuro = {
+                name = "Evil Neuro",
+                text = {
+                    "If the played hand has exactly {C:attention}#1#{} cards,",
+                    "both of them score, and this Joker gives",
+                    "{C:chips}Chips{} equal to the {C:attention}permutation{} of the",
+                    "greater card's {C:chips}Chips{} over the lesser's",
+                },
+            },
             j_celesta_fefe = {
                 name = "FeFe",
                 text = {
@@ -1249,15 +1258,6 @@ return {
                 text = {
                     "{C:attention}Steel Cards{} in played hand",
                     "give {X:mult,C:white}X#1#{} Mult when scored",
-                },
-            },
-            j_celesta_evil_neuro = {
-                name = "Evil Neuro",
-                text = {
-                    "If the played hand has exactly {C:attention}#1#{} cards,",
-                    "both of them score, and this Joker gives",
-                    "{C:chips}Chips{} equal to the {C:attention}permutation{} of the",
-                    "greater card's {C:chips}Chips{} over the lesser's",
                 },
             },
         },
