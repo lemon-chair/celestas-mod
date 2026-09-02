@@ -2456,23 +2456,63 @@ local function vedal_active()
     return next(vedal_cards()) ~= nil
 end
 
---- Talisman's, when it is there. The multiplier compounds by half again on
---- every trigger, so it leaves what a Lua number can hold within a few rounds
---- and would quietly become inf - which reads on the card as a broken Joker
---- rather than a big one.
-local function vedal_big(x)
-    return to_big and to_big(x) or x
+-- The largest the multiplier is allowed to get.
+--
+-- It compounds by half again on every trigger, so it leaves what a Lua number
+-- can hold within a couple of thousand of them, and inf on a card reads as a
+-- broken Joker rather than a big one.
+--
+-- Held as a plain Lua NUMBER rather than one of Talisman's big ones, which the
+-- first version of this did. A big number is a table, and Lua 5.1 only
+-- consults a comparison metamethod when both operands are the same type - so
+-- the moment one reached SMODS's `pseudorandom(seed) < numerator / denominator`
+-- (utils.lua:2736) it took the run down. Everything Vedal multiplies goes on
+-- to be compared against something by somebody; a plain number is the only
+-- form that is safe everywhere, and Talisman promotes what it needs to on its
+-- own once the values it owns get large.
+CelestasMod.VEDAL_CAP = 1e300
+
+--- The multiplier a Vedal is carrying, as a number.
+--- Coerced rather than trusted: a save written by the version that stored a
+--- big number here still has one.
+local function vedal_total(joker)
+    local extra = joker and joker.ability and joker.ability.extra
+    local total = extra and extra.total
+    if type(total) == "number" then return total end
+    if type(total) == "table" and type(total.to_number) == "function" then
+        local ok, n = pcall(total.to_number, total)
+        if ok and type(n) == "number" and n == n then
+            return math.min(n, CelestasMod.VEDAL_CAP)
+        end
+        return CelestasMod.VEDAL_CAP
+    end
+    return nil
 end
 
 --- What every Vedal in play multiplies by between them, right now.
 local function vedal_multiplier()
     local total = nil
     for _, joker in ipairs(vedal_cards()) do
-        local mine = joker.ability and joker.ability.extra
-            and joker.ability.extra.total
-        if mine then total = total and total * mine or mine end
+        local mine = vedal_total(joker)
+        if mine then total = math.min((total or 1) * mine, CelestasMod.VEDAL_CAP) end
     end
     return total
+end
+
+--- A chance, scaled and then capped at certainty.
+---
+--- There is nothing to gain by handing back a numerator larger than the
+--- denominator - the chance is already every time - and a great deal to lose:
+--- an enormous one is where a plain number turns into inf, and inf/denominator
+--- is not a probability. Capping keeps it a number a die roll can be compared
+--- against.
+local function vedal_odds(context, mult)
+    local n = context.numerator or 0
+    local d = context.denominator or 1
+    if type(n) ~= "number" or type(d) ~= "number" then return n end
+    local grown = n * mult
+    if grown ~= grown or grown >= d then return d end
+    return grown
 end
 
 --- Compounds every Vedal in play, and answers with what they now multiply by.
@@ -2486,8 +2526,9 @@ local function vedal_grow()
     for _, joker in ipairs(vedal_cards()) do
         local extra = joker.ability and joker.ability.extra
         if extra then
-            extra.total = vedal_big(extra.total or 1) * CelestasMod.VEDAL_SCALE
-            total = total and total * extra.total or extra.total
+            extra.total = math.min((vedal_total(joker) or 1) * CelestasMod.VEDAL_SCALE,
+                                   CelestasMod.VEDAL_CAP)
+            total = math.min((total or 1) * extra.total, CelestasMod.VEDAL_CAP)
         end
     end
     return total
@@ -2765,7 +2806,7 @@ SMODS.Joker {
                 and context.trigger_obj.ability.set == "Joker") then
                 return
             end
-            return { numerator = (context.numerator or 0) * showing }
+            return { numerator = vedal_odds(context, showing) }
         end
 
         -- Whoever is about to roll. Jokers from this mod only, which is the
@@ -2779,7 +2820,7 @@ SMODS.Joker {
 
         local mult = vedal_grow()
         if not mult then return end
-        return { numerator = (context.numerator or 0) * mult }
+        return { numerator = vedal_odds(context, mult) }
     end,
 }
 
