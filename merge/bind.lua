@@ -2231,19 +2231,40 @@ function Card:calculate_joker(context, ...)
     end
 
     local center = Bind.partner_center(self)
-    if not center or type(center.calculate) ~= "function" then return effect, post end
+    if not center then return effect, post end
 
+    -- Run through the chain BELOW this wrapper rather than by calling
+    -- center.calculate directly.
+    --
+    -- A vanilla Joker has no calculate at all. Greedy Joker is
+    -- `{name = "Greedy Joker", effect = "Suit Mult", ...}` and nothing more -
+    -- what it DOES lives in vanilla's own Card:calculate_joker, a chain of
+    -- name and effect checks. Calling center.calculate meant every merge whose
+    -- absorbed half was a vanilla Joker carried a passenger: no Mult, no
+    -- popup, nothing.
+    --
+    -- The ref reaches both. Steamodded's dispatch sits at the top of that
+    -- function and hands a modded centre to its own calculate; a vanilla one
+    -- falls through to the chain that knows it. It also puts the absorbed half
+    -- through this mod's other wrappers - the Frozen edition's roll, the
+    -- Clover's suppression - which is what "as if it were on its own card"
+    -- should have meant all along. Frozen caches its roll per card per play,
+    -- so the two halves share one outcome rather than rolling twice.
+    --
     -- The absorbed centre reads its own fields off card.ability, so it is lent
     -- the ability table that came with it - the same trick Eutrophic uses to
     -- run a foreign centre against a card that is not really it. Lent rather
     -- than copied: a Joker that scales itself must keep that growth.
     running = true
     local saved_center, saved_ability = self.config.center, self.ability
+    local saved_key = self.config.center_key
     self.config.center = center
+    self.config.center_key = center.key or saved_key
     self.ability = self.ability.celesta_bind.ability
     local ok, partner = pcall(with_acting_half, self, "absorbed",
-                              center.calculate, center, self, context)
+                              celesta_bind_calculate_joker_ref, self, context)
     self.config.center, self.ability = saved_center, saved_ability
+    self.config.center_key = saved_key
     running = false
 
     if not ok then
