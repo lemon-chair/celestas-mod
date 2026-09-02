@@ -180,6 +180,24 @@ local function pin(card, x, y)
     card.T.x, card.T.y, card.T.r = x, y, 0
     card.VT.x, card.VT.y, card.VT.r = x, y, 0
     card.juice = nil
+
+    -- ambient_tilt is the slow cosine sway EVERY card carries (card.lua:18,
+    -- applied at :4687). On a board it reads as the cards being alive; on one
+    -- held still in the middle of the screen it reads as jitter, and it tilts
+    -- the card while it does it. Zeroed while pinned, and put back after -
+    -- Evil Neuro outlives this and should sway like everything else.
+    if card.celesta_ritual_tilt == nil then
+        card.celesta_ritual_tilt = card.ambient_tilt or false
+    end
+    card.ambient_tilt = 0
+end
+
+--- Gives a card its sway back. Called on the way out, on anything that is
+--- still there to give it to.
+local function unpin(card)
+    if not card or card.celesta_ritual_tilt == nil then return end
+    card.ambient_tilt = card.celesta_ritual_tilt or nil
+    card.celesta_ritual_tilt = nil
 end
 
 --- Starts the funnel. The cards are not consumed here; that happens when it
@@ -313,6 +331,10 @@ local function ritual_step(dt)
     end
     if ritual.t < CelestasMod.EVIL_NEURO_HOLD then return true end
 
+    -- Everything still standing gets its sway back before the tray takes it.
+    for _, tracked in ipairs(ritual.parts) do unpin(tracked.card) end
+    unpin(made)
+
     ritual = nil
     return false
 end
@@ -337,6 +359,8 @@ function Game:update(dt, ...)
         -- themselves, so this hands over the ritual whatever it faulted on.
         pcall(ritual_burn)
         pcall(ritual_reveal)
+        for _, tracked in ipairs(ritual.parts) do pcall(unpin, tracked.card) end
+        pcall(unpin, ritual.made)
         ritual = nil
     end
 end
