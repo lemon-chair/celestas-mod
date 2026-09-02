@@ -236,3 +236,68 @@ SMODS.Back {
         } }
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Hell: three Bosses that cannot open the run
+--------------------------------------------------------------------------------
+--
+-- The Pillar debuffs every card played this Ante, and Greed and Clover both
+-- charge for playing at all. Against a deck that starts on one hand with no
+-- interest, meeting any of the three at Ante 1 is not a hard fight - it is a
+-- run that was over before it began.
+--
+-- Only the FIRST Boss. From Ante 2 all three are back in the pool: by then
+-- there has been a shop, and the deck is meant to be brutal.
+
+local HELL_KEY = 'b_' .. SMODS.current_mod.prefix .. '_hell'
+
+local HELL_FIRST_BOSS_BANNED = {
+    'bl_pillar',
+    'bl_' .. SMODS.current_mod.prefix .. '_clover',
+    'bl_' .. SMODS.current_mod.prefix .. '_greed',
+}
+
+--- True while the run is being played on the Hell Deck.
+local function on_hell()
+    local back = G.GAME and G.GAME.selected_back
+    return back and back.effect and back.effect.center
+        and back.effect.center.key == HELL_KEY
+end
+
+local celesta_hell_boss_ref = get_new_boss
+function get_new_boss(...)
+    local resets = G.GAME and G.GAME.round_resets
+    if not (on_hell() and G.GAME.banned_keys
+            and (resets and resets.ante or 1) <= 1) then
+        return celesta_hell_boss_ref(...)
+    end
+
+    -- Banned for the length of the pick rather than re-rolled afterwards.
+    -- get_new_boss already drops every key in banned_keys from the pool
+    -- (common_events.lua:2745), so borrowing that leaves the choice, the
+    -- per-boss use counts and the boss seed exactly where vanilla would have
+    -- put them. A re-roll loop would pull from the 'boss' stream more than
+    -- once and shift every later Ante's Boss along with it.
+    local restore = {}
+    for _, key in ipairs(HELL_FIRST_BOSS_BANNED) do
+        restore[key] = G.GAME.banned_keys[key]
+        G.GAME.banned_keys[key] = true
+    end
+
+    local ok, boss = pcall(celesta_hell_boss_ref, ...)
+
+    for _, key in ipairs(HELL_FIRST_BOSS_BANNED) do
+        G.GAME.banned_keys[key] = restore[key]
+    end
+
+    -- A run needs a Boss more than it needs this rule. If banning the three
+    -- somehow left nothing to pick - another mod having banned the rest -
+    -- take whatever vanilla would have given.
+    if not ok or not boss then
+        CelestasMod.warn_once("hell_first_boss",
+            "Hell could not open on anything but The Pillar, Greed or Clover; "
+            .. "letting the run have one of them")
+        return celesta_hell_boss_ref(...)
+    end
+    return boss
+end
