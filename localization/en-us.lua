@@ -1845,6 +1845,9 @@ return {
     },
 
     misc = {
+        challenge_names = {
+            c_celesta_dairy_farm = "Dairy Farm",
+        },
         labels = {
             m_celesta_exo = "Exo Card",
             m_celesta_eutrophic = "Eutrophic Card",

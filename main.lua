@@ -135,7 +135,8 @@ end
 -- 'items/consumables.lua' (the Reforge Tarot) is disabled while it still has
 -- placeholder art — add it back to this list to re-enable. Its code, atlas and
 -- localization are all still in place.
-for _, file in ipairs({ 'seals/seals.lua', 'items/decks.lua' }) do
+for _, file in ipairs({ 'seals/seals.lua', 'items/decks.lua',
+                        'items/challenges.lua' }) do
     assert(SMODS.load_file(file))()
 end
 

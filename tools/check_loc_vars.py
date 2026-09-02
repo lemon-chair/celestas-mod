@@ -24,6 +24,10 @@ BOOTSTRAP = '''
 jokers, seals, enhancements, blinds, atlases = {}, {}, {}, {}, {}
 consumables, backs = {}, {}
 sounds = {}
+-- Challenges have no descriptions entry - only a name, under
+-- misc.challenge_names - so they are recorded to keep main.lua loadable and
+-- checked by test_challenges.py instead.
+challenges = {}
 suits = {}
 SMODS = {
   Atlas = function(t) atlases[t.key] = t end,
@@ -38,6 +42,7 @@ SMODS = {
   Suit = function(t) suits[t.key] = t end,
   Consumable = function(t) consumables[t.key] = t end,
   Back = function(t) backs[t.key] = t end,
+  Challenge = function(t) challenges[t.key] = t end,
   ConsumableTypes = {},
   current_mod = { path = "", name = "M", prefix = "celesta", config = {} },
 }
