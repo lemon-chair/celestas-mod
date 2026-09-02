@@ -111,25 +111,32 @@ end
 -- The animation
 --------------------------------------------------------------------------------
 --
--- The four cards stay in the areas they are in. A Card is drawn by its
--- CardArea and by nothing else - Moveable:init only registers plain Moveables
--- in G.I.MOVEABLE, which is the list Game:draw walks for parentless things -
--- so a card pulled out of every area is simply invisible. Instead their
--- transforms are overwritten every frame, AFTER the game has finished its own
--- update, so what the areas laid out is what gets replaced rather than what
--- fights back.
+-- The cards stay in the areas they are in. A Card is drawn by its CardArea and
+-- by nothing else - Moveable:init only registers plain Moveables in
+-- G.I.MOVEABLE, which is the list Game:draw walks for parentless things - so a
+-- card pulled out of every area is simply invisible. Instead their transforms
+-- are overwritten every frame, AFTER the game has finished its own update, so
+-- what the areas laid out is what gets replaced rather than what fights back.
+--
+-- They ORBIT but do not turn: rotation is pinned to zero and the juice that
+-- makes a card bob is cleared each frame. A card spinning on its own axis while
+-- also going round the middle reads as a glitch rather than as a ritual.
 --
 -- The spiral is p^2 in both radius and angle: it starts where the cards are,
--- and both the closing and the spin accelerate into the middle rather than
--- running at a constant rate.
+-- and both the closing and the spin accelerate into the middle.
 --
--- The merge itself is start_dissolve in white. That is the game's own burn
--- animation and it removes the card properly on the way out - Card:remove
--- takes it out of its area and calls remove_from_deck - so the ball of light
--- and the disposal are the same thing rather than two that could disagree.
+-- The merge itself is start_dissolve in white, drawn out over a couple of
+-- seconds. That is the game's own burn animation and it removes the card
+-- properly on the way out - Card:remove takes it out of its area and calls
+-- remove_from_deck - so the ball of light and the disposal are the same thing
+-- rather than two that could disagree.
 
-CelestasMod.EVIL_NEURO_SPIN = 3       -- turns each card makes on the way in
-CelestasMod.EVIL_NEURO_TIME = 1.6     -- seconds from the edges to the middle
+CelestasMod.EVIL_NEURO_SPIN = 3        -- turns each card makes on the way in
+CelestasMod.EVIL_NEURO_TIME = 1.6      -- seconds from the edges to the middle
+CelestasMod.EVIL_NEURO_BURN = 2.5      -- how much longer than usual they burn
+CelestasMod.EVIL_NEURO_HOLD = 0.5      -- seconds she hangs in the middle
+CelestasMod.EVIL_NEURO_DARK = 0.72     -- how far the board is dimmed behind it
+CelestasMod.EVIL_NEURO_FADE = 0.4      -- seconds the dimming takes to arrive
 
 local ritual = nil
 
@@ -142,6 +149,21 @@ local function room_centre()
     local room = G.ROOM and G.ROOM.T
     if not room then return 0, 0 end
     return room.w / 2, room.h / 2
+end
+
+--- Holds a card exactly where it is put, with no turn and no bob.
+---
+--- Both transforms, because VT eases toward T and would otherwise lag a frame
+--- behind the spiral. `juice` is what Moveable:move_juice reads to make a card
+--- pulse, and every one of these was juiced on its way in.
+local function pin(card, x, y)
+    -- A card with no transform is not one this can place. Every real Card has
+    -- both; guarded because being handed something else must not take the
+    -- frame down.
+    if not (card and card.T and card.VT) then return end
+    card.T.x, card.T.y, card.T.r = x, y, 0
+    card.VT.x, card.VT.y, card.VT.r = x, y, 0
+    card.juice = nil
 end
 
 --- Starts the funnel. The cards are not consumed here; that happens when it
@@ -157,80 +179,126 @@ local function ritual_begin(parts)
             card = card,
             angle = atan2(y, x),
             radius = math.sqrt(x * x + y * y),
-            spin = card.T.r or 0,
         }
     end
 
-    ritual = { parts = tracked, t = 0, done = false }
+    ritual = { parts = tracked, phase = "funnel", t = 0, dark = 0 }
     play_sound("timpani")
 end
 
---- One frame of the funnel. Returns true while it is still running.
+--- Everything the funnel is currently holding in place, so the darkening can
+--- be drawn UNDER it and it can be drawn again on top.
+function CelestasMod.evil_neuro_lit()
+    if not ritual then return nil end
+    local lit = {}
+    for _, tracked in ipairs(ritual.parts) do
+        if tracked.card and not tracked.card.REMOVED then
+            lit[#lit + 1] = tracked.card
+        end
+    end
+    if ritual.made and not ritual.made.REMOVED then
+        lit[#lit + 1] = ritual.made
+    end
+    return lit, ritual.dark
+end
+
+--- The white ball. The cards burn for EVIL_NEURO_BURN times as long as the
+--- game normally takes, because the merge is the moment and rushing it makes
+--- the whole funnel look like a loading screen.
+local function ritual_burn()
+    -- Once. Called again on a card already dissolving it would start a second
+    -- burn on it, which is what the error path below used to do.
+    if ritual.burnt then return end
+    ritual.burnt = true
+    for _, tracked in ipairs(ritual.parts) do
+        local card = tracked.card
+        if card and not card.REMOVED and card.start_dissolve then
+            card:start_dissolve({ G.C.WHITE }, nil, CelestasMod.EVIL_NEURO_BURN)
+        end
+    end
+    play_sound("gold_seal", 0.9, 0.6)
+end
+
+--- What comes out of it. She is emplaced immediately, because a Card is drawn
+--- by its area and nothing else - and then held in the middle by the same
+--- transform override the ingredients were, until the hold is up.
+local function ritual_reveal()
+    if ritual.revealed then return end
+    ritual.revealed = true
+    if not (G.jokers and SMODS.create_card) then return end
+    local made = SMODS.create_card {
+        set = "Joker",
+        key = CelestasMod.EVIL_NEURO_KEY,
+        area = G.jokers,
+        skip_materialize = true,
+    }
+    if not made then return end
+
+    made:add_to_deck()
+    G.jokers:emplace(made)
+    made:juice_up(0.5, 0.8)
+    play_sound("holo1", 1.1, 0.6)
+    ritual.made = made
+end
+
+--- One frame. Returns true while there is still something to do.
 local function ritual_step(dt)
     if not ritual then return false end
 
     ritual.t = ritual.t + dt
-    local p = math.min(ritual.t / CelestasMod.EVIL_NEURO_TIME, 1)
-    local eased = p * p
+    -- The dimming arrives over EVIL_NEURO_FADE and stays up for the rest of it.
+    ritual.dark = math.min(ritual.t / CelestasMod.EVIL_NEURO_FADE, 1)
+        * CelestasMod.EVIL_NEURO_DARK
     local cx, cy = room_centre()
 
-    for _, tracked in ipairs(ritual.parts) do
-        local card = tracked.card
-        if card and not card.REMOVED then
-            local angle = tracked.angle
-                + eased * CelestasMod.EVIL_NEURO_SPIN * 2 * math.pi
-            local radius = tracked.radius * (1 - eased)
-            local x = cx + radius * math.cos(angle) - card.T.w / 2
-            local y = cy + radius * math.sin(angle) - card.T.h / 2
-            local r = tracked.spin
-                + eased * CelestasMod.EVIL_NEURO_SPIN * 2 * math.pi
+    if ritual.phase == "funnel" then
+        local p = math.min(ritual.t / CelestasMod.EVIL_NEURO_TIME, 1)
+        local eased = p * p
 
-            -- Both transforms, so the easing that normally smooths a card's
-            -- movement does not lag a step behind the spiral.
-            card.T.x, card.T.y, card.T.r = x, y, r
-            card.VT.x, card.VT.y, card.VT.r = x, y, r
-        end
-    end
-
-    if p < 1 then return true end
-
-    ritual.done = true
-    return false
-end
-
---- The white ball, and what comes out of it.
-local function ritual_land()
-    local parts = ritual and ritual.parts or {}
-    ritual = nil
-
-    for _, tracked in ipairs(parts) do
-        local card = tracked.card
-        if card and not card.REMOVED and card.start_dissolve then
-            card:start_dissolve({ G.C.WHITE })
-        end
-    end
-    play_sound("gold_seal", 0.9, 0.6)
-
-    G.E_MANAGER:add_event(Event {
-        trigger = "after",
-        delay = 0.7,
-        func = function()
-            if not (G.jokers and SMODS.create_card) then return true end
-            local made = SMODS.create_card {
-                set = "Joker",
-                key = CelestasMod.EVIL_NEURO_KEY,
-                area = G.jokers,
-                skip_materialize = true,
-            }
-            if made then
-                made:add_to_deck()
-                G.jokers:emplace(made)
-                made:juice_up(0.5, 0.8)
-                play_sound("holo1", 1.1, 0.6)
+        for _, tracked in ipairs(ritual.parts) do
+            local card = tracked.card
+            if card and not card.REMOVED then
+                local angle = tracked.angle
+                    + eased * CelestasMod.EVIL_NEURO_SPIN * 2 * math.pi
+                local radius = tracked.radius * (1 - eased)
+                pin(card,
+                    cx + radius * math.cos(angle) - card.T.w / 2,
+                    cy + radius * math.sin(angle) - card.T.h / 2)
             end
-            return true
-        end,
-    })
+        end
+
+        if p < 1 then return true end
+        ritual_burn()
+        ritual.phase, ritual.t = "burning", 0
+        return true
+    end
+
+    if ritual.phase == "burning" then
+        -- Held in the middle while they burn, or the areas would pull what is
+        -- left of them back into a row mid-dissolve.
+        for _, tracked in ipairs(ritual.parts) do
+            local card = tracked.card
+            if card and not card.REMOVED then
+                pin(card, cx - card.T.w / 2, cy - card.T.h / 2)
+            end
+        end
+
+        -- 0.6 is the game's own dissolve time, scaled by what we asked for.
+        if ritual.t < 0.6 * CelestasMod.EVIL_NEURO_BURN then return true end
+        ritual_reveal()
+        ritual.phase, ritual.t = "holding", 0
+        return true
+    end
+
+    -- holding: she hangs in the middle before the tray takes her.
+    local made = ritual.made
+    if made and not made.REMOVED then
+        pin(made, cx - made.T.w / 2, cy - made.T.h / 2)
+    end
+    if ritual.t < CelestasMod.EVIL_NEURO_HOLD then return true end
+
+    ritual = nil
+    return false
 end
 
 -- Driven from Game:update rather than from an event, because an event fires
@@ -242,17 +310,67 @@ function Game:update(dt, ...)
     celesta_evil_update_ref(self, dt, ...)
 
     if not ritual then return end
-    local ok, running = pcall(ritual_step, dt)
+    local ok, err = pcall(ritual_step, dt)
     if not ok then
-        -- A fault in the visuals must not cost the player the ritual: land it
-        -- immediately rather than leaving three cards spinning forever.
+        -- A fault in the visuals must not cost the player the ritual: burn the
+        -- ingredients and hand her over anyway, rather than leaving three
+        -- cards spinning forever.
         CelestasMod.warn_once("evil_neuro_spiral",
-            "Evil Neuro's funnel failed: " .. tostring(running))
+            "Evil Neuro's funnel failed: " .. tostring(err))
+        -- Finish what has not happened yet, and nothing that has. Both guard
+        -- themselves, so this hands over the ritual whatever it faulted on.
+        pcall(ritual_burn)
+        pcall(ritual_reveal)
         ritual = nil
-        pcall(ritual_land)
-        return
     end
-    if not running then pcall(ritual_land) end
+end
+
+--------------------------------------------------------------------------------
+-- Dimming the board behind it
+--------------------------------------------------------------------------------
+--
+-- Game:draw has already flushed its canvas to the screen and cleared the
+-- shader by the time this runs, so a rectangle here lands on top of everything
+-- in raw window pixels - the same seam arena/arena.lua tints the weather
+-- through.
+--
+-- Which means the cards have to be drawn AGAIN, over the dimming, or they
+-- would be dimmed along with the board they are supposed to be standing out
+-- from. Card:draw is what a CardArea calls on each of its cards, so calling it
+-- a second time renders the same card again rather than doing anything
+-- special.
+--
+-- All of it is pcall'd. A ritual that looks wrong is a disappointment; a draw
+-- that throws takes the frame, and every frame after it, with the game.
+
+local celesta_evil_draw_ref = Game.draw
+function Game:draw(...)
+    celesta_evil_draw_ref(self, ...)
+
+    local lit, dark = CelestasMod.evil_neuro_lit()
+    if not (lit and dark and dark > 0) then return end
+
+    local ok, err = pcall(function()
+        love.graphics.push()
+        love.graphics.origin()
+        love.graphics.setShader()
+        love.graphics.setBlendMode("alpha")
+
+        local w, h = love.graphics.getDimensions()
+        love.graphics.setColor(0, 0, 0, dark)
+        love.graphics.rectangle("fill", 0, 0, w, h)
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.pop()
+
+        for _, card in ipairs(lit) do
+            if card.draw then card:draw() end
+        end
+    end)
+
+    if not ok then
+        CelestasMod.warn_once("evil_neuro_dark",
+            "Evil Neuro's dimming failed: " .. tostring(err))
+    end
 end
 
 --------------------------------------------------------------------------------
