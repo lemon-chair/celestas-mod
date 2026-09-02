@@ -1154,7 +1154,8 @@ return {
             j_celesta_vantacrow_bringer = {
                 name = "Vantacrow Bringer",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{C:blue}+#1#{} Hands, {C:red}+#2#{} Discards",
+                    "{C:attention}+#3#{} Hand Size",
                 },
             },
             j_celesta_vedal = {

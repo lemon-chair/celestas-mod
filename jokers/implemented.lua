@@ -7916,3 +7916,57 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Vantacrow Bringer [Rare] - more of everything, for the price of a Common.
+--------------------------------------------------------------------------------
+--
+-- Two of the three numbers are fields vanilla already knows. Card:add_to_deck
+-- reads ability.h_size and ability.d_size straight off the centre's config and
+-- applies them, and remove_from_deck takes them back again (card.lua:759 and
+-- :824) - so hand size and discards need no code here at all, and they undo
+-- themselves correctly when the Joker is sold OR debuffed, which is the half
+-- that is easy to get wrong by hand.
+--
+-- Hands have no such field. Troubadour is the one vanilla Joker that grants
+-- them and it does it by moving G.GAME.round_resets.hands in both directions
+-- (card.lua:798 and :858), so that is what this does.
+--
+-- Deliberately NOT eased into the round in progress. ease_discard clamps at
+-- the discards left; ease_hands_played does not, so a Boss debuffing this
+-- mid-round could take the hand the player was about to play. round_resets is
+-- read into hands_left at the start of every Blind (state_events.lua:245),
+-- which is where Troubadour's land too.
+
+SMODS.Joker {
+    key = "vantacrow_bringer",
+    atlas = "vantacrow_bringer",
+    pos = { x = 0, y = 0 },
+    -- Rare, at a Common's price, as asked.
+    rarity = 3, cost = 6,
+    unlocked = true, discovered = true,
+    -- A passive the run reads, not a trigger; there is nothing to copy.
+    blueprint_compat = false, eternal_compat = true,
+
+    -- h_size and d_size sit at the top of config rather than in extra: those
+    -- are the exact names vanilla looks for (card.lua:358).
+    config = { h_size = 2, d_size = 2, extra = { h_plays = 2 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.h_plays,
+                          card.ability.d_size,
+                          card.ability.h_size } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        if not (G.GAME and G.GAME.round_resets) then return end
+        G.GAME.round_resets.hands =
+            G.GAME.round_resets.hands + card.ability.extra.h_plays
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        if not (G.GAME and G.GAME.round_resets) then return end
+        G.GAME.round_resets.hands =
+            G.GAME.round_resets.hands - card.ability.extra.h_plays
+    end,
+}

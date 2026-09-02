@@ -94,10 +94,21 @@ G = {
 
 -- Build a stand-in playing card / joker whose ability mirrors the object's
 -- own config, which is what loc_vars reads.
+--
+-- The TOP-LEVEL config keys are copied as well as `extra`, because Card
+-- :set_ability copies them too - h_size and d_size among them, which vanilla
+-- reads straight off ability to apply hand size and discards (card.lua:358).
+-- Copying only `extra` made a loc_vars that reads one of those look as though
+-- it returned nothing.
 function fake_card(obj)
   local ability = { extra = {}, perma_x_mult = 0, perma_mult = 0 }
-  if obj.config and obj.config.extra then
-    for k, v in pairs(obj.config.extra) do ability.extra[k] = v end
+  if obj.config then
+    for k, v in pairs(obj.config) do
+      if k ~= 'extra' and type(v) ~= 'table' then ability[k] = v end
+    end
+    if obj.config.extra then
+      for k, v in pairs(obj.config.extra) do ability.extra[k] = v end
+    end
   end
   return { ability = ability, config = { center = obj }, base = {} }
 end

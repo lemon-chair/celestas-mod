@@ -28,7 +28,6 @@ local ROSTER = {
     { key = "snapscube", rarity = 1, cost = 4, mult = 4 },
     { key = "squchan", rarity = 1, cost = 4, mult = 4 },
     { key = "uzuri", rarity = 1, cost = 4, mult = 4 },
-    { key = "vantacrow_bringer", rarity = 1, cost = 4, mult = 4 },
 }
 
 for _, entry in ipairs(ROSTER) do
