@@ -135,7 +135,7 @@ CelestasMod.EVIL_NEURO_SPIN = 3        -- turns each card makes on the way in
 CelestasMod.EVIL_NEURO_TIME = 1.6      -- seconds from the edges to the middle
 CelestasMod.EVIL_NEURO_BURN = 2.5      -- how much longer than usual they burn
 CelestasMod.EVIL_NEURO_HOLD = 0.5      -- seconds she hangs in the middle
-CelestasMod.EVIL_NEURO_DARK = 0.72     -- how far the board is dimmed behind it
+CelestasMod.EVIL_NEURO_DARK = 0.5      -- how far the whole screen is dimmed
 CelestasMod.EVIL_NEURO_FADE = 0.4      -- seconds the dimming takes to arrive
 
 local ritual = nil
@@ -145,6 +145,22 @@ local ritual = nil
 -- at all - and an animation nothing can drive is an animation nothing checks.
 local atan2 = math.atan2 or math.atan
 
+--- Where a card has to be PUT to sit in the middle of the screen.
+---
+--- Vanilla's own answer for a card with no area to place it in is
+--- `G.ROOM.T.w/2 - G.CARD_W/2` (common_events.lua:378) - the standard card
+--- size, not the card's own width. A Joker's T.w is whatever its area last
+--- scaled it to, so subtracting that puts it near the middle rather than in
+--- it.
+local function centre_for(card)
+    local room = G.ROOM and G.ROOM.T
+    if not room then return 0, 0 end
+    local w = G.CARD_W or (card and card.T and card.T.w) or 0
+    local h = G.CARD_H or (card and card.T and card.T.h) or 0
+    return room.w / 2 - w / 2, room.h / 2 - h / 2
+end
+
+--- The middle itself, for working out where each card starts from.
 local function room_centre()
     local room = G.ROOM and G.ROOM.T
     if not room then return 0, 0 end
@@ -249,7 +265,6 @@ local function ritual_step(dt)
     -- The dimming arrives over EVIL_NEURO_FADE and stays up for the rest of it.
     ritual.dark = math.min(ritual.t / CelestasMod.EVIL_NEURO_FADE, 1)
         * CelestasMod.EVIL_NEURO_DARK
-    local cx, cy = room_centre()
 
     if ritual.phase == "funnel" then
         local p = math.min(ritual.t / CelestasMod.EVIL_NEURO_TIME, 1)
@@ -261,9 +276,10 @@ local function ritual_step(dt)
                 local angle = tracked.angle
                     + eased * CelestasMod.EVIL_NEURO_SPIN * 2 * math.pi
                 local radius = tracked.radius * (1 - eased)
+                local mx, my = centre_for(card)
                 pin(card,
-                    cx + radius * math.cos(angle) - card.T.w / 2,
-                    cy + radius * math.sin(angle) - card.T.h / 2)
+                    mx + radius * math.cos(angle),
+                    my + radius * math.sin(angle))
             end
         end
 
@@ -279,7 +295,7 @@ local function ritual_step(dt)
         for _, tracked in ipairs(ritual.parts) do
             local card = tracked.card
             if card and not card.REMOVED then
-                pin(card, cx - card.T.w / 2, cy - card.T.h / 2)
+                pin(card, centre_for(card))
             end
         end
 
@@ -293,7 +309,7 @@ local function ritual_step(dt)
     -- holding: she hangs in the middle before the tray takes her.
     local made = ritual.made
     if made and not made.REMOVED then
-        pin(made, cx - made.T.w / 2, cy - made.T.h / 2)
+        pin(made, centre_for(made))
     end
     if ritual.t < CelestasMod.EVIL_NEURO_HOLD then return true end
 
@@ -334,11 +350,13 @@ end
 -- in raw window pixels - the same seam arena/arena.lua tints the weather
 -- through.
 --
--- Which means the cards have to be drawn AGAIN, over the dimming, or they
--- would be dimmed along with the board they are supposed to be standing out
--- from. Card:draw is what a CardArea calls on each of its cards, so calling it
--- a second time renders the same card again rather than doing anything
--- special.
+-- Which dims the ritual cards along with the board. That is deliberate, and it
+-- is the second attempt: the first drew each card AGAIN on top of the
+-- rectangle so it would stay lit, and a card drawn after love.graphics.origin
+-- is drawn in a different transform from the one its CardArea used - so every
+-- one of them got a second copy, offset to the left, carrying its own shadow
+-- and jittering against the original. One honest wash over everything beats
+-- three cards with doubles.
 --
 -- All of it is pcall'd. A ritual that looks wrong is a disappointment; a draw
 -- that throws takes the frame, and every frame after it, with the game.
@@ -347,8 +365,8 @@ local celesta_evil_draw_ref = Game.draw
 function Game:draw(...)
     celesta_evil_draw_ref(self, ...)
 
-    local lit, dark = CelestasMod.evil_neuro_lit()
-    if not (lit and dark and dark > 0) then return end
+    local _, dark = CelestasMod.evil_neuro_lit()
+    if not (dark and dark > 0) then return end
 
     local ok, err = pcall(function()
         love.graphics.push()
@@ -361,10 +379,6 @@ function Game:draw(...)
         love.graphics.rectangle("fill", 0, 0, w, h)
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.pop()
-
-        for _, card in ipairs(lit) do
-            if card.draw then card:draw() end
-        end
     end)
 
     if not ok then
