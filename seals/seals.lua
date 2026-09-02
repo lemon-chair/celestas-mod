@@ -221,3 +221,62 @@ SMODS.Seal {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- No "new!" badge on any of them
+--------------------------------------------------------------------------------
+--
+-- A seal that is `discovered` but not yet `alerted` puts a red circled "!" in
+-- the top-left corner of every card carrying it (card.lua:83, the branch
+-- Steamodded re-applies in lovely/seal.toml:123). That is vanilla's own
+-- collection badge - the same one a newly discovered Joker gets - and on a
+-- Joker it appears only in the collection, because vanilla gates that branch
+-- on `self.area.config.collection`. The seal branch has no such gate, so it
+-- lands on the actual playing card, in hand, mid-hand.
+--
+-- A centre says "do not do that" with `start_alerted`, and the loop that reads
+-- the profile honours it - for G.P_CENTERS. The identical loop three screens
+-- below it, for G.P_SEALS, does not (smods src/utils.lua:112 against :160), so
+-- there is no field a seal can set. Declaring `alerted = true` on the seal
+-- does not survive either: the same loop ends `elseif v.discovered then
+-- v.alerted = false`, which overwrites it.
+--
+-- So it is set after those loops instead, at both places one runs:
+--
+--   * SMODS.SAVE_UNLOCKS, at boot. Vanilla's own pass happens before any mod
+--     exists, so this is the one that sees these seals (loader.lua:615, after
+--     the objects are injected).
+--   * Game:init_item_prototypes, which runs again on a profile change and on
+--     the way back to the main menu from a run (button_callbacks.lua:251 and
+--     :1822) - and by then the seals ARE in G.P_SEALS, so vanilla's pass
+--     clears the flag every time and it has to be put back.
+
+--- Marks every seal this mod adds as already seen.
+local function celesta_seals_seen()
+    for _, key in pairs(CelestasMod.SEAL_KEYS) do
+        local seal = G.P_SEALS and G.P_SEALS[key]
+        if seal then seal.alerted = true end
+    end
+end
+
+-- Both read defensively before being wrapped. Wrapping a nil would not cost a
+-- badge, it would cost the mod: the reference would be nil and the first call
+-- through would take the whole load down. SAVE_UNLOCKS in particular belongs
+-- to Steamodded rather than to the game, and is a name that can move.
+local celesta_save_unlocks_ref = SMODS.SAVE_UNLOCKS
+if type(celesta_save_unlocks_ref) == "function" then
+    function SMODS.SAVE_UNLOCKS(...)
+        local out = celesta_save_unlocks_ref(...)
+        celesta_seals_seen()
+        return out
+    end
+end
+
+local celesta_item_prototypes_ref = Game and Game.init_item_prototypes
+if type(celesta_item_prototypes_ref) == "function" then
+    function Game:init_item_prototypes(...)
+        local out = celesta_item_prototypes_ref(self, ...)
+        celesta_seals_seen()
+        return out
+    end
+end
