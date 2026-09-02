@@ -61,6 +61,7 @@ SMODS.Atlas { key = 'fx_snowstorm', path = 'fx_snowstorm.png', px = 256, py = 25
 
 SMODS.Atlas { key = 'bind', path = 'bind.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'milk_bottle', path = 'milk_bottle.png', px = 71, py = 95 }
+SMODS.Atlas { key = 'burgundy_brew', path = 'burgundy_brew.png', px = 71, py = 95 }
 
 -- Wear overlays, drawn on top of a worn-out playing card.
 SMODS.Atlas { key = 'tatter',            path = 'tatter.png',            px = 71, py = 95 }

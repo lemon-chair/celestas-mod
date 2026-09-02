@@ -33,6 +33,8 @@ INSET = 0.82
 SOURCES = {
     "milk_bottle": os.path.join("Documents", "VTuberTCG", "assets",
                                 "support", "milk_bottle.png"),
+    "burgundy_brew": os.path.join("Documents", "VTuberTCG", "assets",
+                                  "support", "burgundy_brew.png"),
 }
 
 

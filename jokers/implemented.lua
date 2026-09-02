@@ -3909,6 +3909,90 @@ SMODS.Consumable {
 }
 
 --------------------------------------------------------------------------------
+-- Burgundy Brew — permanent Mult on the cards you pick
+--------------------------------------------------------------------------------
+--
+-- Milk Bottle's twin, and written as its twin on purpose: same set, same cost,
+-- same two-card selection, same event-per-card so the juice and the sound
+-- stagger the way they do there. The one difference is which permanent store
+-- it writes to.
+--
+-- perma_mult is vanilla's own, the pair of perma_bonus that Milk Bottle uses.
+-- Card:get_chip_mult reads it and adds it on top of whatever the card's rank
+-- and enhancement give (card.lua:1183), so it stacks with anything already
+-- there and survives the card being re-enhanced.
+--
+-- NOT wired into Moo Merrily or Moo Moo Clover. Both of those name Milk Bottle
+-- specifically - one hands one out each round, the other raises how many cards
+-- it may take - and quietly teaching them a second bottle would change what
+-- THEY do, which is not what was asked for.
+
+CelestasMod.BURGUNDY_BREW_KEY =
+    "c_" .. SMODS.current_mod.prefix .. "_burgundy_brew"
+
+SMODS.Consumable {
+    key = "burgundy_brew",
+    set = "Spectral",
+    atlas = "burgundy_brew",
+    pos = { x = 0, y = 0 },
+
+    cost = 4,
+    unlocked = true,
+    discovered = true,
+
+    -- max_highlighted lives on the CENTRE, the way Milk Bottle's does: the
+    -- game reads it from ability.consumeable, which is this very table.
+    config = { extra = { mult = 2 }, max_highlighted = 2 },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.mult,
+                          self.config.max_highlighted } }
+    end,
+
+    can_use = function(self, card)
+        local picked = G.hand and G.hand.highlighted
+        return picked and #picked > 0
+            and #picked <= (self.config.max_highlighted or 2)
+    end,
+
+    use = function(self, card, area, copier)
+        local mult = card.ability.extra.mult
+        -- Copied before the first event runs: G.hand.highlighted is the live
+        -- selection and the cards leave it as they are used.
+        local picked = {}
+        for i = 1, #G.hand.highlighted do picked[i] = G.hand.highlighted[i] end
+
+        for i, target in ipairs(picked) do
+            G.E_MANAGER:add_event(Event {
+                trigger = "after",
+                delay = 0.15,
+                func = function()
+                    target.ability.perma_mult =
+                        (target.ability.perma_mult or 0) + mult
+                    target:juice_up(0.3, 0.3)
+                    play_sound("gold_seal", 1.1 + 0.05 * i, 0.4)
+                    return true
+                end
+            })
+        end
+
+        G.E_MANAGER:add_event(Event {
+            trigger = "after",
+            delay = 0.2,
+            func = function()
+                SMODS.calculate_effect({
+                    message = localize { type = "variable", key = "a_mult",
+                                         vars = { mult } },
+                    colour = G.C.MULT,
+                }, picked[1] or card)
+                return true
+            end
+        })
+        delay(0.4)
+    end,
+}
+
+--------------------------------------------------------------------------------
 -- Moo Merrily [Uncommon] - a Milk Bottle every round.
 --------------------------------------------------------------------------------
 

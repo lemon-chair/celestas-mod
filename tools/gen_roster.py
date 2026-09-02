@@ -22,7 +22,7 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
           "frozen", "frozen_round",
           # wear overlays, drawn on top of a playing card
           "tatter", "lucky_card_tatter", "limestone_tatter",
-          "bind", "milk_bottle",
+          "bind", "milk_bottle", "burgundy_brew",
           # the added suits: a 13-cell rank row and a UI pip each
           "suit_stars", "suit_stars_ui",
           "suit_leaf", "suit_leaf_ui",
@@ -407,6 +407,14 @@ LOC_TAIL = '''        },
                     "Give up to {C:attention}#2#{} selected",
                     "cards a permanent",
                     "{C:chips}+#1#{} Chip bonus",
+                },
+            },
+            c_celesta_burgundy_brew = {
+                name = "Burgundy Brew",
+                text = {
+                    "Give up to {C:attention}#2#{} selected",
+                    "cards a permanent",
+                    "{C:mult}+#1#{} Mult bonus",
                 },
             },
         },

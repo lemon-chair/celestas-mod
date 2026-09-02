@@ -1345,6 +1345,14 @@ return {
                     "{C:chips}+#1#{} Chip bonus",
                 },
             },
+            c_celesta_burgundy_brew = {
+                name = "Burgundy Brew",
+                text = {
+                    "Give up to {C:attention}#2#{} selected",
+                    "cards a permanent",
+                    "{C:mult}+#1#{} Mult bonus",
+                },
+            },
         },
 
         Blind = {
