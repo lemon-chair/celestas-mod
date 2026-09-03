@@ -5802,7 +5802,16 @@ local function yoka_scale_ability(ability, scale, deny)
     local changed = 0
 
     local extra = ability.extra
-    if type(extra) == "table" then
+    -- A modded Joker keeps a TABLE in `extra`; several vanilla ones keep a
+    -- bare number that is the value itself. The Idol's X2 lives there -
+    -- `config = {extra = 2}`, scored as `x_mult = self.ability.extra`
+    -- (card.lua:3458) - and so do Credit Card's overdraft and To the Moon's
+    -- interest. Walking only the table shape missed all of them.
+    if type(extra) == "number" and extra ~= 0
+        and not (deny and deny.extra) then
+        ability.extra = extra * scale
+        changed = changed + 1
+    elseif type(extra) == "table" then
         for key, value in pairs(extra) do
             if type(value) == "number" and not YOKA_LEAVE_ALONE[key]
                 and not (deny and deny[key]) and not yoka_neutral(key, value) then
@@ -5838,34 +5847,38 @@ local YOKA_PAIR_LEAVE_ALONE = {
     discount = true,    -- Kumi + HeavenlyFather, read by Card:set_cost
 }
 
+--- Everything below this line that is not Cryptid's is a fallback, and only
+--- a fallback. Cryptid is optional for this mod (tools/check_dependencies.py
+--- lists it that way), so there has to be something for a run without it - but
+--- when it is installed, Yoka Siri is Oil Lamp: it calls
+--- Cryptid.manipulate(target, { value = scale }) and does nothing else.
+---
+--- Nothing else, specifically including the merged-half pass below.
+--- manipulate walks the ability table RECURSIVELY (Cryptid.manipulate_table
+--- recurses into every nested table it finds), so it already reaches an
+--- absorbed half's own ability under celesta_bind and the pair's state beside
+--- it. Running the hand pass over those afterwards scaled them a second time -
+--- a X2 on the absorbed half landing on X2.25 instead of X1.5 - which is the
+--- kind of thing nobody notices until the numbers are wrong.
 local function yoka_scale(target, scale)
     local ability = target and target.ability
     if type(ability) ~= "table" then return false end
     if not yoka_may_change(target) then return false end
 
-    local changed = false
-
-    -- The host half. Cryptid does this job better than the fallback below -
-    -- misprintize_caps, big numbers, its own fused Jokers - so it is asked
-    -- first when it is here.
+    -- Oil Lamp's, verbatim apart from the value it passes.
     if type(Cryptid) == "table" and type(Cryptid.manipulate) == "function" then
-        local ok = pcall(Cryptid.manipulate, target, { value = scale })
-        if ok then
-            changed = true
-        else
-            CelestasMod.warn_once("yoka_manipulate",
-                "Yoka Siri could not use Cryptid.manipulate; scaling by hand instead")
-            changed = yoka_scale_ability(ability, scale)
-        end
-    else
-        changed = yoka_scale_ability(ability, scale)
+        local ok, err = pcall(Cryptid.manipulate, target, { value = scale })
+        if ok then return true end
+        CelestasMod.warn_once("yoka_manipulate",
+            "Yoka Siri could not use Cryptid.manipulate (" .. tostring(err)
+            .. "); scaling by hand instead")
     end
 
-    -- ...and the rest of a merged card, which nothing above can reach. The
-    -- absorbed half keeps a whole ability table of its own under celesta_bind,
-    -- and a special pair keeps its state beside it - neither is on the card
-    -- Cryptid was handed, and Bind deliberately hides them from anything that
-    -- walks card.ability one level down (see Bind.special_state).
+    local changed = yoka_scale_ability(ability, scale)
+
+    -- The rest of a merged card, which the hand pass above cannot reach on its
+    -- own: the absorbed half keeps a whole ability table under celesta_bind,
+    -- and a special pair keeps its state beside it.
     --
     -- Both are scaled whichever kind of merge it is. A replacing pair's halves
     -- never run, so scaling them changes nothing; an additive one's do, and so
@@ -5916,12 +5929,13 @@ SMODS.Joker {
             local target = index and row[index + 1]
             if not target or target == card then return end
 
+            -- Oil Lamp's announcement, not a made-up one: it says only that
+            -- the neighbour was upgraded, because after Cryptid has walked a
+            -- whole ability table there is no single number to name.
             if yoka_scale(target, card.ability.extra.scale) then
-                target:juice_up(0.4, 0.5)
                 return {
-                    message = localize { type = "variable", key = "a_xmult",
-                                         vars = { card.ability.extra.scale } },
-                    colour = G.C.MULT,
+                    message = localize("k_upgrade_ex"),
+                    colour = G.C.GREEN,
                     card = card,
                 }
             end
