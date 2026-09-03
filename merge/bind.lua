@@ -181,9 +181,20 @@ function Bind.merge(host, absorbed)
 
         -- Only a replacing pair takes the host's passive off; an additive one
         -- is keeping both halves, passives included.
-        local center = Bind.replacing_special(host) and host.config.center
-        if type(center) == "table" and type(center.remove_from_deck) == "function" then
-            pcall(center.remove_from_deck, center, host, false)
+        if Bind.replacing_special(host) then
+            local center = host.config.center
+            if type(center) == "table" and type(center.remove_from_deck) == "function" then
+                pcall(center.remove_from_deck, center, host, false)
+            end
+            -- ...and its ability-driven ones, for the same reason: the pair
+            -- speaks for the card now, so a hand size or a discard the host
+            -- brought with it is no longer being granted by anything.
+            --
+            -- Through the table, not the local: that is declared with the rest
+            -- of the passive hooks two thousand lines below this, so the bare
+            -- name here would compile as a global and be nil. Same reason
+            -- Bind.apply_partner_passive is reached that way above.
+            Bind.intrinsic_passive(host.ability, -1)
         end
         if type(def.on_merge) == "function" then
             local ok, err = pcall(def.on_merge, def, host, Bind.special_state(host, def))
@@ -2054,6 +2065,17 @@ function Bind.unmerge(card, losing)
         end
     end
 
+    -- Whichever half is leaving takes its passive with it. Neither vanilla
+    -- hook runs on its own here: the card never leaves the Joker row, it just
+    -- stops being two Jokers.
+    if not Bind.replacing_special(card) then
+        if losing == "host" then
+            Bind.remove_own_passive(card)
+        else
+            Bind.remove_partner_passive(card)
+        end
+    end
+
     if losing == "host" then
         local center = Bind.partner_center(card)
         if not center then return false end
@@ -2414,6 +2436,100 @@ function Card:calculate_dollar_bonus()
     return (own or 0) + theirs
 end
 
+-- Passives vanilla applies from a Joker's ABILITY rather than from its centre.
+--
+-- Card:add_to_deck calls the centre's own add_to_deck hook and then runs a
+-- block of branches that read self.ability directly - +1 discard, +1 hand
+-- size, Credit Card's overdraft, and the rest (card.lua:759-801), each undone
+-- by the matching branch in remove_from_deck. with_partner swaps the centre
+-- in, so the HOOK half of that has always worked for an absorbed Joker. The
+-- ability half never did, because self.ability at that moment is the host's:
+-- two Drunkards gave +1 discard rather than +2, and two Jugglers +1 hand size.
+--
+-- Reimplemented rather than re-entered. Calling vanilla's own function again
+-- under the swap would also run its tail, which fires SMODS card_added and
+-- resets the Blind - both about a card ARRIVING, and at a merge nothing
+-- arrives, one card leaves. A Joker counting cards added would count the merge
+-- as one more.
+--
+-- Only the branches vanilla itself UNDOES are here. Chicot's is add-only: it
+-- disables the Blind then and there, which is an event rather than a passive,
+-- and something that cannot be taken back must not be handed out twice.
+-- Astronomer's only refreshes displayed prices.
+--
+-- test_bind_intrinsic.py reads the branch list back out of the game, so one
+-- added there and not here fails rather than going quiet.
+
+--- ability.name -> the effect, scaled by `sign`: 1 applying, -1 taking back.
+local INTRINSIC = {
+    ["Credit Card"] = function(ability, sign)
+        G.GAME.bankrupt_at = G.GAME.bankrupt_at - sign * (ability.extra or 0)
+    end,
+    ["Chaos the Clown"] = function(_, sign)
+        SMODS.change_free_rerolls(sign)
+        calculate_reroll_cost(true)
+    end,
+    ["Turtle Bean"] = function(ability, sign)
+        G.hand:change_size(sign * ((ability.extra or {}).h_size or 0))
+    end,
+    ["Oops! All 6s"] = function(_, sign)
+        for k, v in pairs(G.GAME.probabilities) do
+            G.GAME.probabilities[k] = sign > 0 and v * 2 or v / 2
+        end
+    end,
+    ["To the Moon"] = function(ability, sign)
+        G.GAME.interest_amount = G.GAME.interest_amount + sign * (ability.extra or 0)
+    end,
+    ["Troubadour"] = function(ability, sign)
+        local extra = ability.extra or {}
+        G.hand:change_size(sign * (extra.h_size or 0))
+        G.GAME.round_resets.hands =
+            G.GAME.round_resets.hands + sign * (extra.h_plays or 0)
+    end,
+    ["Stuntman"] = function(ability, sign)
+        G.hand:change_size(-sign * ((ability.extra or {}).h_size or 0))
+    end,
+}
+
+--- Applies (sign 1) or takes back (sign -1) one ability's own passives.
+---
+--- Guarded as a whole: a passive that faults halfway leaves the run with the
+--- wrong number of discards, which is bad - a merge that throws is a crash.
+local function intrinsic_passive(ability, sign)
+    if type(ability) ~= "table" then return end
+
+    local ok, err = pcall(function()
+        if G.hand and (ability.h_size or 0) ~= 0 then
+            G.hand:change_size(sign * ability.h_size)
+        end
+        -- `> 0` is vanilla's own test, on both sides. A negative d_size is
+        -- never applied, so it must never be taken back either.
+        if (ability.d_size or 0) > 0 then
+            G.GAME.round_resets.discards =
+                G.GAME.round_resets.discards + sign * ability.d_size
+            ease_discard(sign * ability.d_size)
+        end
+        local named = INTRINSIC[ability.name]
+        if named then named(ability, sign) end
+    end)
+
+    if not ok then
+        CelestasMod.warn_once("bind_intrinsic_" .. tostring(ability.name),
+            ("Bind could not %s the passive of %s: %s"):format(
+                sign > 0 and "apply" or "take back",
+                tostring(ability.name), tostring(err)))
+    end
+end
+
+--- The absorbed half's, if this card has one and the pair has not replaced it.
+local function partner_intrinsic(card, sign)
+    if not Bind.is_merged(card) then return end
+    if Bind.replacing_special(card) then return end
+    intrinsic_passive(card.ability.celesta_bind.ability, sign)
+end
+
+Bind.intrinsic_passive = intrinsic_passive
+
 -- Passives: +1 hand size, an extra Joker slot, anything a centre applies once
 -- when it enters the deck and undoes when it leaves.
 --
@@ -2431,6 +2547,7 @@ function Card:add_to_deck(from_debuff)
     with_partner(self, "add_to_deck", function(center, card)
         center:add_to_deck(card, from_debuff)
     end)
+    partner_intrinsic(self, 1)
 end
 
 local celesta_bind_remove_ref = Card.remove_from_deck
@@ -2444,6 +2561,7 @@ function Card:remove_from_deck(from_debuff)
     with_partner(self, "remove_from_deck", function(center, card)
         center:remove_from_deck(card, from_debuff)
     end)
+    partner_intrinsic(self, -1)
 end
 
 --- Applies the absorbed half's passive at merge time.
@@ -2455,6 +2573,30 @@ function Bind.apply_partner_passive(host)
     with_partner(host, "add_to_deck", function(center, card)
         center:add_to_deck(card, false)
     end)
+    partner_intrinsic(host, 1)
+end
+
+--- The mirror, for a merge coming apart while the card stays in the row.
+--- Splitting is not leaving the deck - the survivor is still there and vanilla
+--- runs neither hook - so without this the departing half's passive would stay
+--- behind, and merging two Drunkards then destroying one would be a way to
+--- keep the second discard for good.
+function Bind.remove_partner_passive(card)
+    with_partner(card, "remove_from_deck", function(center, held)
+        center:remove_from_deck(held, false)
+    end)
+    partner_intrinsic(card, -1)
+end
+
+--- ...and the same for the HOST's own, for when the host is the half that
+--- goes. Taken while card.config.center and card.ability are still the
+--- host's, because a moment later they are the survivor's.
+function Bind.remove_own_passive(card)
+    local center = card.config.center
+    if type(center) == "table" and type(center.remove_from_deck) == "function" then
+        pcall(center.remove_from_deck, center, card, false)
+    end
+    intrinsic_passive(card.ability, -1)
 end
 
 --------------------------------------------------------------------------------
