@@ -135,6 +135,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "blue_card",
+    path = "blue_card.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "bluto",
     path = "bluto.png",
     px = 71,
@@ -366,6 +373,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "fuchsia_card",
+    path = "fuchsia_card.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "fufu",
     path = "fufu.png",
     px = 71,
@@ -396,6 +410,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "glowypumpkin",
     path = "glowypumpkin.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "green_card",
+    path = "green_card.png",
     px = 71,
     py = 95,
 }

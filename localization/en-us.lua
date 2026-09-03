@@ -179,6 +179,14 @@ return {
                     "{C:inactive}(#1#)",
                 },
             },
+            j_celesta_blue_card = {
+                name = "Blue Card",
+                text = {
+                    "This Joker gains {C:chips}+#1#{} Chips",
+                    "when a {C:attention}Booster Pack{} is skipped",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
+                },
+            },
             j_celesta_bluto = {
                 name = "Bluto",
                 text = {
@@ -430,6 +438,14 @@ return {
                     "{C:mult}+#1#{} Mult",
                 },
             },
+            j_celesta_fuchsia_card = {
+                name = "Fuchsia Card",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult",
+                    "per {C:attention}reroll{} in the shop",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
             j_celesta_fufu = {
                 name = "Fufu",
                 text = {
@@ -464,6 +480,14 @@ return {
                 text = {
                     "{C:planet}Planet{} cards created by",
                     "{C:blue}Blue Seals{} are {C:dark_edition}Negative{}",
+                },
+            },
+            j_celesta_green_card = {
+                name = "Green Card",
+                text = {
+                    "This Joker gains {X:chips,C:white}X#1#{} Chips",
+                    "when a {C:attention}Blind{} is skipped",
+                    "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
                 },
             },
             j_celesta_hannahhyrule = {

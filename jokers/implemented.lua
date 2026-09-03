@@ -8194,6 +8194,141 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
+-- Blue, Green and Fuchsia Card - paid for the things you walk past
+--------------------------------------------------------------------------------
+--
+-- Vanilla's Red Card is the shape all three follow: a Joker that grows on a
+-- moment the player usually treats as a non-event. Red Card takes the skipped
+-- Booster; these take the skipped Booster in Chips, the skipped Blind, and the
+-- reroll.
+--
+-- All three contexts are Steamodded's, patched into the same if/elseif chain
+-- Red Card and Flash Card sit in (card.lua:2709, :2737, :2751), so they arrive
+-- exactly where vanilla's own do and need nothing else installed:
+--
+--     context.skipping_booster  a Booster Pack was skipped
+--     context.skip_blind        a Blind was skipped for its tag
+--     context.reroll_shop       the shop was rerolled
+--
+-- `not context.blueprint` on each, which is what vanilla puts on Red Card and
+-- Flash Card. A copier answering these would bank the growth onto the ORIGINAL
+-- a second time - the scaling lives on the card's own ability, and a copy has
+-- no ability of its own to grow. Blueprint still copies what they score.
+--
+-- Nothing resets any of them. They only ever climb.
+
+--------------------------------------------------------------------------------
+-- Blue Card [Common] - +6 Chips per Booster Pack skipped
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "blue_card",
+    atlas = "blue_card",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { gain = 6, chips = 0 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.gain, card.ability.extra.chips } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.skipping_booster and not context.blueprint then
+            card.ability.extra.chips =
+                card.ability.extra.chips + card.ability.extra.gain
+            return {
+                message = localize { type = "variable", key = "a_chips",
+                                     vars = { card.ability.extra.chips } },
+                colour = G.C.CHIPS, card = card,
+            }
+        end
+
+        if context.joker_main and card.ability.extra.chips > 0 then
+            return { chips = card.ability.extra.chips }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Green Card [Uncommon] - X0.25 Chips per Blind skipped
+--------------------------------------------------------------------------------
+--
+-- x_chips is stored as the multiplier itself rather than as the amount above
+-- 1, because that is the number the description prints and the number scoring
+-- wants; the +0.25 is the step, kept beside it.
+
+SMODS.Joker {
+    key = "green_card",
+    atlas = "green_card",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 7,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { gain = 0.25, x_chips = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.gain, card.ability.extra.x_chips } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.skip_blind and not context.blueprint then
+            card.ability.extra.x_chips =
+                card.ability.extra.x_chips + card.ability.extra.gain
+            return {
+                message = localize { type = "variable", key = "a_xchips",
+                                     vars = { card.ability.extra.x_chips } },
+                colour = G.C.CHIPS, card = card,
+            }
+        end
+
+        -- X1 is no multiplier at all, and returning it would put a "X1 Chips"
+        -- flourish over the Joker every hand for doing nothing.
+        if context.joker_main and card.ability.extra.x_chips > 1 then
+            return { x_chips = card.ability.extra.x_chips }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Fuchsia Card [Rare] - X0.2 Mult per shop reroll
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "fuchsia_card",
+    atlas = "fuchsia_card",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { gain = 0.2, x_mult = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.gain, card.ability.extra.x_mult } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.reroll_shop and not context.blueprint then
+            card.ability.extra.x_mult =
+                card.ability.extra.x_mult + card.ability.extra.gain
+            return {
+                message = localize { type = "variable", key = "a_xmult",
+                                     vars = { card.ability.extra.x_mult } },
+                colour = G.C.MULT, card = card,
+            }
+        end
+
+        if context.joker_main and card.ability.extra.x_mult > 1 then
+            return { x_mult = card.ability.extra.x_mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
 -- GlassesJournal [Uncommon] - Steel first, then Aces - and the deal order
 -- generally, which the Gene Seal also has a claim on.
 --------------------------------------------------------------------------------
