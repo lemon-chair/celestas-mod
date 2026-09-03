@@ -267,10 +267,11 @@ end
 -- defaults the game would, so changing a number here changes the text with it
 -- rather than leaving it to say something that used to be true.
 --
--- The displayed hand and discard counts are the base-stake ones. From Gold
--- stake up the game takes a further discard before any deck is applied, so the
--- real number is one lower - which is true of every vanilla deck's description
--- too, and is left reading the same way they do.
+-- Only what it actually changes is in the config, and so only that is in the
+-- description. Discards and hand size are both absent rather than set to 0:
+-- the text counts what the config holds, so a 0 left behind would print a
+-- live "-0" on the deck select screen, and a stat the deck does not touch has
+-- no business being listed beside the ones it does.
 
 SMODS.Back {
     key = 'hell',
@@ -282,7 +283,6 @@ SMODS.Back {
 
     config = {
         hands = -3,            -- 4 -> 1
-        discards = -1,         -- 3 -> 2
         joker_slot = -1,       -- 5 -> 4
         consumable_slot = -1,  -- 2 -> 1
         no_interest = true,
@@ -292,7 +292,6 @@ SMODS.Back {
         local base = get_starting_params()
         return { vars = {
             base.hands + self.config.hands,
-            base.discards + self.config.discards,
             math.abs(self.config.joker_slot),
             math.abs(self.config.consumable_slot),
         } }

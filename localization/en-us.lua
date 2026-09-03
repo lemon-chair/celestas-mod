@@ -1809,8 +1809,8 @@ return {
             b_celesta_hell = {
                 name = "Hell Deck",
                 text = {
-                    "{C:attention}#1#{} hand, {C:attention}#2#{} discards",
-                    "{C:red}-#3#{} Joker slot, {C:red}-#4#{} consumable slot",
+                    "{C:attention}#1#{} hand",
+                    "{C:red}-#2#{} Joker slot, {C:red}-#3#{} consumable slot",
                     "Earn no {C:attention}interest{}",
                 },
             },
