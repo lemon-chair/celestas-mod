@@ -7039,13 +7039,82 @@ SMODS.Joker {
 -- Slots are held on the CardArea, not in starting_params, and the one thing in
 -- vanilla that changes them mid-run is the Negative edition:
 --     G.jokers.config.card_limit = G.jokers.config.card_limit + 1
---     G.consumeables.config.card_limit = G.consumeables.config.card_limit + 1
 -- in Card:add_to_deck, undone in remove_from_deck. This is that, with bigger
--- numbers.
+-- numbers - but NOT applied once on arrival, which is what it used to do and
+-- what made it silently un-scalable.
 --
--- It has to give its own slot back. add_to_deck runs while the Joker is being
--- placed, so the row it is joining is already one card fuller than the limit
--- it had - the +3 covers that and leaves two free.
+-- Granted by DELTA, from `update`, against what this card is already holding.
+-- Two reasons, and the second is the one that matters:
+--
+--   * Nothing re-reads the number after it changes. Applying it once in
+--     add_to_deck meant that anything raising extra.joker_slots later - Yoka
+--     Siri, a Cryptid misprint - moved the text on the card and nothing else.
+--     The card said +4.5 while the tray still held 8.
+--
+--   * Re-seating the Joker to re-apply it does not work either, and cannot.
+--     Steamodded replaces a CardArea's config with a metatable: reading
+--     card_limit returns `total_slots - extra_slots_used`, and writing it
+--     stores `mod = value - base - extra_slots` (lovely/card_limit.toml:30).
+--     total_slots is only recomputed once a frame, in
+--     CardArea:handle_card_limit. So a remove-then-add inside one frame reads
+--     the SAME stale number twice: take 3 off 8 and then add 4.5 to 8 again,
+--     and the run ends up with 12.5 slots rather than 9.5.
+--
+-- One write per change, which is what makes the read-modify-write safe: the
+-- sync only writes when the number has moved, and records what it granted, so
+-- there is never a second write before the frame's recompute.
+
+local SERAPH_GRANTED = "celesta_seraph_granted"
+
+--- Moves an area's slot count by `delta`.
+---
+--- Through card_limits.mod rather than through config.card_limit, and that is
+--- the whole difference between this working and not. Under Steamodded
+--- card_limit is DERIVED - reading it returns total_slots minus the slots in
+--- use, and total_slots is recomputed once a frame in
+--- CardArea:handle_card_limit. `mod` is where the write actually lands and is
+--- the authoritative half.
+---
+--- So `config.card_limit = config.card_limit + n` reads a number that is only
+--- as fresh as the last frame. One of those per frame is fine. TWO is not, and
+--- two is exactly what Cryptid does: with_deck_effects takes the Joker out of
+--- the deck, changes the number and puts it back, all inside one frame, so
+--- both the take and the give read the same stale 8 - and 8 minus 3 plus 4.5
+--- is 9.5 only if the 8 moved in between. It does not, and the run ended up
+--- with 12.5 slots.
+---
+--- Adding to `mod` has no such problem: it is stored, not derived.
+local function bump_limit(area, delta)
+    if delta == 0 or not area or not area.config then return end
+    local limits = area.config.card_limits
+    if limits then
+        limits.mod = (limits.mod or 0) + delta
+    else
+        -- No Steamodded metatable: card_limit is an ordinary field.
+        area.config.card_limit = area.config.card_limit + delta
+    end
+end
+
+--- Brings the run's slots in line with what this card currently promises.
+local function seraph_sync(card)
+    local held = card.ability[SERAPH_GRANTED] or { jokers = 0, consumables = 0 }
+    local want_j = card.ability.extra.joker_slots
+    local want_c = card.ability.extra.consumable_slots
+    if held.jokers == want_j and held.consumables == want_c then return end
+
+    bump_limit(G.jokers, want_j - held.jokers)
+    bump_limit(G.consumeables, want_c - held.consumables)
+    card.ability[SERAPH_GRANTED] = { jokers = want_j, consumables = want_c }
+end
+
+--- ...and hands all of it back.
+local function seraph_release(card)
+    local held = card.ability[SERAPH_GRANTED]
+    if not held then return end
+    bump_limit(G.jokers, -held.jokers)
+    bump_limit(G.consumeables, -held.consumables)
+    card.ability[SERAPH_GRANTED] = nil
+end
 
 SMODS.Joker {
     key = "smittenseraph",
@@ -7054,7 +7123,7 @@ SMODS.Joker {
     rarity = 3, cost = 9,
     unlocked = true, discovered = true,
     -- Nothing to copy: the slots belong to this card, and they are given and
-    -- taken back by its own add_to_deck and remove_from_deck.
+    -- taken back by its own hooks.
     blueprint_compat = false, eternal_compat = true,
 
     config = { extra = { joker_slots = 3, consumable_slots = 1 } },
@@ -7065,25 +7134,18 @@ SMODS.Joker {
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        if G.jokers then
-            G.jokers.config.card_limit =
-                G.jokers.config.card_limit + card.ability.extra.joker_slots
-        end
-        if G.consumeables then
-            G.consumeables.config.card_limit =
-                G.consumeables.config.card_limit + card.ability.extra.consumable_slots
-        end
+        seraph_sync(card)
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        if G.jokers then
-            G.jokers.config.card_limit =
-                G.jokers.config.card_limit - card.ability.extra.joker_slots
-        end
-        if G.consumeables then
-            G.consumeables.config.card_limit =
-                G.consumeables.config.card_limit - card.ability.extra.consumable_slots
-        end
+        seraph_release(card)
+    end,
+
+    -- Every frame, but it writes only when the number has actually moved. The
+    -- added_to_deck gate keeps a copy in the shop or the collection from
+    -- handing out slots it does not own.
+    update = function(self, card, front)
+        if card.added_to_deck then seraph_sync(card) end
     end,
 }
 
@@ -7100,9 +7162,51 @@ SMODS.Joker {
 -- Both, not one: moving only the play limit would let you select six cards to
 -- play and then find you could not select six to discard.
 --
+-- Granted by DELTA from `update`, for the reason SmittenSeraph above is: those
+-- two functions ADD to a stored number, and nothing calls them again when
+-- extra.limit changes. Applied once on arrival, anything that raised the
+-- number later - Yoka Siri, a misprint - moved the text on the card and left
+-- the actual limit where it was.
+--
 -- Unhighlighting on the way out is Cryptid's too, and it matters - without it
 -- a hand that already had six cards picked keeps them selected after the limit
 -- has dropped back to five.
+
+local SHIABUN_GRANTED = "celesta_shiabun_granted"
+
+--- Moves both limits by however much this card's number has changed.
+local function shiabun_sync(card)
+    if not (SMODS.change_play_limit and SMODS.change_discard_limit) then
+        CelestasMod.warn_once("shiabun_no_limit_api",
+            "Shiabun raises the card selection limit through "
+            .. "SMODS.change_play_limit, which this Steamodded does not "
+            .. "have; the Joker will do nothing")
+        return
+    end
+    local held = card.ability[SHIABUN_GRANTED] or 0
+    local want = card.ability.extra.limit
+    if held == want then return end
+
+    SMODS.change_play_limit(want - held)
+    SMODS.change_discard_limit(want - held)
+    card.ability[SHIABUN_GRANTED] = want
+end
+
+--- ...and gives all of it back.
+local function shiabun_release(card)
+    local held = card.ability[SHIABUN_GRANTED]
+    if not held or held == 0 then
+        card.ability[SHIABUN_GRANTED] = nil
+        return
+    end
+    if SMODS.change_play_limit and SMODS.change_discard_limit then
+        SMODS.change_play_limit(-held)
+        SMODS.change_discard_limit(-held)
+    end
+    card.ability[SHIABUN_GRANTED] = nil
+    -- A selection made under the old limit would otherwise survive it.
+    if G.hand and G.hand.unhighlight_all then G.hand:unhighlight_all() end
+end
 
 SMODS.Joker {
     key = "shiabun",
@@ -7119,23 +7223,15 @@ SMODS.Joker {
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        if not (SMODS.change_play_limit and SMODS.change_discard_limit) then
-            CelestasMod.warn_once("shiabun_no_limit_api",
-                "Shiabun raises the card selection limit through "
-                .. "SMODS.change_play_limit, which this Steamodded does not "
-                .. "have; the Joker will do nothing")
-            return
-        end
-        SMODS.change_play_limit(card.ability.extra.limit)
-        SMODS.change_discard_limit(card.ability.extra.limit)
+        shiabun_sync(card)
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        if not (SMODS.change_play_limit and SMODS.change_discard_limit) then return end
-        SMODS.change_play_limit(-card.ability.extra.limit)
-        SMODS.change_discard_limit(-card.ability.extra.limit)
-        -- A selection made under the old limit would otherwise survive it.
-        if G.hand and G.hand.unhighlight_all then G.hand:unhighlight_all() end
+        shiabun_release(card)
+    end,
+
+    update = function(self, card, front)
+        if card.added_to_deck then shiabun_sync(card) end
     end,
 }
 
