@@ -338,8 +338,13 @@ CelestasMod.WEATHER_JOKERS = {
         "bao",              -- pays while it lasts
         "monikacinnyroll",  -- pays while it lasts
     },
+    -- Freezing is the Snowstorm's other half rather than a separate thing:
+    -- AmaLee raises the storm AND freezes with it, so the Jokers that live
+    -- around Frozen belong to the same weather.
     snowstorm = {
-        "amalee",           -- starts one, and pays while it lasts
+        "amalee",           -- starts one, and freezes a Joker under it
+        "vulpixie",         -- a frozen Joker of yours never misfires
+        "smugalana",        -- strips a sticker as the ice comes off
     },
 }
 
@@ -362,9 +367,73 @@ local function weather_keys()
     return weather and WEATHER_KEYS[weather] or nil
 end
 
-local celesta_weather_pool_ref = get_current_pool
-function get_current_pool(_type, ...)
-    local pool, key = celesta_weather_pool_ref(_type, ...)
+--------------------------------------------------------------------------------
+-- Verdant - nothing common grows here
+--------------------------------------------------------------------------------
+--
+-- Two things have to be true for a Common Joker never to appear, because there
+-- are two ways one is made.
+--
+-- Almost every Joker comes from a rarity that was ROLLED, and Steamodded rolls
+-- it through SMODS.poll_rarity, which scales each rarity's weight by
+-- `G.GAME[<rarity>_mod]` (src/utils.lua:838). Setting common_mod to 0 gives
+-- Common a weight of zero, so the cumulative test never reaches it and it is
+-- never selected. That is Steamodded's own knob rather than a hook, and it
+-- rides on G.GAME, so it is saved with the run.
+--
+-- The other way is a caller that NAMES the rarity. Riff-raff asks for
+-- create_card('Joker', G.jokers, nil, 0, ...) (card.lua:2855), and a numeric
+-- rarity is read as a poll value: 0 is not above 0.7, so it means Common
+-- outright and no weighting can touch it. Those are turned into Uncommon in
+-- the pool hook below.
+--
+-- Banning every Common key instead would have been the obvious move and is
+-- wrong: get_current_pool falls back to j_joker when a pool comes out empty
+-- (common_events.lua:2359), and j_joker is itself Common - so a shop would
+-- have filled with the one Joker the deck is meant to exclude.
+
+--- True while the run is being played on the Verdant Deck. Read from the flag
+--- the deck sets rather than from the Back, because that is what a save keeps.
+local function verdant_run()
+    return G.GAME and G.GAME.celesta_no_commons == true
+end
+
+SMODS.Back {
+    key = "verdant",
+    atlas = "decks",
+    pos = { x = 6, y = 0 },
+
+    unlocked = true,
+    discovered = true,
+
+    apply = function(self, back)
+        if not G.GAME then return end
+        G.GAME.celesta_no_commons = true
+        -- Weight, not ban: see above.
+        G.GAME.common_mod = 0
+    end,
+}
+
+local celesta_deck_pool_ref = get_current_pool
+function get_current_pool(_type, _rarity, _legendary, _append)
+    -- Verdant, before the pool is built: a caller that named Common by number
+    -- is handed Uncommon instead.
+    --
+    -- Only a NUMBER is rewritten. poll_rarity probes each rarity's pool by its
+    -- key - the string "Common" - to find out whether it is empty
+    -- (src/utils.lua:828), and answering that probe with Uncommon's pool would
+    -- be telling it about the wrong rarity. A number is always a caller
+    -- choosing, which is the only case this is for.
+    --
+    -- The replacement is the string rather than 2, because a number is read as
+    -- a poll value: 2 is above 0.95, so passing it would ask for a Rare.
+    if _type == "Joker" and type(_rarity) == "number" and verdant_run() then
+        local named = (_legendary and 4)
+            or (_rarity > 0.95 and 3) or (_rarity > 0.7 and 2) or 1
+        if named == 1 then _rarity = "Uncommon" end
+    end
+
+    local pool, key = celesta_deck_pool_ref(_type, _rarity, _legendary, _append)
     if _type ~= "Joker" then return pool, key end
 
     local keys = weather_keys()
@@ -392,8 +461,8 @@ function get_current_pool(_type, ...)
     return pool, key
 end
 
---- The two decks differ only in which weather they hold and which cell of the
---- sheet they are drawn from, so they are declared from a list.
+--- The two weather decks differ only in which weather they hold and which cell
+--- of the sheet they are drawn from, so they are declared from a list.
 local WEATHER_DECKS = {
     { key = "blizzard", pos = 4, weather = "snowstorm" },
     { key = "rain",     pos = 5, weather = "downpour" },

@@ -38,6 +38,7 @@ DECKS = [
     ("hell", "hell"),
     ("blizzard", "blizzard"),
     ("rain", "rain"),
+    ("verdant", "verdant"),
 ]
 
 

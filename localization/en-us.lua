@@ -1832,6 +1832,13 @@ return {
                     "Earn no {C:attention}interest{}",
                 },
             },
+            b_celesta_verdant = {
+                name = "Verdant Deck",
+                text = {
+                    "{C:common}Common{} Jokers no",
+                    "longer appear",
+                },
+            },
             b_celesta_plaid = {
                 name = "Plaid Deck",
                 text = {
