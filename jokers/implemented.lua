@@ -3711,17 +3711,49 @@ function CelestasMod.stored_list(stored)
     return stored
 end
 
---- Everything needed to rebuild a playing card, as plain strings.
+--- The permanent bonuses a playing card can accumulate - Milk Bottle's Chips,
+--- Burgundy Brew's Mult, a Rose Seal's X Mult, Hiker's, and the rest.
+---
+--- This is not a list of everything that could be called an upgrade; it is
+--- vanilla's own, taken from Card:set_ability (card.lua:365-375), which
+--- carries exactly these eleven forward when a card's centre changes under it
+--- and rebuilds everything else. That is the game's existing answer to "what
+--- belongs to the card rather than to its enhancement", and a card coming back
+--- from Camila is the same question. perma_debuff is deliberately not among
+--- them - set_ability lists it in reset_keys, so it does NOT survive, and
+--- carrying it here would make Camila the one way to keep a debuff through a
+--- change of enhancement.
+CelestasMod.PERMA_KEYS = {
+    "perma_bonus", "perma_mult", "perma_x_mult", "perma_x_chips",
+    "perma_h_chips", "perma_h_mult", "perma_h_x_mult", "perma_h_x_chips",
+    "perma_p_dollars", "perma_h_dollars", "perma_repetitions",
+}
+
+--- Everything needed to rebuild a playing card, as plain strings and numbers.
 --- Stored on the joker and therefore serialized into the save, so it has to
 --- survive a reload with no live references in it.
 function CelestasMod.snapshot_card(card)
     if not (card and card.base) then return nil end
+
+    -- Only what was actually earned. set_ability starts all eleven at 0, so a
+    -- card with no upgrades stores no `perma` table at all and the shape on
+    -- disk is exactly what it was before this existed.
+    local perma = nil
+    for _, key in ipairs(CelestasMod.PERMA_KEYS) do
+        local value = card.ability and card.ability[key]
+        if type(value) == "number" and value ~= 0 then
+            perma = perma or {}
+            perma[key] = value
+        end
+    end
+
     return {
         suit = card.base.suit,
         value = card.base.value,
         center = card.config and card.config.center_key or "c_base",
         edition = card.edition and card.edition.key or "none",
         seal = card.seal,
+        perma = perma,
     }
 end
 
@@ -3807,11 +3839,24 @@ SMODS.Joker {
                         G.play, nil, nil, { G.C.SECONDARY_SET.Enhanced })
 
                     -- A pair may name the edition outright; otherwise the
-                    -- card climbs one rung from whatever it was.
+                    -- card climbs one rung from whatever it was. The ladder
+                    -- only knows the three it climbs, so anything else - a
+                    -- Negative card, an edition from another mod - falls back
+                    -- to what it already had. Without that last `or` the
+                    -- ladder returns nil for it and the card comes back with
+                    -- no edition at all, which loses more than it grants.
                     local upgraded = (pair and pair.camila_edition)
                         or CelestasMod.EDITION_LADDER[stored.edition or "none"]
+                        or stored.edition
                     if upgraded then restored:set_edition(upgraded, true, true) end
                     if stored.seal then restored:set_seal(stored.seal, true) end
+
+                    -- The upgrades it was carrying. Written straight onto the
+                    -- ability because that is where they live; set_ability has
+                    -- already run and started each of them at 0.
+                    for key, value in pairs(stored.perma or {}) do
+                        restored.ability[key] = value
+                    end
 
                     SMODS.calculate_effect({
                         message = localize("celesta_returned"),
