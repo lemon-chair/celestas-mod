@@ -1806,6 +1806,24 @@ return {
                     "{C:green}1 in #2#{} for {C:spectral}The Soul{} in the shop",
                 },
             },
+            b_celesta_blizzard = {
+                name = "Blizzard Deck",
+                text = {
+                    "It is always a {C:attention}Snowstorm",
+                    "Jokers that care about a",
+                    "{C:attention}Snowstorm{} are {C:attention}#1#X{} as likely",
+                    "to appear",
+                },
+            },
+            b_celesta_rain = {
+                name = "Rain Deck",
+                text = {
+                    "It is always a {C:attention}Downpour",
+                    "Jokers that care about a",
+                    "{C:attention}Downpour{} are {C:attention}#1#X{} as likely",
+                    "to appear",
+                },
+            },
             b_celesta_hell = {
                 name = "Hell Deck",
                 text = {

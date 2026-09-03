@@ -299,6 +299,131 @@ SMODS.Back {
 }
 
 --------------------------------------------------------------------------------
+-- Blizzard and Rain - the weather never lets up
+--------------------------------------------------------------------------------
+--
+-- Two decks, one shape: a weather effect that holds for the whole run instead
+-- of for the round a Joker started it in, and a shop that leans toward the
+-- Jokers which care about that weather.
+--
+-- The weather itself is Arena.set_permanent, which is asked about separately
+-- from the round-scoped one for the reason given in arena/arena.lua: a round's
+-- own weather still wins while it lasts, so starting a Downpour on the
+-- Blizzard Deck really does give a Downpour for that round.
+--
+-- The shop half is a hook on get_current_pool. That function builds a flat
+-- array where every candidate contributes one slot - its key, or the string
+-- 'UNAVAILABLE' - and create_card picks from it uniformly, resampling until it
+-- lands on something available (common_events.lua:2449). So a key listed more
+-- than once is simply drawn more often, and no other Joker's chances change in
+-- kind. Appending is also the only edit that cannot break the array: the
+-- positions vanilla built keep their meaning.
+--
+-- An extra copy is only appended for a Joker the pool ALREADY offers. The
+-- base pool writes 'UNAVAILABLE' over one that is owned, banned or gated, and
+-- appending its key regardless would put an owned Joker back in the shop -
+-- which is exactly the check the base pool exists to make.
+
+CelestasMod.WEATHER_WEIGHT = 4
+
+--- Which Jokers each weather is about: they start it, or they read it.
+--- Verified against jokers/implemented.lua by test_weather_decks.py rather
+--- than trusted, because a Joker that learns about the weather later and is
+--- not added here would simply never see the shop bonus.
+CelestasMod.WEATHER_JOKERS = {
+    downpour = {
+        "aquwa",            -- starts one
+        "rainyrentyn",      -- starts one
+        "rainhoe",          -- starts one, and pays while it lasts
+        "bao",              -- pays while it lasts
+        "monikacinnyroll",  -- pays while it lasts
+    },
+    snowstorm = {
+        "amalee",           -- starts one, and pays while it lasts
+    },
+}
+
+-- Prefixed once, here at load, through the prefix the Ecstasy Deck already
+-- resolved above: SMODS.current_mod is only meaningful while the mod is
+-- loading and is nil by the time a shop is built.
+local WEATHER_KEYS = {}
+for weather, names in pairs(CelestasMod.WEATHER_JOKERS) do
+    local keys = {}
+    for _, name in ipairs(names) do
+        keys[#keys + 1] = CELESTA_JOKER_PREFIX .. name
+    end
+    WEATHER_KEYS[weather] = keys
+end
+CelestasMod.WEATHER_JOKER_KEYS = WEATHER_KEYS
+
+--- The prefixed keys for the weather currently held up, or nil.
+local function weather_keys()
+    local weather = CelestasMod.Arena and CelestasMod.Arena.permanent()
+    return weather and WEATHER_KEYS[weather] or nil
+end
+
+local celesta_weather_pool_ref = get_current_pool
+function get_current_pool(_type, ...)
+    local pool, key = celesta_weather_pool_ref(_type, ...)
+    if _type ~= "Joker" then return pool, key end
+
+    local keys = weather_keys()
+    if not keys then return pool, key end
+
+    -- Guarded: a shop that cannot be built is a run that cannot continue, and
+    -- a shop that is merely not weighted is a disappointment.
+    local ok, err = pcall(function()
+        local offered = {}
+        for _, entry in ipairs(pool) do offered[entry] = true end
+
+        for _, joker in ipairs(keys) do
+            if offered[joker] then
+                for _ = 2, CelestasMod.WEATHER_WEIGHT do
+                    pool[#pool + 1] = joker
+                end
+            end
+        end
+    end)
+    if not ok then
+        CelestasMod.warn_once("weather_pool",
+            "could not weight the weather Jokers: " .. tostring(err))
+    end
+
+    return pool, key
+end
+
+--- The two decks differ only in which weather they hold and which cell of the
+--- sheet they are drawn from, so they are declared from a list.
+local WEATHER_DECKS = {
+    { key = "blizzard", pos = 4, weather = "snowstorm" },
+    { key = "rain",     pos = 5, weather = "downpour" },
+}
+
+for _, entry in ipairs(WEATHER_DECKS) do
+    SMODS.Back {
+        key = entry.key,
+        atlas = "decks",
+        pos = { x = entry.pos, y = 0 },
+
+        unlocked = true,
+        discovered = true,
+
+        -- Nothing else changes: no starting param is touched, so there is no
+        -- config at all and Back:apply_to_run has nothing of its own to do.
+
+        -- A Back's loc_vars is called as `back_config:loc_vars()`, with
+        -- nothing after self - the same trap the Ecstasy Deck documents above.
+        loc_vars = function(self, info_queue, back)
+            return { vars = { CelestasMod.WEATHER_WEIGHT } }
+        end,
+
+        apply = function(self, back)
+            CelestasMod.Arena.set_permanent(entry.weather)
+        end,
+    }
+end
+
+--------------------------------------------------------------------------------
 -- Hell: Bosses the deck does not meet
 --------------------------------------------------------------------------------
 --

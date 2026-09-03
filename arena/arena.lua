@@ -80,18 +80,46 @@ function Arena.trace(msg)
     sendInfoMessage("[arena] " .. msg, "CelestasMod")
 end
 
+--- The weather a DECK holds up for the whole run, if any.
+---
+--- Kept apart from G.GAME.celesta_arena rather than written into it, because
+--- that one is round-scoped by design: Arena.active clears it as soon as
+--- G.GAME.round moves on, and the shop clears it outright. A deck's weather
+--- has no round to belong to, so it has to be asked about separately.
+function Arena.permanent()
+    return G.GAME and G.GAME.celesta_arena_always or nil
+end
+
+--- Makes a weather permanent for the rest of the run. Called from a Back's
+--- apply; on G.GAME so it is saved with the run like everything else.
+function Arena.set_permanent(key)
+    if not G.GAME then return end
+    if key ~= nil and not Arena.definitions[key] then
+        sendWarnMessage("No arena effect named " .. tostring(key), "CelestasMod")
+        return
+    end
+    G.GAME.celesta_arena_always = key
+end
+
 function Arena.active()
     -- Debug toggle in the mod's Config tab: forces the effect on without
     -- needing to actually draw Aquwa. Still only draws in-round.
     if MOD.config and MOD.config.debug_downpour then return "downpour" end
-    if not G.GAME or not G.GAME.celesta_arena then return nil end
-    -- Safety net for save/load and any path that skips the shop: an effect
-    -- never outlives the round it was started in.
-    if G.GAME.celesta_arena_round and G.GAME.round
-        and G.GAME.round ~= G.GAME.celesta_arena_round then
-        return nil
+    if not G.GAME then return nil end
+
+    if G.GAME.celesta_arena then
+        -- Safety net for save/load and any path that skips the shop: an
+        -- effect never outlives the round it was started in.
+        if not (G.GAME.celesta_arena_round and G.GAME.round
+                and G.GAME.round ~= G.GAME.celesta_arena_round) then
+            return G.GAME.celesta_arena
+        end
     end
-    return G.GAME.celesta_arena
+
+    -- A round's own weather wins while it lasts, which keeps "one at a time"
+    -- true: a Joker that starts a Downpour on the Blizzard Deck really does
+    -- get a Downpour, and the deck's own comes back when the round ends.
+    return Arena.permanent()
 end
 
 function Arena.is_active(key)
