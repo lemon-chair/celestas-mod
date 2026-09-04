@@ -44,26 +44,37 @@ local MULT_OPERATORS = {
     { operation = 1, keys = { "mult", "h_mult", "mult_mod" } },
     { operation = 2, keys = { "x_mult", "xmult", "Xmult",
                               "x_mult_mod", "Xmult_mod" } },
+    -- The top rung is only reachable by a Yharon merged with a Yharon; a
+    -- single one's cap sends ^Mult straight back as ^Mult.
+    { operation = 3, keys = { "e_mult", "emult", "Emult_mod" } },
 }
 
---- Indexed by the operation number, 1 = addition through 3 = exponentiation.
-local MULT_RETURN = { "mult", "xmult", "emult" }
+--- Indexed by the operation number, 1 = addition through 4 = tetration.
+local MULT_RETURN = { "mult", "xmult", "emult", "eemult" }
 
 --- The popup for each, by the game's own eval types: it picks the wording, the
 --- colour and the sound (multhit1, multhit2, Talisman's ExponentialMult) so
 --- the promoted number announces itself the way that operator always does.
-local MULT_MESSAGE = { "mult", "x_mult", "e_mult" }
+local MULT_MESSAGE = { "mult", "x_mult", "e_mult", "ee_mult" }
 
---- The mark left on the Joker to Yharon's left.
+--- The mark left on the Joker to Yharon's left. Its VALUE is the ceiling that
+--- Yharon promotes up to, because that is the only thing about the marking
+--- Yharon the promotion needs to know later.
 local YHARON_MARK = "celesta_yharon"
+
+--- Exponentiation on its own; tetration for a Yharon merged with a Yharon.
+--- Talisman goes further still - pentation - but the card says tetration and
+--- a ceiling that is not the printed one is not a ceiling.
+local YHARON_CAP = 3
+local YHARON_PAIR_CAP = 4
 
 --- Resolved at load, where SMODS.current_mod is still valid.
 local YHARON_KEY = "j_" .. SMODS.current_mod.prefix .. "_yharon"
 
---- One step up the ladder.
+--- One step up the ladder, stopping at `cap`.
 --- Returns whether the key moved, the key to use, and the operation number it
 --- landed on - nil when nothing moved.
-function CelestasMod.yharon_new_key(key)
+function CelestasMod.yharon_new_key(key, cap)
     -- Steamodded turns Mult off entirely for scoring calculations that do not
     -- have one (SMODS.Scoring_Calculation). Promoting a key it is going to
     -- ignore would be inventing an effect out of nothing.
@@ -75,9 +86,12 @@ function CelestasMod.yharon_new_key(key)
     for _, op in ipairs(MULT_OPERATORS) do
         for _, candidate in ipairs(op.keys) do
             if key == candidate then
-                -- Capped at 3: exponentiation is the top of the ladder, and
-                -- Talisman's tetration above it is not what the card says.
-                local raised = math.max(1, math.min(op.operation + 1, 3))
+                local ceiling = cap or YHARON_CAP
+                local raised = math.max(1, math.min(op.operation + 1, ceiling))
+                -- A key already at the ceiling has not moved, whatever the
+                -- table says: returning it as a promotion would announce an
+                -- effect that is the same effect.
+                if raised <= op.operation then return false, key end
                 return true, MULT_RETURN[raised], raised
             end
         end
@@ -109,7 +123,10 @@ function SMODS.calculate_individual_effect(effect, scored_card, key, amount,
     local announce = nil
 
     if marked then
-        local moved, new_key, raised = CelestasMod.yharon_new_key(key)
+        -- The mark carries the ceiling. An older save could still hold the
+        -- plain flag this used to be, and math.min against `true` is a crash.
+        local cap = type(marked) == "number" and marked or nil
+        local moved, new_key, raised = CelestasMod.yharon_new_key(key, cap)
         if moved then
             key = new_key
             -- The Yharon is the Joker immediately to the marked one's right -
@@ -173,6 +190,24 @@ function CelestasMod.yharon_available()
     return souls_spent() > 1
 end
 
+--- How high this particular Yharon promotes.
+---
+--- A Yharon merged with a Yharon reaches tetration; every other card wearing
+--- this centre stops at exponentiation. Asked of the CARD rather than looked
+--- up as a Bind pair, because both halves of that merge run this and both have
+--- to answer the same - the pair is registered in merge/bind.lua only so that
+--- it has a name and a description in the Collection.
+local function yharon_cap(card)
+    local Bind = CelestasMod.Bind
+    if Bind and Bind.is_merged and Bind.is_merged(card)
+        and card.ability.celesta_bind.key == YHARON_KEY
+        and card.config and card.config.center
+        and card.config.center.key == YHARON_KEY then
+        return YHARON_PAIR_CAP
+    end
+    return YHARON_CAP
+end
+
 --------------------------------------------------------------------------------
 -- The Joker
 --------------------------------------------------------------------------------
@@ -207,7 +242,17 @@ SMODS.Joker {
                     -- the Mult it does not give.
                     if left and left.config and left.config.center
                         and left.config.center.key ~= YHARON_KEY then
-                        left.ability[YHARON_MARK] = true
+                        -- The HIGHER ceiling wins rather than the last one
+                        -- written, because a Yharon + Yharon merge runs this
+                        -- twice: once as the host, which can see the pair, and
+                        -- once as the absorbed half, whose ability table is
+                        -- its own and carries no record of the merge at all.
+                        -- Overwriting would let the second pass undo the pair.
+                        local cap = yharon_cap(card)
+                        local held = left.ability[YHARON_MARK]
+                        if type(held) ~= "number" or cap > held then
+                            left.ability[YHARON_MARK] = cap
+                        end
                     end
                     break
                 end

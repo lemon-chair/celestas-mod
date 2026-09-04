@@ -538,6 +538,15 @@ LOC_TAIL = '''        },
                     "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
                 },
             },
+            celesta_bind_yharon_yharon = {
+                name = "Yharon, Dragon of Rebirth + Yharon, Dragon of Rebirth",
+                text = {
+                    "The {C:mult}Mult{}-modifying Joker to",
+                    "the {C:attention}left{} of this Joker uses the",
+                    "next highest {C:attention}operator{} for scoring",
+                    "{C:inactive}(Caps at tetration)",
+                },
+            },
             celesta_bind_zentreya_zentreya = {
                 name = "Zentreya + Zentreya",
                 text = {

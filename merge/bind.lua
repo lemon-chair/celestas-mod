@@ -1962,6 +1962,28 @@ special("j_celesta_arielle", "j_celesta_ironmouse", {
     end,
 })
 
+-- Yharon + Yharon: the ceiling moves up one, from exponentiation to tetration.
+--
+-- Additive, and it has to be: what the pair changes is the CAP on a promotion
+-- Yharon itself performs, so both halves have to keep running. A replacing
+-- pair would switch off the very thing it is raising the ceiling of.
+--
+-- The cap itself is read off the card in jokers/yharon.lua rather than out of
+-- this state, because both halves of the merge answer the question and they
+-- have to answer it the same way. This entry exists so the pair has a name and
+-- a description in the Collection, which is where a player finds out that two
+-- of them are worth merging at all.
+special("j_celesta_yharon", "j_celesta_yharon", {
+    key = "yharon_yharon",
+    additive = true,
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
 --------------------------------------------------------------------------------
 -- Unmerging: when one half destroys itself
 --------------------------------------------------------------------------------
