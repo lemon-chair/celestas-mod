@@ -2559,6 +2559,45 @@ function Card:add_to_deck(from_debuff)
     partner_intrinsic(self, 1)
 end
 
+-- "Is one of these in play?" for a VANILLA Joker.
+--
+-- find_joker matches card.ability.name (misc_functions.lua:1044), and a merged
+-- card's is the host's - so an absorbed Splash, Shortcut, Pareidolia, Smeared
+-- Joker or Astronomer was not in play as far as the game was concerned, and
+-- those five ARE nothing but that question. Merging one in as the second half
+-- switched it off.
+--
+-- A card is added at most once even when both halves answer to the same name.
+-- Every caller of this in the game asks whether there is one at all - `next`,
+-- or `# > 0` - so counting a merge of two Splashes as two would change nothing
+-- it is asked, while handing the same card twice to a caller that acts on each
+-- of them could double whatever it does.
+--
+-- This mod's own Jokers go through CelestasMod.find_joker instead, which
+-- answers with the right ability table as well; a vanilla Joker has no state
+-- to get wrong, so presence is the whole of the question here.
+local celesta_bind_find_joker_ref = find_joker
+function find_joker(name, non_debuff)
+    local found = celesta_bind_find_joker_ref(name, non_debuff)
+    if not (G.jokers and G.jokers.cards) then return found end
+
+    local already = {}
+    for _, card in ipairs(found) do already[card] = true end
+
+    for _, card in ipairs(G.jokers.cards) do
+        if not already[card] and Bind.is_merged(card)
+            and not Bind.replacing_special(card)
+            and (non_debuff or not card.debuff) then
+            local ability = card.ability.celesta_bind.ability
+            if type(ability) == "table" and ability.name == name then
+                found[#found + 1] = card
+            end
+        end
+    end
+
+    return found
+end
+
 -- Per-frame upkeep. Vanilla dispatches this to self.config.center alone
 -- (card.lua:4678), which is the host's, so an absorbed half's `update` never
 -- ran at all.
