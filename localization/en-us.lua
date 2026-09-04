@@ -1931,10 +1931,15 @@ return {
 
     misc = {
         -- Custom challenge rules, rendered from ch_c_<id>.
+        --
+        -- ONE line each, and that is not a style choice: localize with
+        -- type = 'text' returns after the first line it builds
+        -- (`if args.type == 'text' then return final_line end`,
+        -- misc_functions.lua:2052), so a second line is simply dropped. Every
+        -- one of vanilla's own is a single line for the same reason.
         v_text = {
             ch_c_celesta_printer_quota = {
-                "Blind requirements are multiplied by",
-                "{C:attention}1{} on Ante {C:attention}1{}, and {C:attention}#1#{} more each Ante after",
+                "Blind requirement {C:attention}X1{} at Ante 1, {C:attention}+#1#{} each Ante after",
             },
         },
         challenge_names = {
