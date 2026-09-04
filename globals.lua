@@ -114,6 +114,94 @@ function CelestasMod.hand_is_being_played()
 end
 
 --------------------------------------------------------------------------------
+-- Finding a Joker that may be half of a merge
+--------------------------------------------------------------------------------
+--
+-- SMODS.find_card matches card.config.center.key (utils.lua), and a Joker
+-- absorbed by a Bind does not have one: the merged card wears the HOST's
+-- centre and keeps the other half's key and ability under
+-- ability.celesta_bind. So an absorbed Yoclesh, Kael or Vedal is invisible to
+-- it, and every "is one of these in play" test silently answered no - which is
+-- the whole of what those Jokers do.
+--
+-- Kept as this mod's own rather than patching SMODS.find_card, which other
+-- mods and Steamodded itself call for their own reasons: a merged card
+-- appearing in an answer that was not asking about merges is a bug somewhere
+-- else, not a fix here.
+
+--- Every copy of `key` in the Joker row, merged halves included.
+---
+--- Each entry is { card = the card sitting in the row, ability = that HALF's
+--- ability table }. Those are not the same table for an absorbed half, and a
+--- Joker that SCALES has to write to the half's or it grows the host instead.
+---
+--- Debuffed cards are left out unless asked for, which is what SMODS.find_card
+--- does and what every caller here was already relying on.
+function CelestasMod.find_joker(key, count_debuffed)
+    local out = {}
+    local Bind = CelestasMod.Bind
+    local areas = (SMODS.get_card_areas and SMODS.get_card_areas("jokers"))
+        or { G.jokers }
+
+    for _, area in ipairs(areas) do
+        for _, card in ipairs((area and area.cards) or {}) do
+            -- A replacing pair speaks for both halves, so neither of them is
+            -- in play as itself - the same test with_partner makes before it
+            -- runs an absorbed half's hooks at all.
+            local replaced = Bind and Bind.replacing_special
+                and Bind.replacing_special(card)
+            if not replaced and (count_debuffed or not card.debuff) then
+                local center = card.config and card.config.center
+                if center and center.key == key then
+                    out[#out + 1] = { card = card, ability = card.ability }
+                elseif Bind and Bind.is_merged and Bind.is_merged(card)
+                    and card.ability.celesta_bind.key == key then
+                    out[#out + 1] = {
+                        card = card,
+                        ability = card.ability.celesta_bind.ability,
+                    }
+                end
+            end
+        end
+    end
+
+    return out
+end
+
+--- True when at least one is in play and able to act.
+function CelestasMod.joker_in_play(key)
+    return next(CelestasMod.find_joker(key)) ~= nil
+end
+
+--------------------------------------------------------------------------------
+-- What a merge must not carry across
+--------------------------------------------------------------------------------
+--
+-- A Joker that hands the RUN something - Joker slots, a selection limit, shop
+-- slots - records how much it has handed over on its own ability, so it can
+-- follow the number when it changes and give back exactly what it gave. That
+-- record is a receipt for something the RUN is holding, not part of what the
+-- Joker is.
+--
+-- At a merge the absorbed half's ability is copied onto the host and the
+-- absorbed card is then dissolved, which runs its remove_from_deck and hands
+-- everything back. Copying the receipt across means the host believes it has
+-- already granted what has just been taken away, and grants nothing: a merged
+-- SmittenSeraph gave no slots at all, and unmerging it would have taken three
+-- more away.
+--
+-- So these are dropped on the way in. The host starts owing nothing, grants
+-- afresh, and the absorbed card's own release cancels its own grant.
+--
+-- test_bind_grants.py reads the field names back out of jokers/implemented.lua,
+-- so a fifth one added there and not here fails rather than going quiet.
+CelestasMod.GRANT_LEDGERS = {
+    "celesta_seraph_granted",     -- SmittenSeraph: Joker and consumable slots
+    "celesta_shiabun_granted",    -- Shiabun and Eidolon Wyrm: selection limit
+    "celesta_aethal_granted",     -- Aethal: shop slots
+}
+
+--------------------------------------------------------------------------------
 -- Config backfill
 --------------------------------------------------------------------------------
 --

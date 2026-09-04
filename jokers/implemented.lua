@@ -1110,7 +1110,7 @@ SMODS.Joker {
 -- covers flushes, suit-gated jokers and enhancements from one place.
 local smeared_check_ref = SMODS.smeared_check
 function SMODS.smeared_check(card, suit)
-    if next(SMODS.find_card("j_celesta_arielle")) then return true end
+    if CelestasMod.joker_in_play("j_celesta_arielle") then return true end
     return smeared_check_ref(card, suit)
 end
 
@@ -2182,7 +2182,7 @@ SMODS.Joker {
 -- without this having to know anything about straight detection itself.
 local wrap_around_straight_ref = SMODS.wrap_around_straight
 function SMODS.wrap_around_straight()
-    if next(SMODS.find_card("j_celesta_meicha")) then return true end
+    if CelestasMod.joker_in_play("j_celesta_meicha") then return true end
     return wrap_around_straight_ref()
 end
 
@@ -2469,12 +2469,11 @@ local VEDAL_NEVER = {
 --- Every Vedal in play and able to act.
 --- Asked at the moment the answer is wanted rather than cached: one can be
 --- bought, sold or debuffed between one trigger and the next.
+--- Entries of { card, ability }, not cards: an absorbed Vedal's numbers live
+--- in its own half of the merge, and scaling the host's `extra.total` instead
+--- would grow whichever Joker it happened to be bound to.
 local function vedal_cards()
-    local out = {}
-    for _, joker in ipairs(SMODS.find_card("j_celesta_vedal")) do
-        if not joker.debuff then out[#out + 1] = joker end
-    end
-    return out
+    return CelestasMod.find_joker("j_celesta_vedal")
 end
 
 local function vedal_active()
@@ -2867,9 +2866,10 @@ local liffeh_creating = false
 
 --- The first Liffeh in play that is able to act.
 local function liffeh_active()
-    for _, joker in ipairs(SMODS.find_card("j_celesta_liffeh")) do
-        if not joker.debuff then return joker end
-    end
+    -- The card in the row rather than the half's ability: what this is for is
+    -- the probability roll below, which wants the object the run can see.
+    local found = CelestasMod.find_joker("j_celesta_liffeh")[1]
+    return found and found.card or nil
 end
 
 -- Every route by which a Tarot is gained - The Fool, purple seals, The
@@ -3552,10 +3552,7 @@ function pseudoseed(key, ...)
 end
 
 local function mari_active()
-    for _, joker in ipairs(SMODS.find_card("j_celesta_radicalmari")) do
-        if not joker.debuff then return true end
-    end
-    return false
+    return CelestasMod.joker_in_play("j_celesta_radicalmari")
 end
 
 --- The candidate sitting furthest left in the Joker row.
@@ -4972,10 +4969,7 @@ SMODS.Joker {
 
 --- True when a Kael is in play and able to act.
 local function kael_active()
-    for _, joker in ipairs(SMODS.find_card("j_celesta_kael")) do
-        if not joker.debuff then return true end
-    end
-    return false
+    return CelestasMod.joker_in_play("j_celesta_kael")
 end
 
 -- Raised while something needs the PRINTED rank rather than Kael's answer.
@@ -6020,10 +6014,7 @@ local BLUE_SEAL_APPEND = "blusl"
 
 --- True when a Joker with this key is in play and able to act.
 local function joker_active(key)
-    for _, joker in ipairs(SMODS.find_card(key)) do
-        if not joker.debuff then return true end
-    end
-    return false
+    return CelestasMod.joker_in_play(key)
 end
 
 --- Room for one more consumable, by the same test every vanilla source makes.
@@ -6488,7 +6479,7 @@ SMODS.Joker {
 
 --- True when a Joker in the row is an undebuffed Isaa.
 local function isaa_in_play()
-    return next(SMODS.find_card("j_celesta_isaa")) ~= nil
+    return CelestasMod.joker_in_play("j_celesta_isaa")
 end
 
 --- Whether this hand is the one Isaa gets back.
@@ -6511,8 +6502,8 @@ if celesta_isaa_to_discard_ref then
     celesta_isaa_hooked = true
     G.FUNCS.draw_from_play_to_discard = function(e)
         if isaa_returns_this_hand() and G.FUNCS.draw_from_play_to_hand then
-            for _, isaa in ipairs(SMODS.find_card("j_celesta_isaa")) do
-                card_eval_status_text(isaa, "extra", nil, nil, nil,
+            for _, isaa in ipairs(CelestasMod.find_joker("j_celesta_isaa")) do
+                card_eval_status_text(isaa.card, "extra", nil, nil, nil,
                     { message = localize("celesta_returned"), colour = G.C.FILTER })
             end
             -- Copied out: draw_card moves cards between areas as it goes, and
@@ -8073,7 +8064,7 @@ local celesta_shao_get_id_ref = Card.get_id
 function Card:get_id()
     local id = celesta_shao_get_id_ref(self)
     if type(id) == "number" and id >= 2 and id <= 10
-        and next(SMODS.find_card(SHAO_KEY)) then
+        and CelestasMod.joker_in_play(SHAO_KEY) then
         return 14
     end
     return id
@@ -8119,10 +8110,7 @@ local YOCLESH_KEY = "j_celesta_yoclesh"
 --- Asked at the moment the answer is wanted rather than cached: it can be
 --- bought, sold or debuffed between one round and the next.
 function CelestasMod.yoclesh_active()
-    for _, joker in ipairs(SMODS.find_card(YOCLESH_KEY)) do
-        if not joker.debuff then return true end
-    end
-    return false
+    return CelestasMod.joker_in_play(YOCLESH_KEY)
 end
 
 -- Which round-scoped table each vanilla reset writes its suit into.
@@ -8740,10 +8728,7 @@ SMODS.Joker {
 local GLASSES_KEY = "j_celesta_glassesjournal"
 
 local function glasses_active()
-    for _, joker in ipairs(SMODS.find_card(GLASSES_KEY)) do
-        if not joker.debuff then return true end
-    end
-    return false
+    return CelestasMod.joker_in_play(GLASSES_KEY)
 end
 
 --- Where a card goes in the deal, low to high; the highest is dealt first.

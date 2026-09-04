@@ -137,6 +137,15 @@ function Bind.merge(host, absorbed)
     -- Cannot survive on the absorbed half: it would let a merge be merged.
     carried.celesta_bind = nil
 
+    -- Nor can a receipt for something the RUN is holding. The absorbed card is
+    -- about to dissolve, and its remove_from_deck hands back every slot and
+    -- limit it granted; carrying the record of that across would leave the
+    -- host believing it had already given what has just been taken back, so it
+    -- would grant nothing. See CelestasMod.GRANT_LEDGERS in globals.lua.
+    for _, ledger in ipairs(CelestasMod.GRANT_LEDGERS or {}) do
+        carried[ledger] = nil
+    end
+
     host.ability.celesta_bind = {
         key = absorbed.config.center_key or absorbed.config.center.key,
         ability = carried,
@@ -2548,6 +2557,26 @@ function Card:add_to_deck(from_debuff)
         center:add_to_deck(card, from_debuff)
     end)
     partner_intrinsic(self, 1)
+end
+
+-- Per-frame upkeep. Vanilla dispatches this to self.config.center alone
+-- (card.lua:4678), which is the host's, so an absorbed half's `update` never
+-- ran at all.
+--
+-- It is the hook a passive uses to FOLLOW its own number: this mod's four
+-- slot-granting Jokers apply by delta from here, so that anything raising the
+-- number afterwards - Yoka Siri, a Cryptid misprint - moves the run and not
+-- only the text. Without this an absorbed one was frozen at whatever it
+-- granted the moment it was merged.
+--
+-- Runs on every card every frame, so the cheap test comes first: with_partner
+-- returns immediately for a card that is not merged.
+local celesta_bind_update_ref = Card.update
+function Card:update(dt)
+    celesta_bind_update_ref(self, dt)
+    with_partner(self, "update", function(center, card)
+        center:update(card, dt)
+    end)
 end
 
 local celesta_bind_remove_ref = Card.remove_from_deck
