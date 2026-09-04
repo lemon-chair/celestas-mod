@@ -6294,7 +6294,8 @@ SMODS.Joker {
 
     calculate = function(self, card, context)
         if context.modify_scoring_hand and context.other_card
-            and context.other_card.celesta_played_flipped then
+            and context.other_card.celesta_played_flipped
+            and CelestasMod.hand_is_being_played() then
             return { add_to_hand = true }
         end
     end,
@@ -7303,7 +7304,8 @@ SMODS.Joker {
     calculate = function(self, card, context)
         if pipi_played_count(context) ~= card.ability.extra.cards then return end
 
-        if context.modify_scoring_hand and context.other_card then
+        if context.modify_scoring_hand and context.other_card
+            and CelestasMod.hand_is_being_played() then
             return { add_to_hand = true }
         end
 

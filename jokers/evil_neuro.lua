@@ -518,7 +518,8 @@ SMODS.Joker {
 
     calculate = function(self, card, context)
         -- Every played card scores, when there are exactly two of them.
-        if context.modify_scoring_hand and not context.blueprint then
+        if context.modify_scoring_hand and not context.blueprint
+            and CelestasMod.hand_is_being_played() then
             local hand = context.full_hand or {}
             if #hand == card.ability.extra.size then
                 return { add_to_hand = true }

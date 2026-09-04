@@ -91,6 +91,28 @@ function CelestasMod.warn_once(key, message)
     sendWarnMessage(message, "CelestasMod")
 end
 
+--- True while a played hand is actually being scored, rather than previewed.
+---
+--- modify_scoring_hand - the context a Joker answers to widen the scoring hand,
+--- the way Splash does - is asked in TWO places, not one. The scoring pass asks
+--- it (state_events.lua:753), and so does Blind:debuff_hand through Steamodded
+--- (overrides.lua:2637). debuff_hand is called on every change to the SELECTION,
+--- from CardArea:parse_highlighted (cardarea.lua:208), to work out whether the
+--- hand shows as debuffed before it is played.
+---
+--- So a Joker answering that context answers it every time a card is clicked,
+--- and an answer is a TRIGGER: Steamodded fires post_trigger for it
+--- (common_events.lua:787) and applies whatever that returns. Cryptid's Wario
+--- pays $3 per Joker triggered, so selecting two cards paid out.
+---
+--- Asked as a game state rather than through context.in_scoring, which the
+--- scoring pass sets but play-time debuff_hand does not: the Blind should still
+--- see the widened hand when it decides. G.STATE is HAND_PLAYED for both of
+--- those and SELECTING_HAND for the preview.
+function CelestasMod.hand_is_being_played()
+    return G ~= nil and G.STATES ~= nil and G.STATE == G.STATES.HAND_PLAYED
+end
+
 --------------------------------------------------------------------------------
 -- Config backfill
 --------------------------------------------------------------------------------
