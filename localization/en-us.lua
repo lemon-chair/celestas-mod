@@ -253,6 +253,14 @@ return {
                     "{C:attention}#1#{} times",
                 },
             },
+            j_celesta_chrchie = {
+                name = "Chrchie",
+                text = {
+                    "Earn {C:money}$#1#{} at the end of the round",
+                    "for each card {C:attention}played{} that round",
+                    "{C:inactive}(Currently {C:attention}#2#{C:inactive} cards)",
+                },
+            },
             j_celesta_clover = {
                 name = "Moo Moo Clover",
                 text = {
@@ -282,6 +290,13 @@ return {
                     "{C:attention}consumes{} a random held",
                     "consumable and gains {X:mult,C:white}X#1#{} Mult",
                     "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            j_celesta_cupidyle = {
+                name = "Cupidyle",
+                text = {
+                    "Earn {C:money}$#1#{} for each",
+                    "{C:hearts}Hearts{} card scored",
                 },
             },
             j_celesta_cweamcat = {
@@ -571,6 +586,13 @@ return {
                     "{C:inactive}(after cards in hand score)",
                 },
             },
+            j_celesta_jummy = {
+                name = "Jummy",
+                text = {
+                    "{C:attention}Wild{} cards give {C:mult}+#1#{} Mult",
+                    "when scored",
+                },
+            },
             j_celesta_juniperactias = {
                 name = "Juniper Actias",
                 text = {
@@ -665,6 +687,12 @@ return {
                     "At the start of each round,",
                     "adds a {C:attention}Limestone{} card",
                     "to your deck",
+                },
+            },
+            j_celesta_lordaethelstan = {
+                name = "Aethal",
+                text = {
+                    "{C:attention}+#1#{} shop slots",
                 },
             },
             j_celesta_lucypyre = {
@@ -779,6 +807,14 @@ return {
                 text = {
                     "Earn {C:money}$#1#{} for each",
                     "discarded {V:1}#2#{} suit card",
+                },
+            },
+            j_celesta_moopybuns = {
+                name = "MoopyBuns",
+                text = {
+                    "This Joker gains {X:chips,C:white}X#1#{} Chips",
+                    "for each item {C:attention}bought{} from the shop",
+                    "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
                 },
             },
             j_celesta_motherv3 = {

@@ -198,6 +198,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "chrchie",
+    path = "chrchie.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "clover",
     path = "clover.png",
     px = 71,
@@ -221,6 +228,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "crelly",
     path = "crelly.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "cupidyle",
+    path = "cupidyle.png",
     px = 71,
     py = 95,
 }
@@ -499,6 +513,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "jummy",
+    path = "jummy.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "juniperactias",
     path = "juniperactias.png",
     px = 71,
@@ -578,6 +599,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "limealicious",
     path = "limealicious.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "lordaethelstan",
+    path = "lordaethelstan.png",
     px = 71,
     py = 95,
 }
@@ -683,6 +711,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "mooni",
     path = "mooni.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "moopybuns",
+    path = "moopybuns.png",
     px = 71,
     py = 95,
 }

@@ -8304,6 +8304,238 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
+-- Chrchie [Uncommon] - paid by the card, at the cash-out
+--------------------------------------------------------------------------------
+--
+-- Nothing in the game counts the cards played in a round. current_round keeps
+-- hands_played, and inc_career_stat('c_cards_played') is a lifetime total on
+-- the profile - neither answers "this round". So the tally is kept on the card
+-- and cleared as it is paid out.
+--
+-- Counted in context.before, which is the pass that carries full_hand and runs
+-- once per hand ahead of scoring. full_hand is every played card, not only the
+-- scoring ones: a card that was played is a card that was played.
+--
+-- Kept on ability.extra so it is saved with the run. A hand played, then the
+-- game quit mid-round, is still owed at the cash-out.
+
+SMODS.Joker {
+    key = "chrchie",
+    atlas = "chrchie",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { dollars = 1, cards = 0 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.dollars, card.ability.extra.cards } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.before and not context.blueprint and context.full_hand then
+            card.ability.extra.cards =
+                card.ability.extra.cards + #context.full_hand
+        end
+
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            local owed = card.ability.extra.cards * card.ability.extra.dollars
+            card.ability.extra.cards = 0
+            if owed > 0 then
+                return { dollars = owed, card = card }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Aethal [Uncommon] - a wider shop
+--------------------------------------------------------------------------------
+--
+-- change_shop_size is vanilla's own (common_events.lua:1353), the function the
+-- Overstock voucher goes through: it moves G.GAME.shop.joker_max and then
+-- fills or trims the row to match.
+--
+-- Granted by DELTA from `update`, the way SmittenSeraph and Shiabun are, and
+-- for both of their reasons. Nothing re-reads the number after it changes, so
+-- applied once on arrival it would go stale the moment anything scaled it. And
+-- change_shop_size RETURNS EARLY when there is no shop - a Joker bought from a
+-- Buffoon pack mid-round arrives before one exists - so a single attempt can
+-- simply be dropped. The sync retries every frame until it lands, and records
+-- nothing until it has.
+
+local AETHAL_GRANTED = "celesta_aethal_granted"
+
+--- Brings the shop's width in line with what this card promises.
+local function aethal_sync(card)
+    if not (G.GAME and G.GAME.shop and change_shop_size) then return end
+    local held = card.ability[AETHAL_GRANTED] or 0
+    local want = card.ability.extra.slots
+    if held == want then return end
+
+    change_shop_size(want - held)
+    card.ability[AETHAL_GRANTED] = want
+end
+
+--- ...and narrows it again.
+local function aethal_release(card)
+    local held = card.ability[AETHAL_GRANTED]
+    if not held or held == 0 then
+        card.ability[AETHAL_GRANTED] = nil
+        return
+    end
+    if G.GAME and G.GAME.shop and change_shop_size then
+        change_shop_size(-held)
+    end
+    card.ability[AETHAL_GRANTED] = nil
+end
+
+SMODS.Joker {
+    key = "lordaethelstan",
+    atlas = "lordaethelstan",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    -- The slots belong to this card, and it gives them back itself.
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { slots = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        aethal_sync(card)
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        aethal_release(card)
+    end,
+
+    update = function(self, card, front)
+        if card.added_to_deck then aethal_sync(card) end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Jummy [Common] - Wild cards are worth something on their own
+--------------------------------------------------------------------------------
+--
+-- has_enhancement rather than a raw centre compare, so a card made Wild by
+-- anything - a Tarot, a quantum enhancement - counts the same as one dealt
+-- that way. The Joker above Kirana reads Wild the same way.
+
+SMODS.Joker {
+    key = "jummy",
+    atlas = "jummy",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 4,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { mult = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_wild
+        return { vars = { card.ability.extra.mult } }
+    end,
+
+    calculate = function(self, card, context)
+        -- The scoring-card pass; an unscored played card arrives with
+        -- cardarea == 'unscored' instead, and a debuffed one not at all.
+        if context.individual and context.cardarea == G.play
+            and SMODS.has_enhancement(context.other_card, "m_wild") then
+            return {
+                mult = card.ability.extra.mult,
+                card = context.other_card,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- MoopyBuns [Uncommon] - the shop pays it back
+--------------------------------------------------------------------------------
+--
+-- context.buying_card is Steamodded's, raised once for each thing bought
+-- (lovely/better_calc.toml:935) - a Joker, a consumable, a voucher, a pack.
+--
+-- `not context.blueprint` for the reason Red Card and Flash Card carry it: the
+-- growth lives on this card's own ability, so a copier answering would bank it
+-- onto the original a second time.
+
+SMODS.Joker {
+    key = "moopybuns",
+    atlas = "moopybuns",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { gain = 0.1, x_chips = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.gain, card.ability.extra.x_chips } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.buying_card and not context.blueprint then
+            card.ability.extra.x_chips =
+                card.ability.extra.x_chips + card.ability.extra.gain
+            return {
+                message = localize { type = "variable", key = "a_xchips",
+                                     vars = { card.ability.extra.x_chips } },
+                colour = G.C.CHIPS, card = card,
+            }
+        end
+
+        -- X1 is no multiplier at all; returning it would put a flourish over
+        -- the Joker every hand for doing nothing.
+        if context.joker_main and card.ability.extra.x_chips > 1 then
+            return { x_chips = card.ability.extra.x_chips }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Cupidyle [Common] - Hearts pay
+--------------------------------------------------------------------------------
+--
+-- is_suit rather than a base.suit compare, which is what every suit question
+-- in this mod goes through: it routes through SMODS.smeared_check, so a Wild
+-- card counts as a Heart and so does everything Smeared Joker makes one.
+--
+-- Per scoring card, through context.individual, which is how every suit Joker
+-- in the game works and is what makes a debuffed Heart pay nothing.
+
+SMODS.Joker {
+    key = "cupidyle",
+    atlas = "cupidyle",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 4,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { dollars = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.dollars } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.individual and context.cardarea == G.play
+            and context.other_card:is_suit("Hearts") then
+            return {
+                p_dollars = card.ability.extra.dollars,
+                card = context.other_card,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
 -- Blue, Green and Fuchsia Card - paid for the things you walk past
 --------------------------------------------------------------------------------
 --
