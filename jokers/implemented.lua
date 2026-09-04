@@ -947,14 +947,14 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Bao [Rare] - +5 Mult, or X5 Mult while a Downpour is running.
+-- Bao [Uncommon] - +5 Mult, or X5 Mult while a Downpour is running.
 --------------------------------------------------------------------------------
 
 SMODS.Joker {
     key = "bao",
     atlas = "bao",
     pos = { x = 0, y = 0 },
-    rarity = 3, cost = 8,
+    rarity = 2, cost = 6,
     unlocked = true, discovered = true,
     blueprint_compat = true, eternal_compat = true,
 
