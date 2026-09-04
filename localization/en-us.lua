@@ -1380,6 +1380,15 @@ return {
                     "{C:attention}Gash Card",
                 },
             },
+            c_celesta_community = {
+                name = "The Community",
+                text = {
+                    "Gives {C:attention}double{} of one of the",
+                    "following Tags at random:",
+                    "{C:attention}Standard{}, {C:attention}Charm{}, {C:attention}Meteor{},",
+                    "{C:attention}Buffoon{}, {C:attention}Ethereal{}",
+                },
+            },
             c_celesta_gene = {
                 name = "Gene",
                 text = {

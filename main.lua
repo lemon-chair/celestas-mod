@@ -114,6 +114,8 @@ assert(SMODS.load_file('consumables/occult.lua'))()
 -- Gene hands out a seal rather than an enhancement; it reads the seal's key at
 -- use time, so it does not need seals/seals.lua to have loaded first.
 assert(SMODS.load_file('consumables/gene.lua'))()
+-- The Community hands out Tags, which needs nothing of this mod's at all.
+assert(SMODS.load_file('consumables/community.lua'))()
 
 --------------------------------------------------------------------------------
 -- Jokers — auto-loaded from jokers/.

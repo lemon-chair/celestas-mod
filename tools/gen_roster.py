@@ -34,6 +34,8 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
           # the Tarots that hand out this mod's enhancements, Occult, and Gene
           # (which hands out a seal rather than an enhancement)
           "citrus", "miracle_matter", "knife", "polish", "occult", "gene",
+          # ...and The Community, which hands out Tags
+          "community",
           # eighteen cells in a row, not a card. blank_joker itself is an
           # ordinary Joker face and stays in the roster.
           "blank_joker_layers"}   # not per-joker art
@@ -373,6 +375,15 @@ LOC_TAIL = '''        },
                     "Enhances up to {C:attention}#1#{}",
                     "selected card into a",
                     "{C:attention}Gash Card",
+                },
+            },
+            c_celesta_community = {
+                name = "The Community",
+                text = {
+                    "Gives {C:attention}double{} of one of the",
+                    "following Tags at random:",
+                    "{C:attention}Standard{}, {C:attention}Charm{}, {C:attention}Meteor{},",
+                    "{C:attention}Buffoon{}, {C:attention}Ethereal{}",
                 },
             },
             c_celesta_gene = {
