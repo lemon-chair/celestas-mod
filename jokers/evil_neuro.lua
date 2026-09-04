@@ -531,7 +531,30 @@ SMODS.Joker {
             if not greater then return end
             local chips = permutation(greater, lesser)
             if chips and chips ~= 0 and chips ~= 1 then
-                return { chips = chips }
+                return {
+                    chips = chips,
+
+                    -- Talisman's ExponentialChips.wav, registered as `echip`
+                    -- under its `talisman` prefix. Ironmouse plays the Mult
+                    -- half of the same pair; see the comment there for why the
+                    -- sound is queued on G.E_MANAGER rather than played here -
+                    -- the Chips popup is queued too, and playing it directly
+                    -- lands a beat ahead of the number appearing.
+                    func = function()
+                        if SMODS.no_resolve then return end
+                        if not (SMODS.Sounds and SMODS.Sounds.talisman_echip) then
+                            return
+                        end
+                        G.E_MANAGER:add_event(Event {
+                            trigger = "before",
+                            delay = 0,
+                            func = function()
+                                play_sound("talisman_echip", 1)
+                                return true
+                            end,
+                        })
+                    end,
+                }
             end
         end
     end,
