@@ -46,6 +46,7 @@ DISPLAY_NAMES = {
     "obkatiekat": "ObKatieKat",
     # the art is named for the creator; the card is not
     "lordaethelstan": "Aethal",
+    "eidolonwyrm": "Eidolon Wyrm",
     "moopybuns": "MoopyBuns",
     "nekrolina": "Nekrolina",
     "nyanners": "Nyanners",

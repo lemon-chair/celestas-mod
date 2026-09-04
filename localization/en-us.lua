@@ -352,6 +352,14 @@ return {
                     "in played hand to {C:diamonds}Diamonds{}",
                 },
             },
+            j_celesta_eidolonwyrm = {
+                name = "Eidolon Wyrm",
+                text = {
+                    "{C:attention}+#1#{} card selection limit",
+                    "{X:mult,C:white}X#2#{} Mult for each card",
+                    "played above {C:attention}#3#{}",
+                },
+            },
             j_celesta_el_xox = {
                 name = "El_Xox",
                 text = {

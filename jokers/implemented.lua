@@ -7198,38 +7198,42 @@ SMODS.Joker {
 -- a hand that already had six cards picked keeps them selected after the limit
 -- has dropped back to five.
 
-local SHIABUN_GRANTED = "celesta_shiabun_granted"
+--- Shared with Eidolon Wyrm, which raises the same limit by a different
+--- number. The field name is Shiabun's because it is what has been written
+--- into saves since Shiabun shipped: renaming it would make an existing
+--- Shiabun read back a zero and grant its limit a second time.
+local SELECTION_GRANTED = "celesta_shiabun_granted"
 
 --- Moves both limits by however much this card's number has changed.
-local function shiabun_sync(card)
+local function selection_sync(card)
     if not (SMODS.change_play_limit and SMODS.change_discard_limit) then
-        CelestasMod.warn_once("shiabun_no_limit_api",
-            "Shiabun raises the card selection limit through "
+        CelestasMod.warn_once("selection_no_limit_api",
+            "This mod raises the card selection limit through "
             .. "SMODS.change_play_limit, which this Steamodded does not "
-            .. "have; the Joker will do nothing")
+            .. "have; the Jokers that do it will do nothing")
         return
     end
-    local held = card.ability[SHIABUN_GRANTED] or 0
+    local held = card.ability[SELECTION_GRANTED] or 0
     local want = card.ability.extra.limit
     if held == want then return end
 
     SMODS.change_play_limit(want - held)
     SMODS.change_discard_limit(want - held)
-    card.ability[SHIABUN_GRANTED] = want
+    card.ability[SELECTION_GRANTED] = want
 end
 
 --- ...and gives all of it back.
-local function shiabun_release(card)
-    local held = card.ability[SHIABUN_GRANTED]
+local function selection_release(card)
+    local held = card.ability[SELECTION_GRANTED]
     if not held or held == 0 then
-        card.ability[SHIABUN_GRANTED] = nil
+        card.ability[SELECTION_GRANTED] = nil
         return
     end
     if SMODS.change_play_limit and SMODS.change_discard_limit then
         SMODS.change_play_limit(-held)
         SMODS.change_discard_limit(-held)
     end
-    card.ability[SHIABUN_GRANTED] = nil
+    card.ability[SELECTION_GRANTED] = nil
     -- A selection made under the old limit would otherwise survive it.
     if G.hand and G.hand.unhighlight_all then G.hand:unhighlight_all() end
 end
@@ -7249,15 +7253,15 @@ SMODS.Joker {
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        shiabun_sync(card)
+        selection_sync(card)
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        shiabun_release(card)
+        selection_release(card)
     end,
 
     update = function(self, card, front)
-        if card.added_to_deck then shiabun_sync(card) end
+        if card.added_to_deck then selection_sync(card) end
     end,
 }
 
@@ -8862,6 +8866,74 @@ SMODS.Joker {
                 and held.get_id and held:get_id() == 12 then
                 return { x_chips = card.ability.extra.x_chips, card = held }
             end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Eidolon Wyrm [Rare] - room for three more cards, and a reason to use them.
+--------------------------------------------------------------------------------
+--
+-- The two halves answer each other: +3 selection takes a hand to eight cards,
+-- and the multiplier only starts once more than five are played. Nothing here
+-- pays until the extra room is actually used.
+--
+-- The limit goes through the same pair of helpers Shiabun uses - see the
+-- comment above them for why it is granted by delta from `update` rather than
+-- applied once on arrival, and why both the play and the discard limit move.
+--
+-- `needed` rather than `threshold` because that is the name this mod gives a
+-- "how many cards before it counts" field, and Yoka Siri's leave-alone list
+-- knows it: scaling the requirement UP would make the Joker worse, which is
+-- not what an upgrade means.
+
+SMODS.Joker {
+    key = "eidolonwyrm",
+    atlas = "eidolonwyrm",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    -- Half of it is a passive nothing can copy, and a copy of the other half
+    -- would read as the whole Joker being copied.
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { limit = 3, x_mult_gain = 1, needed = 5 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.limit,
+                          card.ability.extra.x_mult_gain,
+                          card.ability.extra.needed } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        selection_sync(card)
+        if not from_debuff then
+            CelestasMod.play_join_sound("j_celesta_eidolonwyrm")
+        end
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        selection_release(card)
+    end,
+
+    update = function(self, card, front)
+        if card.added_to_deck then selection_sync(card) end
+    end,
+
+    calculate = function(self, card, context)
+        if context.joker_main then
+            -- Cards PLAYED, not cards scored: a hand of eight that scores two
+            -- is still eight cards played, and that is what the card says.
+            local hand = context.full_hand or (G.play and G.play.cards) or {}
+            local above = #hand - card.ability.extra.needed
+            if above <= 0 then return end
+
+            local x_mult = card.ability.extra.x_mult_gain * above
+            -- X1 is the do-nothing multiplier, and announcing it would be a
+            -- popup for an effect that did not happen. At the printed rate
+            -- that is a six-card hand exactly.
+            if x_mult == 1 then return end
+            return { x_mult = x_mult }
         end
     end,
 }

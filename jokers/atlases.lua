@@ -289,6 +289,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "eidolonwyrm",
+    path = "eidolonwyrm.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "el_xox",
     path = "el_xox.png",
     px = 71,
