@@ -137,6 +137,43 @@ function SMODS.calculate_individual_effect(effect, scored_card, key, amount,
 end
 
 --------------------------------------------------------------------------------
+-- When it can turn up
+--------------------------------------------------------------------------------
+--
+-- Legendaries come out of The Soul and nothing else, so this is a gate on that
+-- one moment. Two ways through it:
+--
+--   * a Soul has already been spent this run, or
+--   * the run is past Ante 6.
+--
+-- Souls are counted through G.GAME.consumeable_usage, which the game keeps per
+-- run for exactly this kind of question, so nothing has to be tracked here and
+-- nothing new goes into the save.
+--
+-- The count is compared against ONE rather than zero, and that is not an
+-- off-by-one: set_consumeable_usage runs at the TOP of Card:use_consumeable
+-- (card.lua:1372), before the Soul has created anything at all. So by the time
+-- a Soul asks this question it has already counted itself, and "a Soul has
+-- already been used" means a second one is in hand.
+
+local SOUL_KEY = "c_soul"
+local YHARON_ANTE = 6
+
+--- Souls spent this run, including one currently being used.
+local function souls_spent()
+    local usage = G.GAME and G.GAME.consumeable_usage
+    local soul = usage and usage[SOUL_KEY]
+    return (soul and soul.count) or 0
+end
+
+--- True once Yharon is allowed to be found.
+function CelestasMod.yharon_available()
+    local ante = G.GAME and G.GAME.round_resets and G.GAME.round_resets.ante
+    if type(ante) == "number" and ante > YHARON_ANTE then return true end
+    return souls_spent() > 1
+end
+
+--------------------------------------------------------------------------------
 -- The Joker
 --------------------------------------------------------------------------------
 
@@ -150,6 +187,8 @@ SMODS.Joker {
     -- Joker than the one this card is pointing at - which is not a copy of
     -- this effect, it is a second one.
     blueprint_compat = false, eternal_compat = true,
+
+    in_pool = function(self, args) return CelestasMod.yharon_available() end,
 
     loc_vars = function(self, info_queue, card)
         return {}
