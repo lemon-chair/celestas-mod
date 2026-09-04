@@ -42,6 +42,22 @@
 -- (common_events.lua:377), so a Spectral listed here lands in the consumable
 -- row and not among the Jokers.
 
+-- 1, 3, 5, 7 ... - the multiplier climbs by this much each Ante.
+local PRINTER_QUOTA_STEP = 2
+
+-- Resolved at load: SMODS.current_mod is nil by the time a Blind is set.
+local PRINTER_KEY = "c_" .. SMODS.current_mod.prefix .. "_joker_printer"
+
+--- What the quota is multiplied by at this Ante: 1 at Ante 1, then two more
+--- each time.
+---
+--- Antes below 1 are left alone. get_blind_amount answers 100 for them - it is
+--- the tutorial's, and the formula would hand it a multiplier of -1.
+function CelestasMod.printer_quota_scale(ante)
+    if type(ante) ~= "number" or ante < 1 then return 1 end
+    return 1 + PRINTER_QUOTA_STEP * (ante - 1)
+end
+
 SMODS.Challenge {
     key = "joker_printer",
 
@@ -55,13 +71,49 @@ SMODS.Challenge {
     },
 
     rules = {
-        custom = {},
-        -- Absolute, not a delta: vanilla starts on 5, so three fewer is 2.
+        -- Rendered on the challenge screen from misc.v_text.ch_c_<id>, with
+        -- `value` threaded in as #1# (UI_definitions.lua:6058). Without an
+        -- entry there the rule would be listed as the literal string ERROR.
+        custom = {
+            { id = "celesta_printer_quota", value = PRINTER_QUOTA_STEP },
+        },
         modifiers = {
+            -- Absolute, not a delta: vanilla starts on 5, so three fewer is 2.
             { id = "joker_slots", value = 2 },
         },
     },
 }
+
+--------------------------------------------------------------------------------
+-- ...and the quota that climbs with the Ante
+--------------------------------------------------------------------------------
+--
+-- Ante 1 is untouched, Ante 2 is X3, Ante 3 is X5, and two more every Ante
+-- after - so the multiplier at Ante n is 2n-1.
+--
+-- ante_scaling, the starting param the Plasma Deck uses, cannot do this: it is
+-- one number for the whole run. So the hook is on get_blind_amount instead,
+-- which is the one function BOTH places asking for a quota go through - the
+-- Blind itself (blind.lua:118) and the panel on the Blind select screen
+-- (UI_definitions.lua:1682) - so the number offered and the number required
+-- cannot disagree. The Ante ladder in the run info reads it too, and shows the
+-- challenge's own numbers while the challenge is being played.
+--
+-- Wrapped rather than replaced, and wrapped at load, so Talisman's own version
+-- of this function still does its work first and this only multiplies the
+-- answer. Deliberately NOT guarded on the value being a plain number: past a
+-- certain Ante it is one of Talisman's big numbers, and those multiply through
+-- their own metamethod. It is COMPARISON that Lua 5.1 refuses across types,
+-- not arithmetic.
+
+local celesta_printer_blind_ref = get_blind_amount
+if type(celesta_printer_blind_ref) == "function" then
+    function get_blind_amount(ante, ...)
+        local amount = celesta_printer_blind_ref(ante, ...)
+        if not (G.GAME and G.GAME.challenge == PRINTER_KEY) then return amount end
+        return amount * CelestasMod.printer_quota_scale(ante)
+    end
+end
 
 SMODS.Challenge {
     key = "dairy_farm",

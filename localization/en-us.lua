@@ -1930,6 +1930,13 @@ return {
     },
 
     misc = {
+        -- Custom challenge rules, rendered from ch_c_<id>.
+        v_text = {
+            ch_c_celesta_printer_quota = {
+                "Blind requirements are multiplied by",
+                "{C:attention}1{} on Ante {C:attention}1{}, and {C:attention}#1#{} more each Ante after",
+            },
+        },
         challenge_names = {
             c_celesta_dairy_farm = "Dairy Farm",
             c_celesta_joker_printer = "Joker Printer",
