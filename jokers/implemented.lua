@@ -8928,10 +8928,11 @@ SMODS.Joker {
             local above = #hand - card.ability.extra.needed
             if above <= 0 then return end
 
-            local x_mult = card.ability.extra.x_mult_gain * above
-            -- X1 is the do-nothing multiplier, and announcing it would be a
-            -- popup for an effect that did not happen. At the printed rate
-            -- that is a six-card hand exactly.
+            -- Counted from X1 rather than from nothing: the first card over
+            -- the line is worth a whole X1 on top, so six cards is X2 and
+            -- eight is X4. Multiplying the rate by the count alone would make
+            -- six cards X1, which is the do-nothing multiplier.
+            local x_mult = 1 + card.ability.extra.x_mult_gain * above
             if x_mult == 1 then return end
             return { x_mult = x_mult }
         end
