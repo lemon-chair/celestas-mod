@@ -4871,14 +4871,14 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Kirana [Rare] - paid for holding 3s.
+-- Kirana [Uncommon] - paid for holding 3s.
 --------------------------------------------------------------------------------
 
 SMODS.Joker {
     key = "kirana",
     atlas = "kirana",
     pos = { x = 0, y = 0 },
-    rarity = 3, cost = 8,
+    rarity = 2, cost = 6,
     unlocked = true, discovered = true,
     blueprint_compat = true, eternal_compat = true,
 
