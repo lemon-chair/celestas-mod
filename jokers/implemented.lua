@@ -1013,6 +1013,28 @@ local function rotation_suits()
     return suits or ROTATION_BASE_SUITS
 end
 
+--- `index` as a whole number inside 1..count.
+---
+--- The rotation index is a number the Joker keeps in its ability table, and
+--- Cryptid's misprintize walks that table multiplying every number it finds by
+--- a random factor - so a saved 1 comes back as 46.101724272927, and
+--- suits[46.101724272927] is nil. That nil reaches localize, which indexes it
+--- and crashes: the description is what dies, not the effect, so it takes the
+--- run down the moment the Joker is hovered.
+---
+--- Repaired on the way OUT rather than refused on the way in, because by the
+--- time this is known the corrupted value is already in the save. Talisman can
+--- also leave a big number here rather than a Lua one, and a misprint of a
+--- misprint can arrive as nan, so anything that is not a plain finite number
+--- falls back to the first suit instead of being done arithmetic on.
+local function rotation_index(index, count)
+    if type(index) ~= "number" or index ~= index
+        or index == math.huge or index == -math.huge then
+        return 1
+    end
+    return (math.floor(index) - 1) % count + 1
+end
+
 --- The suit at `index`, wrapped into range.
 --- Shared with Saiiren, which walks the same rotation on its own index.
 --- The list changes length when the first Star card arrives or the last one
@@ -1028,7 +1050,7 @@ local function rotation_suit_at(suits, index)
     if CelestasMod.yoclesh_active and CelestasMod.yoclesh_active() then
         return "Hearts"
     end
-    return suits[((index - 1) % #suits) + 1]
+    return suits[rotation_index(index, #suits)]
 end
 
 SMODS.Joker {
@@ -1063,8 +1085,11 @@ SMODS.Joker {
         -- main_eval keeps the rotation to once per round rather than once per
         -- card evaluated during the end-of-round pass.
         if context.end_of_round and context.main_eval and not context.blueprint then
+            -- Through rotation_index so a misprinted index is written
+            -- back whole: advancing 46.101724272927 by hand would only carry
+            -- the fraction forward for the rest of the run.
             card.ability.extra.suit_index =
-                (card.ability.extra.suit_index % #suits) + 1
+                rotation_index(card.ability.extra.suit_index + 1, #suits)
             local next_suit = rotation_suit_at(suits, card.ability.extra.suit_index)
             return {
                 message = localize(next_suit, "suits_singular"),
@@ -7670,8 +7695,11 @@ SMODS.Joker {
         -- main_eval keeps the rotation to once per round rather than once per
         -- card evaluated during the end-of-round pass.
         if context.end_of_round and context.main_eval and not context.blueprint then
+            -- Through rotation_index so a misprinted index is written
+            -- back whole: advancing 46.101724272927 by hand would only carry
+            -- the fraction forward for the rest of the run.
             card.ability.extra.suit_index =
-                (card.ability.extra.suit_index % #suits) + 1
+                rotation_index(card.ability.extra.suit_index + 1, #suits)
             local next_suit = rotation_suit_at(suits, card.ability.extra.suit_index)
             return {
                 message = localize(next_suit, "suits_singular"),
