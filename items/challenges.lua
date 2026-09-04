@@ -45,6 +45,19 @@
 -- Resolved at load: SMODS.current_mod is nil by the time a Blind is set.
 local PRINTER_KEY = "c_" .. SMODS.current_mod.prefix .. "_joker_printer"
 
+-- Gold Stake's, whatever Stake the run is actually on.
+--
+-- get_blind_amount picks its table of base amounts off
+-- G.GAME.modifiers.scaling (misc_functions.lua:1040): 1 is White's - 300, 800,
+-- 2000, 5000 ... - 2 is what Green and up use, and 3 is what Purple and up use,
+-- which is where Gold lands: 300, 1000, 3200, 9000, 25000, 60000, 110000,
+-- 200000.
+--
+-- Gold is 3 rather than 8 because the Stakes do not each have their own table.
+-- Steamodded builds Gold out of every Stake below it, and exactly two of them
+-- - Green and Purple - raise `scaling` by one (src/game_object.lua:790, :830).
+local PRINTER_BASE_SCALING = 3
+
 --- What the quota is multiplied by at this Ante: 1, 3, 6, 10, 15, 21, 28, 36.
 ---
 --- The triangular numbers, n(n+1)/2 - the multiplier does not climb by a fixed
@@ -79,13 +92,28 @@ SMODS.Challenge {
         { id = "c_celesta_bind" },
     },
 
+    --- Called by Game:start_run once the run exists, after the Stake has been
+    --- set up and the deck applied (game.lua:2117).
+    ---
+    --- modifiers.scaling is read by get_blind_amount and by nothing else in
+    --- the game, so writing it here moves the quota and only the quota.
+    ---
+    --- max rather than assignment: a run already above Gold - another mod's
+    --- Stake - keeps what it had. This is a floor, not a ceiling.
+    apply = function(self)
+        if not (G.GAME and G.GAME.modifiers) then return end
+        G.GAME.modifiers.scaling =
+            math.max(G.GAME.modifiers.scaling or 1, PRINTER_BASE_SCALING)
+    end,
+
     rules = {
         -- Rendered on the challenge screen from misc.v_text.ch_c_<id>, with
         -- `value` threaded in as #1# (UI_definitions.lua:6058). Without an
         -- entry there the rule would be listed as the literal string ERROR.
         custom = {
-            -- No value: the text names the multipliers outright, because the
-            -- growth is not a single number to thread through.
+            -- No value on either: the text names what it means outright,
+            -- because neither is a single number to thread through.
+            { id = "celesta_printer_stake" },
             { id = "celesta_printer_quota" },
         },
         modifiers = {

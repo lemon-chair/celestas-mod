@@ -1938,6 +1938,9 @@ return {
         -- misc_functions.lua:2052), so a second line is simply dropped. Every
         -- one of vanilla's own is a single line for the same reason.
         v_text = {
+            ch_c_celesta_printer_stake = {
+                "Blind base sizes are {C:attention}Gold Stake{}'s",
+            },
             ch_c_celesta_printer_quota = {
                 "Blind requirement {C:attention}X1{}, {C:attention}X3{}, {C:attention}X6{}, {C:attention}X10{} ... by Ante",
             },
