@@ -1282,6 +1282,15 @@ return {
                     "{C:inactive}#3#% Rare, #4#% Legendary",
                 },
             },
+            j_celesta_yharon = {
+                name = "Yharon, Dragon of Rebirth",
+                text = {
+                    "The {C:mult}Mult{}-modifying Joker to",
+                    "the {C:attention}left{} of this Joker uses the",
+                    "next highest {C:attention}operator{} for scoring",
+                    "{C:inactive}(Caps at exponentiation)",
+                },
+            },
             j_celesta_yoclesh = {
                 name = "Yoclesh",
                 text = {
