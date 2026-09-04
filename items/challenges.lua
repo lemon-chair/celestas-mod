@@ -42,20 +42,29 @@
 -- (common_events.lua:377), so a Spectral listed here lands in the consumable
 -- row and not among the Jokers.
 
--- 1, 3, 5, 7 ... - the multiplier climbs by this much each Ante.
-local PRINTER_QUOTA_STEP = 2
-
 -- Resolved at load: SMODS.current_mod is nil by the time a Blind is set.
 local PRINTER_KEY = "c_" .. SMODS.current_mod.prefix .. "_joker_printer"
 
---- What the quota is multiplied by at this Ante: 1 at Ante 1, then two more
---- each time.
+--- What the quota is multiplied by at this Ante: 1, 3, 6, 10, 15, 21, 28, 36.
+---
+--- The triangular numbers, n(n+1)/2 - the multiplier does not climb by a fixed
+--- amount, the CLIMB itself grows by one each Ante. Ante 2 is two more than
+--- Ante 1, Ante 3 is three more than Ante 2, and so on.
+---
+--- Written as the closed form rather than as a running total because a running
+--- total would need somewhere to live, and this has to answer for any Ante at
+--- any time: the Blind select screen asks about the Ante being offered, and the
+--- ladder in the run info asks about all eight at once.
 ---
 --- Antes below 1 are left alone. get_blind_amount answers 100 for them - it is
---- the tutorial's, and the formula would hand it a multiplier of -1.
+--- the tutorial's - and n(n+1)/2 would hand Ante 0 a multiplier of 0, which is
+--- a Blind that needs no chips at all.
 function CelestasMod.printer_quota_scale(ante)
     if type(ante) ~= "number" or ante < 1 then return 1 end
-    return 1 + PRINTER_QUOTA_STEP * (ante - 1)
+    -- floor, because `/` is float division in every Lua the game might run
+    -- on: n(n+1) is always even so nothing is lost, and an integer keeps the
+    -- quota an integer.
+    return math.floor(ante * (ante + 1) / 2)
 end
 
 SMODS.Challenge {
@@ -75,7 +84,9 @@ SMODS.Challenge {
         -- `value` threaded in as #1# (UI_definitions.lua:6058). Without an
         -- entry there the rule would be listed as the literal string ERROR.
         custom = {
-            { id = "celesta_printer_quota", value = PRINTER_QUOTA_STEP },
+            -- No value: the text names the multipliers outright, because the
+            -- growth is not a single number to thread through.
+            { id = "celesta_printer_quota" },
         },
         modifiers = {
             -- Absolute, not a delta: vanilla starts on 5, so three fewer is 2.

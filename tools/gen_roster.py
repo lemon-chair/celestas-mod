@@ -949,7 +949,7 @@ LOC_TAIL = '''        },
         -- one of vanilla's own is a single line for the same reason.
         v_text = {
             ch_c_celesta_printer_quota = {
-                "Blind requirement {C:attention}X1{} at Ante 1, {C:attention}+#1#{} each Ante after",
+                "Blind requirement {C:attention}X1{}, {C:attention}X3{}, {C:attention}X6{}, {C:attention}X10{} ... by Ante",
             },
         },
         challenge_names = {
