@@ -942,6 +942,7 @@ LOC_TAIL = '''        },
     misc = {
         challenge_names = {
             c_celesta_dairy_farm = "Dairy Farm",
+            c_celesta_joker_printer = "Joker Printer",
         },
         labels = {
             m_celesta_exo = "Exo Card",
