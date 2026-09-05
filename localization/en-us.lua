@@ -284,6 +284,16 @@ return {
                     "up to {C:attention}#1#{} cards",
                 },
             },
+            j_celesta_corrupt_maya = {
+                name = "Corrupt Maya",
+                text = {
+                    "Each {C:attention}Steel Card{} held in hand",
+                    "gives {X:mult,C:white}X#1#{} Mult and is",
+                    "retriggered {C:attention}#2#{} times",
+                    "{C:red}-#3#{} Joker slots, cannot be sold",
+                    "All {C:attention}shop{} items become {C:attention}Maya{}",
+                },
+            },
             j_celesta_cosmic = {
                 name = "Cosmic",
                 text = {
@@ -1476,6 +1486,13 @@ return {
                     "hatches after {C:attention}#1#{} rounds",
                 },
             },
+            c_celesta_lost_soul = {
+                name = "Lost Soul",
+                text = {
+                    "Turns the leftmost {C:attention}glowing{}",
+                    "{C:attention}Joker{} into its lost version",
+                },
+            },
             c_celesta_raise = {
                 name = "Raise",
                 text = {
@@ -2045,6 +2062,11 @@ return {
             celesta_tattered = "Tattered",
             celesta_cracked = "Cracked",
             celesta_chipped = "Chipped",
+            -- The rarity a Corrupt Joker is drawn at, named for what is
+            -- left of the card it used to be. Read back through
+            -- localize("k_"..rarity:lower()) (SMODS.Rarity:get_rarity_badge),
+            -- so it is wanted in labels and in the dictionary both.
+            k_celesta_lost = "...",
             celesta_ectoplast_seal = "Ectoplast Seal",
             celesta_foppy_seal = "Foppy Seal",
             celesta_gene_seal = "Gene Seal",
@@ -2052,6 +2074,7 @@ return {
             celesta_star_seal = "Star Seal",
         },
         dictionary = {
+            k_celesta_lost = "...",
             celesta_cfg_animation = "Arena weather animation (off = tint only)",
             celesta_cfg_verbose = "Verbose logging",
             celesta_cfg_downpour = "Force Downpour (debug)",

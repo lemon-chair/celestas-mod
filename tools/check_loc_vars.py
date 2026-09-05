@@ -29,6 +29,9 @@ sounds = {}
 -- checked by test_challenges.py instead.
 challenges = {}
 suits = {}
+-- A Rarity's badge text lives in misc.labels rather than in descriptions, so
+-- like a Suit this is recorded only to keep main.lua loadable.
+rarities = {}
 SMODS = {
   Atlas = function(t) atlases[t.key] = t end,
   Sound = function(t) sounds[t.key] = t end,
@@ -40,6 +43,13 @@ SMODS = {
   -- Suits carry their own loc_txt rather than a descriptions entry, so
   -- they are only recorded here to keep main.lua loadable.
   Suit = function(t) suits[t.key] = t end,
+  -- Prefixes and hands the object back, as the real one does
+  -- (game_object.lua:33, :36) - a caller may read the final key off it.
+  Rarity = function(t)
+    t.key = SMODS.current_mod.prefix .. "_" .. t.key
+    rarities[t.key] = t
+    return t
+  end,
   Consumable = function(t) consumables[t.key] = t end,
   Back = function(t) backs[t.key] = t end,
   Challenge = function(t) challenges[t.key] = t end,

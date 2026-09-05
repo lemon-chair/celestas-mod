@@ -42,7 +42,11 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
           # and the card's corners are not part of it. Thanatos's art is
           # landscape on a square sheet and carries the card silhouette turned
           # a quarter turn, which gen_thanatos.py has already applied.
-          "cryogen_ring", "xm05_thanatos_wide"}
+          "cryogen_ring", "xm05_thanatos_wide",
+          # lost_soul is two cells wide, so the card silhouette would cut it
+          # down to the first one's corners; lost_glow IS that silhouette
+          # already. tools/gen_lost.py masks the half that needs it.
+          "lost_soul", "lost_glow"}
 CARD_W, CARD_H = 71, 95
 
 # Transparent run inwards from the left edge, per row, for a 71x95 sprite.

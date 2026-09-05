@@ -116,6 +116,9 @@ assert(SMODS.load_file('consumables/occult.lua'))()
 assert(SMODS.load_file('consumables/gene.lua'))()
 -- The Community hands out Tags, which needs nothing of this mod's at all.
 assert(SMODS.load_file('consumables/community.lua'))()
+-- The Lost Soul reaches into jokers/lost.lua, which has not loaded yet - but
+-- only from can_use and use, both of which need a run in progress.
+assert(SMODS.load_file('consumables/lost_soul.lua'))()
 
 --------------------------------------------------------------------------------
 -- Jokers — auto-loaded from jokers/.

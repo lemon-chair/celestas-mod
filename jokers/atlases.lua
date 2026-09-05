@@ -226,6 +226,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "corrupt_maya",
+    path = "corrupt_maya.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "cosmic",
     path = "cosmic.png",
     px = 71,

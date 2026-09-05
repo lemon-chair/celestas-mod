@@ -39,6 +39,10 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
           # Cryogen's ring and Thanatos's landscape art: overlays drawn
           # over the card, not faces
           "cryogen_ring", "xm05_thanatos_wide",
+          # The Lost Soul's sheet is two cells - a face and the wisp that
+          # floats over it - and lost_glow is the white outline an eligible
+          # Joker wears while one is held. Neither is a Joker face.
+          "lost_soul", "lost_glow",
           # eighteen cells in a row, not a card. blank_joker itself is an
           # ordinary Joker face and stays in the roster.
           "blank_joker_layers"}   # not per-joker art
@@ -439,6 +443,13 @@ LOC_TAIL = '''        },
                     "{C:attention}Pull{} into an empty",
                     "{C:attention}Joker{} slot, where it",
                     "hatches after {C:attention}#1#{} rounds",
+                },
+            },
+            c_celesta_lost_soul = {
+                name = "Lost Soul",
+                text = {
+                    "Turns the leftmost {C:attention}glowing{}",
+                    "{C:attention}Joker{} into its lost version",
                 },
             },
             c_celesta_raise = {
@@ -1010,6 +1021,11 @@ LOC_TAIL = '''        },
             celesta_tattered = "Tattered",
             celesta_cracked = "Cracked",
             celesta_chipped = "Chipped",
+            -- The rarity a Corrupt Joker is drawn at, named for what is
+            -- left of the card it used to be. Read back through
+            -- localize("k_"..rarity:lower()) (SMODS.Rarity:get_rarity_badge),
+            -- so it is wanted in labels and in the dictionary both.
+            k_celesta_lost = "...",
             celesta_ectoplast_seal = "Ectoplast Seal",
             celesta_foppy_seal = "Foppy Seal",
             celesta_gene_seal = "Gene Seal",
@@ -1017,6 +1033,7 @@ LOC_TAIL = '''        },
             celesta_star_seal = "Star Seal",
         },
         dictionary = {
+            k_celesta_lost = "...",
             celesta_cfg_animation = "Arena weather animation (off = tint only)",
             celesta_cfg_verbose = "Verbose logging",
             celesta_cfg_downpour = "Force Downpour (debug)",
