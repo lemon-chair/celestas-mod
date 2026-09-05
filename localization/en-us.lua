@@ -1404,8 +1404,6 @@ return {
                     "{C:attention}#1#/#2#{} Rounds",
                     "Use a {C:spectral}Soul{} on this",
                     "card to activate it",
-                    "When activated with a {C:spectral}Soul{},",
-                    "the card turns into {C:attention}Yharon{}",
                 },
             },
         },
