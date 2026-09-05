@@ -8897,8 +8897,9 @@ SMODS.Joker {
 --------------------------------------------------------------------------------
 --
 -- The two halves answer each other: +3 selection takes a hand to eight cards,
--- and the multiplier only starts once more than five are played. Nothing here
--- pays until the extra room is actually used.
+-- and the multiplier only starts once more than five of them SCORE. Nothing
+-- here pays until the extra room is actually used, and used on cards the poker
+-- hand takes.
 --
 -- The limit goes through the same pair of helpers Shiabun uses - see the
 -- comment above them for why it is granted by delta from `update` rather than
@@ -8944,9 +8945,15 @@ SMODS.Joker {
 
     calculate = function(self, card, context)
         if context.joker_main then
-            -- Cards PLAYED, not cards scored: a hand of eight that scores two
-            -- is still eight cards played, and that is what the card says.
-            local hand = context.full_hand or (G.play and G.play.cards) or {}
+            -- Cards SCORED, not cards played: an eight-card hand that scores
+            -- two is worth nothing here, and eight scored cards - a Flush
+            -- with three extra cards along for the ride does not manage it -
+            -- is what the multiplier is for.
+            --
+            -- scoring_hand is carried on this context by the scoring pass
+            -- itself (state_events.lua:667), so there is nothing to fall back
+            -- to: an empty one means no hand scored.
+            local hand = context.scoring_hand or {}
             local above = #hand - card.ability.extra.needed
             if above <= 0 then return end
 

@@ -401,7 +401,7 @@ return {
                 text = {
                     "{C:attention}+#1#{} card selection limit",
                     "{X:mult,C:white}X#2#{} Mult for each card",
-                    "played above {C:attention}#3#{}",
+                    "scored above {C:attention}#3#{}",
                 },
             },
             j_celesta_el_xox = {
