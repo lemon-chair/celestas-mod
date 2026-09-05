@@ -57,6 +57,7 @@ DISPLAY_NAMES = {
     "lordaethelstan": "Aethal",
     "astrum_aureus": "Astrum Aureus",
     "blueberrypancake": "BlueberryPancake",
+    "iron_moose": "Iron Moose",
     "blessed_phoenix_egg": "Blessed Phoenix Egg",
     "cryogen": "Cryogen",
     "xm05_thanatos": "XM-05 Thanatos",

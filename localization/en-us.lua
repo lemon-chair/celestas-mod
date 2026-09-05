@@ -592,6 +592,14 @@ return {
                     "{C:mult}+#1#{} Mult",
                 },
             },
+            j_celesta_iron_moose = {
+                name = "Iron Moose",
+                text = {
+                    "{E:1,C:mult}^#1#{} Mult",
+                    "{C:red}-#2#{} Joker slots, cannot be sold",
+                    "All {C:attention}shop{} items become {C:attention}Ironmouse{}",
+                },
+            },
             j_celesta_ironmouse = {
                 name = "Ironmouse",
                 text = {

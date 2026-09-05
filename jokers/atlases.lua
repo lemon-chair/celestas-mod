@@ -513,6 +513,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "iron_moose",
+    path = "iron_moose.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "ironmouse",
     path = "ironmouse.png",
     px = 71,

@@ -56,6 +56,7 @@ Lost.SOUL_KEY = LOST_SOUL_KEY
 Lost.CONVERSIONS = {
     [joker("maya")] = joker("corrupt_maya"),
     [joker("berrycrepe")] = joker("blueberrypancake"),
+    [joker("ironmouse")] = joker("iron_moose"),
 }
 
 --- The same table read the other way: which Joker a Corrupt one used to be.
@@ -425,6 +426,62 @@ SMODS.Joker {
                 },
                 card = other,
             }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Iron Moose
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "iron_moose",
+    atlas = "iron_moose",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    -- The three flags, as on Corrupt Maya above, where what each one does is
+    -- written out.
+    celesta_no_bind = true,
+    celesta_lost = true,
+    celesta_lost_shop = true,
+
+    config = { extra = { e_mult = 1.666, joker_slots = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        local extra = card.ability.extra
+        return { vars = { extra.e_mult, extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, card.ability.extra.joker_slots)
+    end,
+
+    calculate = function(self, card, context)
+        if context.joker_main then
+            -- ^Mult is Talisman's, and Talisman is a declared dependency of
+            -- this mod - but a run without it should say so rather than
+            -- silently score nothing. XM-05 Thanatos checks the same way.
+            if Card.get_chip_e_mult == nil then
+                CelestasMod.warn_once("iron_moose_no_talisman",
+                    "Iron Moose scores ^Mult, which needs Talisman; "
+                    .. "without it the Joker does nothing")
+                return
+            end
+            return { e_mult = card.ability.extra.e_mult }
         end
     end,
 }
