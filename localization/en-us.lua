@@ -1291,6 +1291,15 @@ return {
                     "{C:inactive}#3#% Rare, #4#% Legendary",
                 },
             },
+            j_celesta_xm05_thanatos = {
+                name = "XM-05 Thanatos",
+                text = {
+                    "When a hand is played, destroys all",
+                    "{C:attention}Red Seal Steel Kings{} held in hand,",
+                    "gaining {C:mult}^#1#{} Mult for each King destroyed",
+                    "{C:inactive}(Currently {C:mult}^#2#{C:inactive} Mult)",
+                },
+            },
             j_celesta_yharon = {
                 name = "Yharon, Dragon of Rebirth",
                 text = {

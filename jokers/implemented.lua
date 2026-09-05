@@ -8923,3 +8923,97 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- XM-05 Thanatos [Rare] - eats the Steel Kings it finds in hand.
+--------------------------------------------------------------------------------
+--
+-- context.before is the pass that runs once as a hand is played and before any
+-- of it scores, which is when "held in hand" still means something: the played
+-- cards have moved to G.play and what is left in G.hand is exactly the hand the
+-- player kept. Doing this at joker_main instead would be reading the hand after
+-- the game had already finished with it.
+--
+-- All three conditions are asked the way the game asks them. A King is
+-- get_id() == 13, which is what Grandpaw Shao and Kael rewrite and what every
+-- rank check in the mod goes through. Steel is asked through
+-- SMODS.has_enhancement so a card wearing more than one still counts. The seal
+-- is compared to the string "Red", which is what set_seal stores.
+--
+-- SMODS.destroy_cards does the removing: it refuses eternal and undestroyable
+-- cards, plays the dissolve, and raises the removal contexts other Jokers watch
+-- for. So the count is taken from what it ACTUALLY destroyed rather than from
+-- what was offered to it, and a hand full of eternal Steel Kings pays nothing.
+
+--- Every Steel King with a Red Seal currently held in hand.
+local function thanatos_targets()
+    local held = G.hand and G.hand.cards
+    if type(held) ~= "table" then return {} end
+
+    local found = {}
+    for _, card in ipairs(held) do
+        if card.seal == "Red" and card.get_id and card:get_id() == 13
+            and SMODS.has_enhancement(card, "m_steel") then
+            found[#found + 1] = card
+        end
+    end
+    return found
+end
+
+SMODS.Joker {
+    key = "xm05_thanatos",
+    atlas = "xm05_thanatos",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    -- A copy would eat the same cards a second time, and there would be none
+    -- left for it to eat.
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { e_mult = 1, e_mult_gain = 0.05 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_steel
+        info_queue[#info_queue + 1] = G.P_SEALS.Red
+        return { vars = { 1 + card.ability.extra.e_mult_gain,
+                          card.ability.extra.e_mult } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.before and not context.blueprint then
+            local targets = thanatos_targets()
+            if #targets == 0 then return end
+
+            -- Counted from what survived the destroy rather than from the list
+            -- handed to it: an eternal King is refused, and refusing it must
+            -- not pay.
+            SMODS.destroy_cards(targets)
+            local eaten = 0
+            for _, king in ipairs(targets) do
+                if king.REMOVED or not king.area then eaten = eaten + 1 end
+            end
+            if eaten == 0 then return end
+
+            card.ability.extra.e_mult =
+                card.ability.extra.e_mult + eaten * card.ability.extra.e_mult_gain
+            return {
+                message = localize { type = "variable", key = "celesta_powmult",
+                                     vars = { card.ability.extra.e_mult } },
+                colour = G.C.MULT, card = card,
+            }
+        end
+
+        if context.joker_main and card.ability.extra.e_mult > 1 then
+            -- ^Mult is Talisman's, and Talisman is a declared dependency of
+            -- this mod - but a run without it should say so rather than
+            -- silently score nothing.
+            if Card.get_chip_e_mult == nil then
+                CelestasMod.warn_once("thanatos_no_talisman",
+                    "XM-05 Thanatos scores ^Mult, which needs Talisman; "
+                    .. "without it the Joker does nothing")
+                return
+            end
+            return { e_mult = card.ability.extra.e_mult }
+        end
+    end,
+}

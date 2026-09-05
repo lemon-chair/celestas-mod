@@ -1157,6 +1157,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "xm05_thanatos",
+    path = "xm05_thanatos.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "yharon",
     path = "yharon.png",
     px = 71,
