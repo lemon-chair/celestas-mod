@@ -67,11 +67,11 @@ return {
             j_celesta_arar = {
                 name = "Arar",
                 text = {
-                    "At the start of each round,",
-                    "add a random {C:attention}enhancement{} to",
-                    "a random unenhanced card held in hand,",
-                    "favouring the one made by the {C:tarot}Tarot{}",
-                    "in the {C:attention}first{} consumable slot",
+                    "At the start of each round, add an",
+                    "{C:attention}enhancement{} to a random unenhanced",
+                    "card held in hand: the one made by the",
+                    "{C:tarot}Tarot{} in the {C:attention}first{} consumable slot,",
+                    "or a random one if there is none",
                 },
             },
             j_celesta_arielle = {

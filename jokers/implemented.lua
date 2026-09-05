@@ -36,12 +36,6 @@ end
 -- unenhanced card held in hand.
 --------------------------------------------------------------------------------
 
---- How much likelier the favoured enhancement is than any of its rivals.
---- A tilt rather than a promise: four times the usual weight against seven or
---- eight other enhancements is a little over a third of the time, which is
---- what "favours" should feel like.
-local ARAR_FAVOUR = 4
-
 --- The enhancement made by the Tarot in the first consumable slot, if there is
 --- one there and it makes one at all.
 ---
@@ -62,28 +56,21 @@ local function arar_favoured()
     return nil
 end
 
---- The enhancement pool, with the favoured one weighted up.
+--- The enhancement to hand out without rolling for it, or nil to roll.
 ---
---- Built from get_current_pool rather than from a list of this mod's own, so
---- an enhancement the run has disabled stays disabled and one another mod adds
---- is still in the running. The favoured key is only ever WEIGHTED, never
---- inserted: if the run has taken it out of the pool, it is out.
-local function arar_options()
+--- Every time, while that Tarot is sitting there - but only if the run is
+--- still offering that enhancement. get_current_pool is what a Challenge or a
+--- Deck that bans one takes it out of, and a Joker that could put it back is a
+--- Joker that ignores the ban. So a favoured enhancement the run has culled
+--- falls back to the ordinary roll rather than overriding it.
+local function arar_forced()
     local favoured = arar_favoured()
     if not favoured then return nil end
 
-    local options = {}
     for _, key in ipairs(get_current_pool("Enhanced") or {}) do
-        if key ~= "UNAVAILABLE" then
-            -- 5 is the weight poll_enhancement gives an enhancement that does
-            -- not declare one, which is all of the vanilla ones.
-            local weight = (G.P_CENTERS[key] and G.P_CENTERS[key].weight) or 5
-            if key == favoured then weight = weight * ARAR_FAVOUR end
-            options[#options + 1] = { key = key, weight = weight }
-        end
+        if key == favoured then return favoured end
     end
-    if #options == 0 then return nil end
-    return options
+    return nil
 end
 
 SMODS.Joker {
@@ -128,12 +115,9 @@ SMODS.Joker {
             -- poll_enhancement respects the run's current pool, so this never
             -- rolls an enhancement the run has disabled, and it does pick up
             -- enhancements added by other mods.
-            local enhancement = SMODS.poll_enhancement {
+            local enhancement = arar_forced() or SMODS.poll_enhancement {
                 key = "celesta_arar_enh",
                 guaranteed = true,
-                -- nil when nothing is favoured, which is poll_enhancement's
-                -- own default: the run's pool, evenly weighted.
-                options = arar_options(),
             }
             if not enhancement then return end
 
