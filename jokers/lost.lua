@@ -223,6 +223,21 @@ local function refill(card, key)
     -- Cleared before the swap: it is what create_shop_card_ui would otherwise
     -- read to decide this is a voucher.
     card.shop_voucher = nil
+
+    -- A booster pack is built at 1.27 times card size (game.lua:3260), and
+    -- set_ability restores a card's dimensions from original_T before it
+    -- applies the new centre's own (card.lua:248) - so the pack's size would
+    -- outlive the pack and leave a Joker sitting a quarter again too big.
+    -- Corrected first, so set_ability copies the right numbers across and the
+    -- set_sprites it schedules rebuilds the face to match. Only w and h:
+    -- scale is 0.95 on every card in the game, boosters included
+    -- (card.lua:61).
+    if card.original_T then
+        card.original_T.w, card.original_T.h = G.CARD_W, G.CARD_H
+    end
+    if card.T then card.T.w, card.T.h = G.CARD_W, G.CARD_H end
+    if card.VT then card.VT.w, card.VT.h = G.CARD_W, G.CARD_H end
+
     card:set_ability(center, nil, true)
     card:set_cost()
 end
