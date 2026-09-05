@@ -158,6 +158,62 @@ local function ready_egg()
     return nil
 end
 
+--------------------------------------------------------------------------------
+-- Souls come easier once an egg is ready
+--------------------------------------------------------------------------------
+--
+-- A ready egg needs a Soul and can do nothing else, so while one is waiting
+-- The Soul turns up half again as often: 0.003 becomes 0.0045.
+--
+-- Done as a SECOND, independent roll rather than by moving vanilla's number,
+-- because vanilla's number is a literal inside create_card
+-- (common_events.lua:2424) with no hook near it - reaching it would mean a
+-- Lovely patch on a block Steamodded has already rewritten, which is a
+-- fragile thing to own for one constant. Two independent rolls at 0.003 and
+-- 0.0015 come to 1 - 0.997*0.9985 = 0.0044955, which is the 0.0045 asked for
+-- to within a twentieth of a percent.
+--
+-- The extra roll draws on a stream of its own, so every other pseudorandom
+-- decision in a seeded run falls exactly where it did before.
+--
+-- Setting forced_key skips the rest of create_card's soul block, the modded
+-- souls included - the same thing vanilla's own hit does. It costs the other
+-- souls a roll on 0.15% of the cards that could have carried one, which is
+-- around four in a million.
+
+--- The extra roll's threshold: half of vanilla's 0.003, over the line.
+local EXTRA_SOUL_RATE = 0.0015
+
+local celesta_egg_create_ref = create_card
+
+if celesta_egg_create_ref then
+    function create_card(_type, area, legendary, _rarity, skip_materialize,
+                         soulable, forced_key, key_append)
+        -- Cheapest checks first: this function runs for every card the game
+        -- makes, and the board scan is the expensive part.
+        if soulable and not forced_key
+            and (_type == "Tarot" or _type == "Spectral"
+                 or _type == "Tarot_Planet")
+            and G.GAME and not (G.GAME.banned_keys or {})[SOUL_KEY]
+            -- The same two conditions vanilla puts on its own roll: a Soul
+            -- already used this run does not come back without a Showman.
+            and not ((G.GAME.used_jokers or {})[SOUL_KEY]
+                     and not SMODS.showman(SOUL_KEY))
+            and ready_egg() then
+            local roll = pseudorandom("celesta_egg_soul_" .. _type
+                .. ((G.GAME.round_resets or {}).ante or 0))
+            if roll > 1 - EXTRA_SOUL_RATE then forced_key = SOUL_KEY end
+        end
+
+        return celesta_egg_create_ref(_type, area, legendary, _rarity,
+            skip_materialize, soulable, forced_key, key_append)
+    end
+end
+
+--------------------------------------------------------------------------------
+-- Hatching, continued
+--------------------------------------------------------------------------------
+
 --- Turns `egg` into Yharon in place.
 ---
 --- The same card rather than a new one: it keeps its slot in the row, its
