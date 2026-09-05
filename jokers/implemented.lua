@@ -36,6 +36,56 @@ end
 -- unenhanced card held in hand.
 --------------------------------------------------------------------------------
 
+--- How much likelier the favoured enhancement is than any of its rivals.
+--- A tilt rather than a promise: four times the usual weight against seven or
+--- eight other enhancements is a little over a third of the time, which is
+--- what "favours" should feel like.
+local ARAR_FAVOUR = 4
+
+--- The enhancement made by the Tarot in the first consumable slot, if there is
+--- one there and it makes one at all.
+---
+--- Read through `mod_conv`, which is what an enhancement Tarot IS: vanilla's
+--- Card:use_consumeable applies whatever centre that field names
+--- (card.lua:1401), and this mod's own enhancement Tarots are nothing but that
+--- field. So a Tarot from any mod is understood here without naming any of
+--- them, and a Tarot that does something else - The Fool, Judgement - names no
+--- enhancement and is passed over rather than mistaken for one.
+local function arar_favoured()
+    local slot = G.consumeables and G.consumeables.cards
+        and G.consumeables.cards[1]
+    local center = slot and slot.config and slot.config.center
+    if not (center and center.set == "Tarot") then return nil end
+
+    local key = center.config and center.config.mod_conv
+    if key and G.P_CENTERS[key] then return key end
+    return nil
+end
+
+--- The enhancement pool, with the favoured one weighted up.
+---
+--- Built from get_current_pool rather than from a list of this mod's own, so
+--- an enhancement the run has disabled stays disabled and one another mod adds
+--- is still in the running. The favoured key is only ever WEIGHTED, never
+--- inserted: if the run has taken it out of the pool, it is out.
+local function arar_options()
+    local favoured = arar_favoured()
+    if not favoured then return nil end
+
+    local options = {}
+    for _, key in ipairs(get_current_pool("Enhanced") or {}) do
+        if key ~= "UNAVAILABLE" then
+            -- 5 is the weight poll_enhancement gives an enhancement that does
+            -- not declare one, which is all of the vanilla ones.
+            local weight = (G.P_CENTERS[key] and G.P_CENTERS[key].weight) or 5
+            if key == favoured then weight = weight * ARAR_FAVOUR end
+            options[#options + 1] = { key = key, weight = weight }
+        end
+    end
+    if #options == 0 then return nil end
+    return options
+end
+
 SMODS.Joker {
     key = "arar",
     atlas = "arar",
@@ -81,6 +131,9 @@ SMODS.Joker {
             local enhancement = SMODS.poll_enhancement {
                 key = "celesta_arar_enh",
                 guaranteed = true,
+                -- nil when nothing is favoured, which is poll_enhancement's
+                -- own default: the run's pool, evenly weighted.
+                options = arar_options(),
             }
             if not enhancement then return end
 

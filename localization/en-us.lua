@@ -69,8 +69,9 @@ return {
                 text = {
                     "At the start of each round,",
                     "add a random {C:attention}enhancement{} to",
-                    "a random unenhanced card",
-                    "held in hand",
+                    "a random unenhanced card held in hand,",
+                    "favouring the one made by the {C:tarot}Tarot{}",
+                    "in the {C:attention}first{} consumable slot",
                 },
             },
             j_celesta_arielle = {
