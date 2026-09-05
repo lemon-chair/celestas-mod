@@ -36,6 +36,10 @@ NON_CARD = {
     # and the art's own 13x13 grid is used rather than resampling into 18x18.
     "suit_stars_ui": "13x13 suit pip",
     "suit_leaf_ui": "13x13 suit pip",
+    # Drawn over a card rather than as one, at the card's own scale: 95 across
+    # is 95/71 of a card wide, which is the overhang XM-05 Thanatos is for.
+    # Square rather than 95x71 so the vertical mapping needs no correction.
+    "xm05_thanatos_wide": "95x95 landscape overlay",
 }
 
 

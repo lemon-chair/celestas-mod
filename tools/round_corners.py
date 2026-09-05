@@ -39,8 +39,10 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
           # not cards at all
           "blank_joker_layers",
           # Cryogen's ring TURNS, so its silhouette is a circle at every angle
-          # and the card's corners are not part of it
-          "cryogen_ring"}
+          # and the card's corners are not part of it. Thanatos's art is
+          # landscape on a square sheet and carries the card silhouette turned
+          # a quarter turn, which gen_thanatos.py has already applied.
+          "cryogen_ring", "xm05_thanatos_wide"}
 CARD_W, CARD_H = 71, 95
 
 # Transparent run inwards from the left edge, per row, for a 71x95 sprite.
