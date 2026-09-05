@@ -27,7 +27,7 @@
 --- nowhere for a Joker and its sound to drift apart.
 
 SMODS.Sound { key = "arar_join",     path = "arar_join.ogg" }
-SMODS.Sound { key = "ben_join",      path = "ben_join.ogg" }
+SMODS.Sound { key = "ben_join",      path = "ben_join.mp3" }
 SMODS.Sound { key = "eidolonwyrm_join", path = "eidolonwyrm_join.wav" }
 SMODS.Sound { key = "kokonuts_join", path = "kokonuts_join.ogg" }
 SMODS.Sound { key = "kumi_join",     path = "kumi_join.ogg" }
