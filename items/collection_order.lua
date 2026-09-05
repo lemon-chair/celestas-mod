@@ -3,7 +3,13 @@
 --- The Joker collection pages straight through G.P_CENTER_POOLS.Joker in
 --- registration order, which is the order the files happened to load in and
 --- says nothing about anything. This puts fifteen of them - one full page, five
---- to a row - at the front of it.
+--- to a row - at the front of THIS MOD'S stretch of it.
+---
+--- The front of the mod's block rather than the front of the collection: the
+--- vanilla Jokers come first and stay there, so these open the first page that
+--- is this mod's. With the current counts that is page 11, and it stays the
+--- first page of the mod whatever those counts become - which hardcoding a page
+--- number would not.
 ---
 --- Done by wrapping SMODS.collection_pool rather than by reordering the pool
 --- itself. That function is what the collection screens build their grid from
@@ -38,6 +44,14 @@ if type(SMODS.collection_pool) == "function" then
             return pool
         end
 
+        -- Where this mod's Jokers start. Everything before it is somebody
+        -- else's and is left exactly where it is.
+        local ours = nil
+        for i, center in ipairs(pool) do
+            if CelestasMod.is_ours(center) then ours = i break end
+        end
+        if not ours then return pool end
+
         local wanted = {}
         for i, key in ipairs(CelestasMod.COLLECTION_FIRST) do wanted[key] = i end
 
@@ -45,19 +59,22 @@ if type(SMODS.collection_pool) == "function" then
         -- the page reads the way the list is written whatever order the pool
         -- happens to be in.
         local first, rest = {}, {}
-        for _, center in ipairs(pool) do
-            local place = center.key and wanted[center.key]
+        for i, center in ipairs(pool) do
+            local place = i >= ours and center.key and wanted[center.key]
             if place then first[place] = center else rest[#rest + 1] = center end
         end
 
         local out = {}
+        -- Everything ahead of this mod, untouched.
+        for i = 1, ours - 1 do out[#out + 1] = rest[i] end
+
         -- A gap is skipped rather than left as a hole: a Joker in the list that
-        -- the run is not showing - filtered to another mod's page, or removed
+        -- the screen is not showing - filtered to another mod's page, or removed
         -- outright - must not shift the rest of the page or end the loop.
         for i = 1, #CelestasMod.COLLECTION_FIRST do
             if first[i] then out[#out + 1] = first[i] end
         end
-        for _, center in ipairs(rest) do out[#out + 1] = center end
+        for i = ours, #rest do out[#out + 1] = rest[i] end
 
         return out
     end
