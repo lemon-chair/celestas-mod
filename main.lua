@@ -119,7 +119,12 @@ assert(SMODS.load_file('consumables/community.lua'))()
 
 --------------------------------------------------------------------------------
 -- Jokers — auto-loaded from jokers/.
--- Sorted so atlases.lua always registers before vtubers.lua references it.
+-- Sorted, which does two things. atlases.lua registers before anything
+-- references it, and zz_vtubers.lua - the placeholder roster - loads LAST, so
+-- every finished Joker is contiguous in the Collection and the unfinished ones
+-- are the tail. Named for its position: a Joker added after it would otherwise
+-- land on the far side of seventeen stand-ins, which is where the last two
+-- went missing.
 --------------------------------------------------------------------------------
 
 local joker_src = NFS.getDirectoryItems(SMODS.current_mod.path .. "jokers")

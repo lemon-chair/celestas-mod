@@ -1,4 +1,4 @@
-"""Regenerate jokers/atlases.lua, jokers/vtubers.lua and localization/en-us.lua
+"""Regenerate jokers/atlases.lua, jokers/zz_vtubers.lua and localization/en-us.lua
 from whatever PNGs sit in assets/1x/.
 
 Run from the mod root:   python tools/gen_roster.py
@@ -175,7 +175,7 @@ def collect():
 
 
 def implemented_keys():
-    """Keys defined by hand anywhere in jokers/, vtubers.lua aside.
+    """Keys defined by hand anywhere in jokers/, the placeholder roster aside.
 
     Every .lua in the folder is read rather than implemented.lua alone: a Joker
     that carries enough machinery to want its own file - the Blank Joker does -
@@ -197,7 +197,7 @@ def implemented_keys():
     if not os.path.isdir(d):
         return keys
     for name in sorted(os.listdir(d)):
-        if not name.endswith(".lua") or name == "vtubers.lua":
+        if not name.endswith(".lua") or name == "zz_vtubers.lua":
             continue
         src = open(os.path.join(d, name), encoding="utf-8").read()
         keys.update(re.findall(
@@ -1087,7 +1087,7 @@ def main():
 
     roster = "".join('    { key = "%s", rarity = 1, cost = 4, mult = 4 },\n' % s
                      for s in placeholders)
-    write("jokers/vtubers.lua",
+    write("jokers/zz_vtubers.lua",
           BANNER
           + "--- Placeholder roster: every entry is a Common Joker with a stand-in\n"
             "--- +Mult effect, so all art is loadable and testable in-game.\n"

@@ -27,8 +27,8 @@ local CRYOGEN_KEY = "j_" .. SMODS.current_mod.prefix .. "_cryogen"
 SMODS.Atlas { key = "cryogen_ring", path = "cryogen_ring.png", px = 71, py = 95 }
 local RING_ATLAS = SMODS.current_mod.prefix .. "_cryogen_ring"
 
---- Radians a second. Slow enough to read as drifting rather than whirling.
-local SPIN = 0.7
+--- Radians a second.
+local SPIN = 1.2
 
 --- True when this card is a Cryogen, either half of it.
 ---

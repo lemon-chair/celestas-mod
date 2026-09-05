@@ -1,7 +1,7 @@
 --- Hand-written Jokers with real effects.
 ---
 --- Anything defined here is EXCLUDED from the generated roster in
---- jokers/vtubers.lua, so move a joker into this file the moment it stops
+--- jokers/zz_vtubers.lua, so move a joker into this file the moment it stops
 --- being a placeholder. tools/gen_roster.py finds them by matching
 --- `SMODS.Joker {` followed immediately by `key = "..."`, so keep `key` as the
 --- first field of every definition.
