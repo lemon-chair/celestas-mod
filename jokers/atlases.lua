@@ -135,6 +135,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "blessed_phoenix_egg",
+    path = "blessed_phoenix_egg.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "blue_card",
     path = "blue_card.png",
     px = 71,

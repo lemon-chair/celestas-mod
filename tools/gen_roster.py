@@ -51,6 +51,7 @@ DISPLAY_NAMES = {
     "obkatiekat": "ObKatieKat",
     # the art is named for the creator; the card is not
     "lordaethelstan": "Aethal",
+    "blessed_phoenix_egg": "Blessed Phoenix Egg",
     "cryogen": "Cryogen",
     "xm05_thanatos": "XM-05 Thanatos",
     "eidolonwyrm": "Eidolon Wyrm",
@@ -337,7 +338,12 @@ EXAMPLE_KEYS = ["j_celesta_spark", "j_celesta_ledger", "j_celesta_tollkeeper"]
 #
 # Anything listed here MUST NOT also have art: the two sources are concatenated
 # and a key in both is written into the file twice.
-ARTLESS_KEYS = []
+ARTLESS_KEYS = [
+    # The Blessed Phoenix Egg's second description, the one it reads once it
+    # has finished counting. Not an object of its own - loc_vars swaps to it by
+    # key - so nothing in assets/ points at it.
+    "j_celesta_blessed_phoenix_egg_ready",
+]
 
 LOC_TAIL = '''        },
 
@@ -426,6 +432,14 @@ LOC_TAIL = '''        },
         },
 
         Spectral = {
+            c_celesta_blessed_phoenix_egg = {
+                name = "Blessed Phoenix Egg",
+                text = {
+                    "{C:attention}Pull{} into an empty",
+                    "{C:attention}Joker{} slot, where it",
+                    "hatches after {C:attention}#1#{} rounds",
+                },
+            },
             c_celesta_raise = {
                 name = "Raise",
                 text = {
@@ -1007,6 +1021,9 @@ LOC_TAIL = '''        },
             celesta_cfg_downpour = "Force Downpour (debug)",
             -- Floating message text. Vanilla has no generic "+card" key
             -- (k_plus_stone is Marble Joker's own), so this mod supplies one.
+            -- The button on the Blessed Phoenix Egg, which is pulled into the
+            -- Joker row rather than used.
+            celesta_b_pull = "Pull",
             celesta_upgraded = "Upgraded!",
             celesta_gashed = "Gashed!",
             celesta_broke = "Broke!",

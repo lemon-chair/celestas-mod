@@ -180,6 +180,12 @@ return {
                     "{C:inactive}(#1#)",
                 },
             },
+            j_celesta_blessed_phoenix_egg = {
+                name = "Blessed Phoenix Egg",
+                text = {
+                    "{C:attention}#1#/#2#{} Rounds",
+                },
+            },
             j_celesta_blue_card = {
                 name = "Blue Card",
                 text = {
@@ -1356,6 +1362,16 @@ return {
                     "give {X:mult,C:white}X#1#{} Mult when scored",
                 },
             },
+            j_celesta_blessed_phoenix_egg_ready = {
+                name = "Blessed Phoenix Egg",
+                text = {
+                    "{C:attention}#1#/#2#{} Rounds",
+                    "Use a {C:spectral}Soul{} on this",
+                    "card to activate it",
+                    "When activated with a {C:spectral}Soul{},",
+                    "the card turns into {C:attention}Yharon{}",
+                },
+            },
         },
 
         Tarot = {
@@ -1443,6 +1459,14 @@ return {
         },
 
         Spectral = {
+            c_celesta_blessed_phoenix_egg = {
+                name = "Blessed Phoenix Egg",
+                text = {
+                    "{C:attention}Pull{} into an empty",
+                    "{C:attention}Joker{} slot, where it",
+                    "hatches after {C:attention}#1#{} rounds",
+                },
+            },
             c_celesta_raise = {
                 name = "Raise",
                 text = {
@@ -2024,6 +2048,9 @@ return {
             celesta_cfg_downpour = "Force Downpour (debug)",
             -- Floating message text. Vanilla has no generic "+card" key
             -- (k_plus_stone is Marble Joker's own), so this mod supplies one.
+            -- The button on the Blessed Phoenix Egg, which is pulled into the
+            -- Joker row rather than used.
+            celesta_b_pull = "Pull",
             celesta_upgraded = "Upgraded!",
             celesta_gashed = "Gashed!",
             celesta_broke = "Broke!",
