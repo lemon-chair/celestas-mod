@@ -56,6 +56,7 @@ DISPLAY_NAMES = {
     # the art is named for the creator; the card is not
     "lordaethelstan": "Aethal",
     "astrum_aureus": "Astrum Aureus",
+    "blueberrypancake": "BlueberryPancake",
     "blessed_phoenix_egg": "Blessed Phoenix Egg",
     "cryogen": "Cryogen",
     "xm05_thanatos": "XM-05 Thanatos",

@@ -16,9 +16,10 @@
 
 local PREFIX = SMODS.current_mod.prefix
 
-local MAYA_KEY = "j_" .. PREFIX .. "_maya"
-local CORRUPT_MAYA_KEY = "j_" .. PREFIX .. "_corrupt_maya"
 local LOST_SOUL_KEY = "c_" .. PREFIX .. "_lost_soul"
+
+--- A Joker key, from the bare name.
+local function joker(name) return "j_" .. PREFIX .. "_" .. name end
 
 --------------------------------------------------------------------------------
 -- The rarity
@@ -53,8 +54,15 @@ Lost.SOUL_KEY = LOST_SOUL_KEY
 --- reads the table rather than naming a card, so adding the next conversion is
 --- a line here plus the Joker itself.
 Lost.CONVERSIONS = {
-    [MAYA_KEY] = CORRUPT_MAYA_KEY,
+    [joker("maya")] = joker("corrupt_maya"),
+    [joker("berrycrepe")] = joker("blueberrypancake"),
 }
+
+--- The same table read the other way: which Joker a Corrupt one used to be.
+--- Built rather than written out, so the pair above stays the single place a
+--- conversion is declared.
+Lost.BASE_OF = {}
+for base, corrupt in pairs(Lost.CONVERSIONS) do Lost.BASE_OF[corrupt] = base end
 
 --- True for a Joker the Lost Soul can be spent on.
 ---
@@ -188,27 +196,34 @@ end
 -- event runs gets a Buy button rather than Redeem or Open - which is why
 -- nothing here has to touch the argument.
 
---- True while some Lost Joker is holding the shop shut.
-local function shop_is_taken()
-    if not (G.jokers and G.jokers.cards) then return false end
-    for _, joker in ipairs(G.jokers.cards) do
-        if Lost.is_lost(joker) and joker.config.center.celesta_lost_shop then
-            return true
+--- The Joker every shop item is to become, or nil while the shop is free.
+---
+--- Which Joker that is comes from the holder rather than from a constant: a
+--- Corrupt one fills the shop with whatever it used to be, so Corrupt Maya
+--- fills it with Mayas and BlueberryPancake with BerryCrepes. With two of
+--- them on the board the leftmost wins, the way the Joker row settles every
+--- other disagreement.
+local function shop_filler()
+    if not (G.jokers and G.jokers.cards) then return nil end
+    for _, held in ipairs(G.jokers.cards) do
+        if Lost.is_lost(held) and held.config.center.celesta_lost_shop then
+            local base = Lost.BASE_OF[held.config.center.key]
+            if base and G.P_CENTERS[base] then return base end
         end
     end
-    return false
+    return nil
 end
 
---- Makes `card` a Maya, whatever it was.
-local function mayaify(card)
-    local maya = G.P_CENTERS[MAYA_KEY]
-    if not (card and maya) then return end
-    if card.config and card.config.center == maya then return end
+--- Makes `card` the Joker `key` names, whatever it was.
+local function refill(card, key)
+    local center = G.P_CENTERS[key]
+    if not (card and center) then return end
+    if card.config and card.config.center == center then return end
 
-    -- Set before the swap: it is what create_shop_card_ui would otherwise
+    -- Cleared before the swap: it is what create_shop_card_ui would otherwise
     -- read to decide this is a voucher.
     card.shop_voucher = nil
-    card:set_ability(maya, nil, true)
+    card:set_ability(center, nil, true)
     card:set_cost()
 end
 
@@ -245,7 +260,8 @@ local celesta_lost_shop_ui_ref = create_shop_card_ui
 
 if celesta_lost_shop_ui_ref then
     function create_shop_card_ui(card, type, area)
-        if shop_is_taken() then mayaify(card) end
+        local key = shop_filler()
+        if key then refill(card, key) end
         return celesta_lost_shop_ui_ref(card, type, area)
     end
 end
@@ -330,6 +346,70 @@ SMODS.Joker {
                     card = card,
                 }
             end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- BlueberryPancake
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "blueberrypancake",
+    atlas = "blueberrypancake",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    -- The three flags, as on Corrupt Maya above, where what each one does is
+    -- written out.
+    celesta_no_bind = true,
+    celesta_lost = true,
+    celesta_lost_shop = true,
+
+    config = { extra = { mult_gain = 66.6, joker_slots = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        local extra = card.ability.extra
+        return { vars = { extra.mult_gain, extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, card.ability.extra.joker_slots)
+    end,
+
+    calculate = function(self, card, context)
+        -- BerryCrepe's own pass, at sixty-six and a half times the number.
+        -- perma_mult is scored by Card:get_chip_mult and printed on the card
+        -- automatically as "+N Mult", so no display work is needed.
+        if context.individual and context.cardarea == G.play then
+            local other = context.other_card
+            if not other then return end
+            other.ability.perma_mult = (other.ability.perma_mult or 0)
+                + card.ability.extra.mult_gain
+            return {
+                extra = {
+                    message = localize {
+                        type = "variable",
+                        key = "a_mult",
+                        vars = { other.ability.perma_mult },
+                    },
+                    colour = G.C.MULT,
+                },
+                card = other,
+            }
         end
     end,
 }

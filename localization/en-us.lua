@@ -203,6 +203,15 @@ return {
                     "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
                 },
             },
+            j_celesta_blueberrypancake = {
+                name = "BlueberryPancake",
+                text = {
+                    "Scored cards permanently",
+                    "gain {C:mult}+#1#{} Mult",
+                    "{C:red}-#2#{} Joker slots, cannot be sold",
+                    "All {C:attention}shop{} items become {C:attention}BerryCrepe{}",
+                },
+            },
             j_celesta_bluto = {
                 name = "Bluto",
                 text = {
