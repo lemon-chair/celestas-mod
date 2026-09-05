@@ -343,6 +343,7 @@ CelestasMod.WEATHER_JOKERS = {
     -- around Frozen belong to the same weather.
     snowstorm = {
         "amalee",           -- starts one, and freezes a Joker under it
+        "cryogen",          -- paid every time one freezes
         "vulpixie",         -- a frozen Joker of yours never misfires
         "smugalana",        -- strips a sticker as the ice comes off
     },

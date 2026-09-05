@@ -37,7 +37,10 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
           "boosfer", "frozen_round",
           # eighteen card-sized cells in a row, and the pips inside them are
           # not cards at all
-          "blank_joker_layers"}
+          "blank_joker_layers",
+          # Cryogen's ring TURNS, so its silhouette is a circle at every angle
+          # and the card's corners are not part of it
+          "cryogen_ring"}
 CARD_W, CARD_H = 71, 95
 
 # Transparent run inwards from the left edge, per row, for a 71x95 sprite.

@@ -292,6 +292,15 @@ return {
                     "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
                 },
             },
+            j_celesta_cryogen = {
+                name = "Cryogen",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult",
+                    "every time a Joker is {C:blue}Frozen{}",
+                    "This Joker cannot be {C:blue}Frozen{}",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
             j_celesta_cupidyle = {
                 name = "Cupidyle",
                 text = {
