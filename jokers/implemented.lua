@@ -8960,3 +8960,64 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Astrum Aureus [Uncommon] - paid by the five-card hand, card by card.
+--------------------------------------------------------------------------------
+--
+-- context.individual with cardarea == G.play is the scoring pass over each card
+-- that the poker hand actually uses, and it is raised again for every retrigger
+-- - which is what "each time those cards are scored" says. A Sock and Buskin
+-- doubling the hand doubles what this collects.
+--
+-- The size is read off context.full_hand, the cards that were PLAYED, not off
+-- the scoring hand. A five-card High Card is five cards played and one card
+-- scored; it is still a five-card hand, and it pays for the one card that
+-- scores rather than for five.
+
+SMODS.Joker {
+    key = "astrum_aureus",
+    atlas = "astrum_aureus",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { x_mult = 1, gain = 0.05, size = 5 } },
+
+    -- Written out rather than through the `announces` helper at the top of
+    -- this file: several test harnesses slice it from the middle to the end,
+    -- and a helper declared above the slice is a nil global inside it. Every
+    -- Joker added to the tail of this file carries its own.
+    add_to_deck = function(self, card, from_debuff)
+        if not from_debuff then
+            CelestasMod.play_join_sound("j_celesta_astrum_aureus")
+        end
+    end,
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.size, card.ability.extra.gain,
+                          card.ability.extra.x_mult } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.individual and context.cardarea == G.play
+            and not context.blueprint then
+            local hand = context.full_hand or (G.play and G.play.cards) or {}
+            if #hand ~= card.ability.extra.size then return end
+
+            card.ability.extra.x_mult =
+                card.ability.extra.x_mult + card.ability.extra.gain
+            return {
+                message = localize { type = "variable", key = "a_xmult",
+                                     vars = { card.ability.extra.x_mult } },
+                colour = G.C.MULT,
+                card = card,
+            }
+        end
+
+        if context.joker_main and card.ability.extra.x_mult > 1 then
+            return { x_mult = card.ability.extra.x_mult }
+        end
+    end,
+}

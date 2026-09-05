@@ -27,6 +27,7 @@
 --- nowhere for a Joker and its sound to drift apart.
 
 SMODS.Sound { key = "arar_join",     path = "arar_join.ogg" }
+SMODS.Sound { key = "astrum_aureus_join", path = "astrum_aureus_join.wav" }
 SMODS.Sound { key = "ben_join",      path = "ben_join.mp3" }
 SMODS.Sound { key = "eidolonwyrm_join", path = "eidolonwyrm_join.wav" }
 SMODS.Sound { key = "kokonuts_join", path = "kokonuts_join.ogg" }
@@ -38,6 +39,7 @@ SMODS.Sound { key = "yharon_join",   path = "yharon_join.wav" }
 --- Joker centre key -> the sound it announces itself with.
 CelestasMod.JOIN_SOUNDS = {
     j_celesta_arar     = "celesta_arar_join",
+    j_celesta_astrum_aureus = "celesta_astrum_aureus_join",
     j_celesta_ben      = "celesta_ben_join",
     j_celesta_eidolonwyrm = "celesta_eidolonwyrm_join",
     j_celesta_kokonuts = "celesta_kokonuts_join",

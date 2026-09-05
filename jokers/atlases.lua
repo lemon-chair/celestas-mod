@@ -51,6 +51,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "astrum_aureus",
+    path = "astrum_aureus.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "augustanomoly",
     path = "augustanomoly.png",
     px = 71,

@@ -89,6 +89,15 @@ return {
                     "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
                 },
             },
+            j_celesta_astrum_aureus = {
+                name = "Astrum Aureus",
+                text = {
+                    "If the played hand holds exactly",
+                    "{C:attention}#1#{} cards, this Joker gains",
+                    "{X:mult,C:white}X#2#{} Mult each time one scores",
+                    "{C:inactive}(Currently {X:mult,C:white}X#3#{C:inactive} Mult)",
+                },
+            },
             j_celesta_augustanomoly = {
                 name = "August Anomoly",
                 text = {
