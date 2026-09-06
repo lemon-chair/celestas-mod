@@ -124,6 +124,23 @@ for _, entry in ipairs(ENHANCERS) do
         end,
 
         can_use = can_use_with(entry.requires),
+
+        -- Polish alone. A Tarot that can only be used on a stone is dead
+        -- weight in a deck that has none, and unlike the other three it cannot
+        -- make its own target - so it is not offered until the deck holds
+        -- something it could work on.
+        --
+        -- The FULL deck rather than the hand or the draw pile:
+        -- G.playing_cards is the run's whole deck, a registry kept for
+        -- counting (see CelestasMod.prune_unrenderable_cards in globals.lua
+        -- for what it is and is not). A stone sitting in the discard pile is
+        -- still a stone the player will draw again.
+        in_pool = entry.requires and function(self, args)
+            for _, playing in ipairs(G.playing_cards or {}) do
+                if polished_into(playing) then return true end
+            end
+            return false
+        end or nil,
     }
 end
 
