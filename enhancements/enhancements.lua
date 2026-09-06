@@ -422,7 +422,15 @@ SMODS.Enhancement {
         -- paid instead. Arielle + Ironmouse returns nothing in the same spot
         -- because ^Mult is the entirety of that pair; here it is one branch in
         -- five of a card that otherwise still works.
-        if Card.get_chip_e_chips == nil then
+        --
+        -- get_chip_e_BONUS, not get_chip_e_chips. Talisman's ^Chips half is
+        -- named for the chip bonus a playing card carries (talisman.lua:860)
+        -- rather than for the scoring key it feeds, and it is only the ^Mult
+        -- half that is named after its key (talisman.lua:889). This asked for
+        -- a function Talisman has never defined, so the branch below fired on
+        -- every ^Chips roll of every run - Sandstone has been paying its
+        -- ordinary Chips since it shipped, and saying so in the log.
+        if Card.get_chip_e_bonus == nil then
             CelestasMod.warn_once("sandstone_no_talisman",
                 "Sandstone's ^Chips needs Talisman; without it that roll pays "
                 .. "its ordinary Chips instead")
@@ -637,7 +645,12 @@ SMODS.Enhancement {
             -- branch instead. Sandstone and Scoria answer their own branches
             -- the same way.
             if pick == "chips" then
-                if Card.get_chip_e_chips == nil then
+                -- get_chip_e_BONUS: see the note on Sandstone above. The name
+                -- that reads like the scoring key is not the one Talisman
+                -- defines, and asking for it meant this branch scored nothing
+                -- at all - a Foliage card that rolled Chips did nothing
+                -- whatever, which is what it looked like from the table.
+                if Card.get_chip_e_bonus == nil then
                     CelestasMod.warn_once("foliage_no_talisman",
                         "Foliage's ^Chips and ^Mult need Talisman; without it "
                         .. "those rolls pay nothing")
