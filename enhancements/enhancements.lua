@@ -515,6 +515,34 @@ CelestasMod.FOLIAGE_SPREAD_ODDS = 2
 --- The three payouts, in the order the description lists them.
 local FOLIAGE_PAYS = { "money", "chips", "mult" }
 
+--- The player's money as a plain Lua number, or nil when there is no sensible
+--- one to raise.
+---
+--- Talisman replaces G.GAME.dollars with a big-number TABLE, and `table <= 0`
+--- is an ERROR in Lua rather than false - which is exactly how this crashed
+--- the first time it was played for money. Talisman is a declared dependency
+--- of this mod, so that table is the normal case, not the odd one.
+---
+--- nil is returned rather than 0 for anything that cannot be raised: a debt,
+--- a number too large to bring back down, or a big number with no way to
+--- convert itself. The caller pays nothing in every one of those cases, which
+--- is what it already did for $0.
+local function foliage_dollars()
+    local held = (G.GAME and G.GAME.dollars) or 0
+
+    if type(held) == "table" then
+        if type(held.tonumber) ~= "function" then return nil end
+        local ok, plain = pcall(held.tonumber, held)
+        if not ok then return nil end
+        held = plain
+    end
+
+    if type(held) ~= "number" then return nil end
+    -- NaN and infinity: a run past the point money is a number any more.
+    if held ~= held or held == math.huge or held == -math.huge then return nil end
+    return held
+end
+
 --- The card to this one's left or right in the hand, chosen at random.
 ---
 --- Both sides are offered when both are there and neither already has leaves
@@ -548,9 +576,17 @@ SMODS.Enhancement {
     pos = { x = 0, y = 0 },
     discovered = true,
 
-    -- No replace_base_card: a Foliage card keeps its rank and its suit, and
-    -- the pips draw over the leaves. That is what makes "convert the card to
-    -- its left or right" mean anything - the card stays the card it was.
+    -- Same shape as vanilla m_stone, and as this mod's Limestone, Sandstone
+    -- and Scoria: it IS the card, has no rank and no suit, and scores whether
+    -- or not the poker hand takes it.
+    --
+    -- Which makes the spread below expensive rather than free: a card that
+    -- catches the leaves loses the rank and the suit it had, so a hand can be
+    -- eaten by its own good luck.
+    replace_base_card = true,
+    no_rank = true,
+    no_suit = true,
+    always_scores = true,
 
     in_pool = function(self, args)
         return (args or {}).source == "sta"
@@ -575,11 +611,18 @@ SMODS.Enhancement {
 
             if pick == "money" then
                 -- Raised, not added to. Below a dollar there is no exponent
-                -- worth taking and math.pow of a negative by a fraction is
-                -- not a number at all.
-                local held = (G.GAME and G.GAME.dollars) or 0
-                if held <= 0 then return end
-                local gain = math.floor(held ^ power) - held
+                -- worth taking, and a negative to a fractional power is not a
+                -- number at all.
+                local held = foliage_dollars()
+                if not held or held <= 0 then return end
+
+                local raised = held ^ power
+                -- Off the end of what a double can hold: nothing is paid
+                -- rather than a payout of infinity being handed to
+                -- ease_dollars.
+                if raised ~= raised or raised == math.huge then return end
+
+                local gain = math.floor(raised) - held
                 if gain <= 0 then return end
                 return {
                     dollars = gain,

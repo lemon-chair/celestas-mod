@@ -543,6 +543,7 @@ LOC_TAIL = '''        },
                     "{X:mult,C:white}^#1#{} Mult or {C:money}^#1#{} money",
                     "{C:green}#2# in #3#{} chance at end of round",
                     "to spread to a card beside it in hand",
+                    "{C:inactive}no rank or suit",
                 },
             },
             m_celesta_scoria = {
