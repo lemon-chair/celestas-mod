@@ -632,11 +632,13 @@ SMODS.Enhancement {
 
                 local gain = math.floor(raised) - held
                 if gain <= 0 then return end
-                return {
-                    dollars = gain,
-                    message = localize("$") .. gain,
-                    colour = G.C.MONEY,
-                }
+
+                -- `dollars` alone, with no message of its own. SMODS raises
+                -- the "+$N" popup for that key already
+                -- (utils.lua:1244), and `message` is a key in its own right
+                -- that raises a SECOND one - so returning both announced the
+                -- same payout twice.
+                return { dollars = gain }
             end
 
             -- ^Chips and ^Mult are Talisman's arithmetic, and Talisman is a
