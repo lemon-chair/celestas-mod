@@ -1468,9 +1468,9 @@ return {
             c_celesta_polish = {
                 name = "Polish",
                 text = {
-                    "Converts up to {C:attention}#1#{}",
-                    "selected {C:attention}Stone Card",
-                    "into a {C:attention}Sandstone Card",
+                    "Converts up to {C:attention}#1#{} selected",
+                    "{C:attention}Stone Card{} into {C:attention}Sandstone{},",
+                    "or {C:attention}Limestone{} into {C:attention}Scoria",
                 },
             },
             c_celesta_occult = {
@@ -1586,6 +1586,14 @@ return {
                 text = {
                     "{C:green}#1# in #2#{} chance for {C:chips}+#3#{} Chips",
                     "{C:green}#4# in #5#{} chance for {X:chips,C:white}^#6#{} Chips",
+                    "{C:inactive}no rank or suit",
+                },
+            },
+            m_celesta_scoria = {
+                name = "Scoria Card",
+                text = {
+                    "{C:green}#1# in #2#{} chance for {C:mult}+#3#{} Mult",
+                    "{C:green}#4# in #5#{} chance for {X:mult,C:white}^#6#{} Mult",
                     "{C:inactive}no rank or suit",
                 },
             },
@@ -2074,6 +2082,7 @@ return {
             m_celesta_limestone = "Limestone Card",
             m_celesta_driftwood = "Driftwood Card",
             m_celesta_gash = "Gash Card",
+            m_celesta_scoria = "Scoria Card",
             celesta_tattered = "Tattered",
             celesta_cracked = "Cracked",
             celesta_chipped = "Chipped",

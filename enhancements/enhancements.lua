@@ -16,6 +16,7 @@ CelestasMod.ENHANCEMENT_KEYS = {
     Limestone = "m_" .. SMODS.current_mod.prefix .. "_limestone",
     Driftwood = "m_" .. SMODS.current_mod.prefix .. "_driftwood",
     Sandstone = "m_" .. SMODS.current_mod.prefix .. "_sandstone",
+    Scoria = "m_" .. SMODS.current_mod.prefix .. "_scoria",
 }
 
 -- Shared so Saruei can target this exact roll through fix_probability, and so
@@ -425,6 +426,65 @@ SMODS.Enhancement {
             return { chips = CelestasMod.SANDSTONE_CHIPS }
         end
         return { e_chips = CelestasMod.SANDSTONE_E_CHIPS }
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Scoria — Limestone, weathered into something less predictable.
+--------------------------------------------------------------------------------
+--
+-- Sandstone's twin, and deliberately so: Polish makes Sandstone out of a Stone
+-- Card and Scoria out of a Limestone one, so the pair are the same card in
+-- Chips and in Mult. Everything true of Sandstone is true here - it IS the
+-- card, has no rank or suit, scores whether or not the poker hand takes it -
+-- and its two lines are ONE roll, the rare branch rolled and the common one
+-- whatever that is not, so a Joker that moves the odds cannot leave the card
+-- claiming two chances that do not add up.
+
+CelestasMod.SCORIA_ODDS = 5
+CelestasMod.SCORIA_MULT = 16
+CelestasMod.SCORIA_E_MULT = 1.15
+CelestasMod.SCORIA_ROLL_ID = "celesta_scoria"
+
+SMODS.Enhancement {
+    key = "scoria",
+    atlas = "enh_scoria",
+    pos = { x = 0, y = 0 },
+    discovered = true,
+
+    -- Same shape as vanilla m_stone, this mod's Limestone, and Sandstone.
+    replace_base_card = true,
+    no_rank = true,
+    no_suit = true,
+    always_scores = true,
+
+    loc_vars = function(self, info_queue, card)
+        local n, d = SMODS.get_probability_vars(
+            card, 1, CelestasMod.SCORIA_ODDS, CelestasMod.SCORIA_ROLL_ID)
+        return { vars = { d - n, d, CelestasMod.SCORIA_MULT,
+                          n, d, CelestasMod.SCORIA_E_MULT } }
+    end,
+
+    calculate = function(self, card, context)
+        if not (context.main_scoring and context.cardarea == G.play) then return end
+
+        if not SMODS.pseudorandom_probability(
+                card, CelestasMod.SCORIA_ROLL_ID, 1,
+                CelestasMod.SCORIA_ODDS) then
+            return { mult = CelestasMod.SCORIA_MULT }
+        end
+
+        -- ^Mult is Talisman's arithmetic. Talisman is a declared dependency,
+        -- so this should never be reached - but a card the player is holding
+        -- must not silently score nothing if it is, so the common branch is
+        -- paid instead. Sandstone answers its own ^Chips branch the same way.
+        if Card.get_chip_e_mult == nil then
+            CelestasMod.warn_once("scoria_no_talisman",
+                "Scoria's ^Mult needs Talisman; without it that roll pays "
+                .. "its ordinary Mult instead")
+            return { mult = CelestasMod.SCORIA_MULT }
+        end
+        return { e_mult = CelestasMod.SCORIA_E_MULT }
     end,
 }
 

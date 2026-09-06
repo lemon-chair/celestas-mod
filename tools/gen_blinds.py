@@ -20,7 +20,8 @@ import sys
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DOWNLOADS = os.path.join(os.path.expanduser("~"), "Downloads")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import art_source  # noqa: E402  (needs the path set above)
 
 FRAMES = 21
 CELL = 34          # at 1x
@@ -34,7 +35,7 @@ BLINDS = {
 
 def main():
     for name, filename in BLINDS.items():
-        src = Image.open(os.path.join(DOWNLOADS, filename)).convert("RGBA")
+        src = Image.open(art_source.path(filename)).convert("RGBA")
         if src.width != src.height:
             sys.exit("%s is %s; blind art must be square" % (filename, src.size))
 

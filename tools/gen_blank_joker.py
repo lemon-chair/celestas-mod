@@ -41,7 +41,8 @@ import zipfile
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DOWNLOADS = os.path.join(os.path.expanduser("~"), "Downloads")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import art_source  # noqa: E402  (needs the path set above)
 BALATRO = r"C:\Program Files (x86)\Steam\steamapps\common\Balatro\Balatro.exe"
 
 CARD_W, CARD_H = 71, 95
@@ -68,7 +69,7 @@ DRAWN = {
 DRAWN_PIPS = {"celesta_Stars": "star_suit_effect", "celesta_Leaf": "leaf_suit_effect"}
 
 
-def load(stem, scale, folder=DOWNLOADS):
+def load(stem, scale, folder=art_source.ROOTS[0]):
     path = os.path.join(folder, "%s%dx.png" % (stem, scale))
     if not os.path.exists(path):
         sys.exit("missing source art: " + path)
@@ -151,9 +152,9 @@ def main():
         # gen_enhancements.py names these gash.png / gash2.png rather than
         # 1x/2x, so they are opened directly.
         gash = Image.open(os.path.join(
-            DOWNLOADS, "gash2.png" if scale == 2 else "gash.png")).convert("RGBA")
+            art_source.ROOTS[0], "gash2.png" if scale == 2 else "gash.png")).convert("RGBA")
         if gash.size != (CARD_W * scale, CARD_H * scale):
-            gash = Image.open(os.path.join(DOWNLOADS, "gash2.png")).convert("RGBA")
+            gash = Image.open(art_source.path("gash2.png")).convert("RGBA")
             gash = gash.resize((CARD_W * scale, CARD_H * scale), Image.NEAREST)
         layers["gash"] = gash
         layers["exo"] = card_sized(

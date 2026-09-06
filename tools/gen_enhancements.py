@@ -1,4 +1,4 @@
-"""Build the enhancement atlases from source art in Downloads.
+"""Build the enhancement atlases from the hand-drawn source art.
 
     python tools/gen_enhancements.py
 
@@ -26,10 +26,11 @@ import sys
 from PIL import Image, ImageChops
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import art_source  # noqa: E402  (needs the path set above)
 import round_corners
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DOWNLOADS = os.path.join(os.path.expanduser("~"), "Downloads")
+
 BASE_CARD = os.path.join(ROOT, "tools", "base_card.png")
 
 CARD = (71, 95)
@@ -44,6 +45,9 @@ SOURCES = {
     # other, and it is full-card art like the rest of the stones - no base to
     # composite underneath.
     "sandstone": ("sandstone_card1x.png", "sandstone_card2x.png", CARD, False),
+    # Scoria, what Polish makes of a Limestone card. Drawn at both sizes and
+    # full-card, like the other stones.
+    "scoria":    ("scoria_card1x.png", "scoria_card2x.png", CARD, False),
 }
 
 # Exo is handled separately: its frame is drawn oversized rather than squashed
@@ -93,11 +97,11 @@ def composite(overlay, w, h):
 
 
 def load_pair(src1, src2, cw, ch):
-    big = Image.open(os.path.join(DOWNLOADS, src2)).convert("RGBA")
+    big = Image.open(art_source.path(src2)).convert("RGBA")
     if big.size != (cw * 2, ch * 2):
         sys.exit("%s is %s, expected %s" % (src2, big.size, (cw * 2, ch * 2)))
     if src1:
-        small = Image.open(os.path.join(DOWNLOADS, src1)).convert("RGBA")
+        small = Image.open(art_source.path(src1)).convert("RGBA")
         if small.size != (cw, ch):
             sys.exit("%s is %s, expected %s" % (src1, small.size, (cw, ch)))
     else:
@@ -113,8 +117,25 @@ def save(img, name, folder):
     print("wrote %-34s %s" % (os.path.relpath(out, ROOT), img.size))
 
 
+def already_built(name):
+    """True when both atlases for `name` are already on disk."""
+    return all(os.path.exists(os.path.join(ROOT, "assets", f, "%s.png" % name))
+               for f in ("1x", "2x"))
+
+
 def main():
     for name, (src1, src2, (cw, ch), needs_base) in SOURCES.items():
+        # The source art is not in this repository, and the folder it lives
+        # in has moved before (see tools/art_source.py). An enhancement whose
+        # source has gone but whose atlas is already built is left alone
+        # rather than taking the whole run down with it - otherwise adding one
+        # enhancement means finding the art for every one that came before.
+        if art_source.find(src2) is None:
+            if already_built("enh_" + name):
+                print("skipped %-26s (no source, atlas already built)" % name)
+                continue
+            sys.exit("%s: no source at %s and no atlas built"
+                     % (name, art_source.path(src2)))
         small, big = load_pair(src1, src2, cw, ch)
         for img, folder, scale in ((small, "1x", 1), (big, "2x", 2)):
             out = composite(img, cw * scale, ch * scale) if needs_base else img

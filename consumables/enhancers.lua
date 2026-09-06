@@ -34,15 +34,33 @@ SMODS.Atlas { key = "polish",         path = "polish.png",         px = 71, py =
 --- How many cards may be selected. One each, as asked.
 local SELECTED = 1
 
+--- What Polish accepts, and what each one becomes.
+---
+--- Two stones in, two stones out, and the pair are the same card in Chips and
+--- in Mult. Vanilla's Stone Card is the plain one and becomes Sandstone; this
+--- mod's Limestone becomes Scoria.
+local POLISH = {
+    ["m_stone"] = CelestasMod.ENHANCEMENT_KEYS.Sandstone,
+    [CelestasMod.ENHANCEMENT_KEYS.Limestone] = CelestasMod.ENHANCEMENT_KEYS.Scoria,
+}
+
+--- What Polish would turn `chosen` into, or nil if it is not a stone.
+local function polished_into(chosen)
+    for from, into in pairs(POLISH) do
+        if SMODS.has_enhancement(chosen, from) then return into end
+    end
+    return nil
+end
+
 --- Shared: at least one card highlighted, and no more than the card allows.
 --- Shaped like Tree's, which is the other Tarot in this mod that acts on the
 --- selection.
 ---
 --- `requires` is Polish's alone. Polish does not enhance a card, it weathers a
---- Stone one, so every card picked has to already BE a Stone Card - and the
---- check has to be here rather than in `use`, because there is no use of ours
---- to check in: the conversion is vanilla's mod_conv path, which acts on
---- whatever was highlighted without asking.
+--- stone, so every card picked has to already BE one - and the check has to be
+--- here rather than in `use`, because there is no use of ours to check in: the
+--- conversion is vanilla's mod_conv path, which acts on whatever was
+--- highlighted without asking.
 local function can_use_with(requires)
     return function(self, card)
         local picked = G.hand and G.hand.highlighted
@@ -52,7 +70,7 @@ local function can_use_with(requires)
         end
         if not requires then return true end
         for _, chosen in ipairs(picked) do
-            if not SMODS.has_enhancement(chosen, requires) then return false end
+            if not polished_into(chosen) then return false end
         end
         return true
     end
@@ -65,12 +83,11 @@ local ENHANCERS = {
     { key = "citrus",         atlas = "citrus",         enhancement = "Limestone" },
     { key = "miracle_matter", atlas = "miracle_matter", enhancement = "Exo" },
     { key = "knife",          atlas = "knife",          enhancement = "Gash" },
-    -- Vanilla's Stone Card only. This mod's Limestone is also a stone and is
-    -- deliberately NOT accepted: converting it would quietly throw away an
-    -- enhancement the player chose, and Polish reads as an upgrade to the
-    -- plain one.
+    -- Either stone. Which one it is decides what comes out, which is the one
+    -- thing here mod_conv alone cannot express - see the wrapper below.
+    -- `enhancement` is the default, and the one a Stone Card gets.
     { key = "polish",         atlas = "polish",         enhancement = "Sandstone",
-      requires = "m_stone" },
+      requires = true },
 }
 
 for _, entry in ipairs(ENHANCERS) do
@@ -92,14 +109,61 @@ for _, entry in ipairs(ENHANCERS) do
 
         loc_vars = function(self, info_queue, card)
             -- What it needs before what it gives, which is the order the
-            -- player meets them in.
+            -- player meets them in. Polish has two of each, listed as pairs so
+            -- the stone and what it becomes sit together.
             if entry.requires then
-                info_queue[#info_queue + 1] = G.P_CENTERS[entry.requires]
+                info_queue[#info_queue + 1] = G.P_CENTERS["m_stone"]
+                info_queue[#info_queue + 1] = G.P_CENTERS[POLISH["m_stone"]]
+                local limestone = CelestasMod.ENHANCEMENT_KEYS.Limestone
+                info_queue[#info_queue + 1] = G.P_CENTERS[limestone]
+                info_queue[#info_queue + 1] = G.P_CENTERS[POLISH[limestone]]
+            else
+                info_queue[#info_queue + 1] = G.P_CENTERS[center_key]
             end
-            info_queue[#info_queue + 1] = G.P_CENTERS[center_key]
             return { vars = { self.config.max_highlighted } }
         end,
 
         can_use = can_use_with(entry.requires),
     }
+end
+
+--------------------------------------------------------------------------------
+-- Which stone Polish is polishing
+--------------------------------------------------------------------------------
+--
+-- mod_conv is ONE key applied to whatever was highlighted, and Polish now has
+-- two answers depending on what it finds. So the key is chosen at the moment
+-- the card is spent, just before vanilla reads it.
+--
+-- The card is given its OWN copy of the config table first. Card:set_ability
+-- assigns ability.consumeable = center.config by reference (card.lua:416), so
+-- every Polish in the run shares one table - and the conversion reads mod_conv
+-- out of it inside a deferred event (card.lua:1386), not at the moment of use.
+-- Writing to the shared table would mean two Polishes spent in the same breath
+-- could read each other's answer. A per-card copy cannot.
+--
+-- Wrapped here rather than given a `use`: Steamodded's patch returns as soon as
+-- a centre defines one (the `if obj.use ... return end` immediately above the
+-- mod_conv branch), so a use of ours would REPLACE vanilla's conversion and
+-- lose the whole animation with it - which is the reason this file has no use
+-- functions at all.
+
+local POLISH_KEY = "c_" .. SMODS.current_mod.prefix .. "_polish"
+
+local celesta_polish_use_ref = Card.use_consumeable
+function Card:use_consumeable(area, copier)
+    local center = self.config and self.config.center
+    if center and center.key == POLISH_KEY
+        and G.hand and G.hand.highlighted and G.hand.highlighted[1] then
+        local into = polished_into(G.hand.highlighted[1])
+        if into then
+            if self.ability.consumeable == center.config then
+                local own = {}
+                for k, v in pairs(center.config) do own[k] = v end
+                self.ability.consumeable = own
+            end
+            self.ability.consumeable.mod_conv = into
+        end
+    end
+    return celesta_polish_use_ref(self, area, copier)
 end

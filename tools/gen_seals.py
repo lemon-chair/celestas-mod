@@ -21,7 +21,8 @@ import sys
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DOWNLOADS = os.path.join(os.path.expanduser("~"), "Downloads")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import art_source  # noqa: E402  (needs the path set above)
 
 CARD_W, CARD_H = 71, 95
 # Centre of the vanilla 27x27 emblem within a 71x95 cell.
@@ -42,7 +43,7 @@ def build(scale):
     cw, ch = CARD_W * scale, CARD_H * scale
     sheet = Image.new("RGBA", (cw * len(SEALS), ch), (0, 0, 0, 0))
     for i, (key, filename, size1x) in enumerate(SEALS):
-        src_path = os.path.join(DOWNLOADS, filename)
+        src_path = art_source.path(filename)
         if not os.path.exists(src_path):
             sys.exit("missing source art: " + src_path)
         emblem = Image.open(src_path).convert("RGBA")
