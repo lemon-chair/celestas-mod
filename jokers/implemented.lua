@@ -999,11 +999,17 @@ SMODS.Joker {
 
         local kept, broken = 0, 0
         for _, played in ipairs(context.full_hand or {}) do
+            -- A debuffed card is not counted on either side of the ledger. Its
+            -- enhancement does nothing while the Blind holds it down - it does
+            -- not score and it cannot break - so paying for it surviving would
+            -- be paying for a card that was never at risk.
+            --
             -- Counted once even if a card is somehow both, which this mod's
             -- extra_enhancement cards can be.
-            if SMODS.has_enhancement(played, "m_glass")
-                or SMODS.has_enhancement(
-                    played, CelestasMod.ENHANCEMENT_KEYS.Gash) then
+            if not played.debuff
+                and (SMODS.has_enhancement(played, "m_glass")
+                     or SMODS.has_enhancement(
+                        played, CelestasMod.ENHANCEMENT_KEYS.Gash)) then
                 if played.getting_sliced then
                     broken = broken + 1
                 else

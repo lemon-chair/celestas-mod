@@ -1127,9 +1127,9 @@ return {
             j_celesta_saruei = {
                 name = "Saruei",
                 text = {
-                    "Earn {C:money}$#1#{} for each {C:attention}Glass{} or {C:attention}Gash{}",
-                    "card in the played hand that",
-                    "does not break after scoring,",
+                    "Earn {C:money}$#1#{} for each undebuffed {C:attention}Glass{}",
+                    "or {C:attention}Gash{} card in the played hand",
+                    "that does not break after scoring,",
                     "lose {C:money}$#2#{} for each that does",
                 },
             },
