@@ -535,7 +535,7 @@ local FOLIAGE_PAYS = { "money", "chips", "mult" }
 --- a number too large to bring back down, or a big number with no way to
 --- convert itself. The caller pays nothing in every one of those cases, which
 --- is what it already did for $0.
-local function foliage_dollars()
+local function foliage_dollars_raw()
     local held = (G.GAME and G.GAME.dollars) or 0
 
     if type(held) == "table" then
@@ -549,6 +549,25 @@ local function foliage_dollars()
     -- NaN and infinity: a run past the point money is a number any more.
     if held ~= held or held == math.huge or held == -math.huge then return nil end
     return held
+end
+
+--- What the money branch pays, and it ALWAYS pays.
+---
+--- A scored card must do something. Raising money is worth nothing below $5 -
+--- $4 raised is $4.72, and the whole dollars between them are none - so every
+--- case where the exponent has nothing to give pays a dollar instead: no
+--- money, a debt, a big number that will not convert, an overflow, and the
+--- ordinary $1-to-$4 rounding.
+local function foliage_money()
+    local held = foliage_dollars_raw()
+    if not held or held <= 0 then return 1 end
+
+    local raised = held ^ CelestasMod.FOLIAGE_EXPONENT
+    -- Off the end of what a double can hold. A dollar rather than infinity
+    -- handed to ease_dollars.
+    if raised ~= raised or raised == math.huge then return 1 end
+
+    return math.max(1, math.floor(raised - held))
 end
 
 --- The card to this one's left or right in the hand, chosen at random.
@@ -617,46 +636,35 @@ SMODS.Enhancement {
                 FOLIAGE_PAYS, pseudoseed("celesta_foliage"))
             local power = CelestasMod.FOLIAGE_EXPONENT
 
+            -- NO BRANCH BELOW MAY RETURN NOTHING. A scored card that hands
+            -- back nil scores nothing and says nothing, which reads at the
+            -- table as the card having been skipped - and that is what this
+            -- did on every money roll under $5 and, before the Talisman probe
+            -- was corrected, on every Chips roll of every run. Money is the
+            -- floor every other branch falls back to, and money always pays.
+
             if pick == "money" then
-                -- Raised, not added to. Below a dollar there is no exponent
-                -- worth taking, and a negative to a fractional power is not a
-                -- number at all.
-                local held = foliage_dollars()
-                if not held or held <= 0 then return end
-
-                local raised = held ^ power
-                -- Off the end of what a double can hold: nothing is paid
-                -- rather than a payout of infinity being handed to
-                -- ease_dollars.
-                if raised ~= raised or raised == math.huge then return end
-
-                local gain = math.floor(raised) - held
-                if gain <= 0 then return end
-
                 -- `dollars` alone, with no message of its own. SMODS raises
-                -- the "+$N" popup for that key already
-                -- (utils.lua:1244), and `message` is a key in its own right
-                -- that raises a SECOND one - so returning both announced the
-                -- same payout twice.
-                return { dollars = gain }
+                -- the "+$N" popup for that key already (utils.lua:1244), and
+                -- `message` is a key in its own right that raises a SECOND
+                -- one - so returning both announced the same payout twice.
+                return { dollars = foliage_money() }
             end
 
             -- ^Chips and ^Mult are Talisman's arithmetic, and Talisman is a
-            -- declared dependency - but a card the player is holding must not
-            -- silently score nothing, so a run without it pays the money
-            -- branch instead. Sandstone and Scoria answer their own branches
-            -- the same way.
+            -- declared dependency - so neither fallback below should ever be
+            -- reached. They pay money rather than nothing anyway, because
+            -- "should never happen" is not the same as "cannot".
+            --
+            -- get_chip_e_BONUS, not get_chip_e_chips: see the note on
+            -- Sandstone above. Asking for the name that does not exist is
+            -- what made this branch score nothing at all.
             if pick == "chips" then
-                -- get_chip_e_BONUS: see the note on Sandstone above. The name
-                -- that reads like the scoring key is not the one Talisman
-                -- defines, and asking for it meant this branch scored nothing
-                -- at all - a Foliage card that rolled Chips did nothing
-                -- whatever, which is what it looked like from the table.
                 if Card.get_chip_e_bonus == nil then
                     CelestasMod.warn_once("foliage_no_talisman",
                         "Foliage's ^Chips and ^Mult need Talisman; without it "
-                        .. "those rolls pay nothing")
-                    return
+                        .. "those rolls pay money instead")
+                    return { dollars = foliage_money() }
                 end
                 return { e_chips = power }
             end
@@ -664,8 +672,8 @@ SMODS.Enhancement {
             if Card.get_chip_e_mult == nil then
                 CelestasMod.warn_once("foliage_no_talisman",
                     "Foliage's ^Chips and ^Mult need Talisman; without it "
-                    .. "those rolls pay nothing")
-                return
+                    .. "those rolls pay money instead")
+                return { dollars = foliage_money() }
             end
             return { e_mult = power }
         end
