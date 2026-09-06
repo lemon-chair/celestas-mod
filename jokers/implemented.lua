@@ -8698,12 +8698,29 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Green Card [Uncommon] - X0.25 Chips per Blind skipped
+-- Green Card [Uncommon] - X0.25 Chips per Blind skipped this RUN
 --------------------------------------------------------------------------------
 --
--- x_chips is stored as the multiplier itself rather than as the amount above
--- 1, because that is the number the description prints and the number scoring
--- wants; the +0.25 is the step, kept beside it.
+-- Counted, not accumulated. G.GAME.skips is the run's own tally of skipped
+-- Blinds (button_callbacks.lua:2808), so a Green Card bought on Ante 5 is
+-- worth every skip that came before it - which is what "during the entire
+-- run" means, and what a number climbing on the card's own ability could
+-- never give.
+--
+-- Vanilla does the same thing with Throwback (card.lua:4482), off the same
+-- counter.
+--
+-- Nothing is stored, so there is nothing to reset, nothing to save and
+-- nothing for a merge to carry: both halves of a bound pair read the one
+-- number the run is keeping anyway.
+
+--- The multiplier right now. Declared immediately above the Joker rather than
+--- with the other helpers at the top of this file: several test harnesses
+--- slice it from somewhere in the middle to the end, and a local declared
+--- above the slice is a nil global inside it.
+local function green_card_x_chips(card)
+    return 1 + card.ability.extra.gain * ((G.GAME and G.GAME.skips) or 0)
+end
 
 SMODS.Joker {
     key = "green_card",
@@ -8713,27 +8730,30 @@ SMODS.Joker {
     unlocked = true, discovered = true,
     blueprint_compat = true, eternal_compat = true,
 
-    config = { extra = { gain = 0.25, x_chips = 1 } },
+    config = { extra = { gain = 0.25 } },
 
     loc_vars = function(self, info_queue, card)
-        return { vars = { card.ability.extra.gain, card.ability.extra.x_chips } }
+        return { vars = { card.ability.extra.gain, green_card_x_chips(card) } }
     end,
 
     calculate = function(self, card, context)
+        -- G.GAME.skips is raised before this context is (button_callbacks.lua
+        -- :2808 and :2821), so the number announced already counts the skip
+        -- that just happened. Nothing is written here - the message is the
+        -- whole of it.
         if context.skip_blind and not context.blueprint then
-            card.ability.extra.x_chips =
-                card.ability.extra.x_chips + card.ability.extra.gain
             return {
                 message = localize { type = "variable", key = "a_xchips",
-                                     vars = { card.ability.extra.x_chips } },
+                                     vars = { green_card_x_chips(card) } },
                 colour = G.C.CHIPS, card = card,
             }
         end
 
         -- X1 is no multiplier at all, and returning it would put a "X1 Chips"
         -- flourish over the Joker every hand for doing nothing.
-        if context.joker_main and card.ability.extra.x_chips > 1 then
-            return { x_chips = card.ability.extra.x_chips }
+        if context.joker_main then
+            local x_chips = green_card_x_chips(card)
+            if x_chips > 1 then return { x_chips = x_chips } end
         end
     end,
 }

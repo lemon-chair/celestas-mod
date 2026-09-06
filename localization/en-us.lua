@@ -552,8 +552,8 @@ return {
             j_celesta_green_card = {
                 name = "Green Card",
                 text = {
-                    "This Joker gains {X:chips,C:white}X#1#{} Chips",
-                    "when a {C:attention}Blind{} is skipped",
+                    "{X:chips,C:white}X#1#{} Chips for each {C:attention}Blind",
+                    "skipped this run",
                     "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
                 },
             },
