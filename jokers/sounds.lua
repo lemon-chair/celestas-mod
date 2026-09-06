@@ -34,6 +34,7 @@ SMODS.Sound { key = "kokonuts_join", path = "kokonuts_join.ogg" }
 SMODS.Sound { key = "kumi_join",     path = "kumi_join.ogg" }
 SMODS.Sound { key = "maya_join",     path = "maya_join.ogg" }
 SMODS.Sound { key = "shoomimi_join", path = "shoomimi_join.ogg" }
+SMODS.Sound { key = "slimegod_join", path = "slimegod_join.wav" }
 SMODS.Sound { key = "yharon_join",   path = "yharon_join.wav" }
 
 --- Joker centre key -> the sound it announces itself with.
@@ -46,6 +47,7 @@ CelestasMod.JOIN_SOUNDS = {
     j_celesta_kumi     = "celesta_kumi_join",
     j_celesta_maya     = "celesta_maya_join",
     j_celesta_shoomimi = "celesta_shoomimi_join",
+    j_celesta_slimegod = "celesta_slimegod_join",
     j_celesta_yharon   = "celesta_yharon_join",
 }
 

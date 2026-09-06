@@ -59,6 +59,7 @@ DISPLAY_NAMES = {
     "blueberrypancake": "BlueberryPancake",
     "iron_moose": "Iron Moose",
     "red_boosfer": "Red Boosfer",
+    "slimegod": "Slime God",
     "blessed_phoenix_egg": "Blessed Phoenix Egg",
     "cryogen": "Cryogen",
     "xm05_thanatos": "XM-05 Thanatos",

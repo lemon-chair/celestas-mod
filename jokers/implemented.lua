@@ -7277,7 +7277,12 @@ SMODS.Joker {
 local SELECTION_GRANTED = "celesta_shiabun_granted"
 
 --- Moves both limits by however much this card's number has changed.
-local function selection_sync(card)
+---
+--- `want` overrides the card's own number, for a Joker whose grant comes and
+--- goes rather than simply being what it says: Slime God hands its two cards
+--- back on a Big Blind and takes them again on the next Small one, and does it
+--- through this same delta so the two of them cannot double-grant.
+local function selection_sync(card, want)
     if not (SMODS.change_play_limit and SMODS.change_discard_limit) then
         CelestasMod.warn_once("selection_no_limit_api",
             "This mod raises the card selection limit through "
@@ -7286,7 +7291,7 @@ local function selection_sync(card)
         return
     end
     local held = card.ability[SELECTION_GRANTED] or 0
-    local want = card.ability.extra.limit
+    want = want or card.ability.extra.limit
     if held == want then return end
 
     SMODS.change_play_limit(want - held)
@@ -7309,6 +7314,120 @@ local function selection_release(card)
     -- A selection made under the old limit would otherwise survive it.
     if G.hand and G.hand.unhighlight_all then G.hand:unhighlight_all() end
 end
+
+--------------------------------------------------------------------------------
+-- Slime God [Rare] - a different Joker depending on which Blind is up.
+--------------------------------------------------------------------------------
+--
+-- Blind:get_type answers 'Small', 'Big' or 'Boss' off the Blind's name
+-- (blind.lua:368), and nil for the blank one that sits in G.GAME.blind between
+-- rounds - so "no round in progress" needs no separate test.
+--
+-- The selection half is granted by DELTA through selection_sync, the same
+-- route Shiabun and Eidolon Wyrm use, and for a reason those two do not have:
+-- this grant comes and goes. Asked every frame from `update`, it hands the two
+-- cards back on a Big Blind and takes them again on the next Small one, and
+-- because the delta is computed from what this card has already given, the
+-- coming and going cannot leak a card either way.
+--
+-- Both halves run on a Boss Blind, which is what makes it a Boss.
+
+--- The Blind now, or nil between rounds.
+local function slime_blind()
+    local blind = G.GAME and G.GAME.blind
+    if not (blind and blind.get_type) then return nil end
+    return blind:get_type()
+end
+
+--- How many ranks are held twice or more.
+---
+--- ONE per rank, however many copies are held: two Queens and two Sixes are
+--- two pairs, and so are three Queens and two Sixes. That is what "unique"
+--- does here - counting every combination instead would make four of a kind
+--- six pairs rather than one.
+---
+--- A rankless card is held but has no rank to match: Stone Cards, this mod's
+--- Limestone and Foliage all report through has_no_rank.
+local function slime_pairs()
+    if not (G.hand and G.hand.cards) then return 0 end
+
+    local seen, found = {}, 0
+    for _, held in ipairs(G.hand.cards) do
+        if held.get_id and not SMODS.has_no_rank(held) then
+            local id = held:get_id()
+            seen[id] = (seen[id] or 0) + 1
+            -- Counted on the SECOND copy and never again, which is the whole
+            -- of "one per rank".
+            if seen[id] == 2 then found = found + 1 end
+        end
+    end
+    return found
+end
+
+SMODS.Joker {
+    key = "slimegod",
+    atlas = "slimegod",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    -- Half of it is a passive nothing can copy, and a copy of the other half
+    -- would read as the whole Joker being copied. Eidolon Wyrm is the same
+    -- shape for the same reason.
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { selection = 2, x_mult = 1, x_mult_gain = 0.2 } },
+
+    loc_vars = function(self, info_queue, card)
+        local extra = card.ability.extra
+        return { vars = { extra.selection, extra.x_mult_gain, extra.x_mult } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        selection_sync(card, 0)
+        if not from_debuff then
+            CelestasMod.play_join_sound("j_celesta_slimegod")
+        end
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        selection_release(card)
+    end,
+
+    update = function(self, card, front)
+        if not card.added_to_deck then return end
+        local blind = slime_blind()
+        local want = (blind == "Small" or blind == "Boss")
+            and card.ability.extra.selection or 0
+        selection_sync(card, want)
+    end,
+
+    calculate = function(self, card, context)
+        -- Before the hand scores, while the cards NOT played are still the
+        -- ones in G.hand - which is what "held in hand" means.
+        if context.before and not context.blueprint then
+            local blind = slime_blind()
+            if not (blind == "Big" or blind == "Boss") then return end
+
+            local pairs_held = slime_pairs()
+            if pairs_held <= 0 then return end
+
+            card.ability.extra.x_mult = card.ability.extra.x_mult
+                + card.ability.extra.x_mult_gain * pairs_held
+            return {
+                message = localize { type = "variable", key = "a_xmult",
+                                     vars = { card.ability.extra.x_mult } },
+                colour = G.C.MULT,
+                card = card,
+            }
+        end
+
+        -- X1 is no multiplier at all, and returning it would put a "X1 Mult"
+        -- flourish over the Joker every hand for doing nothing.
+        if context.joker_main and card.ability.extra.x_mult > 1 then
+            return { x_mult = card.ability.extra.x_mult }
+        end
+    end,
+}
 
 SMODS.Joker {
     key = "shiabun",

@@ -1204,6 +1204,16 @@ return {
                     "never break",
                 },
             },
+            j_celesta_slimegod = {
+                name = "Slime God",
+                text = {
+                    "{C:attention}Small Blind{}: {C:attention}+#1#{} card selection limit",
+                    "{C:attention}Big Blind{}: when a hand is played, gains",
+                    "{X:mult,C:white}X#2#{} Mult for each unique pair held in hand",
+                    "{C:attention}Boss Blind{}: both",
+                    "{C:inactive}(Currently {X:mult,C:white}X#3#{C:inactive} Mult)",
+                },
+            },
             j_celesta_smittenseraph = {
                 name = "SmittenSeraph",
                 text = {
