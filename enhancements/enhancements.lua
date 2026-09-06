@@ -17,6 +17,7 @@ CelestasMod.ENHANCEMENT_KEYS = {
     Driftwood = "m_" .. SMODS.current_mod.prefix .. "_driftwood",
     Sandstone = "m_" .. SMODS.current_mod.prefix .. "_sandstone",
     Scoria = "m_" .. SMODS.current_mod.prefix .. "_scoria",
+    Foliage = "m_" .. SMODS.current_mod.prefix .. "_foliage",
 }
 
 -- Shared so Saruei can target this exact roll through fix_probability, and so
@@ -41,11 +42,13 @@ local EXO_FRAME_ATLAS = SMODS.current_mod.prefix .. "_enh_exo_frame"
 SMODS.Sound { key = "driftwood_score", path = "driftwood_score.ogg" }
 SMODS.Sound { key = "eutrophic_score", path = "eutrophic_score.mp3" }
 SMODS.Sound { key = "limestone_score", path = "limestone_score.ogg" }
+SMODS.Sound { key = "foliage_score", path = "foliage_score.mp3" }
 
 CelestasMod.ENHANCEMENT_SOUNDS = {
     Driftwood = SMODS.current_mod.prefix .. "_driftwood_score",
     Eutrophic = SMODS.current_mod.prefix .. "_eutrophic_score",
     Limestone = SMODS.current_mod.prefix .. "_limestone_score",
+    Foliage = SMODS.current_mod.prefix .. "_foliage_score",
 }
 
 --- Queues a scoring sound so it lands with this card's animation.
@@ -485,6 +488,164 @@ SMODS.Enhancement {
             return { mult = CelestasMod.SCORIA_MULT }
         end
         return { e_mult = CelestasMod.SCORIA_E_MULT }
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Foliage — three ways to pay, and it spreads.
+--------------------------------------------------------------------------------
+--
+-- STANDARD PACKS ONLY. get_current_pool hands in_pool the key_append it was
+-- called with as `source` (common_events.lua:2283), and a Standard pack is the
+-- only thing in the game that asks for an Enhanced card with 'sta'
+-- (card.lua:2014). Everything else that reaches for an enhancement -
+-- SMODS.poll_enhancement, this mod's own Arar, the enhancement Tarots - passes
+-- no source at all, so the card is invisible to all of them.
+--
+-- ^MONEY is not a thing the game has. ^Chips and ^Mult are Talisman's, and
+-- there is no money equivalent anywhere in Talisman or Steamodded, so it is
+-- done here the only way that reads the same as its two siblings: the player's
+-- dollars are raised to the power, and the difference is what is paid. Whole
+-- dollars, because money is whole; and nothing at all at $0 or below, where
+-- there is no exponent to take.
+
+CelestasMod.FOLIAGE_EXPONENT = 1.12
+CelestasMod.FOLIAGE_SPREAD_ODDS = 2
+
+--- The three payouts, in the order the description lists them.
+local FOLIAGE_PAYS = { "money", "chips", "mult" }
+
+--- The card to this one's left or right in the hand, chosen at random.
+---
+--- Both sides are offered when both are there and neither already has leaves
+--- on it. An end of the hand has one neighbour; a card between two Foliage
+--- cards has none, and the spread simply has nowhere to go - which is better
+--- than spending the roll converting something already converted.
+function CelestasMod.foliage_neighbour(card)
+    if not (G.hand and G.hand.cards) then return nil end
+
+    local index = nil
+    for i, held in ipairs(G.hand.cards) do
+        if held == card then index = i break end
+    end
+    if not index then return nil end
+
+    local options = {}
+    for _, i in ipairs({ index - 1, index + 1 }) do
+        local side = G.hand.cards[i]
+        if side and not SMODS.has_enhancement(
+                side, CelestasMod.ENHANCEMENT_KEYS.Foliage) then
+            options[#options + 1] = side
+        end
+    end
+    if #options == 0 then return nil end
+    return pseudorandom_element(options, pseudoseed("celesta_foliage_side"))
+end
+
+SMODS.Enhancement {
+    key = "foliage",
+    atlas = "enh_foliage",
+    pos = { x = 0, y = 0 },
+    discovered = true,
+
+    -- No replace_base_card: a Foliage card keeps its rank and its suit, and
+    -- the pips draw over the leaves. That is what makes "convert the card to
+    -- its left or right" mean anything - the card stays the card it was.
+
+    in_pool = function(self, args)
+        return (args or {}).source == "sta"
+    end,
+
+    loc_vars = function(self, info_queue, card)
+        local n, d = SMODS.get_probability_vars(
+            card, 1, CelestasMod.FOLIAGE_SPREAD_ODDS, "celesta_foliage_spread")
+        return { vars = { CelestasMod.FOLIAGE_EXPONENT, n, d } }
+    end,
+
+    calculate = function(self, card, context)
+        ------------------------------------------------------------------
+        -- Scoring: one of the three, chosen fresh every time
+        ------------------------------------------------------------------
+        if context.main_scoring and context.cardarea == G.play then
+            play_scoring_sound(CelestasMod.ENHANCEMENT_SOUNDS.Foliage)
+
+            local pick = pseudorandom_element(
+                FOLIAGE_PAYS, pseudoseed("celesta_foliage"))
+            local power = CelestasMod.FOLIAGE_EXPONENT
+
+            if pick == "money" then
+                -- Raised, not added to. Below a dollar there is no exponent
+                -- worth taking and math.pow of a negative by a fraction is
+                -- not a number at all.
+                local held = (G.GAME and G.GAME.dollars) or 0
+                if held <= 0 then return end
+                local gain = math.floor(held ^ power) - held
+                if gain <= 0 then return end
+                return {
+                    dollars = gain,
+                    message = localize("$") .. gain,
+                    colour = G.C.MONEY,
+                }
+            end
+
+            -- ^Chips and ^Mult are Talisman's arithmetic, and Talisman is a
+            -- declared dependency - but a card the player is holding must not
+            -- silently score nothing, so a run without it pays the money
+            -- branch instead. Sandstone and Scoria answer their own branches
+            -- the same way.
+            if pick == "chips" then
+                if Card.get_chip_e_chips == nil then
+                    CelestasMod.warn_once("foliage_no_talisman",
+                        "Foliage's ^Chips and ^Mult need Talisman; without it "
+                        .. "those rolls pay nothing")
+                    return
+                end
+                return { e_chips = power }
+            end
+
+            if Card.get_chip_e_mult == nil then
+                CelestasMod.warn_once("foliage_no_talisman",
+                    "Foliage's ^Chips and ^Mult need Talisman; without it "
+                    .. "those rolls pay nothing")
+                return
+            end
+            return { e_mult = power }
+        end
+
+        ------------------------------------------------------------------
+        -- The end of the round: it spreads
+        ------------------------------------------------------------------
+        if context.end_of_round and context.cardarea == G.hand
+            and not context.blueprint and not context.repetition then
+            -- A card that became Foliage a moment ago does not get a turn of
+            -- its own this round. The end-of-round pass walks the hand once,
+            -- so without this a single card could take the whole hand in one
+            -- go, each new leaf spreading to the next. Shoto's freshly-gashed
+            -- cards are spared the same way.
+            if card.celesta_foliage_fresh then
+                card.celesta_foliage_fresh = nil
+                return
+            end
+
+            if not SMODS.pseudorandom_probability(
+                    card, "celesta_foliage_spread", 1,
+                    CelestasMod.FOLIAGE_SPREAD_ODDS) then
+                return
+            end
+
+            local neighbour = CelestasMod.foliage_neighbour(card)
+            if not neighbour then return end
+
+            neighbour:set_ability(
+                G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Foliage], nil, true)
+            neighbour.celesta_foliage_fresh = true
+            neighbour:juice_up(0.3, 0.4)
+            return {
+                message = localize("celesta_spread"),
+                colour = G.C.GREEN,
+                card = neighbour,
+            }
+        end
     end,
 }
 

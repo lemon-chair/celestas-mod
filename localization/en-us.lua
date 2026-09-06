@@ -1591,6 +1591,15 @@ return {
                     "{C:inactive}no rank or suit",
                 },
             },
+            m_celesta_foliage = {
+                name = "Foliage Card",
+                text = {
+                    "When scored, one of {X:chips,C:white}^#1#{} Chips,",
+                    "{X:mult,C:white}^#1#{} Mult or {C:money}^#1#{} money",
+                    "{C:green}#2# in #3#{} chance at end of round",
+                    "to spread to a card beside it in hand",
+                },
+            },
             m_celesta_scoria = {
                 name = "Scoria Card",
                 text = {
@@ -2085,6 +2094,7 @@ return {
             m_celesta_driftwood = "Driftwood Card",
             m_celesta_gash = "Gash Card",
             m_celesta_scoria = "Scoria Card",
+            m_celesta_foliage = "Foliage Card",
             celesta_tattered = "Tattered",
             celesta_cracked = "Cracked",
             celesta_chipped = "Chipped",
@@ -2111,6 +2121,7 @@ return {
             celesta_b_pull = "Pull",
             celesta_upgraded = "Upgraded!",
             celesta_gashed = "Gashed!",
+            celesta_spread = "Spread!",
             celesta_broke = "Broke!",
             celesta_tattered = "Tattered!",
             celesta_repaired = "Repaired!",

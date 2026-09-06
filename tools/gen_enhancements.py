@@ -48,6 +48,9 @@ SOURCES = {
     # Scoria, what Polish makes of a Limestone card. Drawn at both sizes and
     # full-card, like the other stones.
     "scoria":    ("scoria_card1x.png", "scoria_card2x.png", CARD, False),
+    # Foliage keeps its rank and suit - the pips draw over it - so it is an
+    # ordinary enhancement like Gold or Steel rather than one of the stones.
+    "foliage":   ("foliage_card1x.png", "foliage_card2x.png", CARD, False),
 }
 
 # Exo is handled separately: its frame is drawn oversized rather than squashed
