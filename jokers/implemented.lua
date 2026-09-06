@@ -956,8 +956,27 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Saruei [Common] - Gashed cards always break when scored.
+-- Saruei [Common] - paid by the fragile cards that survive, charged for the
+-- ones that do not.
 --------------------------------------------------------------------------------
+--
+-- context.after is the only pass that can answer this, and the reason is worth
+-- writing down. The destroy pass is the last thing evaluate_play does
+-- (state_events.lua:750), and the remove_playing_cards context that follows it
+-- is raised ONLY when something was actually destroyed (state_events.lua:756) -
+-- so a hand where every Glass card held would never pay for a single one of
+-- them. `after` is raised unconditionally after all of it
+-- (state_events.lua:869), by which point every card that is going to break has
+-- been marked and not one has left G.play yet.
+--
+-- getting_sliced is the mark to read. SMODS sets it on every card the destroy
+-- pass takes, BEFORE splitting them into shattered and destroyed
+-- (utils.lua:2074), so one field covers Glass shattering and Gash dissolving
+-- alike - and covers anything else that destroys a played card too, which is
+-- what "doesn't break" ought to mean.
+--
+-- Not guarded against context.blueprint: what this returns is money and
+-- nothing else, so a copy paying again is exactly what a copy should do.
 
 SMODS.Joker {
     key = "saruei",
@@ -967,19 +986,38 @@ SMODS.Joker {
     unlocked = true, discovered = true,
     blueprint_compat = true, eternal_compat = true,
 
+    config = { extra = { earn = 3, lose = 1 } },
+
     loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_glass
         info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Gash]
-        return {}
+        return { vars = { card.ability.extra.earn, card.ability.extra.lose } }
     end,
 
     calculate = function(self, card, context)
-        -- fix_probability OVERRIDES the odds rather than nudging them, which is
-        -- what "1 in 1" needs. Scoped by identifier so it only touches Gash's
-        -- break roll and nothing else in the run.
-        if context.fix_probability
-            and context.identifier == CelestasMod.GASH_BREAK_ID then
-            return { numerator = context.denominator }
+        if not context.after then return end
+
+        local kept, broken = 0, 0
+        for _, played in ipairs(context.full_hand or {}) do
+            -- Counted once even if a card is somehow both, which this mod's
+            -- extra_enhancement cards can be.
+            if SMODS.has_enhancement(played, "m_glass")
+                or SMODS.has_enhancement(
+                    played, CelestasMod.ENHANCEMENT_KEYS.Gash) then
+                if played.getting_sliced then
+                    broken = broken + 1
+                else
+                    kept = kept + 1
+                end
+            end
         end
+
+        -- One payout rather than two: what leaves the wallet and what enters
+        -- it happen in the same breath, so the player is shown the difference.
+        local money = kept * card.ability.extra.earn
+            - broken * card.ability.extra.lose
+        if money == 0 then return end
+        return { dollars = money, card = card }
     end,
 }
 
