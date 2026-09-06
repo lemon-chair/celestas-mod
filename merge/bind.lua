@@ -258,9 +258,12 @@ end
 --- first time the pair is evaluated and serialized with it thereafter.
 ---
 --- on_merge and on_unmerge are for a pair whose ability is not a calculate at
---- all - a passive, a slot, a hand size. They are called once each, with
---- (def, card, state), at the two moments the pair comes into and goes out of
---- existence. Everything in between is the card's own: a passive written onto
+--- all - a passive, a slot, a hand size. They are called once each, at the two
+--- moments the pair comes into and goes out of existence: on_merge with
+--- (def, card, state), and on_unmerge with (def, card, state, losing), where
+--- `losing` is "host" or "partner" - the half that is leaving. It is passed
+--- because the centre swap has not happened yet, so a pair that has to hand
+--- something back to the SURVIVOR cannot read which one that is off the card. Everything in between is the card's own: a passive written onto
 --- card.ability is applied and removed by vanilla's own add_to_deck and
 --- remove_from_deck, so selling, debuffing and destroying the merge all work
 --- without either hook being involved.
@@ -1397,6 +1400,67 @@ special("j_celesta_crelly", "j_celesta_vedal", {
     end,
 })
 
+-- Drunkard + Juggler: one gives a discard, the other a card in hand. Together
+-- each of them doubles, and each half gets what the other had.
+--
+-- The first special whose BOTH halves carry an intrinsic passive - h_size and
+-- d_size are read straight off self.ability by Card:add_to_deck and undone by
+-- remove_from_deck (card.lua:759, :762), rather than living in a centre hook.
+-- So the fields are written onto the card and vanilla handles selling,
+-- debuffing and destroying the merge from there.
+--
+-- SET, not added to. Juggler's h_size and Drunkard's d_size are the whole of
+-- what those two Jokers are, and the host's is still sitting on the card when
+-- the pair forms - Bind.remove_own_passive reverses its EFFECT but leaves the
+-- field. Adding to it would leave the field higher than what is actually
+-- applied, and the next debuff or sale would take back more than was given.
+--
+-- The live change goes through Bind.intrinsic_passive rather than being
+-- written out, so it obeys the same rules vanilla does - including that a
+-- d_size is only ever applied when it is positive.
+special("j_drunkard", "j_juggler", {
+    key = "drunkard_juggler",
+    config = { h_size = 2, d_size = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.h_size, state.d_size } }
+    end,
+
+    on_merge = function(def, card, state)
+        card.ability.h_size = state.h_size
+        card.ability.d_size = state.d_size
+        Bind.intrinsic_passive(
+            { h_size = state.h_size, d_size = state.d_size }, 1)
+    end,
+
+    on_unmerge = function(def, card, state, losing)
+        Bind.intrinsic_passive(
+            { h_size = state.h_size, d_size = state.d_size }, -1)
+
+        -- ...and the survivor goes back to being itself, with its own number
+        -- applied again. Nothing else does this: a split is not leaving the
+        -- deck, so neither vanilla hook runs, and the host's own passive was
+        -- taken off when the pair formed.
+        --
+        -- Which half survives cannot be read off the card here - the centre
+        -- swap happens after this returns - so `losing` is what says.
+        local surviving
+        if losing == "host" then
+            -- The absorbed half's saved ability becomes the card's, numbers
+            -- and all, so there is nothing to write: only to apply.
+            surviving = card.ability.celesta_bind
+                and card.ability.celesta_bind.ability
+        else
+            surviving = card.ability
+            local center = card.config.center
+            local config = (type(center) == "table" and center.config) or {}
+            surviving.h_size = config.h_size or 0
+            surviving.d_size = config.d_size or 0
+        end
+        if surviving then Bind.intrinsic_passive(surviving, 1) end
+    end,
+})
+
 -- Maya + Ben: Maya retriggers Steel Cards held in hand on a coin flip, Ben
 -- makes room to hold more of them. Together the coin flip goes away and the
 -- room is permanent rather than only against the Boss.
@@ -2089,7 +2153,11 @@ function Bind.unmerge(card, losing)
     -- the moment celesta_bind is cleared.
     local def = Bind.special_of(card)
     if def and type(def.on_unmerge) == "function" then
-        local ok, err = pcall(def.on_unmerge, def, card, Bind.special_state(card, def))
+        -- `losing` as well, because a pair that has to hand something back to
+        -- the SURVIVOR needs to know which half that is - and it cannot be
+        -- read off the card, since the centre swap has not happened yet.
+        local ok, err = pcall(def.on_unmerge, def, card,
+            Bind.special_state(card, def), losing)
         if not ok then
             CelestasMod.warn_once("bind_unmerge_" .. tostring(def.key),
                 ("Bind pair %s failed to part: %s"):format(tostring(def.key), tostring(err)))

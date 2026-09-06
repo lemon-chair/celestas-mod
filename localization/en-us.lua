@@ -1855,6 +1855,13 @@ return {
                     "to earn {C:money}$#3#{} per card destroyed",
                 },
             },
+            celesta_bind_drunkard_juggler = {
+                name = "Drunkard + Juggler",
+                text = {
+                    "{C:attention}+#1#{} hand size",
+                    "{C:attention}+#2#{} discards",
+                },
+            },
             celesta_bind_maya_ben = {
                 name = "Maya + Ben",
                 text = {
