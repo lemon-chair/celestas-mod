@@ -27,6 +27,7 @@ G.C.CELESTA = {
 -- to exist before SMODS.current_mod is safe to touch.
 CelestasMod.ROUND_JOKERS = {
     j_celesta_boosfer = true,
+    j_celesta_red_boosfer = true,
 }
 
 --- True for a card whose art is a circle rather than a card.

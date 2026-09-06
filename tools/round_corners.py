@@ -34,7 +34,7 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
           # Boosfer is a circle, not a card, and frozen_round is the frost pane
           # cut to match it. The card silhouette would shave 1px off the widest
           # point of both.
-          "boosfer", "frozen_round",
+          "boosfer", "red_boosfer", "frozen_round",
           # eighteen card-sized cells in a row, and the pips inside them are
           # not cards at all
           "blank_joker_layers",

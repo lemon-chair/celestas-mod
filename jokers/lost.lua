@@ -57,6 +57,7 @@ Lost.CONVERSIONS = {
     [joker("maya")] = joker("corrupt_maya"),
     [joker("berrycrepe")] = joker("blueberrypancake"),
     [joker("ironmouse")] = joker("iron_moose"),
+    [joker("boosfer")] = joker("red_boosfer"),
 }
 
 --- The same table read the other way: which Joker a Corrupt one used to be.
@@ -478,6 +479,160 @@ SMODS.Joker {
             if Card.get_chip_e_mult == nil then
                 CelestasMod.warn_once("iron_moose_no_talisman",
                     "Iron Moose scores ^Mult, which needs Talisman; "
+                    .. "without it the Joker does nothing")
+                return
+            end
+            return { e_mult = card.ability.extra.e_mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Red Boosfer
+--------------------------------------------------------------------------------
+--
+-- Three things at once, and the order they happen in is the whole card.
+--
+-- THE CONVERSION runs at context.before, and it runs SYNCHRONOUSLY. That is
+-- not a style choice: context.before is raised part-way through
+-- G.FUNCS.evaluate_play, and the rest of that function - naming the hand,
+-- every card's chips, every suit check a Joker or a Blind makes - runs before
+-- it returns. An event queued here would not run until the next frame, and the
+-- hand that triggered it would already have scored as it was. Only the juice
+-- is queued, which is vanilla's Midas Mask shape. jokers/implemented.lua says
+-- the same thing at greater length above convert_scoring_to.
+--
+-- CelestasMod.unjudged is what makes converting a PLAYED card safe. Card:
+-- set_base ends by asking the Blind to judge the card again, and The Pillar
+-- debuffs anything carrying ability.played_this_ante - a flag every card in
+-- the hand was given moments before evaluate_play ran. Vanilla never
+-- re-judges a card mid-hand so it never notices; this does. Cards in hand
+-- were not played and need none of that.
+
+--- True when a card counts as a Star. is_suit rather than reading base.suit,
+--- so a Wild card is a Star like every other suit check in the game sees it.
+local function is_star(other_card)
+    return other_card ~= nil and other_card.is_suit ~= nil
+        and other_card:is_suit(CelestasMod.STARS_SUIT)
+end
+
+--- Turns one card into a Star, or reports that there was nothing to turn.
+---
+--- A card with no suit is left alone. Stone Cards and this mod's Limestone
+--- report through has_no_suit, and handing them a suit is handing them
+--- something they are not supposed to have.
+local function starify(target, played)
+    if SMODS.has_no_suit(target) then return false end
+    if target:is_suit(CelestasMod.STARS_SUIT) then return false end
+
+    if played then
+        CelestasMod.unjudged(target, function()
+            SMODS.change_base(target, CelestasMod.STARS_SUIT)
+        end)
+    else
+        SMODS.change_base(target, CelestasMod.STARS_SUIT)
+    end
+
+    G.E_MANAGER:add_event(Event {
+        func = function() target:juice_up() return true end
+    })
+    return true
+end
+
+SMODS.Joker {
+    key = "red_boosfer",
+    atlas = "red_boosfer",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    -- The three flags, as on Corrupt Maya above, where what each one does is
+    -- written out.
+    celesta_no_bind = true,
+    celesta_lost = true,
+    celesta_lost_shop = true,
+
+    config = { extra = { repetitions = 2, e_mult = 1, e_mult_gain = 0.06,
+                         joker_slots = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        local extra = card.ability.extra
+        local name, colour = CelestasMod.suit_name_and_colour(
+            CelestasMod.STARS_SUIT, CelestasMod.STARS_COLOUR, true)
+        return { vars = { name, extra.repetitions, extra.e_mult_gain,
+                          extra.e_mult, extra.joker_slots,
+                          colours = { colour } } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, card.ability.extra.joker_slots)
+    end,
+
+    calculate = function(self, card, context)
+        ------------------------------------------------------------------
+        -- Everything becomes a Star
+        ------------------------------------------------------------------
+        if context.before and not context.blueprint then
+            local changed = 0
+            for _, played in ipairs(context.full_hand or {}) do
+                if starify(played, true) then changed = changed + 1 end
+            end
+            for _, held in ipairs((G.hand and G.hand.cards) or {}) do
+                if starify(held, false) then changed = changed + 1 end
+            end
+            if changed > 0 then
+                return {
+                    message = localize("celesta_starred"),
+                    colour = G.C.FILTER,
+                    card = card,
+                }
+            end
+            return
+        end
+
+        ------------------------------------------------------------------
+        -- Every Star triggers again, and pays for doing so
+        ------------------------------------------------------------------
+        if context.repetition and is_star(context.other_card)
+            and (context.cardarea == G.play or context.cardarea == G.hand) then
+            local extra = card.ability.extra
+
+            -- The exponent is raised once per RETRIGGER, not once per card:
+            -- this pass is raised a single time and hands back how many extra
+            -- triggers to run, so the whole lot is banked here.
+            if not context.blueprint then
+                extra.e_mult = extra.e_mult + extra.e_mult_gain * extra.repetitions
+            end
+
+            return {
+                message = localize("k_again_ex"),
+                repetitions = extra.repetitions,
+                card = card,
+            }
+        end
+
+        ------------------------------------------------------------------
+        -- ...and then it scores
+        ------------------------------------------------------------------
+        if context.joker_main and card.ability.extra.e_mult > 1 then
+            -- ^Mult is Talisman's, and Talisman is a declared dependency of
+            -- this mod - but a run without it should say so rather than
+            -- silently score nothing. Iron Moose checks the same way.
+            if Card.get_chip_e_mult == nil then
+                CelestasMod.warn_once("red_boosfer_no_talisman",
+                    "Red Boosfer scores ^Mult, which needs Talisman; "
                     .. "without it the Joker does nothing")
                 return
             end

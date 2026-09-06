@@ -947,6 +947,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "red_boosfer",
+    path = "red_boosfer.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "rinpenrose",
     path = "rinpenrose.png",
     px = 71,

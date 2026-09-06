@@ -1068,6 +1068,18 @@ return {
                     "{C:attention}#1#{} additional time",
                 },
             },
+            j_celesta_red_boosfer = {
+                name = "Red Boosfer",
+                text = {
+                    "When a hand is played, all played cards",
+                    "and cards held in hand become {V:1}#1#{}",
+                    "Retriggers each {V:1}#1#{} card {C:attention}#2#{} times,",
+                    "gaining {E:1,C:mult}^#3#{} Mult each retrigger",
+                    "{C:inactive}(Currently {E:1,C:mult}^#4#{C:inactive} Mult)",
+                    "{C:red}-#5#{} Joker slots, cannot be sold",
+                    "All {C:attention}shop{} items become {C:attention}Boosfer{}",
+                },
+            },
             j_celesta_rinpenrose = {
                 name = "Rin Penrose",
                 text = {
@@ -2145,6 +2157,7 @@ return {
             celesta_raised = "Raised!",
             celesta_sealed = "Sealed!",
             celesta_hearts = "All Hearts!",
+            celesta_starred = "All Stars!",
             celesta_spades = "All Spades!",
             celesta_diamonds = "All Diamonds!",
             celesta_clubs = "All Clubs!",
