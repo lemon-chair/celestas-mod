@@ -121,6 +121,9 @@ assert(SMODS.load_file('consumables/community.lua'))()
 -- The Lost Soul reaches into jokers/lost.lua, which has not loaded yet - but
 -- only from can_use and use, both of which need a run in progress.
 assert(SMODS.load_file('consumables/lost_soul.lua'))()
+-- Lifts vanilla's five-card ceiling on what a consumable may be used on, which
+-- this mod's raised selection limits and Haruka's doubling both run into.
+assert(SMODS.load_file('consumables/targets.lua'))()
 
 --------------------------------------------------------------------------------
 -- Jokers — auto-loaded from jokers/.
