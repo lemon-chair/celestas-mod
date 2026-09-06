@@ -47,6 +47,21 @@ SMODS.Consumable {
     soul_set = "Tarot",
     soul_rate = 0.003,
 
+    -- Not offered at all unless there is something on the board to spend it
+    -- on. The soul roll asks this: create_card walks
+    -- SMODS.Consumable.legendaries and takes only the entries
+    -- SMODS.add_to_pool accepts (common_events.lua:2408), and add_to_pool is
+    -- in_pool (utils.lua:3059).
+    --
+    -- The same question can_use asks, through the same function - so a Lost
+    -- Soul can never turn up as a card the player is unable to use. A Joker
+    -- already Corrupt does not count, and neither does one bound into a
+    -- merge, because Lost.convertible refuses both.
+    in_pool = function(self, args)
+        local Lost = CelestasMod.Lost
+        return Lost ~= nil and #Lost.targets() > 0
+    end,
+
     -- Ours because it has to be: Steamodded routes can_use_consumeable through
     -- the centre, and vanilla's chain of name checks ends in `return false`
     -- for a key it does not recognise, which would grey the button out
