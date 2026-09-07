@@ -269,6 +269,10 @@ SMODS.Joker {
 
     config = { extra = { odds = 2, repetitions = 2 } },
 
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 3 },
+
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_steel
         local numerator, denominator = SMODS.get_probability_vars(
@@ -480,6 +484,10 @@ SMODS.Joker {
 
     config = { extra = { odds = 2, repetitions = 1 } },
 
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 3 },
+
     loc_vars = function(self, info_queue, card)
         local numerator, denominator = SMODS.get_probability_vars(
             card, 1, card.ability.extra.odds, "celesta_froggyloch")
@@ -521,6 +529,10 @@ SMODS.Joker {
     eternal_compat = true,
 
     config = { extra = { repetitions = 2 } },
+
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 1 },
 
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.repetitions } }
@@ -1668,6 +1680,10 @@ SMODS.Joker {
 
     config = { extra = { repetitions = 1 } },
 
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 1 },
+
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.j_blueprint
         info_queue[#info_queue + 1] = G.P_CENTERS.j_brainstorm
@@ -1972,6 +1988,10 @@ SMODS.Joker {
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 1 } },
+
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 1 },
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_stone
@@ -2365,6 +2385,10 @@ SMODS.Joker {
 
     config = { extra = { repetitions = 1 } },
 
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 1 },
+
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.repetitions } }
     end,
@@ -2503,6 +2527,10 @@ SMODS.Joker {
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 2 } },
+
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 1 },
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Exo]
@@ -2858,12 +2886,36 @@ function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges,
     local scale = vedal_multiplier()
     if not scale then return plain() end
 
+    --- The retrigger count, brought back to what the Joker will actually do.
+    ---
+    --- The cap lands on the effect table, which is where Steamodded reads the
+    --- number and spends it. The description is scaled here instead, a long
+    --- way from there, so without this a capped Joker goes on advertising the
+    --- uncapped figure: Boosfer offered 1.215e6 retriggers over a Joker doing
+    --- 40 of them, which is the same "says one number, does another" this
+    --- whole wrapper exists to stop.
+    ---
+    --- WHICH var is the count cannot be worked out from the list - it is
+    --- unlabelled, and a count of cards looks exactly like a count of
+    --- retriggers - so each Joker that prints one says where it is, in
+    --- celesta_repetition_vars.
+    local function cap_reps(vars)
+        local where = _c.celesta_repetition_vars
+        if not where then return vars end
+        for _, i in ipairs(where) do
+            if type(vars[i]) == "number" then
+                vars[i] = math.min(vars[i], CelestasMod.VEDAL_REPETITION_CAP)
+            end
+        end
+        return vars
+    end
+
     -- The vanilla-shaped path, kept: a caller that DOES pass vars in is still
     -- answered, and this is the one that carries a debuffed card's flags.
     if type(specific_vars) == "table" and type(specific_vars.vars) == "table" then
         local copy = {}
         for k, v in pairs(specific_vars) do copy[k] = v end
-        copy.vars = CelestasMod.scale_vars(specific_vars.vars, marked, scale)
+        copy.vars = cap_reps(CelestasMod.scale_vars(specific_vars.vars, marked, scale))
         specific_vars = copy
     end
 
@@ -2877,7 +2929,7 @@ function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges,
             -- Copied, not scaled in place: several loc_vars hand back a list
             -- built straight off the card's ability, and scaling that would
             -- change the real thing every time the card was hovered.
-            res.vars = CelestasMod.scale_vars(res.vars, marked, scale)
+            res.vars = cap_reps(CelestasMod.scale_vars(res.vars, marked, scale))
         end
         return res
     end
@@ -3745,6 +3797,10 @@ SMODS.Joker {
 
     config = { extra = { repetitions = 1 } },
 
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 1 },
+
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.repetitions } }
     end,
@@ -4334,6 +4390,10 @@ SMODS.Joker {
 
     config = { extra = { repetitions = 2 } },
 
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 1 },
+
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.repetitions } }
     end,
@@ -4381,6 +4441,10 @@ SMODS.Joker {
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 1 } },
+
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 1 },
 
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.repetitions } }
@@ -4991,6 +5055,10 @@ SMODS.Joker {
 
     config = { extra = { repetitions = 1 } },
 
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 1 },
+
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_wild
         return { vars = { card.ability.extra.repetitions } }
@@ -5390,6 +5458,10 @@ SMODS.Joker {
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { odds = 4, repetitions = 1 } },
+
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 3 },
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.BIND_KEY]
@@ -6093,6 +6165,10 @@ SMODS.Joker {
 
     config = { extra = { repetitions = 1 } },
 
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 1 },
+
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_SEALS.Blue
         return { vars = { card.ability.extra.repetitions } }
@@ -6322,6 +6398,10 @@ SMODS.Joker {
 
     config = { extra = { repetitions = 2 } },
 
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 1 },
+
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.repetitions } }
     end,
@@ -6507,6 +6587,10 @@ SMODS.Joker {
     config = { extra = { repetitions = 1 } },
 
     in_pool = leaf_gated,
+
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 1 },
 
     loc_vars = function(self, info_queue, card)
         local name, colour = leaf_name_and_colour()
@@ -7673,6 +7757,10 @@ SMODS.Joker {
 
     config = { extra = { repetitions = 1 } },
 
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 1 },
+
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_gold
         return { vars = { card.ability.extra.repetitions } }
@@ -7848,6 +7936,10 @@ SMODS.Joker {
     config = { extra = { repetitions = 1, x_mult = 1, x_mult_gain = 0.1 } },
 
     in_pool = star_gated,
+
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 1 },
 
     loc_vars = function(self, info_queue, card)
         local name, colour = star_name_and_colour()

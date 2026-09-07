@@ -333,6 +333,10 @@ SMODS.Joker {
 
     config = { extra = { x_mult = 3, repetitions = 6, joker_slots = 4 } },
 
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 2 },
+
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_steel
         local extra = card.ability.extra
@@ -576,6 +580,10 @@ SMODS.Joker {
     config = { extra = { repetitions = 2, e_mult = 1, e_mult_gain = 0.06,
                          joker_slots = 4 } },
 
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 2 },
+
     loc_vars = function(self, info_queue, card)
         local extra = card.ability.extra
         local name, colour = CelestasMod.suit_name_and_colour(
@@ -770,6 +778,10 @@ SMODS.Joker {
 
     config = { extra = { repetitions = 2 } },
 
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 1 },
+
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.repetitions } }
     end,
@@ -945,6 +957,10 @@ SMODS.Joker {
     celesta_lost_shop = "j_" .. PREFIX .. "_error_missing_chad",
 
     config = { extra = { repetitions = 6, joker_slots = 4 } },
+
+    -- Which of the numbers loc_vars hands back is a retrigger count, so the
+    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
+    celesta_repetition_vars = { 1 },
 
     loc_vars = function(self, info_queue, card)
         local extra = card.ability.extra
