@@ -900,6 +900,14 @@ return {
                     "each {C:attention}merged{} Joker #3# time",
                 },
             },
+            j_celesta_navy_bean = {
+                name = "Navy Bean",
+                text = {
+                    "{C:attention}+#1#{} hand size",
+                    "{C:red}-#2#{} Joker slots, cannot be sold",
+                    "All {C:attention}shop{} items become this {C:attention}Joker{}",
+                },
+            },
             j_celesta_nekrolina = {
                 name = "Nekrolina",
                 text = {

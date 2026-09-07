@@ -793,6 +793,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "navy_bean",
+    path = "navy_bean.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "nekrolina",
     path = "nekrolina.png",
     px = 71,

@@ -63,6 +63,7 @@ Lost.CONVERSIONS = {
     -- Mail-In Rebates as readily as Mayas.
     ["j_mail"] = joker("unwanted_rebate"),
     ["j_blueprint"] = joker("schematic"),
+    ["j_turtle_bean"] = joker("navy_bean"),
 }
 
 --- The same table read the other way: which Joker a Corrupt one used to be.
@@ -786,6 +787,65 @@ SMODS.Joker {
                 }
             end
         end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Navy Bean
+--------------------------------------------------------------------------------
+--
+-- Turtle Bean gives five cards of hand size and takes one back every round.
+-- This one gives six and keeps them.
+--
+-- The hand size is applied HERE rather than left to vanilla. Turtle Bean's is
+-- granted by a branch of Card:add_to_deck that tests ability.name
+-- (card.lua:778), and after the conversion the name is no longer Turtle
+-- Bean's - so nothing in the game would apply it. A centre's own add_to_deck
+-- and remove_from_deck are the supported way to say it, and they cover
+-- selling, debuffing and destroying without another hook.
+--
+-- Not written to ability.h_size, which is the OTHER way a Joker can carry a
+-- hand size - vanilla reads that field directly and would then apply it as
+-- well as this, twice over. Turtle Bean keeps its number in extra for the
+-- same reason.
+SMODS.Joker {
+    key = "navy_bean",
+    atlas = "navy_bean",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    unlocked = true,
+    discovered = true,
+    -- Half of it is a passive nothing can copy, which is why vanilla's Turtle
+    -- Bean refuses a copy too.
+    blueprint_compat = false,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+    -- Itself, the way Unwanted Rebate does: a shop of Jokers that cannot be
+    -- sold and take four slots each.
+    celesta_lost_shop = "j_" .. PREFIX .. "_navy_bean",
+
+    config = { extra = { h_size = 6, joker_slots = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        local extra = card.ability.extra
+        return { vars = { extra.h_size, extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        retake_shop()
+        if G.hand then G.hand:change_size(card.ability.extra.h_size) end
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, card.ability.extra.joker_slots)
+        if G.hand then G.hand:change_size(-card.ability.extra.h_size) end
     end,
 }
 
