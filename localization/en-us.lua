@@ -1145,6 +1145,14 @@ return {
                     "lose {C:money}$#2#{} for each that does",
                 },
             },
+            j_celesta_schematic = {
+                name = "Schematic",
+                text = {
+                    "Retriggers each {C:attention}Joker{} to",
+                    "the right of this one {C:attention}#1#{} times",
+                    "Cannot be sold",
+                },
+            },
             j_celesta_shaoanvt = {
                 name = "Grandpaw Shao",
                 text = {
@@ -1310,7 +1318,7 @@ return {
                     "Earn {C:money}$#1#{} for each",
                     "{C:attention}#2#{} discarded",
                     "{C:red}-#3#{} Joker slots, cannot be sold",
-                    "All {C:attention}shop{} items become {C:attention}Mail-In Rebate{}",
+                    "All {C:attention}shop{} items become this {C:attention}Joker{}",
                 },
             },
             j_celesta_uzuri = {

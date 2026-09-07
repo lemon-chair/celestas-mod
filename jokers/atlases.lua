@@ -1010,6 +1010,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "schematic",
+    path = "schematic.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "shaoanvt",
     path = "shaoanvt.png",
     px = 71,

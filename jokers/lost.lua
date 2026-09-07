@@ -62,6 +62,7 @@ Lost.CONVERSIONS = {
     -- mod's own: the shop filler reads this table backwards and will hand out
     -- Mail-In Rebates as readily as Mayas.
     ["j_mail"] = joker("unwanted_rebate"),
+    ["j_blueprint"] = joker("schematic"),
 }
 
 --- The same table read the other way: which Joker a Corrupt one used to be.
@@ -204,17 +205,23 @@ end
 
 --- The Joker every shop item is to become, or nil while the shop is free.
 ---
---- Which Joker that is comes from the holder rather than from a constant: a
---- Corrupt one fills the shop with whatever it used to be, so Corrupt Maya
---- fills it with Mayas and BlueberryPancake with BerryCrepes. With two of
---- them on the board the leftmost wins, the way the Joker row settles every
---- other disagreement.
+--- celesta_lost_shop says which. `true` means "whatever I used to be", which
+--- is what four of the five want: Corrupt Maya fills the shop with Mayas and
+--- BlueberryPancake with BerryCrepes. A KEY means that Joker instead, and
+--- Unwanted Rebate names ITSELF - a shop of Jokers that cannot be sold and
+--- take four slots each.
+---
+--- With two Corrupt Jokers on the board the leftmost wins, the way the Joker
+--- row settles every other disagreement.
 local function shop_filler()
     if not (G.jokers and G.jokers.cards) then return nil end
     for _, held in ipairs(G.jokers.cards) do
-        if Lost.is_lost(held) and held.config.center.celesta_lost_shop then
-            local base = Lost.BASE_OF[held.config.center.key]
-            if base and G.P_CENTERS[base] then return base end
+        local declared = Lost.is_lost(held)
+            and held.config.center.celesta_lost_shop
+        if declared then
+            local key = declared
+            if key == true then key = Lost.BASE_OF[held.config.center.key] end
+            if key and G.P_CENTERS[key] then return key end
         end
     end
     return nil
@@ -673,10 +680,12 @@ SMODS.Joker {
     in_pool = function() return false end,
 
     -- The three flags, as on Corrupt Maya above, where what each one does is
-    -- written out.
+    -- written out - except that this one names the Joker its shop fills with
+    -- rather than taking the default. It is ITSELF: a shop of cards that
+    -- cannot be sold and take four Joker slots each.
     celesta_no_bind = true,
     celesta_lost = true,
-    celesta_lost_shop = true,
+    celesta_lost_shop = "j_" .. PREFIX .. "_unwanted_rebate",
 
     config = { extra = { dollars = 6.66, rank = 6, joker_slots = 4 } },
 
@@ -700,6 +709,82 @@ SMODS.Joker {
             and context.other_card.get_id
             and context.other_card:get_id() == card.ability.extra.rank then
             return { dollars = card.ability.extra.dollars, card = card }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Schematic
+--------------------------------------------------------------------------------
+--
+-- Blueprint copies the Joker to its right. This one makes every Joker to its
+-- right go again, twice.
+--
+-- The ONLY Corrupt Joker that leaves the run's shape alone: no Joker slots
+-- taken, no shop held shut. It carries celesta_lost, which is what makes it
+-- unsellable and draws its description inverted, and nothing else - so it has
+-- no celesta_lost_shop and no joker_slots at all rather than a zero, because
+-- a zero would still be a number somebody could scale.
+--
+-- retrigger_joker_check is asked of every Joker about every OTHER Joker, and
+-- about itself, so the answer has to name who it is being asked about. Ray
+-- guards that with an explicit `other_card ~= card`; here the position test
+-- already says it - a card is never further along the row than itself - so
+-- adding the guard as well would be a branch that can never be taken, and a
+-- negative test aimed at it could never fail.
+--
+-- Steamodded only runs that pass at all when a loaded mod has asked for it,
+-- which main.lua does through optional_features.retrigger_joker; Ray is why
+-- that is already on.
+
+--- Where `card` sits in the Joker row, or nil if it is not in it.
+local function row_index(card)
+    if not (G.jokers and G.jokers.cards) then return nil end
+    for i, held in ipairs(G.jokers.cards) do
+        if held == card then return i end
+    end
+    return nil
+end
+
+SMODS.Joker {
+    key = "schematic",
+    atlas = "schematic",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    unlocked = true,
+    discovered = true,
+    -- A copy of a Joker that retriggers Jokers is a knot; Blueprint itself is
+    -- blueprint_compat = false for the same reason.
+    blueprint_compat = false,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+
+    config = { extra = { repetitions = 2 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.repetitions } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.retrigger_joker_check and context.other_card then
+            local mine = row_index(card)
+            local theirs = row_index(context.other_card)
+            -- To the RIGHT: further along the row than this card. Both have to
+            -- be in it - a Joker being evaluated from somewhere else is not to
+            -- anyone's right.
+            if mine and theirs and theirs > mine then
+                return {
+                    message = localize("k_again_ex"),
+                    repetitions = card.ability.extra.repetitions,
+                    card = card,
+                }
+            end
         end
     end,
 }
