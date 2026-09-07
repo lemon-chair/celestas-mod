@@ -1157,6 +1157,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "unwanted_rebate",
+    path = "unwanted_rebate.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "uzuri",
     path = "uzuri.png",
     px = 71,

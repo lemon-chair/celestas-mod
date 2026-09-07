@@ -58,6 +58,10 @@ Lost.CONVERSIONS = {
     [joker("berrycrepe")] = joker("blueberrypancake"),
     [joker("ironmouse")] = joker("iron_moose"),
     [joker("boosfer")] = joker("red_boosfer"),
+    -- The first with a VANILLA base. Nothing here assumes a pair is this
+    -- mod's own: the shop filler reads this table backwards and will hand out
+    -- Mail-In Rebates as readily as Mayas.
+    ["j_mail"] = joker("unwanted_rebate"),
 }
 
 --- The same table read the other way: which Joker a Corrupt one used to be.
@@ -637,6 +641,65 @@ SMODS.Joker {
                 return
             end
             return { e_mult = card.ability.extra.e_mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Unwanted Rebate
+--------------------------------------------------------------------------------
+--
+-- Mail-In Rebate pays for one rank, chosen fresh each round
+-- (G.GAME.current_round.mail_card). This one pays for sixes and only sixes,
+-- and pays $6.66 a card - which is not a whole number, and is not meant to be.
+-- ease_dollars takes it as given, so the run's money goes fractional and stays
+-- that way; three sixes is $19.98.
+--
+-- A debuffed card is not counted, which is vanilla's own test in the same
+-- place (card.lua:3164): the Blind has taken the card's rank away, so there is
+-- no six there to pay for.
+SMODS.Joker {
+    key = "unwanted_rebate",
+    atlas = "unwanted_rebate",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    -- The three flags, as on Corrupt Maya above, where what each one does is
+    -- written out.
+    celesta_no_bind = true,
+    celesta_lost = true,
+    celesta_lost_shop = true,
+
+    config = { extra = { dollars = 6.66, rank = 6, joker_slots = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        local extra = card.ability.extra
+        return { vars = { extra.dollars, extra.rank, extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, card.ability.extra.joker_slots)
+    end,
+
+    calculate = function(self, card, context)
+        if context.discard and context.other_card
+            and not context.other_card.debuff
+            and context.other_card.get_id
+            and context.other_card:get_id() == card.ability.extra.rank then
+            return { dollars = card.ability.extra.dollars, card = card }
         end
     end,
 }

@@ -1304,6 +1304,15 @@ return {
                     "{C:attention}flipped over{} are scored",
                 },
             },
+            j_celesta_unwanted_rebate = {
+                name = "Unwanted Rebate",
+                text = {
+                    "Earn {C:money}$#1#{} for each",
+                    "{C:attention}#2#{} discarded",
+                    "{C:red}-#3#{} Joker slots, cannot be sold",
+                    "All {C:attention}shop{} items become {C:attention}Mail-In Rebate{}",
+                },
+            },
             j_celesta_uzuri = {
                 name = "Uzuri",
                 text = {
