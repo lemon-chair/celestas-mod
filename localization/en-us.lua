@@ -211,6 +211,10 @@ return {
                     "{C:red}-#2#{} Joker slots, cannot be sold",
                     "All {C:attention}shop{} items become {C:attention}BerryCrepe{}",
                 },
+                unlock = {
+                    "Use a {C:spectral}Lost Soul{} on",
+                    "{C:attention}BerryCrepe{}",
+                },
             },
             j_celesta_bluto = {
                 name = "Bluto",
@@ -301,6 +305,10 @@ return {
                     "retriggered {C:attention}#2#{} times",
                     "{C:red}-#3#{} Joker slots, cannot be sold",
                     "All {C:attention}shop{} items become {C:attention}Maya{}",
+                },
+                unlock = {
+                    "Use a {C:spectral}Lost Soul{} on",
+                    "{C:attention}Maya{}",
                 },
             },
             j_celesta_cosmic = {
@@ -447,6 +455,10 @@ return {
                     "{C:red}-#2#{} Joker slots, cannot be sold",
                     "All {C:attention}shop{} items become this {C:attention}Joker{}",
                 },
+                unlock = {
+                    "Use a {C:spectral}Lost Soul{} on",
+                    "{C:attention}Hanging Chad{}",
+                },
             },
             j_celesta_evil_neuro = {
                 name = "Evil Neuro",
@@ -464,6 +476,10 @@ return {
                     "{C:chips}+#1#{} Chips when scored",
                     "{C:red}-#2#{} Joker slots, cannot be sold",
                     "All {C:attention}shop{} items become this {C:attention}Joker{}",
+                },
+                unlock = {
+                    "Use a {C:spectral}Lost Soul{} on",
+                    "{C:attention}Scary Face{}",
                 },
             },
             j_celesta_fefe = {
@@ -616,6 +632,10 @@ return {
                     "{E:1,C:mult}^#1#{} Mult",
                     "{C:red}-#2#{} Joker slots, cannot be sold",
                     "All {C:attention}shop{} items become {C:attention}Ironmouse{}",
+                },
+                unlock = {
+                    "Use a {C:spectral}Lost Soul{} on",
+                    "{C:attention}Ironmouse{}",
                 },
             },
             j_celesta_ironmouse = {
@@ -925,6 +945,10 @@ return {
                     "{C:red}-#2#{} Joker slots, cannot be sold",
                     "All {C:attention}shop{} items become this {C:attention}Joker{}",
                 },
+                unlock = {
+                    "Use a {C:spectral}Lost Soul{} on",
+                    "{C:attention}Turtle Bean{}",
+                },
             },
             j_celesta_nekrolina = {
                 name = "Nekrolina",
@@ -1105,6 +1129,10 @@ return {
                     "{C:red}-#5#{} Joker slots, cannot be sold",
                     "All {C:attention}shop{} items become {C:attention}Boosfer{}",
                 },
+                unlock = {
+                    "Use a {C:spectral}Lost Soul{} on",
+                    "{C:attention}Boosfer{}",
+                },
             },
             j_celesta_rinpenrose = {
                 name = "Rin Penrose",
@@ -1177,6 +1205,10 @@ return {
                     "Retriggers each {C:attention}Joker{} to",
                     "the right of this one {C:attention}#1#{} times",
                     "Cannot be sold",
+                },
+                unlock = {
+                    "Use a {C:spectral}Lost Soul{} on",
+                    "{C:attention}Blueprint{}",
                 },
             },
             j_celesta_shaoanvt = {
@@ -1345,6 +1377,10 @@ return {
                     "{C:attention}#2#{} discarded",
                     "{C:red}-#3#{} Joker slots, cannot be sold",
                     "All {C:attention}shop{} items become this {C:attention}Joker{}",
+                },
+                unlock = {
+                    "Use a {C:spectral}Lost Soul{} on",
+                    "{C:attention}Mail-In Rebate{}",
                 },
             },
             j_celesta_uzuri = {

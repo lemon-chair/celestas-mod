@@ -149,10 +149,41 @@ Lost.soul_held = Lost.soul_present
 --- both of those matter here: the old Joker may have given the run something,
 --- and the new one takes four Joker slots away. So they are called by hand,
 --- in the order a sale-then-purchase would have done it.
+--- Takes the lock and the "?" off a Lost centre the player has just made one
+--- of, and off the card carrying it.
+---
+--- Both halves matter, and the second is the one that bites. An UNDISCOVERED
+--- centre is exempted in the Joker row and the consumable tray, so a card you
+--- own always draws as itself (card.lua:717). A LOCKED centre has no such
+--- exemption (card.lua:720): left locked, the Joker you just made would sit in
+--- your row as a padlock.
+---
+--- unlock_card and discover_card both refuse outright in a seeded or challenge
+--- run (common_events.lua:1630, 1880), so the centre is opened here as well.
+--- That may reach the profile on the next save_progress, which is a fair price:
+--- a padlock where a Joker should be is the worse of the two.
+local function reveal(center, card)
+    if unlock_card then unlock_card(center) end
+    if discover_card then discover_card(center) end
+    center.unlocked, center.discovered = true, true
+
+    -- Saved with the card (card.lua:4652), so a reload does not hide it again.
+    card.bypass_lock = true
+    card.bypass_discovery_center = true
+    card.bypass_discovery_ui = true
+    card.params = card.params or {}
+    card.params.bypass_discovery_center = true
+    card.params.bypass_discovery_ui = true
+end
+
 function Lost.convert(card)
     local key = Lost.CONVERSIONS[card.config.center.key]
     local center = key and G.P_CENTERS[key]
     if not center then return false end
+
+    -- Before the swap, so the sprite it is given is its own rather than the
+    -- lock: set_sprites reads both flags as it goes (card.lua:168).
+    reveal(center, card)
 
     card:remove_from_deck()
     card:set_ability(center, nil, true)
@@ -327,8 +358,12 @@ SMODS.Joker {
 
     rarity = LOST_RARITY,
     cost = 20,
-    unlocked = true,
-    discovered = true,
+    -- Hidden in the collection until one has been made, and locked rather
+    -- than merely undiscovered: a locked centre is the one the game will
+    -- print a per-card reason for (card.lua:720 beats 723), which is where
+    -- "use a Lost Soul on <Joker>" goes. See reveal() below.
+    unlocked = false,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -415,8 +450,12 @@ SMODS.Joker {
 
     rarity = LOST_RARITY,
     cost = 20,
-    unlocked = true,
-    discovered = true,
+    -- Hidden in the collection until one has been made, and locked rather
+    -- than merely undiscovered: a locked centre is the one the game will
+    -- print a per-card reason for (card.lua:720 beats 723), which is where
+    -- "use a Lost Soul on <Joker>" goes. See reveal() below.
+    unlocked = false,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -479,8 +518,12 @@ SMODS.Joker {
 
     rarity = LOST_RARITY,
     cost = 20,
-    unlocked = true,
-    discovered = true,
+    -- Hidden in the collection until one has been made, and locked rather
+    -- than merely undiscovered: a locked centre is the one the game will
+    -- print a per-card reason for (card.lua:720 beats 723), which is where
+    -- "use a Lost Soul on <Joker>" goes. See reveal() below.
+    unlocked = false,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -583,8 +626,12 @@ SMODS.Joker {
 
     rarity = LOST_RARITY,
     cost = 20,
-    unlocked = true,
-    discovered = true,
+    -- Hidden in the collection until one has been made, and locked rather
+    -- than merely undiscovered: a locked centre is the one the game will
+    -- print a per-card reason for (card.lua:720 beats 723), which is where
+    -- "use a Lost Soul on <Joker>" goes. See reveal() below.
+    unlocked = false,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -702,8 +749,12 @@ SMODS.Joker {
 
     rarity = LOST_RARITY,
     cost = 20,
-    unlocked = true,
-    discovered = true,
+    -- Hidden in the collection until one has been made, and locked rather
+    -- than merely undiscovered: a locked centre is the one the game will
+    -- print a per-card reason for (card.lua:720 beats 723), which is where
+    -- "use a Lost Soul on <Joker>" goes. See reveal() below.
+    unlocked = false,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -783,8 +834,12 @@ SMODS.Joker {
 
     rarity = LOST_RARITY,
     cost = 20,
-    unlocked = true,
-    discovered = true,
+    -- Hidden in the collection until one has been made, and locked rather
+    -- than merely undiscovered: a locked centre is the one the game will
+    -- print a per-card reason for (card.lua:720 beats 723), which is where
+    -- "use a Lost Soul on <Joker>" goes. See reveal() below.
+    unlocked = false,
+    discovered = false,
     -- A copy of a Joker that retriggers Jokers is a knot; Blueprint itself is
     -- blueprint_compat = false for the same reason.
     blueprint_compat = false,
@@ -848,8 +903,12 @@ SMODS.Joker {
 
     rarity = LOST_RARITY,
     cost = 20,
-    unlocked = true,
-    discovered = true,
+    -- Hidden in the collection until one has been made, and locked rather
+    -- than merely undiscovered: a locked centre is the one the game will
+    -- print a per-card reason for (card.lua:720 beats 723), which is where
+    -- "use a Lost Soul on <Joker>" goes. See reveal() below.
+    unlocked = false,
+    discovered = false,
     -- Half of it is a passive nothing can copy, which is why vanilla's Turtle
     -- Bean refuses a copy too.
     blueprint_compat = false,
@@ -903,8 +962,12 @@ SMODS.Joker {
 
     rarity = LOST_RARITY,
     cost = 20,
-    unlocked = true,
-    discovered = true,
+    -- Hidden in the collection until one has been made, and locked rather
+    -- than merely undiscovered: a locked centre is the one the game will
+    -- print a per-card reason for (card.lua:720 beats 723), which is where
+    -- "use a Lost Soul on <Joker>" goes. See reveal() below.
+    unlocked = false,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -964,8 +1027,12 @@ SMODS.Joker {
 
     rarity = LOST_RARITY,
     cost = 20,
-    unlocked = true,
-    discovered = true,
+    -- Hidden in the collection until one has been made, and locked rather
+    -- than merely undiscovered: a locked centre is the one the game will
+    -- print a per-card reason for (card.lua:720 beats 723), which is where
+    -- "use a Lost Soul on <Joker>" goes. See reveal() below.
+    unlocked = false,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
