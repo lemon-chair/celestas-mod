@@ -77,6 +77,14 @@ function Game:update(dt)
     since = 0
 
     local ok, line = pcall(function()
+        -- TEMPORARY, with the rest of this file: the convertible-Joker
+        -- outline draws nothing at all in game, and there are exactly three
+        -- ways for that to happen. This says which.
+        local Lost = CelestasMod.Lost or {}
+        local glow = string.format("atlas:%s soul:%s tgt:%d",
+            (G.ASSET_ATLAS and G.ASSET_ATLAS["celesta_lost_glow"]) and "y" or "N",
+            (Lost.soul_held and Lost.soul_held()) and "y" or "n",
+            Lost.targets and #Lost.targets() or -1)
         local vedal = 0
         for _, held in ipairs(CelestasMod.find_joker("j_celesta_vedal") or {}) do
             local total = held.ability and held.ability.extra
@@ -87,7 +95,7 @@ function Game:update(dt)
         return string.format(
             "%s state=%-2s lua=%7.1fMB card=%-5d sprite=%-5d move=%-5d "
             .. "uibox=%-4d node=%-5d ev=%-4d jok=%-12s con=%-12s "
-            .. "hand=%-3d deck=%-3d vedal=%.3g",
+            .. "hand=%-3d deck=%-3d vedal=%-9.3g glow=%s",
             os.date("%H:%M:%S"), tostring(G.STATE),
             collectgarbage("count") / 1024,
             count(G.I and G.I.CARD), count(G.I and G.I.SPRITE),
@@ -95,7 +103,7 @@ function Game:update(dt)
             count(G.I and G.I.NODE), queued(),
             row(G.jokers), row(G.consumeables),
             #((G.hand or {}).cards or {}), #((G.deck or {}).cards or {}),
-            vedal)
+            vedal, glow)
     end)
 
     write(ok and line or ("watch failed: " .. tostring(line)))

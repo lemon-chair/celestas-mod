@@ -1110,7 +1110,15 @@ local glow_sprite = nil
 local function glow()
     if glow_sprite then return glow_sprite end
     local atlas = G.ASSET_ATLAS[GLOW_ATLAS]
-    if not atlas then return nil end
+    if not atlas then
+        -- Silently drawing nothing is how this went unnoticed: the outline is
+        -- the only thing that says a Joker can be spent on, and a missing
+        -- sheet looks exactly like a Joker that cannot.
+        CelestasMod.warn_once("lost_glow_atlas",
+            ("The Lost Soul glow sheet %s is not loaded, so convertible "
+             .. "Jokers will not outline"):format(GLOW_ATLAS))
+        return nil
+    end
     glow_sprite = Sprite(0, 0, G.CARD_W, G.CARD_H, atlas, { x = 0, y = 0 })
     return glow_sprite
 end
