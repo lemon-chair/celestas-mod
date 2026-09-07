@@ -20,6 +20,17 @@ local PREFIX = SMODS.current_mod.prefix
 -- tools/gen_lost.py builds it.
 SMODS.Atlas { key = "lost_soul", path = "lost_soul.png", px = 71, py = 95 }
 
+-- Declared here rather than in jokers/sounds.lua: that file is the roster of
+-- JOKER arrival sounds, and this is a consumable's. SMODS.Sound has a
+-- register_global that would sweep assets/sounds/ automatically, but nothing
+-- in Steamodded ever calls it, so a file dropped in that folder registers only
+-- if it is named somewhere.
+--
+-- Avoid the words music, stream and ambient in a sound key: SMODS matches
+-- those to decide streaming vs static, and a short effect wants static.
+SMODS.Sound { key = "lost_soul_use", path = "lost_soul_use.wav" }
+local USE_SOUND = SMODS.current_mod.prefix .. "_lost_soul_use"
+
 --------------------------------------------------------------------------------
 
 -- `hidden` is what puts it on the same roll as The Soul rather than in the
@@ -72,6 +83,10 @@ SMODS.Consumable {
     end,
 
     use = function(self, card, area, copier)
+        -- Straight away, not with the conversion event below: the sound is
+        -- the card being spent, and the Joker turning is what follows it.
+        play_sound(USE_SOUND)
+
         local Lost = CelestasMod.Lost
         if not Lost then return end
 
