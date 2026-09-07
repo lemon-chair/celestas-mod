@@ -65,6 +65,7 @@ Lost.CONVERSIONS = {
     ["j_blueprint"] = joker("schematic"),
     ["j_turtle_bean"] = joker("navy_bean"),
     ["j_scary_face"] = joker("face"),
+    ["j_hanging_chad"] = joker("error_missing_chad"),
 }
 
 --- The same table read the other way: which Joker a Corrupt one used to be.
@@ -904,6 +905,70 @@ SMODS.Joker {
             and context.other_card:is_face() then
             return { chips = card.ability.extra.chips,
                      card = context.other_card }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- ERROR:missing_chad.exe
+--------------------------------------------------------------------------------
+--
+-- Hanging Chad retriggers the first scoring card twice more; this does it six
+-- times.
+--
+-- "The first played card" is the first card of the SCORING hand, which is
+-- what Hanging Chad means by it - its own description says "first played card
+-- used in scoring". A five-card hand that makes a Pair starts scoring at the
+-- Pair, not at whatever was leftmost. Spongey in jokers/implemented.lua tests
+-- the same thing against the LAST entry and says so there.
+--
+-- The name is punctuation and mixed case, and neither needs anything: Balatro
+-- prints the localization string exactly as written. The KEY cannot be, so it
+-- is error_missing_chad - keys are lowercase and underscored throughout this
+-- mod, and nothing player-facing reads them.
+SMODS.Joker {
+    key = "error_missing_chad",
+    atlas = "error_missing_chad",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+    celesta_lost_shop = "j_" .. PREFIX .. "_error_missing_chad",
+
+    config = { extra = { repetitions = 6, joker_slots = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        local extra = card.ability.extra
+        return { vars = { extra.repetitions, extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, card.ability.extra.joker_slots)
+    end,
+
+    calculate = function(self, card, context)
+        if context.repetition and context.cardarea == G.play
+            and context.scoring_hand
+            and context.other_card == context.scoring_hand[1] then
+            return {
+                message = localize("k_again_ex"),
+                repetitions = card.ability.extra.repetitions,
+                card = card,
+            }
         end
     end,
 }

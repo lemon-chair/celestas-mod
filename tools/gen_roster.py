@@ -62,6 +62,9 @@ DISPLAY_NAMES = {
     "slimegod": "Slime God",
     # Lowercase on purpose. Balatro prints the localization string as written.
     "face": "face",
+    # Punctuation and case on purpose, for the same reason. The KEY cannot
+    # carry either, which is why the two differ so much here.
+    "error_missing_chad": "ERROR:missing_chad.exe",
     "blessed_phoenix_egg": "Blessed Phoenix Egg",
     "cryogen": "Cryogen",
     "xm05_thanatos": "XM-05 Thanatos",

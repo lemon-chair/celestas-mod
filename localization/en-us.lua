@@ -439,6 +439,15 @@ return {
                     "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
                 },
             },
+            j_celesta_error_missing_chad = {
+                name = "ERROR:missing_chad.exe",
+                text = {
+                    "Retriggers the first played card",
+                    "used in scoring {C:attention}#1#{} times",
+                    "{C:red}-#2#{} Joker slots, cannot be sold",
+                    "All {C:attention}shop{} items become this {C:attention}Joker{}",
+                },
+            },
             j_celesta_evil_neuro = {
                 name = "Evil Neuro",
                 text = {

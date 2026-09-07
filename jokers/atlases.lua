@@ -366,6 +366,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "error_missing_chad",
+    path = "error_missing_chad.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "evil_neuro",
     path = "evil_neuro.png",
     px = 71,
