@@ -78,8 +78,45 @@ function Card:draw(layer)
     -- added to: VT.w is one card across, so OVERHANG of it is twelve pixels of
     -- the sheet. No y offset - the sheet is a card tall already.
     sprite.role.draw_major = self
-    sprite:draw_shader("dissolve", nil, nil, nil, anchor, nil, nil,
-                       -OVERHANG * (anchor.VT.w or 0), 0)
+
+    --- One pass of the wide sheet, in the card's place.
+    local function pass(shader, send)
+        sprite:draw_shader(shader, nil, send, nil, anchor, nil, nil,
+                           -OVERHANG * (anchor.VT.w or 0), 0)
+    end
+
+    -- An edition is drawn onto the card's OWN sprite, which is card shaped
+    -- (SMODS card_draw.lua:252, and vanilla card.lua:4459 before it). This
+    -- Joker's art is not: it hangs twelve pixels over each edge, and those
+    -- twelve pixels were the only part of it left matte while the rest of the
+    -- card shone. So every shader the card is wearing is run over the wide
+    -- sheet as well, in the same order the game runs them.
+    --
+    -- Read off G.P_CENTER_POOLS.Edition rather than a list of the three
+    -- vanilla ones, which is how SMODS itself does it: an edition is any
+    -- centre whose flag is set on the card, so a modded one is covered by
+    -- being registered rather than by being named here. `key:sub(3)` drops
+    -- the "e_".
+    local edition = self.delay_edition or self.edition
+
+    -- Negative replaces the dissolve pass rather than adding to it, the way
+    -- the card's own sprite is drawn (card_draw.lua:151).
+    if edition and edition.negative then
+        pass("negative", self.ARGS.send_to_shader)
+    else
+        pass("dissolve")
+    end
+
+    if edition then
+        for _, e in pairs(G.P_CENTER_POOLS.Edition or {}) do
+            if e.key and e.shader and edition[e.key:sub(3)] then
+                pass(e.shader, self.ARGS.send_to_shader)
+            end
+        end
+        if edition.negative then
+            pass("negative_shine", self.ARGS.send_to_shader)
+        end
+    end
 end
 
 --------------------------------------------------------------------------------
