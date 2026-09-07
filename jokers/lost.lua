@@ -1083,27 +1083,26 @@ end
 -- The glow
 --------------------------------------------------------------------------------
 --
--- A Joker the held Lost Soul could be spent on wears a pulsing white outline.
+-- A Joker the held Lost Soul could be spent on wears a white outline.
 --
 -- The outline is a sprite rather than a tint, and hollow rather than filled.
 -- Balatro draws sprites through the dissolve shader, whose fragment stage
 -- returns either the texture's own colours or a hardcoded black silhouette and
 -- ignores the vertex colour entirely (resources/shaders/dissolve.fs), so
 -- setColor cannot whiten anything drawn that way and a multiply tint could
--- only ever darken it. The sheet is therefore white to begin with, and the
--- pulse is its SIZE rather than its alpha.
+-- only ever darken it. The sheet is therefore white to begin with, and it is
+-- drawn plainly over the card - no tint, no fade, no animation. It says which
+-- Jokers the Soul can be spent on and nothing else.
 --
 -- Declared here rather than in the generated jokers/atlases.lua: that file is
 -- one atlas per Joker face, and this sheet is not a face.
 SMODS.Atlas { key = "lost_glow", path = "lost_glow.png", px = 71, py = 95 }
 local GLOW_ATLAS = PREFIX .. "_lost_glow"
 
---- Radians a second the pulse runs at.
-local PULSE = 3.4
-
---- How far outside the card the outline sits, at its smallest and its largest.
---- A fraction of the card, which is what draw_shader's `ms` is.
-local GLOW_MIN, GLOW_SWING = 0.03, 0.06
+--- How far outside the card the outline sits, as a fraction of the card -
+--- which is what draw_shader's `ms` is. Constant: the outline is a flag
+--- saying "this one", and a flag does not need to move to be read.
+local GLOW_OUTSET = 0.05
 
 -- One sprite shared by every glowing Joker, built on first use: the atlases do
 -- not exist yet while this file is loading. Cryogen's ring is built the same
@@ -1138,25 +1137,13 @@ function Card:draw(layer)
     local sprite = glow()
     if not sprite then return end
 
-    -- G.TIMERS.REAL rather than a per-card phase: every eligible Joker pulses
-    -- in step, and a value carried on the card would be one more thing in the
-    -- save that has to survive being sold and loaded.
-    local pulse = 0.5 + 0.5 * math.sin(PULSE * (G.TIMERS.REAL or 0))
-
     -- Through draw_shader, which is how every other overlay in this mod is
     -- drawn: Cryogen's ring, Thanatos' wide sheet, the frost pane, Exo's
     -- frame. draw_from is the layer underneath it (engine/sprite.lua:180) and
     -- the game never calls it on its own - draw_shader sets the shader and
     -- the draw_major the transform is built from, then calls it. Called cold
     -- it drew nothing at all, which is exactly what the outline did.
-    --
-    -- So the pulse cannot be an alpha any more: the dissolve shader returns
-    -- the texture's own colours and ignores the vertex colour entirely
-    -- (resources/shaders/dissolve.fs), which is why setColor was being used
-    -- here in the first place. It is a SIZE instead - the ring breathes
-    -- around the card - and on a white outline that reads at a glance in a
-    -- way a few percent of alpha never did.
     sprite.role.draw_major = self
     sprite:draw_shader("dissolve", nil, nil, nil, self.children.center,
-                       GLOW_MIN + GLOW_SWING * pulse, 0)
+                       GLOW_OUTSET, 0)
 end
