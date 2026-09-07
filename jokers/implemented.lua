@@ -2532,11 +2532,11 @@ SMODS.Joker {
 CelestasMod.VEDAL_SCALE = 1.1
 
 -- EVERY number a Joker hands back is scaled - Mult, Chips, multipliers,
--- Talisman's exponents, dollars, hand size, repetitions, the lot. There is no
--- list of blessed keys any more: keeping one meant Vedal quietly ignored
--- whatever it had not been told about, which is most of what a Joker can give.
+-- Talisman's exponents, dollars, hand size, the lot. There is no list of
+-- blessed keys any more: keeping one meant Vedal quietly ignored whatever it
+-- had not been told about, which is most of what a Joker can give.
 --
--- Two keys are held out, and only these two.
+-- Two keys are held out, and only these two. Neither of them is a value.
 local VEDAL_NEVER = {
     -- The divisor of a chance. "1 in 5" is one number, not two: scaling both
     -- leaves the odds exactly where they were. The numerator is scaled through
@@ -2546,6 +2546,28 @@ local VEDAL_NEVER = {
     -- would apply X1.5 twice to a chance that came back through an effect.
     numerator = true,
 }
+
+-- The most times a Joker of this mod may be made to retrigger something.
+--
+-- A retrigger count is the one number Vedal touches that is WORK rather than
+-- arithmetic. Steamodded spends it as a loop:
+--     for h = 1, effect.repetitions do table.insert(ret, ...) end
+-- (utils.lua:1498), one fresh table per repetition. Every other key costs the
+-- same whatever it says; this one costs whatever it SAYS, and it feeds itself
+-- - each retrigger is another evaluation, each evaluation grows Vedal, and the
+-- next card's count is drawn from the grown multiplier.
+--
+-- Boosfer with Arielle out is where that showed. Arielle makes is_suit answer
+-- yes to everything, so every scored card is a Star and every one of them gets
+-- the retrigger, and a Vedal sitting at X14 turned a five card hand into a
+-- loop that allocated until LuaJIT could not. Twice, three minutes apart, with
+-- no crash screen - drawing one needs memory too.
+--
+-- 40 is Boosfer's ceiling by request, and it is applied to every retrigger
+-- this mod hands back rather than to that one Joker: sixty-odd others return
+-- repetitions through the same loop, and a bound that only covers the Joker
+-- that was caught is not a bound.
+CelestasMod.VEDAL_REPETITION_CAP = 40
 
 --- Every Vedal in play and able to act.
 --- Asked at the moment the answer is wanted rather than cached: one can be
@@ -2691,6 +2713,15 @@ function Card:calculate_joker(context, ...)
             scaled[k] = v
         end
     end
+
+    -- Bounded here rather than in the Jokers, because here is the only place
+    -- that sees the number Steamodded will actually loop over. See
+    -- VEDAL_REPETITION_CAP.
+    if type(scaled.repetitions) == "number" then
+        scaled.repetitions = math.min(scaled.repetitions,
+                                      CelestasMod.VEDAL_REPETITION_CAP)
+    end
+
     return scaled, post
 end
 
@@ -7214,23 +7245,18 @@ end
 --- tests `#cards < card_limit`, so a limit of 8.3 lets a ninth Joker in while
 --- the card claims 8.3 - the same mismatch again, one decimal place down.
 ---
---- SWITCHED OFF while an out-of-memory crash is being chased. Two runs died
---- three minutes apart with LuaJIT's own ERRMEM abort (exception 0xe24c4a04,
---- and no crash screen, because drawing one needs memory too) while this was
---- handing out 43 Joker slots and 14 consumable ones under a Vedal at X14.4.
---- The same save had run for 26 minutes without it.
+--- This was switched off for two runs while an out-of-memory crash was being
+--- chased, on nothing better than the fact that both crashes were the first
+--- sessions to carry it. The cause turned out to be elsewhere and to have
+--- nothing to do with slots - Vedal was scaling Boosfer's RETRIGGER COUNT,
+--- which Steamodded spends as a loop, so see VEDAL_NEVER above. Nothing in
+--- the game, Steamodded, Talisman, CardSleeves or this mod loops over
+--- card_limit; all five were checked before it went back on.
 ---
---- The slots themselves allocate nothing - nothing in the game, Steamodded,
---- Talisman, CardSleeves or this mod loops over card_limit, which was checked
---- against all five. What a row that is never full DOES do is switch every
---- "if there is room" effect back on: x3DustCo makes a Joker on the way out
---- of every shop and could not before, and the process was already sitting
---- near a gigabyte. That is a guess until the trace says otherwise, and this
---- is off until it does.
----
---- Turning it back on is this one flag. Both halves - the grant and the
---- tooltip - read it, so they cannot come apart either way.
-local SERAPH_FOLLOWS_VEDAL = false
+--- The flag stays, because it is the switch to reach for if the slots are
+--- ever suspected again. Both halves - the grant and the tooltip - read it,
+--- so they cannot come apart either way.
+local SERAPH_FOLLOWS_VEDAL = true
 
 local function seraph_slots(card)
     -- Only a Joker in the row is boosted, which is the condition the
