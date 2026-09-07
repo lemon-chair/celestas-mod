@@ -7213,11 +7213,31 @@ end
 --- Rounded, because a slot is a thing you either have or do not. The game
 --- tests `#cards < card_limit`, so a limit of 8.3 lets a ninth Joker in while
 --- the card claims 8.3 - the same mismatch again, one decimal place down.
+---
+--- SWITCHED OFF while an out-of-memory crash is being chased. Two runs died
+--- three minutes apart with LuaJIT's own ERRMEM abort (exception 0xe24c4a04,
+--- and no crash screen, because drawing one needs memory too) while this was
+--- handing out 43 Joker slots and 14 consumable ones under a Vedal at X14.4.
+--- The same save had run for 26 minutes without it.
+---
+--- The slots themselves allocate nothing - nothing in the game, Steamodded,
+--- Talisman, CardSleeves or this mod loops over card_limit, which was checked
+--- against all five. What a row that is never full DOES do is switch every
+--- "if there is room" effect back on: x3DustCo makes a Joker on the way out
+--- of every shop and could not before, and the process was already sitting
+--- near a gigabyte. That is a guess until the trace says otherwise, and this
+--- is off until it does.
+---
+--- Turning it back on is this one flag. Both halves - the grant and the
+--- tooltip - read it, so they cannot come apart either way.
+local SERAPH_FOLLOWS_VEDAL = false
+
 local function seraph_slots(card)
     -- Only a Joker in the row is boosted, which is the condition the
     -- description wrapper uses too: one in the shop or in the collection is
     -- not owned yet, and neither of them is holding any slots.
-    local scale = (card.area == G.jokers and vedal_multiplier()) or 1
+    local scale = (SERAPH_FOLLOWS_VEDAL and G.jokers
+        and card.area == G.jokers and vedal_multiplier()) or 1
     local extra = card.ability.extra
     return math.floor(extra.joker_slots * scale + 0.5),
            math.floor(extra.consumable_slots * scale + 0.5)
