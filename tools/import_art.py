@@ -23,6 +23,11 @@ is one of the ways that went wrong:
   * 1x and 2x must DIFFER, and each must be its own size. Handing the same
     file twice is the other easy slip.
 
+Round art - Boosfer's, and Red Boosfer's - is drawn square, 71x71, because a
+circle has no corners to fill. A square source of the right width is centred
+in the card cell, which is where Boosfer's own sits: (95-71)/2 = 12 rows of
+nothing above and below.
+
 `--replace` allows an existing name to be overwritten, and says what it did.
 It does not relax any of the checks above.
 """
@@ -74,9 +79,11 @@ def main(argv):
         if not os.path.exists(src):
             sys.exit("no such file: %s" % src)
         size, _ = fingerprint(src)
-        if size != SIZES[folder]:
-            sys.exit("%s is %dx%d, and %s art must be %dx%d"
-                     % (src, size[0], size[1], folder, *SIZES[folder]))
+        want = SIZES[folder]
+        if size != want and size != (want[0], want[0]):
+            sys.exit("%s is %dx%d, and %s art must be %dx%d - or %dx%d if it "
+                     "is round" % (src, size[0], size[1], folder,
+                                   want[0], want[1], want[0], want[0]))
 
     if fingerprint(src1)[1] == fingerprint(src2)[1]:
         sys.exit("the 1x and 2x sources are the same picture")
@@ -94,8 +101,18 @@ def main(argv):
         if os.path.exists(dest) and not replace:
             sys.exit("%s already exists; pass --replace to overwrite it" % dest)
         was = " (replaced)" if os.path.exists(dest) else ""
-        shutil.copyfile(src, dest)
-        print("wrote assets/%s/%s.png%s" % (folder, name, was))
+
+        img = Image.open(src).convert("RGBA")
+        if img.size == SIZES[folder]:
+            shutil.copyfile(src, dest)
+            note = ""
+        else:
+            # Square: round art, centred in the card cell the way Boosfer's is.
+            cell = Image.new("RGBA", SIZES[folder], (0, 0, 0, 0))
+            cell.paste(img, (0, (SIZES[folder][1] - img.size[1]) // 2))
+            cell.save(dest)
+            note = " (round art, centred)"
+        print("wrote assets/%s/%s.png%s%s" % (folder, name, was, note))
 
     print("Now LOOK at them. Every check here is about what the file is, and "
           "none of them can tell you it is the right picture.")
