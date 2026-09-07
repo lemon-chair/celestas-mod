@@ -83,7 +83,7 @@ function Game:update(dt)
         local Lost = CelestasMod.Lost or {}
         local glow = string.format("atlas:%s soul:%s tgt:%d",
             (G.ASSET_ATLAS and G.ASSET_ATLAS["celesta_lost_glow"]) and "y" or "N",
-            (Lost.soul_held and Lost.soul_held()) and "y" or "n",
+            (Lost.soul_present and Lost.soul_present()) and "y" or "n",
             Lost.targets and #Lost.targets() or -1)
         local vedal = 0
         for _, held in ipairs(CelestasMod.find_joker("j_celesta_vedal") or {}) do

@@ -107,19 +107,38 @@ function Lost.targets()
     return out
 end
 
---- True while a Lost Soul is sitting in the consumable tray.
---- This is what "in the Lost Soul's presence" means: one held, not one that
---- exists somewhere in the run.
-function Lost.soul_held()
-    if not (G.consumeables and G.consumeables.cards) then return false end
-    for _, card in ipairs(G.consumeables.cards) do
-        if card.config and card.config.center
-            and card.config.center.key == LOST_SOUL_KEY then
-            return true
+--- True while a Lost Soul is somewhere the player can see it: the consumable
+--- tray, or the booster pack open on screen.
+---
+--- The pack is where one is FIRST seen - the Lost Soul is a pack card, like
+--- the Soul it comes with - and the moment the outline is worth anything is
+--- the moment you are looking at the pack deciding whether to take it. The
+--- Joker row sits above the pack and stays visible, so it can be read off
+--- while the choice is still open.
+---
+--- G.pack_cards is not cleared when a pack closes: the area is marked REMOVED
+--- and left in place, which is the test vanilla itself makes
+--- (button_callbacks.lua:2022). Asking for the area alone would leave every
+--- Joker outlined for the rest of the run after one Spectral pack.
+function Lost.soul_present()
+    local areas = { G.consumeables }
+    if G.pack_cards and not G.pack_cards.REMOVED then
+        areas[#areas + 1] = G.pack_cards
+    end
+
+    for _, area in ipairs(areas) do
+        for _, card in ipairs((area and area.cards) or {}) do
+            if card.config and card.config.center
+                and card.config.center.key == LOST_SOUL_KEY then
+                return true
+            end
         end
     end
     return false
 end
+
+--- The name this went by when it only looked at the tray.
+Lost.soul_held = Lost.soul_present
 
 --- Turns `card` into its Lost version, in place.
 ---
@@ -1132,7 +1151,7 @@ function Card:draw(layer)
     -- Nothing to outline on the back of a card, and the shadow pass is the
     -- card's silhouette rather than its face.
     if layer == "shadow" or self.facing == "back" then return end
-    if not (Lost.soul_held() and Lost.convertible(self)) then return end
+    if not (Lost.soul_present() and Lost.convertible(self)) then return end
 
     local sprite = glow()
     if not sprite then return end
