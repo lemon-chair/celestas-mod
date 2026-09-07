@@ -64,6 +64,7 @@ Lost.CONVERSIONS = {
     ["j_mail"] = joker("unwanted_rebate"),
     ["j_blueprint"] = joker("schematic"),
     ["j_turtle_bean"] = joker("navy_bean"),
+    ["j_scary_face"] = joker("face"),
 }
 
 --- The same table read the other way: which Joker a Corrupt one used to be.
@@ -846,6 +847,64 @@ SMODS.Joker {
     remove_from_deck = function(self, card, from_debuff)
         bump_limit(G.jokers, card.ability.extra.joker_slots)
         if G.hand then G.hand:change_size(-card.ability.extra.h_size) end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- face
+--------------------------------------------------------------------------------
+--
+-- Scary Face, corrupted. +30 Chips a face card becomes +66.6 - fractional on
+-- purpose, the way Unwanted Rebate's $6.66 is.
+--
+-- Its name is lowercase, and that needs nothing special: Balatro prints the
+-- localization string as it is written, and does not case it either way.
+--
+-- Card:is_face is the whole test and is asked rather than reimplemented. It
+-- already refuses a debuffed card (card.lua:1159) and already says yes to
+-- every card while Pareidolia is out (card.lua:1163) - two rules that would
+-- have to be remembered separately if the rank were compared by hand.
+SMODS.Joker {
+    key = "face",
+    atlas = "face",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+    celesta_lost_shop = "j_" .. PREFIX .. "_face",
+
+    config = { extra = { chips = 66.6, joker_slots = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        local extra = card.ability.extra
+        return { vars = { extra.chips, extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, card.ability.extra.joker_slots)
+    end,
+
+    calculate = function(self, card, context)
+        if context.individual and context.cardarea == G.play
+            and context.other_card and context.other_card.is_face
+            and context.other_card:is_face() then
+            return { chips = card.ability.extra.chips,
+                     card = context.other_card }
+        end
     end,
 }
 

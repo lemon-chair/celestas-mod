@@ -448,6 +448,15 @@ return {
                     "greater card's {C:chips}Chips{} over the lesser's",
                 },
             },
+            j_celesta_face = {
+                name = "face",
+                text = {
+                    "Played {C:attention}face cards{} give",
+                    "{C:chips}+#1#{} Chips when scored",
+                    "{C:red}-#2#{} Joker slots, cannot be sold",
+                    "All {C:attention}shop{} items become this {C:attention}Joker{}",
+                },
+            },
             j_celesta_fefe = {
                 name = "FeFe",
                 text = {
