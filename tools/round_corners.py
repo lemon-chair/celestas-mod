@@ -46,7 +46,12 @@ SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
           # lost_soul is two cells wide, so the card silhouette would cut it
           # down to the first one's corners; lost_glow IS that silhouette
           # already. tools/gen_lost.py masks the half that needs it.
-          "lost_soul", "lost_glow"}
+          "lost_soul", "lost_glow",
+          # Asked for verbatim: use the file exactly as supplied, do not edit
+          # it. Its corners are already the card silhouette, so masking is a
+          # no-op today - listing it here is what keeps that true if the art
+          # is ever redrawn, rather than leaving the promise to luck.
+          "face"}
 CARD_W, CARD_H = 71, 95
 
 # Transparent run inwards from the left edge, per row, for a 71x95 sprite.
