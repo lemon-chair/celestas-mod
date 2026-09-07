@@ -2806,6 +2806,11 @@ function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges,
     if not (card and card.area == G.jokers
         and type(_c) == "table" and _c.set == "Joker"
         and _c.key ~= "j_celesta_vedal"
+        -- A Joker whose numbers are a passive rather than a returned effect
+        -- cannot be boosted by scaling its tooltip, so the ones that scale
+        -- themselves say so and are left alone here. Scaling them again would
+        -- print one number over an effect worth another.
+        and not _c.celesta_vedal_own_scaling
         and not vedal_scaling[_c]
         and CelestasMod.is_ours(_c)
         and vedal_active()) then
@@ -7193,11 +7198,35 @@ local function bump_limit(area, delta)
     end
 end
 
+--- What this card is worth right now, in whole slots.
+---
+--- Vedal scales every number one of this mod's Jokers shows, but it does it to
+--- the DESCRIPTION: it lends loc_vars a wrapper on the way to the tooltip. A
+--- slot is not a value returned from calculate, so nothing carried the boost
+--- through to the tray, and a scaled Seraph advertised room it never handed
+--- out - which is the whole of what "changes visually and not actually" was.
+---
+--- The scaling therefore happens HERE, where the tooltip and the grant both
+--- read it, and the centre opts out of the description wrapper below. One
+--- number, worked out once, with no way for the two to drift.
+---
+--- Rounded, because a slot is a thing you either have or do not. The game
+--- tests `#cards < card_limit`, so a limit of 8.3 lets a ninth Joker in while
+--- the card claims 8.3 - the same mismatch again, one decimal place down.
+local function seraph_slots(card)
+    -- Only a Joker in the row is boosted, which is the condition the
+    -- description wrapper uses too: one in the shop or in the collection is
+    -- not owned yet, and neither of them is holding any slots.
+    local scale = (card.area == G.jokers and vedal_multiplier()) or 1
+    local extra = card.ability.extra
+    return math.floor(extra.joker_slots * scale + 0.5),
+           math.floor(extra.consumable_slots * scale + 0.5)
+end
+
 --- Brings the run's slots in line with what this card currently promises.
 local function seraph_sync(card)
     local held = card.ability[SERAPH_GRANTED] or { jokers = 0, consumables = 0 }
-    local want_j = card.ability.extra.joker_slots
-    local want_c = card.ability.extra.consumable_slots
+    local want_j, want_c = seraph_slots(card)
     if held.jokers == want_j and held.consumables == want_c then return end
 
     bump_limit(G.jokers, want_j - held.jokers)
@@ -7226,9 +7255,13 @@ SMODS.Joker {
 
     config = { extra = { joker_slots = 3, consumable_slots = 1 } },
 
+    -- Scaled by seraph_slots rather than by the description wrapper, so the
+    -- tooltip prints the slots the run actually has.
+    celesta_vedal_own_scaling = true,
+
     loc_vars = function(self, info_queue, card)
-        return { vars = { card.ability.extra.joker_slots,
-                          card.ability.extra.consumable_slots } }
+        local jokers, consumables = seraph_slots(card)
+        return { vars = { jokers, consumables } }
     end,
 
     add_to_deck = function(self, card, from_debuff)
