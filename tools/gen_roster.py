@@ -93,7 +93,7 @@ DISPLAY_NAMES = {
     "occi": "Occi",
     "matarakan": "Matarakan",
     "projektmelody": "Projekt Melody",
-    "pristinezero": "Pristine Zero",
+    "pristinezero": "Pwistine",
     "minikomew": "Minikomew",
     "rubensargasm": "Ruben Sargasm",
     "yokasiri": "Yoka Siri",

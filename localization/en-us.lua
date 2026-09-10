@@ -1067,7 +1067,7 @@ return {
                 },
             },
             j_celesta_pristinezero = {
-                name = "Pristine Zero",
+                name = "Pwistine",
                 text = {
                     "{X:mult,C:white}X#1#{} Mult if you have",
                     "exactly {C:money}$0{}",

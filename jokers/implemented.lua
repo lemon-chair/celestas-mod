@@ -7015,7 +7015,7 @@ local function money_eq(a, b)
 end
 
 --------------------------------------------------------------------------------
--- Pristine Zero [Uncommon] - broke, exactly.
+-- Pwistine [Uncommon] - broke, exactly.
 --------------------------------------------------------------------------------
 --
 -- Vanilla's Bull reads G.GAME.dollars straight, and so does this. Exactly
