@@ -1831,6 +1831,14 @@ return {
                     "{C:inactive}(Must have room)",
                 },
             },
+            celesta_bind_cottontail_kumi = {
+                name = "CottontailVA + Kumi",
+                text = {
+                    "{C:green}#1# in #2#{} chance for {C:attention}unscored{}",
+                    "cards with a {C:attention}Star Seal{}",
+                    "to give {C:money}$#3#{}",
+                },
+            },
             celesta_bind_arielle_nagzz = {
                 name = "Arielle + Nagzz",
                 text = {

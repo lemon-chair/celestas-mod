@@ -2316,6 +2316,34 @@ special("j_celesta_jaws", "j_celesta_liffeh", {
     end,
 })
 
+-- CottontailVA + Kumi: Cottontail's Star Seals, cashed in on the cards that
+-- did NOT score. A non-scoring played card reaches a Joker through the same
+-- individual pass as a scoring one, with cardarea set to the string 'unscored'
+-- rather than G.play (SMODS utils.lua:1993).
+--
+-- The dollars are returned rather than eased on: `dollars` is one of the keys
+-- SMODS pays out itself, and it raises the "+$8" of its own accord - a message
+-- alongside it would be a second popup saying the same thing.
+special("j_celesta_cottontail", "j_celesta_kumi", {
+    key = "cottontail_kumi",
+    config = { odds = 4, dollars = 8 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_cottontail_kumi")
+        return { vars = { n, d, state.dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == "unscored") then return end
+        local other = context.other_card
+        if not (other and other.seal == CelestasMod.SEAL_KEYS.Star) then return end
+        if not SMODS.pseudorandom_probability(card, "celesta_bind_cottontail_kumi",
+                1, state.odds, "celesta_bind_cottontail_kumi") then return end
+        return { dollars = state.dollars, card = card }
+    end,
+})
+
 -- Arielle + Nagzz: Nagzz turned the other way. Nagzz alone halves every listed
 -- chance by doubling its denominator; bound to Arielle, every chance is
 -- raised instead, and a Lucky Card's twice as far again.
