@@ -1762,7 +1762,16 @@ SMODS.Joker {
         -- denominator rather than halving the numerator keeps the odds
         -- readable as "1 in N" instead of turning into a fraction.
         if context.mod_probability then
-            return { denominator = (context.denominator or 1) * 2 }
+            -- Only a number is doubled. The denominator is whatever the card
+            -- asking passed in, and that is not always a number: Cryptid's
+            -- RNJoker prints a joke as its odds, handing SMODS the string
+            -- "The Entire Fucking Deck" (items/misc_joker.lua:4038), and
+            -- doubling that took the game down on hover. A Talisman big
+            -- number is a table, and doubles through its own metamethod.
+            local d = context.denominator or 1
+            local meta = type(d) == "table" and getmetatable(d)
+            if type(d) ~= "number" and not (meta and meta.__mul) then return end
+            return { denominator = d * 2 }
         end
     end,
 }
