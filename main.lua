@@ -163,13 +163,6 @@ for _, file in ipairs({ 'seals/seals.lua', 'items/decks.lua',
 end
 
 --------------------------------------------------------------------------------
--- TEMPORARY: the out-of-memory crash. Delete this and debug/memwatch.lua once
--- it is found. It writes celesta_memwatch.log beside the save data.
---------------------------------------------------------------------------------
-
-assert(SMODS.load_file('debug/memwatch.lua'))()
-
---------------------------------------------------------------------------------
 -- Mod config tab
 --------------------------------------------------------------------------------
 
