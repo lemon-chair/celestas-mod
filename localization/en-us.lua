@@ -397,6 +397,19 @@ return {
                     "{C:mult}+#1#{} Mult",
                 },
             },
+            j_celesta_doodle_kumi = {
+                name = "Doodle Kumi",
+                text = {
+                    "{C:green}#1# in #2#{} chance for scored",
+                    "{C:attention}Gold{} cards to give {C:money}$#3#{}",
+                    "{C:red}-#4#{} Joker slots, cannot be sold",
+                    "All {C:attention}shop{} items become {C:attention}Kumi{}",
+                },
+                unlock = {
+                    "Use a {C:spectral}Lost Soul{} on",
+                    "{C:attention}Kumi{}",
+                },
+            },
             j_celesta_ebiko = {
                 name = "Ebiko",
                 text = {

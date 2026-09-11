@@ -317,6 +317,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "doodle_kumi",
+    path = "doodle_kumi.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "ebiko",
     path = "ebiko.png",
     px = 71,

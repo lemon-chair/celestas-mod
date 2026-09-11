@@ -67,6 +67,7 @@ Lost.CONVERSIONS = {
     ["j_scary_face"] = joker("face"),
     ["j_hanging_chad"] = joker("error_missing_chad"),
     [joker("arielle")] = joker("elleira"),
+    [joker("kumi")] = joker("doodle_kumi"),
 }
 
 --- The same table read the other way: which Joker a Corrupt one used to be.
@@ -1280,6 +1281,70 @@ SMODS.Joker {
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_stone
         return { vars = { card.ability.extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, card.ability.extra.joker_slots)
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Doodle Kumi
+--------------------------------------------------------------------------------
+--
+-- Kumi, corrupted. Kumi EATS the scoring Gold cards and pays for each one it
+-- destroyed; Doodle Kumi leaves them where they are and pays for them anyway,
+-- which is the same roll made kinder: the card is still in the deck for the
+-- next hand.
+SMODS.Joker {
+    key = "doodle_kumi",
+    atlas = "doodle_kumi",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    -- Hidden in the collection until one has been made, and locked rather
+    -- than merely undiscovered: a locked centre is the one the game will
+    -- print a per-card reason for (card.lua:720 beats 723), which is where
+    -- "use a Lost Soul on <Joker>" goes.
+    unlocked = false,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+    -- Whatever it used to be: a shop of Kumis.
+    celesta_lost_shop = true,
+
+    config = { extra = { odds = 4, dollars = 20, joker_slots = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_gold
+        local extra = card.ability.extra
+        local numerator, denominator = SMODS.get_probability_vars(
+            card, 1, extra.odds, "celesta_doodle_kumi")
+        return { vars = { numerator, denominator, extra.dollars, extra.joker_slots } }
+    end,
+
+    calculate = function(self, card, context)
+        if not (context.individual and context.cardarea == G.play) then return end
+        local other = context.other_card
+        if not (other and SMODS.has_enhancement(other, "m_gold")) then return end
+        if not SMODS.pseudorandom_probability(
+                card, "celesta_doodle_kumi", 1, card.ability.extra.odds) then
+            return
+        end
+        -- Returned rather than eased on: `dollars` is a key SMODS pays out
+        -- itself, and it raises the "+$20" of its own accord.
+        return { dollars = card.ability.extra.dollars, card = card }
     end,
 
     add_to_deck = function(self, card, from_debuff)
