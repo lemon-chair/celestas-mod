@@ -426,6 +426,19 @@ return {
                     "{C:mult}+#1#{} Mult",
                 },
             },
+            j_celesta_elleira = {
+                name = "Elleira",
+                text = {
+                    "Every card counts as a",
+                    "{C:attention}different suit{} from every other",
+                    "{C:red}-#1#{} Joker slots, cannot be sold",
+                    "All {C:attention}shop{} items become {C:attention}Stone Cards{}",
+                },
+                unlock = {
+                    "Use a {C:spectral}Lost Soul{} on",
+                    "{C:attention}Arielle{}",
+                },
+            },
             j_celesta_ellyvtuber = {
                 name = "Ellyvtuber",
                 text = {
@@ -1730,31 +1743,6 @@ return {
         },
 
         Other = {
-            celesta_bind_arar_arar = {
-                name = "Arar + Arar",
-                text = {
-                    "{X:mult,C:white}X#1#{} Mult when exactly",
-                    "{C:attention}#2#{} hands remain",
-                },
-            },
-            celesta_bind_aries_yoka = {
-                name = "Aries Akana + Yoka Siri",
-                text = {
-                    "This Joker gains {X:chips,C:white}X#1#{} Chips if the",
-                    "played hand contains a {C:attention}Flush{}",
-                    "of {V:1}#3#{} cards",
-                    "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
-                },
-            },
-            celesta_bind_yharon_yharon = {
-                name = "Yharon, Dragon of Rebirth + Yharon, Dragon of Rebirth",
-                text = {
-                    "The {C:mult}Mult{}-modifying Joker to",
-                    "the {C:attention}left{} of this Joker uses the",
-                    "next highest {C:attention}operator{} for scoring",
-                    "{C:inactive}(Caps at tetration)",
-                },
-            },
             celesta_bind_arielle_froggy = {
                 name = "Arielle + FroggyLoch",
                 text = {
@@ -1844,6 +1832,31 @@ return {
                 text = {
                     "All {C:green}chances{} on cards are {X:green,C:white}X#1#{}",
                     "{C:attention}Lucky Card{} chances are {X:green,C:white}X#2#{}",
+                },
+            },
+            celesta_bind_arar_arar = {
+                name = "Arar + Arar",
+                text = {
+                    "{X:mult,C:white}X#1#{} Mult when exactly",
+                    "{C:attention}#2#{} hands remain",
+                },
+            },
+            celesta_bind_aries_yoka = {
+                name = "Aries Akana + Yoka Siri",
+                text = {
+                    "This Joker gains {X:chips,C:white}X#1#{} Chips if the",
+                    "played hand contains a {C:attention}Flush{}",
+                    "of {V:1}#3#{} cards",
+                    "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_yharon_yharon = {
+                name = "Yharon, Dragon of Rebirth + Yharon, Dragon of Rebirth",
+                text = {
+                    "The {C:mult}Mult{}-modifying Joker to",
+                    "the {C:attention}left{} of this Joker uses the",
+                    "next highest {C:attention}operator{} for scoring",
+                    "{C:inactive}(Caps at tetration)",
                 },
             },
             celesta_bind_zentreya_zentreya = {

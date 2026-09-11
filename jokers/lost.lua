@@ -66,6 +66,7 @@ Lost.CONVERSIONS = {
     ["j_turtle_bean"] = joker("navy_bean"),
     ["j_scary_face"] = joker("face"),
     ["j_hanging_chad"] = joker("error_missing_chad"),
+    [joker("arielle")] = joker("elleira"),
 }
 
 --- The same table read the other way: which Joker a Corrupt one used to be.
@@ -269,12 +270,22 @@ end
 local function shop_filler()
     if not (G.jokers and G.jokers.cards) then return nil end
     for _, held in ipairs(G.jokers.cards) do
-        local declared = Lost.is_lost(held)
-            and held.config.center.celesta_lost_shop
-        if declared then
-            local key = declared
-            if key == true then key = Lost.BASE_OF[held.config.center.key] end
-            if key and G.P_CENTERS[key] then return key end
+        if Lost.is_lost(held) then
+            local center = held.config.center
+
+            -- An enhancement instead of a Joker: Elleira fills the shop with
+            -- Stone Cards rather than with copies of anything.
+            local enhancement = center.celesta_lost_shop_enhancement
+            if enhancement and G.P_CENTERS[enhancement] then
+                return enhancement, "enhancement"
+            end
+
+            local declared = center.celesta_lost_shop
+            if declared then
+                local key = declared
+                if key == true then key = Lost.BASE_OF[center.key] end
+                if key and G.P_CENTERS[key] then return key, "joker" end
+            end
         end
     end
     return nil
@@ -304,6 +315,41 @@ local function refill(card, key)
     if card.T then card.T.w, card.T.h = G.CARD_W, G.CARD_H end
     if card.VT then card.VT.w, card.VT.h = G.CARD_W, G.CARD_H end
 
+    card:set_ability(center, nil, true)
+    card:set_cost()
+end
+
+--- Makes `card` a playing card carrying `enhancement`, whatever it was.
+---
+--- A shop CAN sell a playing card, which is what makes this possible at all:
+--- vanilla's buy_from_shop has a branch for a card whose ability.set is
+--- 'Default' or 'Enhanced' that puts it into the deck rather than the Joker
+--- row (button_callbacks.lua), and create_shop_card_ui gives anything that is
+--- neither a Voucher nor a Booster a plain Buy button
+--- (UI_definitions.lua:824). So this is the swap above plus a FRONT: a
+--- playing card needs a rank and a suit underneath the enhancement, and
+--- set_base is what gives it one.
+---
+--- The front is rolled and then never looked at again, because a Stone Card
+--- has neither rank nor suit to show. It is rolled rather than fixed so the
+--- deck a shop of them builds is not fifty copies of the same card underneath.
+---
+--- The price looks after itself: set_ability takes base_cost from the centre's
+--- own `cost` and falls back to 1 where there is none (card.lua:213), which an
+--- enhancement has - so a Stone Card is the cheapest thing the shop can sell.
+local function refill_playing(card, enhancement)
+    local center = G.P_CENTERS[enhancement]
+    if not (card and center) then return end
+    if card.config and card.config.center == center and card.base then return end
+
+    card.shop_voucher = nil
+    if card.original_T then
+        card.original_T.w, card.original_T.h = G.CARD_W, G.CARD_H
+    end
+    if card.T then card.T.w, card.T.h = G.CARD_W, G.CARD_H end
+    if card.VT then card.VT.w, card.VT.h = G.CARD_W, G.CARD_H end
+
+    card:set_base(pseudorandom_element(G.P_CARDS, pseudoseed("celesta_elleira")))
     card:set_ability(center, nil, true)
     card:set_cost()
 end
@@ -341,8 +387,12 @@ local celesta_lost_shop_ui_ref = create_shop_card_ui
 
 if celesta_lost_shop_ui_ref then
     function create_shop_card_ui(card, type, area)
-        local key = shop_filler()
-        if key then refill(card, key) end
+        local key, kind = shop_filler()
+        if key and kind == "enhancement" then
+            refill_playing(card, key)
+        elseif key then
+            refill(card, key)
+        end
         return celesta_lost_shop_ui_ref(card, type, area)
     end
 end
@@ -1164,6 +1214,83 @@ if celesta_lost_popup_ref then
         return box
     end
 end
+
+--------------------------------------------------------------------------------
+-- Elleira
+--------------------------------------------------------------------------------
+--
+-- Arielle, corrupted, and it is her own rule read backwards. Arielle widens
+-- the question "is this card that suit?" until every card answers yes to every
+-- suit; Elleira narrows it until every card answers no to all of them, which
+-- is the same sentence from the other side: if no card shares a suit with any
+-- other, nothing is ever a Flush, and no suit named by a Joker, a Blind or a
+-- seal finds anything to name.
+--
+-- Hooked on Card:is_suit rather than on SMODS.smeared_check, where Arielle
+-- sits. smeared_check only decides whether two DIFFERENT suits are to count as
+-- one; turning it off would still leave two Hearts as two Hearts.
+local ELLEIRA_KEY = "j_" .. PREFIX .. "_elleira"
+
+--- Walked by hand rather than through find_joker: is_suit is asked of every
+--- card in every hand the game scores, several times over, and find_joker
+--- builds a table on each call.
+local function elleira_out()
+    for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
+        local center = held.config and held.config.center
+        if center and center.key == ELLEIRA_KEY and not held.debuff then
+            return true
+        end
+    end
+    return false
+end
+
+local celesta_elleira_is_suit_ref = Card.is_suit
+function Card:is_suit(suit, bypass_debuff, flush_calc)
+    if elleira_out() then return false end
+    return celesta_elleira_is_suit_ref(self, suit, bypass_debuff, flush_calc)
+end
+
+SMODS.Joker {
+    key = "elleira",
+    atlas = "elleira",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    -- Hidden in the collection until one has been made, and locked rather
+    -- than merely undiscovered: a locked centre is the one the game will
+    -- print a per-card reason for (card.lua:720 beats 723), which is where
+    -- "use a Lost Soul on <Joker>" goes.
+    unlocked = false,
+    discovered = false,
+    -- The suit rule is not an effect a copy could return, and the slots are a
+    -- passive; there is nothing here for a Blueprint to copy.
+    blueprint_compat = false,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+    -- Not a Joker: a shop of Stone Cards. See refill_playing above.
+    celesta_lost_shop_enhancement = "m_stone",
+
+    config = { extra = { joker_slots = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_stone
+        return { vars = { card.ability.extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, card.ability.extra.joker_slots)
+    end,
+}
 
 --------------------------------------------------------------------------------
 -- The glow
