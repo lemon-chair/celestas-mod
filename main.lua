@@ -107,6 +107,9 @@ assert(SMODS.load_file('wear/tattered.lua'))()
 assert(SMODS.load_file('merge/bind.lua'))()
 -- After bind.lua: it lists the pairs that file registers.
 assert(SMODS.load_file('merge/collection.lua'))()
+-- After bind.lua too, for the same reason: clicking a Joker in the collection
+-- shows the pairs it belongs to.
+assert(SMODS.load_file('merge/web.lua'))()
 
 -- Standalone consumables. After enhancements/, which is where the keys the
 -- enhancement Tarots hand out are resolved.
