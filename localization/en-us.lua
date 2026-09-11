@@ -1479,7 +1479,7 @@ return {
                 },
             },
             j_celesta_yuy_ix = {
-                name = "Yuy_ix",
+                name = "Yuy",
                 text = {
                     "On the {C:attention}final hand{} of the round,",
                     "each scoring card gives",
@@ -1753,6 +1753,89 @@ return {
                     "the {C:attention}left{} of this Joker uses the",
                     "next highest {C:attention}operator{} for scoring",
                     "{C:inactive}(Caps at tetration)",
+                },
+            },
+            celesta_bind_arielle_froggy = {
+                name = "Arielle + FroggyLoch",
+                text = {
+                    "{C:green}#1# in #2#{} chance to retrigger",
+                    "played cards {C:attention}#3#{} times",
+                },
+            },
+            celesta_bind_arielle_haruka = {
+                name = "Arielle + Haruka Karibu",
+                text = {
+                    "{C:green}#1# in #2#{} chance to add a random",
+                    "{C:dark_edition}edition{} to cards or Jokers",
+                    "a {C:tarot}Tarot{} card is used on",
+                },
+            },
+            celesta_bind_aquwa_megalodon = {
+                name = "Aquwa + Megalodon",
+                text = {
+                    "This Joker gains {C:mult}+#1#{} Mult",
+                    "for each card in played hand",
+                    "{X:mult,C:white}X#2#{} as much during a {C:blue}Downpour{}",
+                    "{C:inactive}Resets at end of round{}",
+                    "{C:inactive}(Currently {C:mult}+#3#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_aquwa_yuy = {
+                name = "Aquwa + Yuy",
+                text = {
+                    "Starts a {C:blue}Downpour{} at the",
+                    "start of each round",
+                    "On the {C:attention}final hand{} of the round,",
+                    "each scoring card gives",
+                    "{X:mult,C:white}X#1#{} Mult",
+                },
+            },
+            celesta_bind_cottontail_layna = {
+                name = "CottontailVA + LaynaLazar",
+                text = {
+                    "Adds a {C:attention}Star Seal{} to a scored",
+                    "{C:attention}Mult Card{} with no seal",
+                },
+            },
+            celesta_bind_aquwa_nekrolina = {
+                name = "Aquwa + Nekrolina",
+                text = {
+                    "Starts a {C:blue}Downpour{} at the",
+                    "start of each round",
+                    "Earn {C:money}$#1#{} for each {C:dark_edition}Negative{}",
+                    "consumable obtained",
+                },
+            },
+            celesta_bind_berry_shoomimi = {
+                name = "BerryCrepe + Shoomimi",
+                text = {
+                    "Scored cards permanently",
+                    "gain {C:mult}+#1#{} Mult",
+                    "{C:inactive}(Equal to your consumable slots)",
+                },
+            },
+            celesta_bind_shoomimi_chrchie = {
+                name = "Shoomimi + Chrchie",
+                text = {
+                    "Earn {C:money}$#1#{} at end of round",
+                    "for each consumable slot",
+                    "{C:inactive}(Currently {C:money}$#2#{C:inactive})",
+                },
+            },
+            celesta_bind_jaws_liffeh = {
+                name = "Jaws + Liffeh",
+                text = {
+                    "{C:green}#1# in #2#{} chance to gain a",
+                    "{C:tarot}Tarot{} card when a card",
+                    "is {C:attention}destroyed{}",
+                    "{C:inactive}(Must have room)",
+                },
+            },
+            celesta_bind_arielle_nagzz = {
+                name = "Arielle + Nagzz",
+                text = {
+                    "All {C:green}chances{} on cards are {X:green,C:white}X#1#{}",
+                    "{C:attention}Lucky Card{} chances are {X:green,C:white}X#2#{}",
                 },
             },
             celesta_bind_zentreya_zentreya = {

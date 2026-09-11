@@ -166,7 +166,7 @@ DISPLAY_NAMES = {
     "smugalana": "Smug Alana",
     "x3dustco": "x3Dustco",
     "yomiquinnely": "Yomi Quinnely",
-    "yuy_ix": "Yuy_ix",
+    "yuy_ix": "Yuy",
 }
 
 

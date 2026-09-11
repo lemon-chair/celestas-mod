@@ -2049,6 +2049,303 @@ special("j_celesta_yharon", "j_celesta_yharon", {
 })
 
 --------------------------------------------------------------------------------
+-- The second batch
+--------------------------------------------------------------------------------
+--
+-- Each of these stands in for both halves, like every pair above that is not
+-- marked additive: an Arielle bound into one of them no longer makes every
+-- card every suit, and a Jaws in one no longer eats anything.
+
+--- True while a Downpour is up.
+local function raining()
+    local Arena = CelestasMod.Arena
+    return (Arena and Arena.is_active and Arena.is_active("downpour")) and true or false
+end
+
+--- Aquwa's opening move, for the three pairs that keep it: a Downpour at the
+--- moment the Blind is chosen, before a card is dealt, so it is up for the
+--- whole round. The Arena clears itself on the way back to Blind select.
+local function open_with_downpour(card, context)
+    if not (context.setting_blind and not context.blueprint) then return nil end
+    local Arena = CelestasMod.Arena
+    if raining() or not (Arena and Arena.start) then return nil end
+    Arena.start("downpour")
+    return { message = localize("celesta_downpour"), colour = G.C.BLUE, card = card }
+end
+
+--- How many consumable slots the run has - the tray's size, not how full it is.
+local function consumable_slots()
+    local area = G.consumeables
+    local limit = area and area.config and area.config.card_limit
+    return type(limit) == "number" and limit or 0
+end
+
+-- Arielle + FroggyLoch: FroggyLoch's retrigger, rolled at better odds and
+-- paid out three times over.
+special("j_celesta_arielle", "j_celesta_froggyloch", {
+    key = "arielle_froggy",
+    config = { odds = 2, repetitions = 3 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_arielle_froggy")
+        return { vars = { n, d, state.repetitions } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.repetition and context.cardarea == G.play
+                and context.other_card) then return end
+        if not SMODS.pseudorandom_probability(card, "celesta_bind_arielle_froggy",
+                1, state.odds, "celesta_bind_arielle_froggy") then return end
+        return {
+            message = localize("k_again_ex"),
+            repetitions = state.repetitions,
+            card = card,
+        }
+    end,
+})
+
+-- Arielle + Haruka Karibu: a Tarot card leaves an edition behind on what it
+-- touched. Nothing in the calculate pass says what a Tarot was used ON, so
+-- this one is done from Card:use_consumeable - see the hooks further down.
+special("j_celesta_arielle", "j_celesta_harukakaribu", {
+    key = "arielle_haruka",
+    config = { odds = 2 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_arielle_haruka")
+        return { vars = { n, d } }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+-- Aquwa + Megalodon: Megalodon's hunger, doubled while it is raining.
+special("j_celesta_aquwa", "j_celesta_megalodon", {
+    key = "aquwa_megalodon",
+    config = { mult = 0, mult_gain = 5, rain_scale = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.mult_gain, state.rain_scale, state.mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- context.before carries full_hand: every card played, not just the
+        -- scoring ones, and it lands ahead of scoring so the hand that fed the
+        -- Joker is the first to be paid by it.
+        if context.before and not context.blueprint then
+            local played = #(context.full_hand or {})
+            if played > 0 then
+                local per = state.mult_gain * (raining() and state.rain_scale or 1)
+                state.mult = state.mult + per * played
+                return {
+                    message = localize { type = "variable", key = "a_mult",
+                                         vars = { state.mult } },
+                    colour = G.C.MULT,
+                    card = card,
+                }
+            end
+        end
+
+        if context.joker_main and state.mult > 0 then
+            return { mult = state.mult }
+        end
+
+        -- main_eval is the once-a-round pass; without it the reset would also
+        -- run for every card the end of the round looks at.
+        if context.end_of_round and context.main_eval and not context.blueprint
+            and state.mult > 0 then
+            state.mult = 0
+            return { message = localize("k_reset"), colour = G.C.MULT, card = card }
+        end
+    end,
+})
+
+-- Aquwa + Yuy: Aquwa's Downpour and Yuy's last hand, both.
+special("j_celesta_aquwa", "j_celesta_yuy_ix", {
+    key = "aquwa_yuy",
+    config = { x_mult = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        local rain = open_with_downpour(card, context)
+        if rain then return rain end
+
+        -- hands_left == 0 is how Yuy and vanilla Dusk both know the final
+        -- hand: it is decremented before the hand scores.
+        if context.individual and context.cardarea == G.play
+            and G.GAME.current_round and G.GAME.current_round.hands_left == 0 then
+            return { x_mult = state.x_mult, colour = G.C.RED, card = card }
+        end
+    end,
+})
+
+-- CottontailVA + LaynaLazar: LaynaLazar goes looking for Mult cards;
+-- Cottontail seals them. Every one, with no roll - and, like Cottontail, only
+-- a card with no seal already, so a Red or a Gold is never traded away.
+special("j_celesta_cottontail", "j_celesta_laynalazar", {
+    key = "cottontail_layna",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play) then return end
+        local other = context.other_card
+        if not (other and not other.seal
+                and SMODS.has_enhancement(other, "m_mult")) then return end
+        other:set_seal(CelestasMod.SEAL_KEYS.Star, nil, true)
+        return { message = localize("celesta_sealed"), colour = G.C.PURPLE, card = card }
+    end,
+})
+
+-- Aquwa + Nekrolina: a Downpour turns every consumable that arrives in the
+-- round Negative (arena.lua), and this is paid for each Negative consumable
+-- that arrives - the Downpour's own and any other. The payment is made where
+-- the card lands in the tray; see the hooks further down.
+special("j_celesta_aquwa", "j_celesta_nekrolina", {
+    key = "aquwa_nekrolina",
+    config = { dollars = 4 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        return open_with_downpour(card, context)
+    end,
+})
+
+-- BerryCrepe + Shoomimi: BerryCrepe's permanent Mult, sized by how much room
+-- Shoomimi has made in the consumable tray. Read when each card scores, so a
+-- slot gained mid-run counts from the next card on.
+special("j_celesta_berrycrepe", "j_celesta_shoomimi", {
+    key = "berry_shoomimi",
+
+    loc_vars = function(def, card, state)
+        return { vars = { consumable_slots() } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play) then return end
+        local other = context.other_card
+        local gain = consumable_slots()
+        if not other or gain <= 0 then return end
+        -- perma_mult is scored by Card:get_chip_mult and printed on the card
+        -- as "+N Mult" by the game, the same field BerryCrepe writes.
+        other.ability.perma_mult = (other.ability.perma_mult or 0) + gain
+        return {
+            extra = {
+                message = localize { type = "variable", key = "a_mult",
+                                     vars = { other.ability.perma_mult } },
+                colour = G.C.MULT,
+            },
+            card = other,
+        }
+    end,
+})
+
+-- Shoomimi + Chrchie: paid at the cash-out, per consumable slot. Through
+-- calc_dollar_bonus, like Zentreya + Ruben above, so it gets its own line on
+-- the cash-out screen.
+special("j_celesta_shoomimi", "j_celesta_chrchie", {
+    key = "shoomimi_chrchie",
+    config = { per_slot = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.per_slot, state.per_slot * consumable_slots() } }
+    end,
+
+    calc_dollar_bonus = function(def, card, state)
+        local total = state.per_slot * consumable_slots()
+        if total <= 0 then return end
+        return total
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+-- Jaws + Liffeh: a Tarot out of the wreckage. remove_playing_cards fires once
+-- after the destroy pass with every card that died, so this catches a Glass
+-- Card shattering and another Joker eating something the same way - and it is
+-- one roll per card, so three at once are three chances.
+special("j_celesta_jaws", "j_celesta_liffeh", {
+    key = "jaws_liffeh",
+    config = { odds = 5 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_jaws_liffeh")
+        return { vars = { n, d } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.remove_playing_cards and not context.blueprint) then return end
+
+        local made = 0
+        for _ in ipairs(context.removed or {}) do
+            -- Rolled before the room is asked for, so a full tray costs the
+            -- roll rather than banking it.
+            if SMODS.pseudorandom_probability(card, "celesta_bind_jaws_liffeh",
+                    1, state.odds, "celesta_bind_jaws_liffeh")
+                and bind_consumable_room() then
+                made = made + 1
+                G.GAME.consumeable_buffer = (G.GAME.consumeable_buffer or 0) + 1
+                G.E_MANAGER:add_event(Event {
+                    trigger = "before", delay = 0.0,
+                    func = function()
+                        local tarot = SMODS.add_card {
+                            set = "Tarot", key_append = "celesta_bind_jaws_liffeh" }
+                        if tarot then tarot:juice_up(0.3, 0.5) end
+                        G.GAME.consumeable_buffer =
+                            math.max(0, (G.GAME.consumeable_buffer or 1) - 1)
+                        return true
+                    end
+                })
+            end
+        end
+
+        if made > 0 then
+            return { message = localize("k_plus_tarot"), colour = G.C.PURPLE, card = card }
+        end
+    end,
+})
+
+-- Arielle + Nagzz: Nagzz turned the other way. Nagzz alone halves every listed
+-- chance by doubling its denominator; bound to Arielle, every chance is
+-- raised instead, and a Lucky Card's twice as far again.
+--
+-- The numerator is the half that moves, which is what makes it "1 in 2"
+-- becoming "2 in 2" rather than a fraction. Only a number is multiplied, or a
+-- Talisman big number: the denominator of a chance is whatever the card
+-- asking passed in, and Cryptid's RNJoker passes a sentence.
+special("j_celesta_arielle", "j_celesta_nagzz", {
+    key = "arielle_nagzz",
+    config = { scale = 2, lucky_scale = 4 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.scale, state.lucky_scale } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.mod_probability then return end
+        local n = context.numerator or 1
+        local meta = type(n) == "table" and getmetatable(n)
+        if type(n) ~= "number" and not (meta and meta.__mul) then return end
+
+        local roller = context.trigger_obj
+        local lucky = roller and roller.ability
+            and SMODS.has_enhancement(roller, "m_lucky")
+        return { numerator = n * (lucky and state.lucky_scale or state.scale) }
+    end,
+})
+
+--------------------------------------------------------------------------------
 -- Unmerging: when one half destroys itself
 --------------------------------------------------------------------------------
 --
@@ -2419,6 +2716,125 @@ function Bind.find_special(key)
         if def and def.key == key then return held, def end
     end
     return nil
+end
+
+-- Arielle + Haruka Karibu: an edition on what a Tarot was used on.
+--
+-- Nothing raised in the calculate pass says what a Tarot was used ON -
+-- using_consumeable carries the card and where it came from, not its targets -
+-- so they are read here, before the Tarot runs, off the same selection it is
+-- about to read them from.
+--
+-- A Tarot that takes a selection declares max_highlighted, and a hand Tarot
+-- cannot be used with nothing picked in the hand. So a selecting Tarot used
+-- with the hand empty is one that selects Jokers, and its targets are the
+-- Jokers picked instead. A Tarot that selects nothing - The Fool, Judgement -
+-- was not used on anything, and adds nothing.
+--
+-- Only a card with no edition gets one, and the roll is Aura's: Foil,
+-- Holographic or Polychrome, never Negative. The edition is put on by an event
+-- queued behind the Tarot's own, so its flips and swaps finish first.
+
+local ARIELLE_HARUKA = "arielle_haruka"
+
+--- Every held, working card governed by the special `key`.
+local function specials_held(key)
+    local out = {}
+    for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
+        local def = Bind.special_of(held)
+        if def and def.key == key and not held.debuff then
+            out[#out + 1] = { card = held, def = def }
+        end
+    end
+    return out
+end
+
+--- What `tarot` is about to be used on, in the order it was picked.
+local function tarot_targets(tarot)
+    local consumeable = tarot.ability and tarot.ability.consumeable
+    if not (consumeable and consumeable.max_highlighted) then return {} end
+    local picked = (G.hand and G.hand.highlighted) or {}
+    if #picked == 0 then picked = (G.jokers and G.jokers.highlighted) or {} end
+    local out = {}
+    for i, target in ipairs(picked) do out[i] = target end
+    return out
+end
+
+local celesta_bind_use_consumeable_ref = Card.use_consumeable
+function Card:use_consumeable(area, copier, ...)
+    local holders, targets = nil, nil
+    if self.ability and self.ability.set == "Tarot" then
+        holders = specials_held(ARIELLE_HARUKA)
+        if #holders > 0 then targets = tarot_targets(self) end
+    end
+
+    local ret = celesta_bind_use_consumeable_ref(self, area, copier, ...)
+
+    if targets and #targets > 0 then
+        -- Rolled now, so the seed is spent in the order things happened; one
+        -- card is only ever given one edition, whoever rolled for it first.
+        local given = {}
+        for _, h in ipairs(holders) do
+            local state = Bind.special_state(h.card, h.def)
+            for _, target in ipairs(targets) do
+                if not target.edition and not given[target]
+                    and SMODS.pseudorandom_probability(h.card, "celesta_bind_arielle_haruka",
+                        1, state.odds, "celesta_bind_arielle_haruka") then
+                    given[target] = h.card
+                end
+            end
+        end
+
+        for _, target in ipairs(targets) do
+            local holder = given[target]
+            if holder then
+                G.E_MANAGER:add_event(Event {
+                    func = function()
+                        -- The Tarot may have destroyed it, or given it an
+                        -- edition of its own, while this waited.
+                        if target.REMOVED or target.edition then return true end
+                        target:set_edition(
+                            poll_edition("celesta_bind_arielle_haruka_ed", nil, true, true), true)
+                        holder:juice_up(0.3, 0.5)
+                        return true
+                    end
+                })
+            end
+        end
+    end
+
+    return ret
+end
+
+-- Aquwa + Nekrolina: paid for each Negative consumable that arrives.
+--
+-- Where a consumable lands in the tray is the one place every source of one
+-- goes through - bought, made by a Joker, taken from a pack - and it is where
+-- the Downpour turns one Negative (arena.lua). This file is loaded after that
+-- one, so this wraps the Downpour's wrapper and sees the card after it has
+-- turned, and a card that arrived Negative from anywhere else counts the same.
+--
+-- Marked on the card once paid, so one put back into the tray is not paid for
+-- twice. The mark is saved with it.
+
+local AQUWA_NEKROLINA = "aquwa_nekrolina"
+local NEGATIVE_PAID = "celesta_bind_negative_paid"
+
+local celesta_bind_nekro_emplace_ref = CardArea.emplace
+function CardArea:emplace(card, ...)
+    local ret = celesta_bind_nekro_emplace_ref(self, card, ...)
+
+    if self == G.consumeables and card and card.ability
+        and card.edition and card.edition.negative
+        and not card.ability[NEGATIVE_PAID] then
+        for _, h in ipairs(specials_held(AQUWA_NEKROLINA)) do
+            card.ability[NEGATIVE_PAID] = true
+            local state = Bind.special_state(h.card, h.def)
+            SMODS.calculate_effect({ dollars = state.dollars }, h.card)
+        end
+    end
+
+    return ret
 end
 
 -- Booster prices, for Kumi + HeavenlyFather.
