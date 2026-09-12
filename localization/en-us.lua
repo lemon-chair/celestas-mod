@@ -2275,6 +2275,14 @@ return {
                     "Earn no {C:attention}interest{}",
                 },
             },
+            b_celesta_rock = {
+                name = "Rock Deck",
+                text = {
+                    "{C:spades}Spades{} and {C:clubs}Clubs{} start as",
+                    "{C:attention}Stone Cards{}, {C:hearts}Hearts{} and",
+                    "{C:diamonds}Diamonds{} as {C:attention}Limestone Cards{}",
+                },
+            },
             b_celesta_verdant = {
                 name = "Verdant Deck",
                 text = {

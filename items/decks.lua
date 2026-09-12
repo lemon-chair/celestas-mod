@@ -576,3 +576,56 @@ function get_new_boss(...)
     end
     return boss
 end
+
+--------------------------------------------------------------------------------
+-- Rock: a deck of nothing but stone
+--------------------------------------------------------------------------------
+--
+-- Spades and Clubs become Stone Cards, Hearts and Diamonds Limestone. Both
+-- enhancements take the rank and the suit off the card they are on, so what
+-- the deck really hands over is fifty-two rankless cards in two kinds - and
+-- the difference between the two kinds is what the run is played on.
+--
+-- Done from a queued event walking G.playing_cards, which is how vanilla's
+-- Checkered Deck rewrites a starting deck (back.lua:239): the deck is built
+-- before the Back is applied, so the cards are there to change, and changing
+-- them from inside an event keeps it behind the deal.
+--
+-- Suits this mod adds are left alone. A Star or a Leaf cannot be in a starting
+-- deck - both are conversion-only - so naming the four vanilla suits is
+-- naming every card that can be there, and a deck that somehow held one would
+-- keep it rather than being asked what a Leaf is made of.
+
+SMODS.Back {
+    key = "rock",
+    atlas = "decks",
+    pos = { x = 7, y = 0 },
+
+    unlocked = true,
+    discovered = true,
+
+    apply = function(self, back)
+        G.E_MANAGER:add_event(Event {
+            func = function()
+                local stone = G.P_CENTERS.m_stone
+                local limestone = G.P_CENTERS[
+                    (CelestasMod.ENHANCEMENT_KEYS or {}).Limestone]
+                if not (stone and limestone) then
+                    CelestasMod.warn_once("rock_deck_enhancements",
+                        "the Rock Deck needs the Stone and Limestone "
+                        .. "enhancements, and one of them is missing")
+                    return true
+                end
+
+                for _, card in pairs(G.playing_cards or {}) do
+                    local suit = card.base and card.base.suit
+                    local want = ((suit == "Spades" or suit == "Clubs") and stone)
+                        or ((suit == "Hearts" or suit == "Diamonds") and limestone)
+                        or nil
+                    if want then card:set_ability(want, nil, true) end
+                end
+                return true
+            end
+        })
+    end,
+}

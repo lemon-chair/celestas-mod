@@ -39,6 +39,7 @@ DECKS = [
     ("blizzard", "blizzard"),
     ("rain", "rain"),
     ("verdant", "verdant"),
+    ("rock", "rock"),
 ]
 
 
