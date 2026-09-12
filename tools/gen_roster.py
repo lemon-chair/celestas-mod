@@ -94,6 +94,7 @@ DISPLAY_NAMES = {
     "matarakan": "Matarakan",
     "projektmelody": "Projekt Melody",
     "pristinezero": "Pwistine",
+    "mellowmabel": "Mellow Mabel",
     "minikomew": "Minikomew",
     "rubensargasm": "Ruben Sargasm",
     "yokasiri": "Yoka Siri",

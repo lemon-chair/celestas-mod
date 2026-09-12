@@ -9391,3 +9391,222 @@ SMODS.Joker {
         end
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Alluux [Common] - the first Leaf card of a hand is worth X2.5 Chips.
+--------------------------------------------------------------------------------
+--
+-- "First" is asked of the scoring hand rather than remembered as the pass goes
+-- along. context.individual runs once per scoring card, and again for every
+-- retrigger of one, so a counter would make a retriggered first card the
+-- second - and a Joker that retriggers the hand would move the bonus onto a
+-- different card. Read off context.scoring_hand it is a question about the
+-- hand, and every pass over the same card answers it the same way.
+
+SMODS.Joker {
+    key = "alluux",
+    atlas = "alluux",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { x_chips = 2.5 } },
+
+    loc_vars = function(self, info_queue, card)
+        local name, colour = CelestasMod.suit_name_and_colour(
+            CelestasMod.LEAF_SUIT, CelestasMod.LEAF_COLOUR, true)
+        return { vars = { card.ability.extra.x_chips, name, colours = { colour } } }
+    end,
+
+    calculate = function(self, card, context)
+        if not (context.individual and context.cardarea == G.play) then return end
+        local other = context.other_card
+        if not other then return end
+
+        local first = nil
+        for _, scored in ipairs(context.scoring_hand or {}) do
+            if scored.is_suit and scored:is_suit(CelestasMod.LEAF_SUIT) then
+                first = scored
+                break
+            end
+        end
+        if not first or first ~= other then return end
+
+        return { x_chips = card.ability.extra.x_chips, card = card }
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Grimmi [Uncommon] - the Joker sold before it comes back Negative.
+--------------------------------------------------------------------------------
+--
+-- Which Joker that was has to be written down as it happens: by the time
+-- Grimmi is sold, the other card is already gone. Vanilla raises
+-- context.selling_card on every OTHER Joker in the row as one is sold, which
+-- is where Matarakan takes the money from, and this takes the name.
+--
+-- Kept on Grimmi's own ability, so it is saved with the run and a Grimmi
+-- bought later does not inherit a sale it never saw.
+--
+-- The copy is Negative, so there is no room to check: a Negative Joker brings
+-- its own slot. It is made in an event for the reason every other created card
+-- is - the sale itself is a queued event, and this has to land behind it.
+
+SMODS.Joker {
+    key = "grimmi",
+    atlas = "grimmi",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = true,
+    -- Nothing to copy: what it does happens as it leaves the row.
+    blueprint_compat = false, eternal_compat = false,
+
+    config = { extra = {} },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = {} }
+    end,
+
+    calculate = function(self, card, context)
+        if context.selling_card and context.card and not context.blueprint then
+            local sold = context.card
+            if sold.ability and sold.ability.set == "Joker" then
+                local config = sold.config or {}
+                card.ability.extra.last_sold = config.center_key
+                    or (config.center and config.center.key)
+            end
+            return
+        end
+
+        if context.selling_self and not context.blueprint then
+            local key = card.ability.extra.last_sold
+            if not (key and G.P_CENTERS[key]) then return end
+
+            G.E_MANAGER:add_event(Event {
+                func = function()
+                    local made = SMODS.add_card { key = key }
+                    if made then
+                        made:set_edition({ negative = true }, true)
+                        made:juice_up(0.3, 0.5)
+                    end
+                    return true
+                end
+            })
+            return { message = localize("k_plus_joker"), colour = G.C.DARK_EDITION,
+                     card = card }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Mellow Mabel [Common] - Stars and Leaves are one suit.
+--------------------------------------------------------------------------------
+--
+-- Through SMODS.smeared_check, which is the one place the game asks whether
+-- two suits are to count as one: it is how vanilla's Smeared Joker merges
+-- Hearts with Diamonds, and widening it covers flushes, suit-gated Jokers and
+-- suit-gated enhancements together rather than one at a time. Arielle sits on
+-- the same hook and answers yes to everything; this answers yes to one pair.
+
+local celesta_mabel_smeared_ref = SMODS.smeared_check
+function SMODS.smeared_check(card, suit, ...)
+    if CelestasMod.joker_in_play("j_celesta_mellowmabel") then
+        local own = card and card.base and card.base.suit
+        local pair = { [CelestasMod.STARS_SUIT] = true, [CelestasMod.LEAF_SUIT] = true }
+        if pair[own] and pair[suit] then return true end
+    end
+    return celesta_mabel_smeared_ref(card, suit, ...)
+end
+
+SMODS.Joker {
+    key = "mellowmabel",
+    atlas = "mellowmabel",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = true,
+    -- The suits are rewritten for as long as it is in the row; there is no
+    -- effect returned for a copy to return.
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        local stars, star_colour = CelestasMod.suit_name_and_colour(
+            CelestasMod.STARS_SUIT, CelestasMod.STARS_COLOUR)
+        local leaves, leaf_colour = CelestasMod.suit_name_and_colour(
+            CelestasMod.LEAF_SUIT, CelestasMod.LEAF_COLOUR)
+        return { vars = { stars, leaves, colours = { star_colour, leaf_colour } } }
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Squchan [Rare] - sold, it leaves the row full of Holographic Jokers.
+--------------------------------------------------------------------------------
+--
+-- A round has to pass first, counted at the end of each one: bought and sold
+-- inside the same shop it gives nothing, which is what stops a shop with money
+-- in it being turned straight into a row of Holographics.
+--
+-- The fill is bounded. "Every empty slot" is the ask, and in an ordinary run
+-- that is a handful - but this mod can put the Joker limit into the millions
+-- (Smitten Seraph under a grown Vedal), and a loop that filled THAT would
+-- allocate until the game died. It is the same shape as the retrigger count
+-- Vedal was capped for. So the ceiling below is a bound on the loop, not a
+-- rule about the Joker: past it there was never room on screen anyway.
+
+local SQUCHAN_MAX_FILL = 25
+
+SMODS.Joker {
+    key = "squchan",
+    atlas = "squchan",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = true,
+    -- What it does happens as it leaves the row, which a copy cannot do.
+    blueprint_compat = false, eternal_compat = false,
+
+    config = { extra = { rounds = 0, needed = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.needed, card.ability.extra.rounds } }
+    end,
+
+    calculate = function(self, card, context)
+        -- main_eval is the once-a-round pass; without it this counts once per
+        -- card the end of the round looks at.
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            card.ability.extra.rounds = card.ability.extra.rounds + 1
+            return
+        end
+
+        if not (context.selling_self and not context.blueprint) then return end
+        if card.ability.extra.rounds < card.ability.extra.needed then return end
+        if not (G.jokers and G.jokers.config) then return end
+
+        -- The slot Squchan is vacating counts: it is still in the row as this
+        -- runs, and gone by the time the events below fill anything.
+        local limit = G.jokers.config.card_limit or 0
+        local free = limit - (#G.jokers.cards - 1) - (G.GAME.joker_buffer or 0)
+        free = math.min(free, SQUCHAN_MAX_FILL)
+        if free <= 0 then return end
+
+        for _ = 1, free do
+            G.GAME.joker_buffer = (G.GAME.joker_buffer or 0) + 1
+            G.E_MANAGER:add_event(Event {
+                trigger = "before", delay = 0.0,
+                func = function()
+                    local made = SMODS.add_card { set = "Joker" }
+                    if made then
+                        made:set_edition({ holo = true }, true)
+                        made:start_materialize()
+                    end
+                    G.GAME.joker_buffer =
+                        math.max(0, (G.GAME.joker_buffer or 1) - 1)
+                    return true
+                end
+            })
+        end
+
+        return { message = localize("k_plus_joker"), colour = G.C.SECONDARY_SET.Joker,
+                 card = card }
+    end,
+}

@@ -19,10 +19,8 @@ local ROSTER = {
     { key = "huntressspectre", rarity = 1, cost = 4, mult = 4 },
     { key = "kiri", rarity = 1, cost = 4, mult = 4 },
     { key = "lucypyre", rarity = 1, cost = 4, mult = 4 },
-    { key = "mellowmabel", rarity = 1, cost = 4, mult = 4 },
     { key = "nicoviras", rarity = 1, cost = 4, mult = 4 },
     { key = "smuggiess", rarity = 1, cost = 4, mult = 4 },
-    { key = "squchan", rarity = 1, cost = 4, mult = 4 },
     { key = "uzuri", rarity = 1, cost = 4, mult = 4 },
 }
 

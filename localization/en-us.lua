@@ -40,6 +40,13 @@ return {
                     "{C:inactive}(Currently {C:mult}+#2#{C:inactive} Mult)",
                 },
             },
+            j_celesta_alluux = {
+                name = "Alluux",
+                text = {
+                    "The {C:attention}first{} {V:1}#2#{} card played",
+                    "gives {X:chips,C:white}X#1#{} Chips when scored",
+                },
+            },
             j_celesta_amalee = {
                 name = "AmaLee",
                 text = {
@@ -617,6 +624,14 @@ return {
                     "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
                 },
             },
+            j_celesta_grimmi = {
+                name = "Grimmi",
+                text = {
+                    "When this Joker is {C:attention}sold{},",
+                    "creates a {C:dark_edition}Negative{} copy of",
+                    "the Joker {C:attention}sold{} before it",
+                },
+            },
             j_celesta_hannahhyrule = {
                 name = "Hannah Hyrule",
                 text = {
@@ -874,9 +889,10 @@ return {
                 },
             },
             j_celesta_mellowmabel = {
-                name = "Mellowmabel",
+                name = "Mellow Mabel",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "{V:1}#1#{} and {V:2}#2#{} cards are",
+                    "considered the {C:attention}same suit{}",
                 },
             },
             j_celesta_michi = {
@@ -1363,7 +1379,10 @@ return {
             j_celesta_squchan = {
                 name = "Squchan",
                 text = {
-                    "{C:mult}+#1#{} Mult",
+                    "After {C:attention}#1#{} round, selling this Joker",
+                    "fills every empty Joker slot with a",
+                    "random {C:dark_edition}Holographic{} Joker",
+                    "{C:inactive}(Rounds held: #2#)",
                 },
             },
             j_celesta_suto = {
