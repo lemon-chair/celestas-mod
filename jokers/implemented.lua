@@ -9441,17 +9441,37 @@ SMODS.Joker {
 -- Grimmi [Uncommon] - the Joker sold before it comes back Negative.
 --------------------------------------------------------------------------------
 --
--- Which Joker that was has to be written down as it happens: by the time
--- Grimmi is sold, the other card is already gone. Vanilla raises
--- context.selling_card on every OTHER Joker in the row as one is sold, which
--- is where Matarakan takes the money from, and this takes the name.
+-- "The Joker sold before this one" is a fact about the RUN, not about what
+-- Grimmi happened to witness. The first version kept the name on Grimmi's own
+-- ability, written from context.selling_card - and that only hears the sales
+-- made while Grimmi is already in the row, so selling a Joker and then buying
+-- Grimmi left it with nothing to bring back. It also heard its OWN sale and
+-- wrote itself down, because vanilla broadcasts selling_card to the row after
+-- the sale rather than before it.
 --
--- Kept on Grimmi's own ability, so it is saved with the run and a Grimmi
--- bought later does not inherit a sale it never saw.
---
--- The copy is Negative, so there is no room to check: a Negative Joker brings
--- its own slot. It is made in an event for the reason every other created card
--- is - the sale itself is a queued event, and this has to land behind it.
+-- So the name is kept on G.GAME, written where every sale of every card goes
+-- through, and recorded AFTER the sale has been evaluated. That order is the
+-- whole of it: Card:sell_card raises selling_self from inside itself
+-- (card.lua:1842), so a Grimmi being sold reads the Joker before it and is
+-- only then written down as the latest sale itself.
+
+-- Guarded the way the shop hook in jokers/lost.lua is: there is always a
+-- Card:sell_card in the game, and there is not always one in a harness that
+-- has sliced this file open to read a single Joker.
+local celesta_grimmi_sell_ref = Card and Card.sell_card
+if celesta_grimmi_sell_ref then
+    function Card:sell_card(...)
+        local ret = celesta_grimmi_sell_ref(self, ...)
+
+        if G.GAME and self.ability and self.ability.set == "Joker" then
+            local config = self.config or {}
+            G.GAME.celesta_last_joker_sold = config.center_key
+                or (config.center and config.center.key)
+        end
+
+        return ret
+    end
+end
 
 SMODS.Joker {
     key = "grimmi",
@@ -9462,40 +9482,35 @@ SMODS.Joker {
     -- Nothing to copy: what it does happens as it leaves the row.
     blueprint_compat = false, eternal_compat = false,
 
-    config = { extra = {} },
-
     loc_vars = function(self, info_queue, card)
         return { vars = {} }
     end,
 
     calculate = function(self, card, context)
-        if context.selling_card and context.card and not context.blueprint then
-            local sold = context.card
-            if sold.ability and sold.ability.set == "Joker" then
-                local config = sold.config or {}
-                card.ability.extra.last_sold = config.center_key
-                    or (config.center and config.center.key)
-            end
-            return
-        end
+        if not (context.selling_self and not context.blueprint) then return end
 
-        if context.selling_self and not context.blueprint then
-            local key = card.ability.extra.last_sold
-            if not (key and G.P_CENTERS[key]) then return end
+        local key = G.GAME and G.GAME.celesta_last_joker_sold
+        -- TEMPORARY trace, until this is seen working in a run.
+        sendInfoMessage("[grimmi] sold, last joker sold=" .. tostring(key)
+            .. " known=" .. tostring(key ~= nil and G.P_CENTERS[key] ~= nil),
+            "CelestasMod")
+        if not (key and G.P_CENTERS[key]) then return end
 
-            G.E_MANAGER:add_event(Event {
-                func = function()
-                    local made = SMODS.add_card { key = key }
-                    if made then
-                        made:set_edition({ negative = true }, true)
-                        made:juice_up(0.3, 0.5)
-                    end
-                    return true
+        -- Negative, so there is no room to check: it brings its own slot. Made
+        -- from an event because the sale is one too, and this has to land
+        -- behind it.
+        G.E_MANAGER:add_event(Event {
+            func = function()
+                local made = SMODS.add_card { key = key }
+                if made then
+                    made:set_edition({ negative = true }, true)
+                    made:juice_up(0.3, 0.5)
                 end
-            })
-            return { message = localize("k_plus_joker"), colour = G.C.DARK_EDITION,
-                     card = card }
-        end
+                return true
+            end
+        })
+        return { message = localize("k_plus_joker"), colour = G.C.DARK_EDITION,
+                 card = card }
     end,
 }
 
