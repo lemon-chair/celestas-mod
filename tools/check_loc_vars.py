@@ -54,6 +54,10 @@ SMODS = {
   Back = function(t) backs[t.key] = t end,
   Challenge = function(t) challenges[t.key] = t end,
   ConsumableTypes = {},
+  -- Registered objects by full key. Nothing is registered into it here, so a
+  -- file attaching to a Joker by key finds nothing and says so, which is all
+  -- loading main.lua needs.
+  Centers = {},
   current_mod = { path = "", name = "M", prefix = "celesta", config = {} },
 }
 SMODS.add_to_pool = function(o, a)

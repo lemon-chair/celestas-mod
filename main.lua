@@ -170,6 +170,29 @@ end
 -- which point SMODS.current_mod is no longer guaranteed to be set.
 local MOD = SMODS.current_mod
 
+-- Resolved now for the same reason: the button runs long after loading.
+local JOKER_PREFIX = 'j_' .. MOD.prefix .. '_'
+
+--- Unlocks every Joker this mod adds, and only those.
+---
+--- Set straight onto the centres rather than through unlock_card, which pops
+--- an unlock notice per card - for every Joker at once, a wall of them.
+--- save_progress is what writes the flags into the profile.
+G.FUNCS.celesta_unlock_all_jokers = function(e)
+    local changed = false
+    for key, center in pairs(G.P_CENTERS) do
+        if center.set == 'Joker' and center.unlocked == false
+            and key:sub(1, #JOKER_PREFIX) == JOKER_PREFIX then
+            center.unlocked = true
+            changed = true
+        end
+    end
+    if changed then
+        G:save_progress()
+        if G.FILE_HANDLER then G.FILE_HANDLER.force = true end
+    end
+end
+
 MOD.config_tab = function()
     return {
         n = G.UIT.ROOT,
@@ -189,6 +212,12 @@ MOD.config_tab = function()
                 label = localize('celesta_cfg_downpour'),
                 ref_table = MOD.config,
                 ref_value = 'debug_downpour',
+            },
+            UIBox_button {
+                label = { localize('celesta_cfg_unlock_all') },
+                button = 'celesta_unlock_all_jokers',
+                minw = 4,
+                colour = G.C.RED,
             },
         },
     }

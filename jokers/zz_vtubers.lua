@@ -33,7 +33,7 @@ for _, entry in ipairs(ROSTER) do
         rarity = entry.rarity,
         cost = entry.cost,
         unlocked = true,
-        discovered = true,
+        discovered = false,
         blueprint_compat = true,
         eternal_compat = true,
 

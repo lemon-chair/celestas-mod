@@ -81,7 +81,7 @@ SMODS.Joker {
     rarity = 1,
     cost = 4,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -154,7 +154,7 @@ SMODS.Joker {
     rarity = 2,
     cost = 6,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -211,7 +211,7 @@ SMODS.Joker {
     rarity = 3,
     cost = 8,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -263,7 +263,7 @@ SMODS.Joker {
     rarity = 3,
     cost = 8,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -312,7 +312,7 @@ SMODS.Joker {
     rarity = 2,
     cost = 6,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -350,7 +350,7 @@ SMODS.Joker {
     rarity = 1,
     cost = 5,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -407,8 +407,8 @@ SMODS.Joker {
 
     rarity = 1,
     cost = 5,
-    unlocked = true,
-    discovered = true,
+    unlocked = false,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -478,7 +478,7 @@ SMODS.Joker {
     rarity = 2,
     cost = 6,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -524,7 +524,7 @@ SMODS.Joker {
     rarity = 1,
     cost = 4,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -566,7 +566,7 @@ SMODS.Joker {
     rarity = 3,
     cost = 8,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -606,7 +606,7 @@ SMODS.Joker {
     rarity = 3,
     cost = 8,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -666,8 +666,8 @@ SMODS.Joker {
 
     rarity = 3,
     cost = 8,
-    unlocked = true,
-    discovered = true,
+    unlocked = false,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -736,8 +736,8 @@ for _, entry in ipairs(SEAL_GRANTERS) do
 
         rarity = 2,
         cost = entry.cost,
-        unlocked = true,
-        discovered = true,
+        unlocked = false,
+        discovered = false,
         blueprint_compat = true,
         eternal_compat = true,
 
@@ -780,7 +780,7 @@ SMODS.Joker {
     rarity = 2,
     cost = 6,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -820,7 +820,7 @@ SMODS.Joker {
     rarity = 1,
     cost = 5,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -879,7 +879,7 @@ SMODS.Joker {
     rarity = 4,
     cost = 20,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
 
@@ -938,7 +938,7 @@ SMODS.Joker {
     atlas = "shoto",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = false, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { odds = 4 } },
@@ -995,7 +995,7 @@ SMODS.Joker {
     atlas = "saruei",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { earn = 3, lose = 1 } },
@@ -1048,7 +1048,7 @@ SMODS.Joker {
     atlas = "bao",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { mult = 5, x_mult = 5 } },
@@ -1151,7 +1151,7 @@ SMODS.Joker {
     atlas = "yomiquinnely",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { suit_index = 1 } },
@@ -1212,7 +1212,7 @@ SMODS.Joker {
     atlas = "arielle",
     pos = { x = 0, y = 0 },
     rarity = 4, cost = 20,
-    unlocked = true, discovered = true,
+    unlocked = false, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -1229,7 +1229,7 @@ SMODS.Joker {
     atlas = "demenishki",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { x_mult = 1, x_mult_gain = 0.25 } },
@@ -1271,7 +1271,7 @@ SMODS.Joker {
     atlas = "motherv3",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = false, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -1318,7 +1318,7 @@ SMODS.Joker {
     atlas = "michi",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -1360,7 +1360,7 @@ SMODS.Joker {
     atlas = "bearthewitch",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { chips = 20 } },
@@ -1388,7 +1388,7 @@ SMODS.Joker {
     atlas = "shoomimi",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = false, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { odds = 6 } },
@@ -1419,7 +1419,7 @@ SMODS.Joker {
     atlas = "chacha",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = false, eternal_compat = false,
 
     loc_vars = function(self, info_queue, card)
@@ -1465,7 +1465,7 @@ SMODS.Joker {
     atlas = "onigiri",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 7,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = false, eternal_compat = true,
 
     config = { extra = { target = nil } },
@@ -1509,7 +1509,7 @@ SMODS.Joker {
     atlas = "papamutt",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -1566,7 +1566,7 @@ SMODS.Joker {
     atlas = "cweamcat",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { chips = 0, chip_gain = 24, hand = "Pair" } },
@@ -1620,7 +1620,7 @@ SMODS.Joker {
     atlas = "pandabearlily",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { cards = 2 } },
@@ -1675,7 +1675,7 @@ SMODS.Joker {
     atlas = "bluto",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 1 } },
@@ -1712,7 +1712,7 @@ SMODS.Joker {
     atlas = "rosedoodle",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { odds = 2, x_mult = 1.5 } },
@@ -1748,7 +1748,7 @@ SMODS.Joker {
     atlas = "nagzz",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = false, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -1785,7 +1785,7 @@ SMODS.Joker {
     atlas = "baddaboom",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { x_mult = 1, x_mult_gain = 0.2 } },
@@ -1871,7 +1871,7 @@ SMODS.Joker {
     atlas = "x3dustco",
     pos = { x = 0, y = 0 },
     rarity = 4, cost = 20,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -1945,7 +1945,7 @@ SMODS.Joker {
     atlas = "limealicious",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = false, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -1993,7 +1993,7 @@ SMODS.Joker {
     atlas = "jaxvtuber",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 1 } },
@@ -2032,7 +2032,7 @@ SMODS.Joker {
     atlas = "yuzu",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { odds = 2, dollars = 3 } },
@@ -2072,7 +2072,7 @@ SMODS.Joker {
     atlas = "jowol",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { chips = 50 } },
@@ -2108,7 +2108,7 @@ SMODS.Joker {
     atlas = "neuro",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     -- last_round is how it fires once per round; see calculate.
@@ -2192,7 +2192,7 @@ SMODS.Joker {
     atlas = "pomatomaster",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -2246,7 +2246,7 @@ SMODS.Joker {
     atlas = "jaws",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { chips = 0, chip_gain = 5 } },
@@ -2301,7 +2301,7 @@ SMODS.Joker {
     atlas = "meicha",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = false, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -2318,7 +2318,7 @@ SMODS.Joker {
     atlas = "aicandii",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { mult = 0, mult_gain = 4 } },
@@ -2360,7 +2360,7 @@ SMODS.Joker {
     atlas = "hannahhyrule",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { x = 1.5 } },
@@ -2389,7 +2389,7 @@ SMODS.Joker {
     atlas = "beribug",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 1 } },
@@ -2430,7 +2430,7 @@ SMODS.Joker {
     atlas = "smugalana",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = false, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -2447,7 +2447,7 @@ SMODS.Joker {
     atlas = "amalee",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = false, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { odds = 4 } },
@@ -2515,7 +2515,7 @@ SMODS.Joker {
     atlas = "vulpixie",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = false, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -2532,7 +2532,7 @@ SMODS.Joker {
     atlas = "cyyuvtuber",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 2 } },
@@ -2969,7 +2969,7 @@ SMODS.Joker {
     atlas = "vedal",
     pos = { x = 0, y = 0 },
     rarity = 4, cost = 20,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- The one joker in the mod that opts out of copying, per its own text.
     blueprint_compat = false, eternal_compat = true,
 
@@ -3110,7 +3110,7 @@ SMODS.Joker {
     atlas = "liffeh",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = false, eternal_compat = true,
 
     config = { extra = { odds = CelestasMod.LIFFEH_ODDS } },
@@ -3132,7 +3132,7 @@ SMODS.Joker {
     atlas = "birdyovo",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     -- count carries across hands and rounds, so the seventh card is the
@@ -3176,7 +3176,7 @@ SMODS.Joker {
     atlas = "mintfantome",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -3256,7 +3256,7 @@ SMODS.Joker {
     atlas = "bricky",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { chip_mod = 20 } },
@@ -3311,7 +3311,7 @@ SMODS.Joker {
     atlas = "axialmatt",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { rank_mult = 2 } },
@@ -3460,7 +3460,7 @@ SMODS.Joker {
     atlas = "harukakaribu",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = false, eternal_compat = true,
 
     config = { extra = { scale = 2 } },
@@ -3488,7 +3488,7 @@ SMODS.Joker {
     atlas = "heavenlyfather",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = false, eternal_compat = true,
 
     config = { extra = { slots = 2 } },
@@ -3521,7 +3521,7 @@ SMODS.Joker {
     atlas = "kyaree",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { chips = 0, chip_mod = 6 } },
@@ -3565,7 +3565,7 @@ SMODS.Joker {
     atlas = "rtgame",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { x_mult = 1, x_mult_gain = 1 } },
@@ -3611,7 +3611,7 @@ SMODS.Joker {
     atlas = "nostro",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- Nothing to copy: it is a passive the enhancement reads, not a trigger.
     blueprint_compat = false, eternal_compat = true,
 
@@ -3655,7 +3655,7 @@ SMODS.Joker {
     atlas = "rinpenrose",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     -- bank is the chips carried toward the next step, so a hand of 15 chips
@@ -3783,7 +3783,7 @@ SMODS.Joker {
     atlas = "radicalmari",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = false, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -3801,7 +3801,7 @@ SMODS.Joker {
     atlas = "monikacinnyroll",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 1 } },
@@ -3843,7 +3843,7 @@ SMODS.Joker {
     atlas = "dejavudea",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- Protection is a binary state, so a copy has nothing left to add.
     blueprint_compat = false, eternal_compat = true,
 
@@ -3975,7 +3975,7 @@ SMODS.Joker {
     atlas = "camila",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = false, eternal_compat = true,
 
     config = { extra = {} },
@@ -4250,7 +4250,7 @@ SMODS.Joker {
     atlas = "moomerrily",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -4349,7 +4349,7 @@ SMODS.Joker {
     atlas = "clover",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = false, eternal_compat = true,
 
     config = { extra = { selection = CelestasMod.MILK_BOTTLE_CLOVER_SELECTION } },
@@ -4394,7 +4394,7 @@ SMODS.Joker {
     atlas = "chibidoki",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 2 } },
@@ -4446,7 +4446,7 @@ SMODS.Joker {
     atlas = "ray",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 1 } },
@@ -4488,7 +4488,7 @@ SMODS.Joker {
     atlas = "spongeybuns",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { chips = 0, chip_mod = 10 } },
@@ -4613,7 +4613,7 @@ SMODS.Joker {
     atlas = "fefe",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = false, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -4712,7 +4712,7 @@ SMODS.Joker {
     atlas = "milky",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = false, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -4760,7 +4760,7 @@ SMODS.Joker {
     atlas = "vexoria",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = false, discovered = false,
     blueprint_compat = true, eternal_compat = true,
     loc_vars = function(self, info_queue, card) return {} end,
     calculate = converter_calculate("Spades", G.C.SPADES, "celesta_spades"),
@@ -4771,7 +4771,7 @@ SMODS.Joker {
     atlas = "ebiko",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = false, discovered = false,
     blueprint_compat = true, eternal_compat = true,
     loc_vars = function(self, info_queue, card) return {} end,
     calculate = converter_calculate("Diamonds", G.C.DIAMONDS, "celesta_diamonds"),
@@ -4782,7 +4782,7 @@ SMODS.Joker {
     atlas = "nihmune",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = false, discovered = false,
     blueprint_compat = true, eternal_compat = true,
     loc_vars = function(self, info_queue, card) return {} end,
     calculate = converter_calculate("Clubs", G.C.CLUBS, "celesta_clubs"),
@@ -4797,7 +4797,7 @@ SMODS.Joker {
     atlas = "eros",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = false, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { chips = 0, chip_gain = 15 } },
@@ -4864,7 +4864,7 @@ SMODS.Joker {
     atlas = "sinder",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = false, discovered = false,
     -- Nothing to copy: it is a passive the enhancement reads, not a trigger.
     blueprint_compat = false, eternal_compat = true,
 
@@ -4884,7 +4884,7 @@ SMODS.Joker {
     atlas = "suto",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = false, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -4994,7 +4994,7 @@ SMODS.Joker {
     atlas = "henya",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { dollars = 1 } },
@@ -5029,7 +5029,7 @@ SMODS.Joker {
     atlas = "el_xox",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 4,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { dollars = 1 } },
@@ -5059,7 +5059,7 @@ SMODS.Joker {
     atlas = "fream",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 1 } },
@@ -5095,7 +5095,7 @@ SMODS.Joker {
     atlas = "kirana",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { dollars = 3 } },
@@ -5225,7 +5225,7 @@ SMODS.Joker {
     atlas = "kael",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- A passive the rank lookup reads, not a trigger; there is nothing to copy.
     blueprint_compat = false, eternal_compat = true,
 
@@ -5244,7 +5244,7 @@ SMODS.Joker {
     atlas = "mariyume",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- Copyable, like Blueprint is: a Blueprint next to this one copies it and
     -- ends up pointed at the same rightmost Joker.
     blueprint_compat = true, eternal_compat = true,
@@ -5280,7 +5280,7 @@ SMODS.Joker {
     atlas = "kairyucrocodile",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- A copy would grant a second set of the same slots, which the reset
     -- below could not take back off: the amount applied lives on this card.
     blueprint_compat = false, eternal_compat = true,
@@ -5376,7 +5376,7 @@ SMODS.Joker {
     atlas = "sansin",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- A passive the wear system reads, not a trigger; nothing to copy.
     blueprint_compat = false, eternal_compat = true,
 
@@ -5407,7 +5407,7 @@ SMODS.Joker {
     atlas = "sigrid_bird",
     pos = { x = 0, y = 0 },
     rarity = 4, cost = 20,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- Copyable, the way Blueprint is: a copier next to this one ends up
     -- pointed at the same two neighbours.
     blueprint_compat = true, eternal_compat = true,
@@ -5463,7 +5463,7 @@ SMODS.Joker {
     atlas = "nana_ruru",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 9,
-    unlocked = true, discovered = true,
+    unlocked = false, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { odds = 4, repetitions = 1 } },
@@ -5577,7 +5577,7 @@ SMODS.Joker {
     atlas = "cosmic",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { mult = 3 } },
@@ -5627,7 +5627,7 @@ SMODS.Joker {
     atlas = "vienna",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 7,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { odds = 3, e_mult = 1.15 } },
@@ -5664,7 +5664,7 @@ SMODS.Joker {
     atlas = "piapiufo",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { x_mult = 1.5 } },
@@ -5693,7 +5693,7 @@ SMODS.Joker {
     atlas = "mooni",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 4,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { dollars = 1 } },
@@ -5727,7 +5727,7 @@ SMODS.Joker {
     atlas = "ariesakana",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { chips = 0, chip_mod = 3 } },
@@ -5774,7 +5774,7 @@ SMODS.Joker {
     atlas = "sonneflower",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { x_mult = 1, x_mult_gain = 0.25 } },
@@ -5838,7 +5838,7 @@ SMODS.Joker {
     atlas = "taehoongie",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { levels = 1 } },
@@ -5884,7 +5884,7 @@ SMODS.Joker {
     atlas = "shenpai",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { needed = 4 } },
@@ -6121,7 +6121,7 @@ SMODS.Joker {
     atlas = "yokasiri",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 9,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- A copy would multiply the same neighbour a second time.
     blueprint_compat = false, eternal_compat = true,
 
@@ -6169,7 +6169,7 @@ SMODS.Joker {
     atlas = "radiaactive",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 1 } },
@@ -6261,7 +6261,7 @@ SMODS.Joker {
     atlas = "augustanomoly",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- The work happens at the Seal, not here; there is no trigger to copy.
     blueprint_compat = false, eternal_compat = true,
 
@@ -6276,7 +6276,7 @@ SMODS.Joker {
     atlas = "glowypumpkin",
     pos = { x = 0, y = 0 },
     rarity = 4, cost = 20,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = false, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -6307,7 +6307,7 @@ SMODS.Joker {
     atlas = "fenari",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 9,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { x_mult = 1, x_mult_gain = 0.5 } },
@@ -6384,7 +6384,7 @@ SMODS.Joker {
     atlas = "geega",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 9,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = false, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -6402,7 +6402,7 @@ SMODS.Joker {
     atlas = "cerbervt",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 2 } },
@@ -6481,7 +6481,7 @@ SMODS.Joker {
     atlas = "unnamed",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- Answering a question twice does not answer it harder.
     blueprint_compat = false, eternal_compat = true,
 
@@ -6516,7 +6516,7 @@ SMODS.Joker {
     atlas = "auteru",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { mult = 3 } },
@@ -6550,7 +6550,7 @@ SMODS.Joker {
     atlas = "buffpup",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { chips = 16 } },
@@ -6590,7 +6590,7 @@ SMODS.Joker {
     atlas = "maplechicken",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 1 } },
@@ -6643,7 +6643,7 @@ SMODS.Joker {
     atlas = "fufu",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { x_mult_gain = 0.5 } },
@@ -6731,7 +6731,7 @@ SMODS.Joker {
     atlas = "isaa",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- There is no calculate to copy: the effect is in where the cards go
     -- afterwards, which happens once for the hand however many Isaas are out.
     blueprint_compat = false, eternal_compat = true,
@@ -6771,7 +6771,7 @@ SMODS.Joker {
     atlas = "occi",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     -- Spades is a vanilla suit, so {C:spades} paints it and there is no
@@ -6838,7 +6838,7 @@ SMODS.Joker {
     atlas = "matarakan",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- Copying it would copy the payout without the deposits.
     blueprint_compat = false, eternal_compat = false,
 
@@ -6925,7 +6925,7 @@ SMODS.Joker {
     atlas = "projektmelody",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { dollars = 1, round_gain = 1, skip_gain = 3 } },
@@ -7035,7 +7035,7 @@ SMODS.Joker {
     atlas = "pristinezero",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 7,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { x_mult = 3 } },
@@ -7086,7 +7086,7 @@ SMODS.Joker {
     atlas = "minikomew",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { mult = 2 } },
@@ -7170,7 +7170,7 @@ SMODS.Joker {
     atlas = "rubensargasm",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 4,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- It has no calculate to copy; the sell value belongs to this card.
     blueprint_compat = false, eternal_compat = true,
 
@@ -7228,7 +7228,7 @@ SMODS.Joker {
     atlas = "kourra",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { mult = 2, per_chips = 50 } },
@@ -7387,7 +7387,7 @@ SMODS.Joker {
     atlas = "smittenseraph",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 9,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- Nothing to copy: the slots belong to this card, and they are given and
     -- taken back by its own hooks.
     blueprint_compat = false, eternal_compat = true,
@@ -7541,7 +7541,7 @@ SMODS.Joker {
     atlas = "slimegod",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- Half of it is a passive nothing can copy, and a copy of the other half
     -- would read as the whole Joker being copied. Eidolon Wyrm is the same
     -- shape for the same reason.
@@ -7606,7 +7606,7 @@ SMODS.Joker {
     atlas = "shiabun",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = false, eternal_compat = true,
 
     config = { extra = { limit = 1 } },
@@ -7656,7 +7656,7 @@ SMODS.Joker {
     atlas = "pipi",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- Widening the scoring hand is a yes/no answer; a copy cannot say yes
     -- harder, and the retrigger it could copy is not worth the confusion of
     -- half the Joker being copyable.
@@ -7711,7 +7711,7 @@ SMODS.Joker {
     atlas = "itsdeadlyboop",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { x_mult = 2, x_chips = 2, hand = "Full House" } },
@@ -7761,7 +7761,7 @@ SMODS.Joker {
     atlas = "rynxryn",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 1 } },
@@ -7855,7 +7855,7 @@ SMODS.Joker {
     atlas = "ben",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- Hand size belongs to this card and is given back by its own hooks;
     -- there is no scoring effect for a copier to repeat.
     blueprint_compat = false, eternal_compat = true,
@@ -7939,7 +7939,7 @@ SMODS.Joker {
     atlas = "boosfer",
     pos = { x = 0, y = 0 },
     rarity = 4, cost = 20,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 1, x_mult = 1, x_mult_gain = 0.1 } },
@@ -8038,7 +8038,7 @@ SMODS.Joker {
     atlas = "saiiren",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { x_mult = 2, suit_index = 1 } },
@@ -8106,7 +8106,7 @@ SMODS.Joker {
     atlas = "juniperactias",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { x_chips = 1, x_chip_gain = 0.1 } },
@@ -8165,7 +8165,7 @@ SMODS.Joker {
     atlas = "nekrolina",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- The value belongs to this card; a copy has nothing to add to it.
     blueprint_compat = false, eternal_compat = true,
 
@@ -8248,7 +8248,7 @@ SMODS.Joker {
     atlas = "rainhoe",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- A copy would triple the interest a second time, off one round.
     blueprint_compat = false, eternal_compat = true,
 
@@ -8310,7 +8310,7 @@ SMODS.Joker {
     atlas = "nyanners",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { chips = 15 } },
@@ -8342,7 +8342,7 @@ SMODS.Joker {
     atlas = "obkatiekat",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = false, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { e_chips = 1.2 } },
@@ -8382,7 +8382,7 @@ SMODS.Joker {
     atlas = "trickywi",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- A copy would eat a second Joker, and the row this reads is position, not
     -- an effect worth repeating.
     blueprint_compat = false, eternal_compat = true,
@@ -8455,7 +8455,7 @@ SMODS.Joker {
     atlas = "shaoanvt",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- A passive the rank lookup reads, not a trigger; there is nothing to copy.
     blueprint_compat = false, eternal_compat = true,
 
@@ -8534,7 +8534,7 @@ SMODS.Joker {
     atlas = "yoclesh",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- A passive that other Jokers read, not a trigger; there is nothing to
     -- copy, and pinning a pinned suit twice is still Hearts.
     blueprint_compat = false, eternal_compat = true,
@@ -8562,22 +8562,96 @@ SMODS.Joker {
 -- Vantacrow Bringer [Rare] - more of everything, for the price of a Common.
 --------------------------------------------------------------------------------
 --
--- Two of the three numbers are fields vanilla already knows. Card:add_to_deck
--- reads ability.h_size and ability.d_size straight off the centre's config and
--- applies them, and remove_from_deck takes them back again (card.lua:759 and
--- :824) - so hand size and discards need no code here at all, and they undo
--- themselves correctly when the Joker is sold OR debuffed, which is the half
--- that is easy to get wrong by hand.
+-- All three numbers live in extra and are granted by DELTA from `update`,
+-- against what this card is already holding - the way SmittenSeraph's slots
+-- are, and for the same reason: nothing re-reads a number after it changes.
 --
--- Hands have no such field. Troubadour is the one vanilla Joker that grants
--- them and it does it by moving G.GAME.round_resets.hands in both directions
--- (card.lua:798 and :858), so that is what this does.
+-- Hand size and discards used to be vanilla's own ability.h_size and d_size,
+-- which Card:add_to_deck applies once. That made them unscalable twice over:
+-- applied once, a raised number moved the text and nothing else, and Cryptid's
+-- manipulate - which Yoka Siri hands the work to - refuses those two names
+-- outright (Cryptid.misprintize_value_blacklist). Hands were in extra all
+-- along, which is why Yoka reached the hands and not the other two.
+-- `discards` and `hand_size` are names neither vanilla nor Cryptid treats
+-- specially.
 --
--- Deliberately NOT eased into the round in progress. ease_discard clamps at
--- the discards left; ease_hands_played does not, so a Boss debuffing this
--- mid-round could take the hand the player was about to play. round_resets is
--- read into hands_left at the start of every Blind (state_events.lua:245),
--- which is where Troubadour's land too.
+-- Hands are moved the way Troubadour moves them, round_resets only, and
+-- deliberately NOT eased into the round in progress: ease_hands_played does
+-- not clamp, so a Boss debuffing this mid-round could take the hand the player
+-- was about to play. round_resets is read into hands_left at the start of
+-- every Blind (state_events.lua:245). Discards and hand size are moved the way
+-- vanilla moved them for this card (card.lua:759-764).
+
+local VANTACROW_GRANTED = "celesta_vantacrow_granted"
+
+--- What the card promises right now, in whole hands, discards and cards.
+--- Rounded, as Seraph's slots are: half a hand is not something a round holds.
+local function vantacrow_wants(card)
+    local ability = card.ability
+    local extra = ability.extra
+    return math.floor(extra.h_plays + 0.5),
+           math.floor((extra.discards or ability.d_size or 0) + 0.5),
+           math.floor((extra.hand_size or ability.h_size or 0) + 0.5)
+end
+
+--- A Vantacrow saved before the three moved into extra still carries
+--- ability.h_size and d_size, and nothing recording what it holds.
+---
+--- Moved into extra and zeroed, so vanilla stops applying them. Card:add_to_deck
+--- and remove_from_deck read those fields AFTER calling this centre's hooks
+--- (card.lua:757-764 and :822-829), so zeroing them inside a hook is in time.
+--- `applied` is whether the run currently holds this card's numbers: true in
+--- the deck (update, and remove_from_deck, which runs before vanilla takes its
+--- half back), false arriving (add_to_deck, before vanilla gives its half).
+local function vantacrow_adopt(card, applied)
+    local ability, extra = card.ability, card.ability.extra
+    if extra.discards ~= nil and extra.hand_size ~= nil then return end
+    extra.discards = extra.discards or ability.d_size or 0
+    extra.hand_size = extra.hand_size or ability.h_size or 0
+    ability.d_size, ability.h_size = 0, 0
+    if applied and not ability[VANTACROW_GRANTED] then
+        ability[VANTACROW_GRANTED] = {
+            hands = extra.h_plays, discards = extra.discards, hand_size = extra.hand_size,
+        }
+    end
+end
+
+--- Moves the run by these amounts.
+local function vantacrow_move(hands, discards, hand_size)
+    if hands ~= 0 then
+        G.GAME.round_resets.hands = G.GAME.round_resets.hands + hands
+    end
+    if discards ~= 0 then
+        G.GAME.round_resets.discards = G.GAME.round_resets.discards + discards
+        ease_discard(discards)
+    end
+    if hand_size ~= 0 and G.hand then G.hand:change_size(hand_size) end
+end
+
+--- Brings the run in line with what this card currently promises.
+local function vantacrow_sync(card, applied)
+    if not (G.GAME and G.GAME.round_resets) then return end
+    vantacrow_adopt(card, applied)
+    local held = card.ability[VANTACROW_GRANTED] or { hands = 0, discards = 0, hand_size = 0 }
+    local hands, discards, hand_size = vantacrow_wants(card)
+    if held.hands == hands and held.discards == discards
+        and held.hand_size == hand_size then
+        return
+    end
+    vantacrow_move(hands - held.hands, discards - held.discards,
+                   hand_size - held.hand_size)
+    card.ability[VANTACROW_GRANTED] = { hands = hands, discards = discards, hand_size = hand_size }
+end
+
+--- ...and hands all of it back.
+local function vantacrow_release(card)
+    if not (G.GAME and G.GAME.round_resets) then return end
+    vantacrow_adopt(card, true)
+    local held = card.ability[VANTACROW_GRANTED]
+    if not held then return end
+    vantacrow_move(-held.hands, -held.discards, -held.hand_size)
+    card.ability[VANTACROW_GRANTED] = nil
+end
 
 SMODS.Joker {
     key = "vantacrow_bringer",
@@ -8585,30 +8659,30 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     -- Rare, at a Common's price, as asked.
     rarity = 3, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = false, discovered = false,
     -- A passive the run reads, not a trigger; there is nothing to copy.
     blueprint_compat = false, eternal_compat = true,
 
-    -- h_size and d_size sit at the top of config rather than in extra: those
-    -- are the exact names vanilla looks for (card.lua:358).
-    config = { h_size = 2, d_size = 2, extra = { h_plays = 2 } },
+    config = { extra = { h_plays = 2, discards = 2, hand_size = 2 } },
 
     loc_vars = function(self, info_queue, card)
-        return { vars = { card.ability.extra.h_plays,
-                          card.ability.d_size,
-                          card.ability.h_size } }
+        local hands, discards, hand_size = vantacrow_wants(card)
+        return { vars = { hands, discards, hand_size } }
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        if not (G.GAME and G.GAME.round_resets) then return end
-        G.GAME.round_resets.hands =
-            G.GAME.round_resets.hands + card.ability.extra.h_plays
+        vantacrow_sync(card, false)
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        if not (G.GAME and G.GAME.round_resets) then return end
-        G.GAME.round_resets.hands =
-            G.GAME.round_resets.hands - card.ability.extra.h_plays
+        vantacrow_release(card)
+    end,
+
+    -- Every frame, but it writes only when a number has actually moved. The
+    -- added_to_deck gate keeps a copy in the shop or the collection from
+    -- granting anything it does not own.
+    update = function(self, card, front)
+        if card.added_to_deck then vantacrow_sync(card, true) end
     end,
 }
 
@@ -8628,7 +8702,7 @@ SMODS.Joker {
     atlas = "rainyrentyn",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -8676,7 +8750,7 @@ SMODS.Joker {
     atlas = "snapscube",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { gain = 4, size = 4, mult = 0 } },
@@ -8726,7 +8800,7 @@ SMODS.Joker {
     atlas = "chrchie",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { dollars = 1, cards = 0 } },
@@ -8798,7 +8872,7 @@ SMODS.Joker {
     atlas = "lordaethelstan",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- The slots belong to this card, and it gives them back itself.
     blueprint_compat = false, eternal_compat = true,
 
@@ -8834,7 +8908,7 @@ SMODS.Joker {
     atlas = "jummy",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 4,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { mult = 4 } },
@@ -8873,7 +8947,7 @@ SMODS.Joker {
     atlas = "moopybuns",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { gain = 0.1, x_chips = 1 } },
@@ -8917,7 +8991,7 @@ SMODS.Joker {
     atlas = "cupidyle",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 4,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { dollars = 1 } },
@@ -8970,7 +9044,7 @@ SMODS.Joker {
     atlas = "blue_card",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { gain = 6, chips = 0 } },
@@ -9026,7 +9100,7 @@ SMODS.Joker {
     atlas = "green_card",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 7,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { gain = 0.25 } },
@@ -9066,7 +9140,7 @@ SMODS.Joker {
     atlas = "fuchsia_card",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { gain = 0.2, x_mult = 1 } },
@@ -9204,7 +9278,7 @@ SMODS.Joker {
     atlas = "glassesjournal",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- A passive the deal reads, not a trigger; there is nothing to copy.
     blueprint_compat = false, eternal_compat = true,
 
@@ -9234,7 +9308,7 @@ SMODS.Joker {
     atlas = "giwi",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { x_chips = 1.5 } },
@@ -9278,7 +9352,7 @@ SMODS.Joker {
     atlas = "eidolonwyrm",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- Half of it is a passive nothing can copy, and a copy of the other half
     -- would read as the whole Joker being copied.
     blueprint_compat = false, eternal_compat = true,
@@ -9350,7 +9424,7 @@ SMODS.Joker {
     atlas = "astrum_aureus",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { x_mult = 1, gain = 0.05, size = 5 } },
@@ -9408,7 +9482,7 @@ SMODS.Joker {
     atlas = "alluux",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { x_chips = 2.5 } },
@@ -9478,7 +9552,7 @@ SMODS.Joker {
     atlas = "grimmi",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- Nothing to copy: what it does happens as it leaves the row.
     blueprint_compat = false, eternal_compat = false,
 
@@ -9539,7 +9613,7 @@ SMODS.Joker {
     atlas = "mellowmabel",
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
-    unlocked = true, discovered = true,
+    unlocked = false, discovered = false,
     -- The suits are rewritten for as long as it is in the row; there is no
     -- effect returned for a copy to return.
     blueprint_compat = false, eternal_compat = true,
@@ -9575,7 +9649,7 @@ SMODS.Joker {
     atlas = "squchan",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- What it does happens as it leaves the row, which a copy cannot do.
     blueprint_compat = false, eternal_compat = false,
 

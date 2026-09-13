@@ -97,6 +97,7 @@ DISPLAY_NAMES = {
     "mellowmabel": "Mellow Mabel",
     "minikomew": "Minikomew",
     "rubensargasm": "Ruben Sargasm",
+    "vantacrow_bringer": "Vantacrow",
     "yokasiri": "Yoka Siri",
     "radiaactive": "Radiaactive",
     "augustanomoly": "August Anomoly",
@@ -276,7 +277,7 @@ for _, entry in ipairs(ROSTER) do
         rarity = entry.rarity,
         cost = entry.cost,
         unlocked = true,
-        discovered = true,
+        discovered = false,
         blueprint_compat = true,
         eternal_compat = true,
 
@@ -581,6 +582,93 @@ LOC_TAIL = '''        },
         },
 
         Other = {
+            celesta_bind_arar_kumi = {
+                name = "Arar + Kumi",
+                text = {
+                    "Destroys all scoring {C:attention}enhanced{}",
+                    "cards in played hand",
+                    "{C:green}#1# in #2#{} chance to earn",
+                    "{C:money}$#3#{} per card destroyed",
+                },
+            },
+            celesta_bind_beepers_heavenly = {
+                name = "Beepers + HeavenlyFather",
+                text = {
+                    "{C:green}#1# in #2#{} chance to give a scored",
+                    "{C:attention}King{} a {C:attention}Steel{} enhancement",
+                    "and a {C:red}Red Seal{}",
+                },
+            },
+            celesta_bind_kumi_berry = {
+                name = "Kumi + BerryCrepe",
+                text = {
+                    "Scored {C:attention}Gold{} cards permanently",
+                    "gain {C:mult}+#1#{} Mult",
+                    "{C:green}#2# in #3#{} chance to give {C:money}$#4#{}",
+                },
+            },
+            celesta_bind_birdyovo_kourra = {
+                name = "Birdyovo + Kourra",
+                text = {
+                    "{X:mult,C:white}X#1#{} Mult for every",
+                    "{C:chips}#2#{} Chips scored so far",
+                },
+            },
+            celesta_bind_sonne_kourra = {
+                name = "SonneFlower + Kourra",
+                text = {
+                    "{C:mult}+#1#{} Mult for every {V:1}#2#{}",
+                    "card scored so far",
+                },
+            },
+            celesta_bind_buffpup_shiabun = {
+                name = "BuffPup + Shiabun",
+                text = {
+                    "{C:attention}+1{} card selection limit for",
+                    "every {C:attention}#1#{} {V:1}#2#{} cards",
+                    "in your {C:attention}full deck{}",
+                    "{C:inactive}(Currently {C:attention}#3#{C:inactive} cards)",
+                },
+            },
+            celesta_bind_arielle_shiabun = {
+                name = "Arielle + Shiabun",
+                text = {
+                    "{C:attention}+1{} card selection limit for every",
+                    "{C:attention}#1#{} unique suits in your {C:attention}full deck{}",
+                    "{C:inactive}(Currently {C:attention}#2#{C:inactive} suits)",
+                },
+            },
+            celesta_bind_arar_occi = {
+                name = "Arar + Occi",
+                text = {
+                    "At the start of each round, converts",
+                    "a random card held in hand to",
+                    "the {C:attention}Ace{} of {C:spades}Spades{}",
+                },
+            },
+            celesta_bind_arielle_shao = {
+                name = "Arielle + Grandpaw Shao",
+                text = {
+                    "All cards are considered",
+                    "{C:attention}Aces{} of the same {C:attention}suit{}",
+                },
+            },
+            celesta_bind_fufu_katie = {
+                name = "Fufu + ObKatieKat",
+                text = {
+                    "This Joker gains {X:chips,C:white}^#1#{} Chips",
+                    "per unique {C:attention}suit{} in full deck",
+                    "{C:inactive}(Currently {X:chips,C:white}^#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_ironmouse_michi = {
+                name = "Ironmouse + Michi",
+                text = {
+                    "This Joker gains {X:mult,C:white}^#1#{} Mult",
+                    "per {C:purple}Purple Seal{} card discarded",
+                    "{C:inactive}(Currently {X:mult,C:white}^#2#{C:inactive} Mult)",
+                },
+            },
             celesta_bind_arielle_froggy = {
                 name = "Arielle + FroggyLoch",
                 text = {
@@ -1173,6 +1261,7 @@ LOC_TAIL = '''        },
             celesta_cfg_animation = "Arena weather animation (off = tint only)",
             celesta_cfg_verbose = "Verbose logging",
             celesta_cfg_downpour = "Force Downpour (debug)",
+            celesta_cfg_unlock_all = "Unlock All Jokers",
             -- Floating message text. Vanilla has no generic "+card" key
             -- (k_plus_stone is Marble Joker's own), so this mod supplies one.
             -- The button on the Blessed Phoenix Egg, which is pulled into the

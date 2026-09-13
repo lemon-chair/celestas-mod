@@ -103,7 +103,7 @@ SMODS.Joker {
     atlas = "blessed_phoenix_egg",
     pos = { x = 0, y = 0 },
     rarity = 4, cost = 20,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- Nothing to copy: it counts rounds and then stops being itself.
     blueprint_compat = false, eternal_compat = true,
 

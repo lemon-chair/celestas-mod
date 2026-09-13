@@ -124,7 +124,7 @@ SMODS.Joker {
     atlas = "cryogen",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- The gain is not a trigger a copy could take part in - it happens when
     -- something else freezes - and a copy of the multiplier would be a second
     -- Joker's worth of it.

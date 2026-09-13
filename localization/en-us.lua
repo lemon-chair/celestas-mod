@@ -55,6 +55,10 @@ return {
                     "{C:green}#1# in #2#{} chance to {C:blue}Freeze{} a random",
                     "Joker after each hand played",
                 },
+                unlock = {
+                    "Win a run with the",
+                    "{C:attention}Blizzard Deck{} on any stake",
+                },
             },
             j_celesta_angelsteps = {
                 name = "Angelsteps",
@@ -69,6 +73,10 @@ return {
                     "starts a {C:blue}Downpour{}",
                     "{C:inactive}Consumables obtained during{}",
                     "{C:inactive}a Downpour are {C:dark_edition}Negative",
+                },
+                unlock = {
+                    "Win a run with the",
+                    "{C:attention}Rain Deck{} on any stake",
                 },
             },
             j_celesta_arar = {
@@ -86,6 +94,10 @@ return {
                 text = {
                     "All cards are considered",
                     "to be the {C:attention}same suit{}",
+                },
+                unlock = {
+                    "Have a full deck made",
+                    "only of cards of {C:attention}one{} suit",
                 },
             },
             j_celesta_ariesakana = {
@@ -156,6 +168,10 @@ return {
                     "{C:green}#1# in #2#{} chance to add a",
                     "{C:attention}Foppy Seal{} to a scored",
                     "card with a {C:red}Red Seal{}",
+                },
+                unlock = {
+                    "Have a card with",
+                    "a {C:attention}Foppy Seal{}",
                 },
             },
             j_celesta_ben = {
@@ -332,6 +348,10 @@ return {
                     "{C:attention}Star Seal{} to a scored",
                     "{C:attention}face card{} with no seal",
                 },
+                unlock = {
+                    "Have a card with",
+                    "a {C:attention}Star Seal{}",
+                },
             },
             j_celesta_crelly = {
                 name = "Crelly",
@@ -423,6 +443,10 @@ return {
                     "Converts all scoring cards",
                     "in played hand to {C:diamonds}Diamonds{}",
                 },
+                unlock = {
+                    "Have {C:attention}#1#{} or more {C:diamonds}Diamonds{}",
+                    "in your full deck",
+                },
             },
             j_celesta_eidolonwyrm = {
                 name = "Eidolon Wyrm",
@@ -479,6 +503,10 @@ return {
                     "gains {C:chips}+#1#{} Chips per one removed",
                     "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
                 },
+                unlock = {
+                    "Have {C:attention}#1#{} or more",
+                    "{C:attention}Bonus Cards{} in your full deck",
+                },
             },
             j_celesta_error_missing_chad = {
                 name = "ERROR:missing_chad.exe",
@@ -521,6 +549,10 @@ return {
                     "Converts all scoring cards",
                     "in played hand to {C:hearts}Hearts{}",
                 },
+                unlock = {
+                    "Have {C:attention}#1#{} or more {C:hearts}Hearts{}",
+                    "in your full deck",
+                },
             },
             j_celesta_fenari = {
                 name = "Fenari",
@@ -543,6 +575,10 @@ return {
                     "{C:green}#1# in #2#{} chance to add a",
                     "{C:attention}Rose Seal{} to a scored",
                     "{C:attention}non-face card{} with no seal",
+                },
+                unlock = {
+                    "Have a card with",
+                    "a {C:attention}Rose Seal{}",
                 },
             },
             j_celesta_fream = {
@@ -811,6 +847,10 @@ return {
                     "enhancement removed",
                     "{C:inactive}(Currently {C:mult}+#2#{C:inactive} Mult)",
                 },
+                unlock = {
+                    "Have {C:attention}#1#{} or more",
+                    "{C:attention}Mult Cards{} in your full deck",
+                },
             },
             j_celesta_liffeh = {
                 name = "Liffeh",
@@ -826,6 +866,9 @@ return {
                     "At the start of each round,",
                     "adds a {C:attention}Limestone{} card",
                     "to your deck",
+                },
+                unlock = {
+                    "Have a {C:attention}Limestone Card{}",
                 },
             },
             j_celesta_lordaethelstan = {
@@ -893,6 +936,10 @@ return {
                 text = {
                     "{V:1}#1#{} and {V:2}#2#{} cards are",
                     "considered the {C:attention}same suit{}",
+                },
+                unlock = {
+                    "Win a run with the",
+                    "{C:attention}Plaid Deck{} on any stake",
                 },
             },
             j_celesta_michi = {
@@ -964,6 +1011,10 @@ return {
                     "adds {C:attention}Exo{} to a random",
                     "unenhanced card held in hand",
                 },
+                unlock = {
+                    "Enhance a card",
+                    "with {C:attention}Exo{}",
+                },
             },
             j_celesta_nagzz = {
                 name = "Nagzz",
@@ -978,6 +1029,10 @@ return {
                 text = {
                     "{C:green}#1# in #2#{} chance to retrigger",
                     "each {C:attention}merged{} Joker #3# time",
+                },
+                unlock = {
+                    "Win a run with only",
+                    "{C:attention}merged{} Jokers",
                 },
             },
             j_celesta_navy_bean = {
@@ -1020,6 +1075,10 @@ return {
                     "Converts all scoring cards",
                     "in played hand to {C:clubs}Clubs{}",
                 },
+                unlock = {
+                    "Have {C:attention}#1#{} or more {C:clubs}Clubs{}",
+                    "in your full deck",
+                },
             },
             j_celesta_nostro = {
                 name = "Nostro",
@@ -1043,6 +1102,10 @@ return {
                 text = {
                     "{X:chips,C:white}^#1#{} Chips if every",
                     "{C:attention}Joker{} slot is filled",
+                },
+                unlock = {
+                    "Score more than {C:attention}#1#{}",
+                    "Chips in a single hand",
                 },
             },
             j_celesta_occi = {
@@ -1281,12 +1344,20 @@ return {
                     "{C:attention}+1{} consumable slot",
                     "for each shop {C:attention}reroll{}",
                 },
+                unlock = {
+                    "Have {C:attention}#1#{} or more",
+                    "consumable slots",
+                },
             },
             j_celesta_shoto = {
                 name = "Shoto",
                 text = {
                     "{C:green}#1# in #2#{} chance to add a",
                     "{C:attention}Gash{} to a scored card",
+                },
+                unlock = {
+                    "Enhance a card",
+                    "with {C:attention}Gash{}",
                 },
             },
             j_celesta_shylily = {
@@ -1310,6 +1381,9 @@ return {
                 text = {
                     "{C:attention}Driftwood{} cards",
                     "never break",
+                },
+                unlock = {
+                    "Have a {C:attention}Driftwood Card{}",
                 },
             },
             j_celesta_slimegod = {
@@ -1367,6 +1441,10 @@ return {
                     "{C:attention}Ectoplast Seal{} to a scored",
                     "{C:attention}enhanced card{} with no seal",
                 },
+                unlock = {
+                    "Have a card with",
+                    "an {C:attention}Ecto Seal{}",
+                },
             },
             j_celesta_spongeybuns = {
                 name = "Spongey",
@@ -1390,6 +1468,10 @@ return {
                 text = {
                     "Converts all played cards",
                     "into {C:attention}Wild Cards{}",
+                },
+                unlock = {
+                    "Have {C:attention}#1#{} or more",
+                    "{C:attention}Wild Cards{} in your full deck",
                 },
             },
             j_celesta_taehoongie = {
@@ -1435,10 +1517,15 @@ return {
                 },
             },
             j_celesta_vantacrow_bringer = {
-                name = "Vantacrow Bringer",
+                name = "Vantacrow",
                 text = {
                     "{C:blue}+#1#{} Hands, {C:red}+#2#{} Discards",
                     "{C:attention}+#3#{} Hand Size",
+                },
+                unlock = {
+                    "Have {C:attention}+#1#{} hands, {C:attention}+#1#{} discards",
+                    "and {C:attention}+#1#{} hand size over your",
+                    "starting amounts at the same time",
                 },
             },
             j_celesta_vedal = {
@@ -1456,6 +1543,10 @@ return {
                 text = {
                     "Converts all scoring cards",
                     "in played hand to {C:spades}Spades{}",
+                },
+                unlock = {
+                    "Have {C:attention}#1#{} or more {C:spades}Spades{}",
+                    "in your full deck",
                 },
             },
             j_celesta_vienna = {
@@ -1775,6 +1866,93 @@ return {
         },
 
         Other = {
+            celesta_bind_arar_kumi = {
+                name = "Arar + Kumi",
+                text = {
+                    "Destroys all scoring {C:attention}enhanced{}",
+                    "cards in played hand",
+                    "{C:green}#1# in #2#{} chance to earn",
+                    "{C:money}$#3#{} per card destroyed",
+                },
+            },
+            celesta_bind_beepers_heavenly = {
+                name = "Beepers + HeavenlyFather",
+                text = {
+                    "{C:green}#1# in #2#{} chance to give a scored",
+                    "{C:attention}King{} a {C:attention}Steel{} enhancement",
+                    "and a {C:red}Red Seal{}",
+                },
+            },
+            celesta_bind_kumi_berry = {
+                name = "Kumi + BerryCrepe",
+                text = {
+                    "Scored {C:attention}Gold{} cards permanently",
+                    "gain {C:mult}+#1#{} Mult",
+                    "{C:green}#2# in #3#{} chance to give {C:money}$#4#{}",
+                },
+            },
+            celesta_bind_birdyovo_kourra = {
+                name = "Birdyovo + Kourra",
+                text = {
+                    "{X:mult,C:white}X#1#{} Mult for every",
+                    "{C:chips}#2#{} Chips scored so far",
+                },
+            },
+            celesta_bind_sonne_kourra = {
+                name = "SonneFlower + Kourra",
+                text = {
+                    "{C:mult}+#1#{} Mult for every {V:1}#2#{}",
+                    "card scored so far",
+                },
+            },
+            celesta_bind_buffpup_shiabun = {
+                name = "BuffPup + Shiabun",
+                text = {
+                    "{C:attention}+1{} card selection limit for",
+                    "every {C:attention}#1#{} {V:1}#2#{} cards",
+                    "in your {C:attention}full deck{}",
+                    "{C:inactive}(Currently {C:attention}#3#{C:inactive} cards)",
+                },
+            },
+            celesta_bind_arielle_shiabun = {
+                name = "Arielle + Shiabun",
+                text = {
+                    "{C:attention}+1{} card selection limit for every",
+                    "{C:attention}#1#{} unique suits in your {C:attention}full deck{}",
+                    "{C:inactive}(Currently {C:attention}#2#{C:inactive} suits)",
+                },
+            },
+            celesta_bind_arar_occi = {
+                name = "Arar + Occi",
+                text = {
+                    "At the start of each round, converts",
+                    "a random card held in hand to",
+                    "the {C:attention}Ace{} of {C:spades}Spades{}",
+                },
+            },
+            celesta_bind_arielle_shao = {
+                name = "Arielle + Grandpaw Shao",
+                text = {
+                    "All cards are considered",
+                    "{C:attention}Aces{} of the same {C:attention}suit{}",
+                },
+            },
+            celesta_bind_fufu_katie = {
+                name = "Fufu + ObKatieKat",
+                text = {
+                    "This Joker gains {X:chips,C:white}^#1#{} Chips",
+                    "per unique {C:attention}suit{} in full deck",
+                    "{C:inactive}(Currently {X:chips,C:white}^#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_ironmouse_michi = {
+                name = "Ironmouse + Michi",
+                text = {
+                    "This Joker gains {X:mult,C:white}^#1#{} Mult",
+                    "per {C:purple}Purple Seal{} card discarded",
+                    "{C:inactive}(Currently {X:mult,C:white}^#2#{C:inactive} Mult)",
+                },
+            },
             celesta_bind_arielle_froggy = {
                 name = "Arielle + FroggyLoch",
                 text = {
@@ -2367,6 +2545,7 @@ return {
             celesta_cfg_animation = "Arena weather animation (off = tint only)",
             celesta_cfg_verbose = "Verbose logging",
             celesta_cfg_downpour = "Force Downpour (debug)",
+            celesta_cfg_unlock_all = "Unlock All Jokers",
             -- Floating message text. Vanilla has no generic "+card" key
             -- (k_plus_stone is Marble Joker's own), so this mod supplies one.
             -- The button on the Blessed Phoenix Egg, which is pulled into the

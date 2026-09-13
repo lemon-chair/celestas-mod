@@ -386,7 +386,7 @@ SMODS.Joker {
     atlas = "blank_joker",
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     -- Merging would have to answer what a face built from five layers looks

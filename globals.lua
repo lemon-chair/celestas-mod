@@ -200,6 +200,7 @@ CelestasMod.GRANT_LEDGERS = {
     "celesta_seraph_granted",     -- SmittenSeraph: Joker and consumable slots
     "celesta_shiabun_granted",    -- Shiabun and Eidolon Wyrm: selection limit
     "celesta_aethal_granted",     -- Aethal: shop slots
+    "celesta_vantacrow_granted",  -- Vantacrow: hands, discards and hand size
 }
 
 --------------------------------------------------------------------------------

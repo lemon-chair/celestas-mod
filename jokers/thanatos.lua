@@ -160,7 +160,7 @@ SMODS.Joker {
     atlas = "xm05_thanatos",
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     -- A copy would eat the same cards a second time, and there would be none
     -- left for it to eat.
     blueprint_compat = false, eternal_compat = true,

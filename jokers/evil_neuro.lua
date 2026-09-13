@@ -503,7 +503,7 @@ SMODS.Joker {
     atlas = "evil_neuro",
     pos = { x = 0, y = 0 },
     rarity = 4, cost = 20,
-    unlocked = true, discovered = true,
+    unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     -- Never offered. The recipe is the only way to one, and a copy in the shop
