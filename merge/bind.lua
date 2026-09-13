@@ -3310,6 +3310,51 @@ if celesta_bind_selection_update_ref then
     end
 end
 
+-- Stake badges for both halves of a merge.
+--
+-- A won run gives a stake badge to every Joker in the row: set_joker_win
+-- (misc_functions.lua:1192) counts the win against each card's own centre -
+-- which for a merged card is the host alone. The absorbed half was in the row
+-- for the win just the same, so it is counted the same way, into both the
+-- stake-index table vanilla keeps and the stake-key one Steamodded's
+-- get_joker_win_sticker builds the badge from.
+
+--- Counts this run's win against `key`, the way set_joker_win does.
+local function record_joker_win(key, center)
+    local profile = G.PROFILES and G.SETTINGS and G.PROFILES[G.SETTINGS.profile]
+    local all_usage = profile and profile.joker_usage
+    if not (all_usage and G.GAME and G.GAME.stake) then return false end
+
+    local usage = all_usage[key] or { count = 1, order = center.order, wins = {},
+                                      losses = {}, wins_by_key = {}, losses_by_key = {} }
+    all_usage[key] = usage
+    usage.wins = usage.wins or {}
+    usage.wins[G.GAME.stake] = (usage.wins[G.GAME.stake] or 0) + 1
+    if SMODS.stake_from_index then
+        local stake_key = SMODS.stake_from_index(G.GAME.stake)
+        usage.wins_by_key = usage.wins_by_key or {}
+        usage.wins_by_key[stake_key] = (usage.wins_by_key[stake_key] or 0) + 1
+    end
+    return true
+end
+
+local celesta_bind_joker_win_ref = set_joker_win
+if celesta_bind_joker_win_ref then
+    function set_joker_win(...)
+        local ret = celesta_bind_joker_win_ref(...)
+        local recorded = false
+        for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
+            local bound = held.ability and held.ability.set == "Joker"
+                and Bind.is_merged(held) and held.ability.celesta_bind
+            -- A half whose mod has since been removed has no centre to badge.
+            local center = bound and G.P_CENTERS[bound.key]
+            if center and record_joker_win(bound.key, center) then recorded = true end
+        end
+        if recorded then G:save_settings() end
+        return ret
+    end
+end
+
 -- Booster prices, for Kumi + HeavenlyFather.
 --
 -- A booster's cost is decided in Card:set_cost and nowhere else, and vanilla
