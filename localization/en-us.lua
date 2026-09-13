@@ -1534,7 +1534,6 @@ return {
                     "Multiplies every value and {C:green}chance{}",
                     "other {C:attention}Jokers from this mod{} have",
                     "Grows {X:mult,C:white}X#1#{} each time one triggers",
-                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive})",
                     "{C:inactive}(Cannot be copied)",
                 },
             },

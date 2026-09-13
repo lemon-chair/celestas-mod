@@ -3007,8 +3007,12 @@ SMODS.Joker {
             if not showing then return end
             local roller_c = context.trigger_obj and context.trigger_obj.config
             local center_c = roller_c and roller_c.center
+            -- Owned Jokers only, the rule the description wrapper follows: one
+            -- in the shop, a booster pack or the collection is not boosted, so
+            -- it does not print a boosted chance either.
             if not (center_c and CelestasMod.is_ours(center_c)
                 and center_c.key ~= "j_celesta_vedal"
+                and context.trigger_obj.area == G.jokers
                 and context.trigger_obj.ability
                 and context.trigger_obj.ability.set == "Joker") then
                 return
@@ -3024,6 +3028,7 @@ SMODS.Joker {
         if not (center and CelestasMod.is_ours(center)) then return end
         if center.key == "j_celesta_vedal" then return end
         if not (roller.ability and roller.ability.set == "Joker") then return end
+        if roller.area ~= G.jokers then return end
 
         local mult = vedal_grow()
         if not mult then return end
