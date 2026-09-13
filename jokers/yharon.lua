@@ -193,7 +193,9 @@ SMODS.Joker {
     atlas = "yharon",
     pos = { x = 0, y = 0 },
     rarity = 4, cost = 20,
-    unlocked = true, discovered = true,
+    -- Undiscovered until one is hatched in a run; phoenix_egg.lua's hatch
+    -- discovers it, since the egg swaps in place and add_to_deck never runs.
+    unlocked = true, discovered = false,
     -- A copy sits somewhere else in the row, so it would promote a different
     -- Joker than the one this card is pointing at - which is not a copy of
     -- this effect, it is a second one.

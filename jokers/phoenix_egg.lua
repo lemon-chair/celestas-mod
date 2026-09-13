@@ -228,6 +228,15 @@ local function hatch(egg)
         trigger = "after",
         delay = 0.4,
         func = function()
+            -- Card:add_to_deck is where an arriving Joker is discovered
+            -- (card.lua:735), and an in-place swap never runs it. discover_card
+            -- refuses in a seeded or challenge run, so the centre is marked as
+            -- well - an undiscovered card in the row still draws as itself, so
+            -- this is only for the Collection.
+            if not yharon.discovered then
+                if discover_card then discover_card(yharon) end
+                yharon.discovered = true
+            end
             egg:set_ability(yharon, nil, true)
             egg:juice_up(0.5, 0.6)
             -- set_ability does not run the centre's add_to_deck, which is
