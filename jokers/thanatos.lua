@@ -137,10 +137,13 @@ end
 --
 -- SMODS.destroy_cards does the removing: it refuses eternal and undestroyable
 -- cards, plays the dissolve, and raises the removal contexts other Jokers watch
--- for. So the count is taken from what it ACTUALLY destroyed rather than from
+-- for. So the count is taken from what it ACTUALLY accepted rather than from
 -- what was offered to it, and a hand full of eternal Steel Kings pays nothing.
 
 --- Every Steel King with a Red Seal currently held in hand.
+---
+--- Not one something else is already destroying: that King is spoken for, and
+--- eating it too would pay for a kill that was not this Joker's.
 local function thanatos_targets()
     local held = G.hand and G.hand.cards
     if type(held) ~= "table" then return {} end
@@ -148,6 +151,7 @@ local function thanatos_targets()
     local found = {}
     for _, card in ipairs(held) do
         if card.seal == "Red" and card.get_id and card:get_id() == 13
+            and not card.getting_sliced
             and SMODS.has_enhancement(card, "m_steel") then
             found[#found + 1] = card
         end
@@ -179,13 +183,20 @@ SMODS.Joker {
             local targets = thanatos_targets()
             if #targets == 0 then return end
 
-            -- Counted from what survived the destroy rather than from the list
+            -- Counted from what the destroy accepted rather than from the list
             -- handed to it: an eternal King is refused, and refusing it must
             -- not pay.
+            --
+            -- Accepted, not gone. destroy_cards flags each card it takes at
+            -- once and dissolves it in a queued event (utils.lua:2573-2610),
+            -- so straight after the call every King is still in G.hand.
+            -- Waiting for REMOVED counted none of them: the Kings dissolved and
+            -- nothing was gained. `destroyed` and `shattered` are the flags it
+            -- sets on the spot, and an eternal King gets neither.
             SMODS.destroy_cards(targets)
             local eaten = 0
             for _, king in ipairs(targets) do
-                if king.REMOVED or not king.area then eaten = eaten + 1 end
+                if king.destroyed or king.shattered then eaten = eaten + 1 end
             end
             if eaten == 0 then return end
 
