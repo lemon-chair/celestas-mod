@@ -722,6 +722,14 @@ LOC_TAIL = '''        },
                     "to your full deck",
                 },
             },
+            celesta_bind_suko_koko = {
+                name = "Suko + KokoNuts",
+                text = {
+                    "At the start of the round, add a",
+                    "{C:dark_edition}Foil{} {C:attention}Lucky{} {C:attention}7{} of {C:spades}Spades{}",
+                    "to your full deck",
+                },
+            },
             celesta_bind_arielle_froggy = {
                 name = "Arielle + FroggyLoch",
                 text = {

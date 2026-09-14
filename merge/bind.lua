@@ -1636,6 +1636,9 @@ special("j_celesta_zentreya", "j_celesta_boosfer", {
 -- deck, which is vanilla Marble Joker's shape and what KokoNuts itself is
 -- built on. Shared by the two pairs below because they differ only in how
 -- many are made and whether they arrive with an edition.
+--
+-- `editioned` is true for a rolled edition, or an edition table - { foil =
+-- true } - for one that is always the same.
 local function koko_sevens(card, count, seed, editioned)
     if count <= 0 then return end
     G.E_MANAGER:add_event(Event {
@@ -1645,7 +1648,9 @@ local function koko_sevens(card, count, seed, editioned)
                 local seven = create_playing_card(
                     { front = G.P_CARDS.S_7, center = G.P_CENTERS.m_lucky },
                     G.play, nil, nil, { G.C.SECONDARY_SET.Enhanced })
-                if editioned then
+                if type(editioned) == "table" then
+                    seven:set_edition(editioned, true)
+                elseif editioned then
                     -- Guaranteed, and never Negative: a Negative playing card
                     -- does nothing in vanilla, so rolling one would read as
                     -- the Joker having failed rather than as an edition.
@@ -2911,6 +2916,22 @@ special("j_celesta_squchan", "j_celesta_limealicious", {
                 return true
             end,
         })
+    end,
+})
+
+-- Suko + KokoNuts: KokoNuts's seven, arriving Foil, as the round starts.
+special("j_celesta_suko", "j_celesta_kokonuts", {
+    key = "suko_koko",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.setting_blind and not context.blueprint
+            and not (context.blueprint_card or card).getting_sliced then
+            koko_sevens(card, 1, "celesta_bind_suko_koko", { foil = true })
+        end
     end,
 })
 

@@ -1147,6 +1147,14 @@ return {
                     "{C:inactive}(Must have room)",
                 },
             },
+            j_celesta_pheromoan = {
+                name = "Pheromoan",
+                text = {
+                    "Converts {C:attention}unscoring{} played cards",
+                    "to the {C:attention}enhancement{} of the",
+                    "first scoring card",
+                },
+            },
             j_celesta_piapiufo = {
                 name = "PiapiUFO",
                 text = {
@@ -1461,6 +1469,14 @@ return {
                     "fills every empty Joker slot with a",
                     "random {C:dark_edition}Holographic{} Joker",
                     "{C:inactive}(Rounds held: #2#)",
+                },
+            },
+            j_celesta_suko = {
+                name = "Suko",
+                text = {
+                    "At the end of the {C:attention}shop{},",
+                    "create a random {C:dark_edition}Foil{} Joker",
+                    "{C:inactive}(Must have room)",
                 },
             },
             j_celesta_suto = {
@@ -2002,6 +2018,14 @@ return {
                 text = {
                     "At the start of the round, add a",
                     "{C:dark_edition}Holographic{} {C:attention}Limestone Card{}",
+                    "to your full deck",
+                },
+            },
+            celesta_bind_suko_koko = {
+                name = "Suko + KokoNuts",
+                text = {
+                    "At the start of the round, add a",
+                    "{C:dark_edition}Foil{} {C:attention}Lucky{} {C:attention}7{} of {C:spades}Spades{}",
                     "to your full deck",
                 },
             },

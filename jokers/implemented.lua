@@ -9704,3 +9704,102 @@ SMODS.Joker {
                  card = card }
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Suko [Rare] - leaving the shop, a Foil Joker.
+--------------------------------------------------------------------------------
+--
+-- context.ending_shop is raised as "Next Round" leaves the shop. Room is asked
+-- the way every vanilla Joker-maker asks it, buffer included, and the slot is
+-- reserved across the event that fills it - Riff-Raff's shape - so two things
+-- making a Joker in the same moment cannot both take the last slot.
+
+SMODS.Joker {
+    key = "suko",
+    atlas = "suko",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = false,
+    blueprint_compat = true, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.e_foil
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        if not context.ending_shop then return end
+        if not (G.jokers and G.jokers.config) then return end
+        if #G.jokers.cards + (G.GAME.joker_buffer or 0) >= G.jokers.config.card_limit then
+            return
+        end
+
+        G.GAME.joker_buffer = (G.GAME.joker_buffer or 0) + 1
+        G.E_MANAGER:add_event(Event {
+            trigger = "before", delay = 0.0,
+            func = function()
+                local made = SMODS.add_card { set = "Joker", key_append = "celesta_suko" }
+                if made then made:set_edition({ foil = true }, true) end
+                G.GAME.joker_buffer = math.max(0, (G.GAME.joker_buffer or 1) - 1)
+                return true
+            end,
+        })
+        return { message = localize("k_plus_joker"), colour = G.C.SECONDARY_SET.Joker,
+                 card = card }
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Pheromoan [Uncommon] - the cards along for the ride take the first scorer's
+-- enhancement.
+--------------------------------------------------------------------------------
+--
+-- context.before, FeFe's moment: after the poker hand is named and before
+-- anything scores. The first scoring card is scoring_hand[1], which keeps the
+-- order the cards were played in. A first card with no enhancement has none to
+-- hand on, so nothing changes. Played cards are converted under unjudged, for
+-- the reason FeFe gives.
+
+SMODS.Joker {
+    key = "pheromoan",
+    atlas = "pheromoan",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = false,
+    -- A copy has nothing left to convert.
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        if not (context.before and not context.blueprint) then return end
+        local scoring = context.scoring_hand or {}
+        local first = scoring[1]
+        local center = first and first.config and first.config.center
+        if not center or center == G.P_CENTERS.c_base then return end
+
+        local scored = {}
+        for _, scorer in ipairs(scoring) do scored[scorer] = true end
+
+        local converted = 0
+        for _, played in ipairs(context.full_hand or {}) do
+            if not scored[played] and played.config.center ~= center then
+                CelestasMod.unjudged(played, function()
+                    played:set_ability(center, nil, true)
+                end)
+                converted = converted + 1
+                local target = played
+                G.E_MANAGER:add_event(Event {
+                    func = function() target:juice_up() return true end
+                })
+            end
+        end
+
+        if converted > 0 then
+            return { message = localize("celesta_plus_enhancement"),
+                     colour = G.C.SECONDARY_SET.Enhanced, card = card }
+        end
+    end,
+}
