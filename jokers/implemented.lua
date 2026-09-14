@@ -198,7 +198,7 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Kumi [Rare]
+-- Kumi [Uncommon]
 -- Destroys all scoring Gold cards in the played hand, with a 1 in 4 chance
 -- to give $20 for each Gold card destroyed.
 --------------------------------------------------------------------------------
@@ -208,7 +208,7 @@ SMODS.Joker {
     atlas = "kumi",
     pos = { x = 0, y = 0 },
 
-    rarity = 3,
+    rarity = 2,
     cost = 8,
     unlocked = true,
     discovered = false,
