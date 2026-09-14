@@ -2936,6 +2936,617 @@ special("j_celesta_suko", "j_celesta_kokonuts", {
 })
 
 --------------------------------------------------------------------------------
+-- Money, Stars, Clubs and Driftwood
+--------------------------------------------------------------------------------
+
+local function is_star_card(card)
+    return card ~= nil and card.is_suit ~= nil and card:is_suit(CelestasMod.STARS_SUIT)
+end
+
+local function star_vars()
+    return CelestasMod.suit_name_and_colour(CelestasMod.STARS_SUIT, CelestasMod.STARS_COLOUR, true)
+end
+
+--- A card's rank as money: its nominal, which is 2 to 10, 10 for a face card
+--- and 11 for an Ace. A card with no rank is worth nothing.
+local function rank_value(card)
+    if not (card and card.base) or SMODS.has_no_rank(card) then return 0 end
+    return card.base.nominal or 0
+end
+
+--- What the destroyed cards of `suit` are worth, or nil for nothing.
+---
+--- remove_playing_cards is raised for every way a playing card is destroyed -
+--- SMODS.destroy_cards, a discard, a Tarot - with the cards in context.removed.
+local function paid_for_destroyed(context, suit)
+    if not (context.remove_playing_cards and not context.blueprint) then return nil end
+    local total = 0
+    for _, gone in ipairs(context.removed or {}) do
+        if gone.is_suit and gone:is_suit(suit) then total = total + rank_value(gone) end
+    end
+    if total > 0 then return total end
+end
+
+--- Yuzu's payout, for the held cards `wanted` accepts.
+---
+--- The held-in-hand pass while a hand is played, and not the end-of-round one,
+--- which would pay a second time on the cash-out - Yuzu's own reason.
+local function yuzu_held(card, context, state, key, wanted)
+    if not (context.individual and context.cardarea == G.hand
+            and not context.end_of_round) then return end
+    local other = context.other_card
+    if not (other and wanted(other)) then return end
+    if not SMODS.pseudorandom_probability(card, key, 1, state.odds, key) then return end
+    return { dollars = state.dollars, card = card }
+end
+
+local function yuzu_vars(card, state, key)
+    local n, d = SMODS.get_probability_vars(card, 1, state.odds, key)
+    return n, d
+end
+
+--- ^Mult is Talisman's; asked at score time, for the reason Vienna gives.
+local function power_supported(id, name)
+    if Card.get_chip_e_mult ~= nil then return true end
+    CelestasMod.warn_once(id, name .. " scores ^Mult, which needs Talisman; "
+        .. "without it the pair does nothing")
+    return false
+end
+
+-- Hannah Hyrule + KokoNuts: the last scoring card gives X Chips and X Mult.
+special("j_celesta_hannahhyrule", "j_celesta_kokonuts", {
+    key = "hannah_koko",
+    config = { x_chips = 1.7, x_mult = 1.7 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_chips, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play
+                and context.other_card) then return end
+        local scoring = context.scoring_hand or {}
+        if context.other_card ~= scoring[#scoring] then return end
+        return { x_chips = state.x_chips, x_mult = state.x_mult, card = context.other_card }
+    end,
+})
+
+-- Yoclesh + Milky: a scored Heart may bring a Negative consumable with it.
+--
+-- Negative, so it needs no room in the tray; made from an event, so it arrives
+-- after the card that earned it has scored.
+special("j_celesta_yoclesh", "j_celesta_milky", {
+    key = "yoclesh_milky",
+    config = { odds = 4 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(card, 1, state.odds, "celesta_bind_yoclesh_milky")
+        return { vars = { n, d } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play
+                and context.other_card) then return end
+        if not context.other_card:is_suit("Hearts") then return end
+        if not SMODS.pseudorandom_probability(card, "celesta_bind_yoclesh_milky",
+                1, state.odds, "celesta_bind_yoclesh_milky") then return end
+        G.E_MANAGER:add_event(Event {
+            func = function()
+                SMODS.add_card { set = "Consumeables", edition = "e_negative",
+                                 key_append = "celesta_bind_yoclesh_milky" }
+                return true
+            end,
+        })
+        return { message = localize("celesta_plus_consumable"), colour = G.C.PURPLE, card = card }
+    end,
+})
+
+-- Vienna + Trickywi: a destroyed Star pays its rank.
+special("j_celesta_vienna", "j_celesta_trickywi", {
+    key = "vienna_tricky",
+
+    loc_vars = function(def, card, state)
+        local name, colour = star_vars()
+        return { vars = { name, colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        local total = paid_for_destroyed(context, CelestasMod.STARS_SUIT)
+        if total then return { dollars = total, card = card } end
+    end,
+})
+
+-- Trickywi + Nihmune: a destroyed Club pays its rank.
+special("j_celesta_trickywi", "j_celesta_nihmune", {
+    key = "tricky_nihmune",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        local total = paid_for_destroyed(context, "Clubs")
+        if total then return { dollars = total, card = card } end
+    end,
+})
+
+-- Rainhoe + Nihmune: Rainhoe's tripled interest, on a deck of Clubs instead of
+-- a wet round.
+--
+-- Rainhoe's shape: interest is not a Joker effect, so G.GAME.interest_amount is
+-- raised in the end_of_round pass, before the cash-out reads it, and lowered
+-- again at ending_shop so it cannot compound. Recorded as a difference against
+-- what the pair has added, so selling or debuffing it cannot leave it behind.
+local function pair_interest_hold(state, on)
+    if not G.GAME then return false end
+    local applied = state.applied or 0
+    if on then
+        if applied > 0 then return false end
+        local add = (G.GAME.interest_amount or 0) * (state.scale - 1)
+        if add <= 0 then return false end
+        G.GAME.interest_amount = G.GAME.interest_amount + add
+        state.applied = add
+        return true
+    end
+    if applied <= 0 then return false end
+    G.GAME.interest_amount = (G.GAME.interest_amount or 0) - applied
+    state.applied = 0
+    return true
+end
+
+special("j_celesta_rainhoe", "j_celesta_nihmune", {
+    key = "rainhoe_nihmune",
+    config = { scale = 3, clubs = 30, applied = 0 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.scale, state.clubs, CelestasMod.count_suit_in_deck("Clubs") } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            local enough = CelestasMod.count_suit_in_deck("Clubs") >= state.clubs
+            if pair_interest_hold(state, enough) and enough then
+                return { message = localize("k_upgrade_ex"), colour = G.C.MONEY, card = card }
+            end
+        end
+        if context.ending_shop and not context.blueprint then
+            pair_interest_hold(state, false)
+        end
+    end,
+
+    remove_from_deck = function(def, card, state, from_debuff)
+        pair_interest_hold(state, false)
+    end,
+})
+
+-- Yuzu + Sinder: held Driftwood may pay.
+special("j_celesta_yuzu", "j_celesta_sinder", {
+    key = "yuzu_sinder",
+    config = { odds = 2, dollars = 3 },
+
+    loc_vars = function(def, card, state)
+        local n, d = yuzu_vars(card, state, "celesta_bind_yuzu_sinder")
+        return { vars = { n, d, state.dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        return yuzu_held(card, context, state, "celesta_bind_yuzu_sinder", function(held)
+            return SMODS.has_enhancement(held, "m_celesta_driftwood")
+        end)
+    end,
+})
+
+-- Yuzu + Bao: during a Downpour, any held card may pay.
+special("j_celesta_yuzu", "j_celesta_bao", {
+    key = "yuzu_bao",
+    config = { odds = 2, dollars = 3 },
+
+    loc_vars = function(def, card, state)
+        local n, d = yuzu_vars(card, state, "celesta_bind_yuzu_bao")
+        return { vars = { n, d, state.dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        return yuzu_held(card, context, state, "celesta_bind_yuzu_bao", raining)
+    end,
+})
+
+-- Yuzu + Nihmune: held Clubs may pay.
+special("j_celesta_yuzu", "j_celesta_nihmune", {
+    key = "yuzu_nihmune",
+    config = { odds = 2, dollars = 3 },
+
+    loc_vars = function(def, card, state)
+        local n, d = yuzu_vars(card, state, "celesta_bind_yuzu_nihmune")
+        return { vars = { n, d, state.dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        return yuzu_held(card, context, state, "celesta_bind_yuzu_nihmune", function(held)
+            return held.is_suit and held:is_suit("Clubs")
+        end)
+    end,
+})
+
+-- Yuzu + Vienna: held Stars may pay.
+special("j_celesta_yuzu", "j_celesta_vienna", {
+    key = "yuzu_vienna",
+    config = { odds = 2, dollars = 3 },
+
+    loc_vars = function(def, card, state)
+        local n, d = yuzu_vars(card, state, "celesta_bind_yuzu_vienna")
+        local name, colour = star_vars()
+        return { vars = { n, d, state.dollars, name, colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        return yuzu_held(card, context, state, "celesta_bind_yuzu_vienna", is_star_card)
+    end,
+})
+
+-- Bao + Vienna: played Stars give +Mult, or X Mult during a Downpour.
+special("j_celesta_bao", "j_celesta_vienna", {
+    key = "bao_vienna",
+    config = { mult = 5, x_mult = 1.5 },
+
+    loc_vars = function(def, card, state)
+        local name, colour = star_vars()
+        return { vars = { state.mult, state.x_mult, name, colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play
+                and is_star_card(context.other_card)) then return end
+        if raining() then return { x_mult = state.x_mult, card = context.other_card } end
+        return { mult = state.mult, card = context.other_card }
+    end,
+})
+
+-- Trickywi + Bao: money gained during a Downpour is doubled. See the
+-- ease_dollars wrapper below: every payout - a Joker's `dollars`, interest,
+-- a sale - ends there, and nothing else sees all of them.
+special("j_celesta_trickywi", "j_celesta_bao", {
+    key = "tricky_bao",
+    config = { scale = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.scale } }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+local function gained(mod)
+    if type(mod) == "number" then return mod > 0 end
+    if type(mod) == "table" and to_big then return to_big(mod) > to_big(0) end
+    return false
+end
+
+local celesta_bind_ease_dollars_ref = ease_dollars
+if celesta_bind_ease_dollars_ref then
+    function ease_dollars(mod, ...)
+        if raining() then
+            local holder, def = Bind.find_special("tricky_bao")
+            if holder and not holder.debuff and gained(mod) then
+                mod = mod * (Bind.special_state(holder, def).scale or 2)
+            end
+        end
+        return celesta_bind_ease_dollars_ref(mod, ...)
+    end
+end
+
+-- Yuzu + Juniper Actias: X Chips for every Star added to the deck.
+--
+-- Juniper's count: playing_card_added, by base.suit, for the reason Juniper
+-- gives - is_suit would let Arielle make every card a Star.
+special("j_celesta_yuzu", "j_celesta_juniperactias", {
+    key = "yuzu_juniper",
+    config = { x_chips = 1, x_chip_gain = 0.1 },
+
+    loc_vars = function(def, card, state)
+        local name, colour = star_vars()
+        return { vars = { state.x_chip_gain, state.x_chips, name, colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.playing_card_added and not context.blueprint
+            and not card.getting_sliced then
+            local added = 0
+            for _, new_card in ipairs(context.cards or {}) do
+                local base = new_card.base
+                if base and base.suit == CelestasMod.STARS_SUIT then added = added + 1 end
+            end
+            if added == 0 then return end
+            state.x_chips = state.x_chips + state.x_chip_gain * added
+            return {
+                message = localize { type = "variable", key = "a_xchips", vars = { state.x_chips } },
+                colour = G.C.CHIPS, card = card,
+            }
+        end
+
+        if context.joker_main and state.x_chips > 1 then
+            return { x_chips = state.x_chips }
+        end
+    end,
+})
+
+-- Sinder + ShyLily: played Driftwood is retriggered.
+special("j_celesta_sinder", "j_celesta_shylily", {
+    key = "sinder_shylily",
+    config = { repetitions = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.repetitions } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.repetition and context.cardarea == G.play
+                and context.other_card) then return end
+        if not SMODS.has_enhancement(context.other_card, "m_celesta_driftwood") then return end
+        return { message = localize("k_again_ex"), repetitions = state.repetitions, card = card }
+    end,
+})
+
+-- Sinder + Trickywi: a destroyed Driftwood card pays.
+special("j_celesta_sinder", "j_celesta_trickywi", {
+    key = "sinder_tricky",
+    config = { dollars = 6 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.remove_playing_cards and not context.blueprint) then return end
+        local found = 0
+        for _, gone in ipairs(context.removed or {}) do
+            if SMODS.has_enhancement(gone, "m_celesta_driftwood") then found = found + 1 end
+        end
+        if found > 0 then return { dollars = found * state.dollars, card = card } end
+    end,
+})
+
+-- Sinder + Vienna: Vienna's chance at ^Mult, on played Driftwood.
+special("j_celesta_sinder", "j_celesta_vienna", {
+    key = "sinder_vienna",
+    config = { odds = 3, e_mult = 1.15 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(card, 1, state.odds, "celesta_bind_sinder_vienna")
+        return { vars = { n, d, state.e_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play) then return end
+        local other = context.other_card
+        if not (other and SMODS.has_enhancement(other, "m_celesta_driftwood")) then return end
+        if not SMODS.pseudorandom_probability(card, "celesta_bind_sinder_vienna",
+                1, state.odds, "celesta_bind_sinder_vienna") then return end
+        if not power_supported("sinder_vienna_no_talisman", "Sinder + Vienna") then return end
+        return { e_mult = state.e_mult, card = other }
+    end,
+})
+
+-- Sinder + Nihmune: scoring unenhanced Clubs become Driftwood.
+--
+-- context.before, FeFe's moment, and under unjudged for FeFe's reason.
+special("j_celesta_sinder", "j_celesta_nihmune", {
+    key = "sinder_nihmune",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.before and not context.blueprint) then return end
+        local driftwood = G.P_CENTERS.m_celesta_driftwood
+        if not driftwood then return end
+        local converted = 0
+        for _, scored in ipairs(context.scoring_hand or {}) do
+            if scored.config.center == G.P_CENTERS.c_base and scored:is_suit("Clubs") then
+                CelestasMod.unjudged(scored, function()
+                    scored:set_ability(driftwood, nil, true)
+                end)
+                converted = converted + 1
+                local target = scored
+                G.E_MANAGER:add_event(Event {
+                    func = function() target:juice_up() return true end
+                })
+            end
+        end
+        if converted > 0 then
+            return { message = localize("celesta_plus_enhancement"),
+                     colour = G.C.SECONDARY_SET.Enhanced, card = card }
+        end
+    end,
+})
+
+-- Yoka Siri + ItsDeadlyBoop: a Full House may scale the neighbour, the way
+-- Yoka Siri does after a Boss.
+--
+-- The Joker to the right of the merged card, scaled by Yoka Siri's own
+-- routine (CelestasMod.yoka_scale), so Cryptid is asked when it is installed
+-- and a merge on the right has both halves scaled.
+special("j_celesta_yokasiri", "j_celesta_itsdeadlyboop", {
+    key = "yoka_boop",
+    config = { odds = 4, scale = 1.5 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(card, 1, state.odds, "celesta_bind_yoka_boop")
+        return { vars = { n, d, state.scale } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.before and not context.blueprint) then return end
+        if not (context.scoring_name == "Full House" or context.scoring_name == "Flush House") then return end
+        local row = G.jokers and G.jokers.cards
+        if not row then return end
+        local index
+        for i, joker in ipairs(row) do
+            if joker == card then index = i break end
+        end
+        local target = index and row[index + 1]
+        if not target or not CelestasMod.yoka_scale then return end
+        if not SMODS.pseudorandom_probability(card, "celesta_bind_yoka_boop",
+                1, state.odds, "celesta_bind_yoka_boop") then return end
+        if CelestasMod.yoka_scale(target, state.scale) then
+            return { message = localize("k_upgrade_ex"), colour = G.C.GREEN, card = card }
+        end
+    end,
+})
+
+-- Shenpai + RTGame: a Four of a Kind grows X Mult by the ranks it scored.
+--
+-- Shenpai's test - four of one rank among the scoring cards, which a Five of a
+-- Kind passes too - and the ranks summed as rank_value counts them.
+special("j_celesta_shenpai", "j_celesta_rtgame", {
+    key = "shenpai_rt",
+    config = { x_mult = 1, x_mult_gain = 0.1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.before and not context.blueprint then
+            local by_rank, sum = {}, 0
+            for _, scored in ipairs(context.scoring_hand or {}) do
+                if not SMODS.has_no_rank(scored) then
+                    local id = scored:get_id()
+                    by_rank[id] = (by_rank[id] or 0) + 1
+                    sum = sum + rank_value(scored)
+                end
+            end
+            local four = false
+            for _, count in pairs(by_rank) do
+                if count >= 4 then four = true break end
+            end
+            if four and sum > 0 then
+                state.x_mult = state.x_mult + state.x_mult_gain * sum
+                return {
+                    message = localize { type = "variable", key = "a_xmult", vars = { state.x_mult } },
+                    colour = G.C.MULT, card = card,
+                }
+            end
+        end
+
+        if context.joker_main and state.x_mult > 1 then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+-- Rin Penrose + RTGame: Rin's banked Chips, paid in X Mult.
+--
+-- Rin's shape: the hand's total read in the `after` pass, banked, and paid a
+-- step per 32 with the remainder kept. Divided rather than looped, and a total
+-- past what a number holds stops banking rather than writing inf into a save.
+local function scored_chips()
+    local n = hand_chips
+    if type(n) ~= "number" and type(to_number) == "function" then
+        local ok, converted = pcall(to_number, n)
+        n = ok and converted or nil
+    end
+    if type(n) ~= "number" or n ~= n or n == math.huge or n == -math.huge then return 0 end
+    return n
+end
+
+special("j_celesta_rinpenrose", "j_celesta_rtgame", {
+    key = "rin_rt",
+    config = { x_mult = 1, x_mult_gain = 0.01, chips_per_step = 32, bank = 0 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, state.chips_per_step,
+                          state.chips_per_step - (state.bank or 0), state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.after and not context.blueprint then
+            local scored = scored_chips()
+            if scored <= 0 then return end
+            state.bank = (state.bank or 0) + scored
+            local steps = math.floor(state.bank / state.chips_per_step)
+            if steps > 0 then
+                state.bank = state.bank - steps * state.chips_per_step
+                state.x_mult = state.x_mult + steps * state.x_mult_gain
+                return {
+                    message = localize { type = "variable", key = "a_xmult", vars = { state.x_mult } },
+                    colour = G.C.MULT, card = card,
+                }
+            end
+        end
+
+        if context.joker_main and state.x_mult > 1 then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+-- CottontailVA + FeFe: scoring Hearts may take a Star Seal, and once the hand
+-- has scored, every scoring card becomes a Heart.
+--
+-- The seal is rolled as each card scores, so it is the Hearts at that moment
+-- that are asked. The conversion waits for `after`, when scoring is finished -
+-- which is what keeps it from changing this hand's suits - and goes through
+-- unjudged for FeFe's reason.
+special("j_celesta_cottontail", "j_celesta_fefe", {
+    key = "cottontail_fefe",
+    config = { odds = 4 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(card, 1, state.odds, "celesta_bind_cottontail_fefe")
+        return { vars = { n, d } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.individual and context.cardarea == G.play and context.other_card then
+            local other = context.other_card
+            if not other:is_suit("Hearts") then return end
+            local seal = CelestasMod.SEAL_KEYS and CelestasMod.SEAL_KEYS.Star
+            if not seal or other.seal == seal then return end
+            if not SMODS.pseudorandom_probability(card, "celesta_bind_cottontail_fefe",
+                    1, state.odds, "celesta_bind_cottontail_fefe") then return end
+            other:set_seal(seal, nil, true)
+            return { message = localize("celesta_sealed"), colour = G.C.PURPLE, card = card }
+        end
+
+        if context.after and not context.blueprint then
+            local converted = 0
+            for _, scored in ipairs(context.scoring_hand or {}) do
+                if not SMODS.has_no_suit(scored) and not scored:is_suit("Hearts") then
+                    CelestasMod.unjudged(scored, function() SMODS.change_base(scored, "Hearts") end)
+                    converted = converted + 1
+                    local target = scored
+                    G.E_MANAGER:add_event(Event {
+                        func = function() target:juice_up() return true end
+                    })
+                end
+            end
+            if converted > 0 then
+                return { message = localize("celesta_hearts"), colour = G.C.HEARTS, card = card }
+            end
+        end
+    end,
+})
+
+-- Ray + LaynaLazar: played Mult cards are retriggered.
+special("j_celesta_ray", "j_celesta_laynalazar", {
+    key = "ray_layna",
+    config = { repetitions = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.repetitions } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.repetition and context.cardarea == G.play
+                and context.other_card) then return end
+        if not SMODS.has_enhancement(context.other_card, "m_mult") then return end
+        return { message = localize("k_again_ex"), repetitions = state.repetitions, card = card }
+    end,
+})
+
+--------------------------------------------------------------------------------
 -- Unmerging: when one half destroys itself
 --------------------------------------------------------------------------------
 --

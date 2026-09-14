@@ -2029,6 +2029,176 @@ return {
                     "to your full deck",
                 },
             },
+            celesta_bind_hannah_koko = {
+                name = "Hannah Hyrule + KokoNuts",
+                text = {
+                    "The last scoring card gives",
+                    "{X:chips,C:white}X#1#{} Chips and {X:mult,C:white}X#2#{} Mult",
+                    "when scored",
+                },
+            },
+            celesta_bind_yoclesh_milky = {
+                name = "Yoclesh + Milky",
+                text = {
+                    "Played {C:hearts}Heart{} cards have a",
+                    "{C:green}#1# in #2#{} chance to create a",
+                    "random {C:dark_edition}Negative{} consumable",
+                    "when scored",
+                },
+            },
+            celesta_bind_vienna_tricky = {
+                name = "Vienna + Trickywi",
+                text = {
+                    "When a {V:1}#1#{} card is destroyed,",
+                    "earn {C:money}${} equal to its rank",
+                    "{C:inactive}(Face cards count as 10)",
+                },
+            },
+            celesta_bind_tricky_nihmune = {
+                name = "Trickywi + Nihmune",
+                text = {
+                    "When a {C:clubs}Club{} card is destroyed,",
+                    "earn {C:money}${} equal to its rank",
+                    "{C:inactive}(Face cards count as 10)",
+                },
+            },
+            celesta_bind_rainhoe_nihmune = {
+                name = "Rainhoe + Nihmune",
+                text = {
+                    "{X:money,C:white}X#1#{} interest if there are",
+                    "{C:attention}#2#{} or more {C:clubs}Club{} cards",
+                    "in your full deck",
+                    "{C:inactive}(Currently {C:attention}#3#{C:inactive})",
+                },
+            },
+            celesta_bind_yuzu_sinder = {
+                name = "Yuzu + Sinder",
+                text = {
+                    "{C:green}#1# in #2#{} chance for {C:attention}Driftwood{}",
+                    "cards held in hand to give",
+                    "{C:money}$#3#{} when a hand is played",
+                },
+            },
+            celesta_bind_yuzu_bao = {
+                name = "Yuzu + Bao",
+                text = {
+                    "During a {C:blue}Downpour{}, {C:green}#1# in #2#{}",
+                    "chance for cards held in hand",
+                    "to give {C:money}$#3#{} when a hand is played",
+                },
+            },
+            celesta_bind_yuzu_nihmune = {
+                name = "Yuzu + Nihmune",
+                text = {
+                    "{C:green}#1# in #2#{} chance for {C:clubs}Club{}",
+                    "cards held in hand to give",
+                    "{C:money}$#3#{} when a hand is played",
+                },
+            },
+            celesta_bind_yuzu_vienna = {
+                name = "Yuzu + Vienna",
+                text = {
+                    "{C:green}#1# in #2#{} chance for {V:1}#4#{}",
+                    "cards held in hand to give",
+                    "{C:money}$#3#{} when a hand is played",
+                },
+            },
+            celesta_bind_bao_vienna = {
+                name = "Bao + Vienna",
+                text = {
+                    "Played {V:1}#3#{} cards give {C:mult}+#1#{} Mult",
+                    "when scored, or {X:mult,C:white}X#2#{} Mult",
+                    "during a {C:blue}Downpour{}",
+                },
+            },
+            celesta_bind_tricky_bao = {
+                name = "Trickywi + Bao",
+                text = {
+                    "Money earned during a",
+                    "{C:blue}Downpour{} is {X:money,C:white}X#1#{}",
+                },
+            },
+            celesta_bind_yuzu_juniper = {
+                name = "Yuzu + Juniper Actias",
+                text = {
+                    "This Joker gains {X:chips,C:white}X#1#{} Chips",
+                    "for each {V:1}#3#{} card added to your deck",
+                    "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_sinder_shylily = {
+                name = "Sinder + ShyLily",
+                text = {
+                    "Retrigger played {C:attention}Driftwood{}",
+                    "cards {C:attention}#1#{} times",
+                },
+            },
+            celesta_bind_sinder_tricky = {
+                name = "Sinder + Trickywi",
+                text = {
+                    "When a {C:attention}Driftwood{} card",
+                    "is destroyed, earn {C:money}$#1#{}",
+                },
+            },
+            celesta_bind_sinder_vienna = {
+                name = "Sinder + Vienna",
+                text = {
+                    "{C:green}#1# in #2#{} chance for played",
+                    "{C:attention}Driftwood{} cards to give",
+                    "{X:mult,C:white}^#3#{} Mult when scored",
+                },
+            },
+            celesta_bind_sinder_nihmune = {
+                name = "Sinder + Nihmune",
+                text = {
+                    "Converts scoring unenhanced",
+                    "{C:clubs}Club{} cards to {C:attention}Driftwood{}",
+                },
+            },
+            celesta_bind_yoka_boop = {
+                name = "Yoka Siri + ItsDeadlyBoop",
+                text = {
+                    "{C:green}#1# in #2#{} chance to multiply the values",
+                    "of the Joker to the right by {X:attention,C:white}X#3#{}",
+                    "when a {C:attention}Full House{} or",
+                    "{C:attention}Flush House{} is played",
+                },
+            },
+            celesta_bind_shenpai_rt = {
+                name = "Shenpai + RTGame",
+                text = {
+                    "If scoring hand contains {C:attention}4{} cards",
+                    "of the same rank, this Joker gains",
+                    "{X:mult,C:white}X#1#{} Mult times the sum of",
+                    "the scoring cards' ranks",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_rin_rt = {
+                name = "Rin Penrose + RTGame",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult",
+                    "every {C:attention}#2#{} Chips scored",
+                    "{C:inactive}(#3# Chips remaining)",
+                    "{C:inactive}(Currently {X:mult,C:white}X#4#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_cottontail_fefe = {
+                name = "CottontailVA + FeFe",
+                text = {
+                    "{C:green}#1# in #2#{} chance to add a {C:attention}Star Seal{}",
+                    "to scoring {C:hearts}Heart{} cards",
+                    "Converts scoring cards to {C:hearts}Hearts{}",
+                    "after the hand finishes scoring",
+                },
+            },
+            celesta_bind_ray_layna = {
+                name = "Ray + LaynaLazar",
+                text = {
+                    "Retrigger played {C:attention}Mult{}",
+                    "cards {C:attention}#1#{} time",
+                },
+            },
             celesta_bind_arielle_froggy = {
                 name = "Arielle + FroggyLoch",
                 text = {

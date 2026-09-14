@@ -6121,6 +6121,10 @@ local function yoka_scale(target, scale)
     return changed
 end
 
+-- Shared with Yoka Siri + ItsDeadlyBoop in merge/bind.lua, which scales a
+-- neighbour the same way.
+CelestasMod.yoka_scale = yoka_scale
+
 SMODS.Joker {
     key = "yokasiri",
     atlas = "yokasiri",

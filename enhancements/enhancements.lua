@@ -81,9 +81,17 @@ end
 --- True when a Nostro is in play and able to act.
 --- Asked at the moment a Gash breaks rather than cached: Nostro can be
 --- bought, sold or debuffed between one break and the next.
+---
+--- Not a Nostro inside a merge that replaces it, for the reason sinder_active
+--- gives: find_card sees only the host, so a pair would otherwise keep Nostro's
+--- effect in one merge order and lose it in the other.
 function CelestasMod.nostro_active()
+    local Bind = CelestasMod.Bind
     for _, joker in ipairs(SMODS.find_card("j_celesta_nostro")) do
-        if not joker.debuff then return true end
+        if not joker.debuff
+            and not (Bind and Bind.replacing_special and Bind.replacing_special(joker)) then
+            return true
+        end
     end
     return false
 end
@@ -722,9 +730,19 @@ SMODS.Enhancement {
 --- True when a Sinder is in play and able to act.
 --- Asked at the moment a Driftwood would break rather than cached: Sinder can
 --- be bought, sold or debuffed between one end of round and the next.
+---
+--- Not a Sinder inside a merge that replaces it. SMODS.find_card matches the
+--- card's own centre, so it finds Sinder as the HOST of such a merge but never
+--- as the absorbed half - and a pair's effect is meant to stand in for both
+--- halves either way round, which Sinder + Trickywi, paid for broken
+--- Driftwood, depends on.
 function CelestasMod.sinder_active()
+    local Bind = CelestasMod.Bind
     for _, joker in ipairs(SMODS.find_card("j_celesta_sinder")) do
-        if not joker.debuff then return true end
+        if not joker.debuff
+            and not (Bind and Bind.replacing_special and Bind.replacing_special(joker)) then
+            return true
+        end
     end
     return false
 end
