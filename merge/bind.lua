@@ -2775,6 +2775,145 @@ special("j_celesta_shylily", "j_celesta_nihmune", {
     end,
 })
 
+-- Fream + Nostro: every played Gash card is retriggered.
+special("j_celesta_fream", "j_celesta_nostro", {
+    key = "fream_nostro",
+    config = { repetitions = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.repetitions } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.repetition and context.cardarea == G.play
+                and context.other_card) then return end
+        if not SMODS.has_enhancement(context.other_card, "m_celesta_gash") then return end
+        return {
+            message = localize("k_again_ex"),
+            repetitions = state.repetitions,
+            card = card,
+        }
+    end,
+})
+
+-- Kairyu + BeriBug: every played 8 is retriggered once for each discard used
+-- this round.
+--
+-- discards_used is the round's own count, reset with the round, so the number
+-- is read when the 8 is scored rather than kept anywhere.
+special("j_celesta_kairyucrocodile", "j_celesta_beribug", {
+    key = "kairyu_beribug",
+    config = { repetitions = 1 },
+
+    loc_vars = function(def, card, state)
+        local round = G.GAME and G.GAME.current_round
+        return { vars = { state.repetitions, (round and round.discards_used or 0) * state.repetitions } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.repetition and context.cardarea == G.play
+                and context.other_card) then return end
+        if context.other_card:get_id() ~= 8 then return end
+        local used = G.GAME.current_round.discards_used or 0
+        if used <= 0 then return end
+        return {
+            message = localize("k_again_ex"),
+            repetitions = used * state.repetitions,
+            card = card,
+        }
+    end,
+})
+
+-- Suto + FeFe: every played card, and every Heart held in hand, becomes Wild.
+--
+-- context.before, FeFe's moment: after the poker hand is named and before
+-- anything scores, so the Wild cards count during scoring without changing
+-- which hand was played. Played cards are converted under unjudged, FeFe's
+-- guard against a Pillar debuffing a card in the hand it was converted in.
+special("j_celesta_suto", "j_celesta_fefe", {
+    key = "suto_fefe",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.before and not context.blueprint) then return end
+        local wild = G.P_CENTERS.m_wild
+        if not wild then return end
+
+        local converted = 0
+        local function make_wild(target, played)
+            if SMODS.has_enhancement(target, "m_wild") then return end
+            if played then
+                CelestasMod.unjudged(target, function() target:set_ability(wild, nil, true) end)
+            else
+                target:set_ability(wild, nil, true)
+            end
+            converted = converted + 1
+            G.E_MANAGER:add_event(Event {
+                func = function() target:juice_up() return true end
+            })
+        end
+
+        for _, played in ipairs(context.full_hand or {}) do
+            make_wild(played, true)
+        end
+        for _, held in ipairs((G.hand and G.hand.cards) or {}) do
+            if held:is_suit("Hearts") and not SMODS.has_enhancement(held, "m_wild") then
+                make_wild(held, false)
+            end
+        end
+
+        if converted > 0 then
+            return {
+                message = localize("k_upgrade_ex"),
+                colour = G.C.SECONDARY_SET.Enhanced,
+                card = card,
+            }
+        end
+    end,
+})
+
+-- Squchan + Laimu: a Holographic Limestone card added to the deck as the round
+-- starts.
+--
+-- Vanilla Marble Joker's shape, which is the same thing with a Stone card:
+-- chosen at setting_blind, made in G.play so it is seen arriving, then drawn
+-- into the deck, and announced to the Jokers that care about new cards.
+special("j_celesta_squchan", "j_celesta_limealicious", {
+    key = "squchan_laimu",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.setting_blind and not card.getting_sliced) then return end
+        local limestone = G.P_CENTERS.m_celesta_limestone
+        if not limestone then return end
+
+        G.E_MANAGER:add_event(Event {
+            func = function()
+                local stone = create_playing_card({
+                    front = pseudorandom_element(G.P_CARDS, pseudoseed("celesta_bind_squchan_laimu")),
+                    center = limestone }, G.play, nil, nil, { G.C.SECONDARY_SET.Enhanced })
+                stone:set_edition({ holo = true }, true)
+                SMODS.calculate_effect({ message = localize("celesta_plus_limestone"),
+                                         colour = G.C.SECONDARY_SET.Enhanced }, card)
+                G.E_MANAGER:add_event(Event {
+                    func = function()
+                        draw_card(G.play, G.deck, 90, "up", nil)
+                        return true
+                    end,
+                })
+                playing_card_joker_effects({ stone })
+                return true
+            end,
+        })
+    end,
+})
+
 --------------------------------------------------------------------------------
 -- Unmerging: when one half destroys itself
 --------------------------------------------------------------------------------

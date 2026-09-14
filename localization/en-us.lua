@@ -861,7 +861,7 @@ return {
                 },
             },
             j_celesta_limealicious = {
-                name = "Limealicious",
+                name = "Laimu",
                 text = {
                     "At the start of each round,",
                     "adds a {C:attention}Limestone{} card",
@@ -1974,6 +1974,37 @@ return {
                     "{C:clubs}Club{} card {C:attention}#1#{} times",
                 },
             },
+            celesta_bind_fream_nostro = {
+                name = "Fream + Nostro",
+                text = {
+                    "Retrigger played {C:attention}Gash{}",
+                    "cards {C:attention}#1#{} time",
+                },
+            },
+            celesta_bind_kairyu_beribug = {
+                name = "Kairyu + BeriBug",
+                text = {
+                    "Retrigger each played {C:attention}8{} {C:attention}#1#{} time",
+                    "for each {C:red}discard{} used this round",
+                    "{C:inactive}(Currently {C:attention}#2#{C:inactive} times)",
+                },
+            },
+            celesta_bind_suto_fefe = {
+                name = "Suto + FeFe",
+                text = {
+                    "Converts all played cards and",
+                    "{C:hearts}Heart{} cards held in hand",
+                    "to {C:attention}Wild Cards{}",
+                },
+            },
+            celesta_bind_squchan_laimu = {
+                name = "Squchan + Laimu",
+                text = {
+                    "At the start of the round, add a",
+                    "{C:dark_edition}Holographic{} {C:attention}Limestone Card{}",
+                    "to your full deck",
+                },
+            },
             celesta_bind_arielle_froggy = {
                 name = "Arielle + FroggyLoch",
                 text = {
@@ -2245,7 +2276,7 @@ return {
                 },
             },
             celesta_bind_lime_ray = {
-                name = "Limealicious + Ray",
+                name = "Laimu + Ray",
                 text = {
                     "Retriggers {C:attention}Bloodstone{}, {C:attention}Rough Gem{},",
                     "{C:attention}Onyx Agate{}, {C:attention}Arrowhead{}, {C:attention}Vienna{}",
