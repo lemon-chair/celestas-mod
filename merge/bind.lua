@@ -3593,6 +3593,35 @@ if celesta_bind_joker_win_ref then
     end
 end
 
+-- A copy starts owing nothing.
+--
+-- copy_card copies every field of a card's ability (common_events.lua:2504),
+-- and that includes the receipts CelestasMod.GRANT_LEDGERS lists - what a
+-- slot- or limit-granting Joker has already handed the run. A copy made by
+-- Invisible Joker, Ankh, Grimmi or anything else therefore believed it had
+-- already granted what its original holds, and granted nothing: two Aethals
+-- stayed one Aethal wide, and selling the copy took the original's slots with
+-- it. So the receipts are cleared on the copy, and on its absorbed half when
+-- it is a merge - the same clearing Bind.merge does for a half it carries.
+--
+-- Only on a card that is not already in play. copy_table is deep, so the copy
+-- holds tables of its own and the original's receipts are untouched.
+local celesta_bind_copy_card_ref = copy_card
+if celesta_bind_copy_card_ref then
+    function copy_card(...)
+        local new_card = celesta_bind_copy_card_ref(...)
+        local ability = new_card and not new_card.added_to_deck and new_card.ability
+        if type(ability) == "table" then
+            local bound = type(ability.celesta_bind) == "table" and ability.celesta_bind.ability
+            for _, ledger in ipairs(CelestasMod.GRANT_LEDGERS or {}) do
+                ability[ledger] = nil
+                if type(bound) == "table" then bound[ledger] = nil end
+            end
+        end
+        return new_card
+    end
+end
+
 -- Booster prices, for Kumi + HeavenlyFather.
 --
 -- A booster's cost is decided in Card:set_cost and nowhere else, and vanilla
