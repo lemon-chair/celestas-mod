@@ -1952,6 +1952,28 @@ return {
                     "{C:inactive}(Currently {X:mult,C:white}^#2#{C:inactive} Mult)",
                 },
             },
+            celesta_bind_bao_shylily = {
+                name = "Bao + ShyLily",
+                text = {
+                    "Retrigger the {C:attention}last{} played card",
+                    "{C:attention}#1#{} times, or {C:attention}#2#{} times",
+                    "during a {C:blue}Downpour{}",
+                },
+            },
+            celesta_bind_bao_nihmune = {
+                name = "Bao + Nihmune",
+                text = {
+                    "During a {C:blue}Downpour{}, retrigger the",
+                    "first played {C:clubs}Club{} card {C:attention}#1#{} times",
+                },
+            },
+            celesta_bind_shylily_nihmune = {
+                name = "ShyLily + Nihmune",
+                text = {
+                    "Retrigger each played",
+                    "{C:clubs}Club{} card {C:attention}#1#{} times",
+                },
+            },
             celesta_bind_arielle_froggy = {
                 name = "Arielle + FroggyLoch",
                 text = {

@@ -2697,6 +2697,84 @@ special("j_celesta_ironmouse", "j_celesta_michi", {
     end,
 })
 
+-- Bao + ShyLily: the last card played is retriggered, more often during a
+-- Downpour.
+--
+-- "Last played" is the last card of full_hand, whether or not it scores. The
+-- repetition pass is only raised for scoring cards, so a last card that does
+-- not score is never asked about and gets nothing.
+special("j_celesta_bao", "j_celesta_shylily", {
+    key = "bao_shylily",
+    config = { repetitions = 2, rain_repetitions = 5 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.repetitions, state.rain_repetitions } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.repetition and context.cardarea == G.play
+                and context.other_card) then return end
+        local played = context.full_hand or (G.play and G.play.cards) or {}
+        if context.other_card ~= played[#played] then return end
+        return {
+            message = localize("k_again_ex"),
+            repetitions = raining() and state.rain_repetitions or state.repetitions,
+            card = card,
+        }
+    end,
+})
+
+-- Bao + Nihmune: during a Downpour, the first Club played is retriggered.
+--
+-- First in the order played, out of full_hand - so a Spade ahead of it does
+-- not move which Club is first, and a first Club that does not score is not
+-- replaced by the second one.
+special("j_celesta_bao", "j_celesta_nihmune", {
+    key = "bao_nihmune",
+    config = { repetitions = 3 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.repetitions } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.repetition and context.cardarea == G.play
+                and context.other_card) then return end
+        -- Only during a Downpour.
+        if not raining() then return end
+        for _, played in ipairs(context.full_hand or (G.play and G.play.cards) or {}) do
+            if played.is_suit and played:is_suit("Clubs") then
+                if played ~= context.other_card then return end
+                return {
+                    message = localize("k_again_ex"),
+                    repetitions = state.repetitions,
+                    card = card,
+                }
+            end
+        end
+    end,
+})
+
+-- ShyLily + Nihmune: every Club played is retriggered.
+special("j_celesta_shylily", "j_celesta_nihmune", {
+    key = "shylily_nihmune",
+    config = { repetitions = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.repetitions } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.repetition and context.cardarea == G.play and context.other_card
+            and context.other_card:is_suit("Clubs")) then return end
+        return {
+            message = localize("k_again_ex"),
+            repetitions = state.repetitions,
+            card = card,
+        }
+    end,
+})
+
 --------------------------------------------------------------------------------
 -- Unmerging: when one half destroys itself
 --------------------------------------------------------------------------------
