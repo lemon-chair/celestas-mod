@@ -964,7 +964,12 @@ wildcard {
     end,
 
     calculate = function(def, card, context, state)
-        if not (context.ending_shop and not context.blueprint) then return end
+        -- A copy duplicates too. This pair replaces both halves, so the
+        -- duplicate is the whole of what the merged card does - a Mari Yume,
+        -- Blueprint or Brainstorm pointed at it had nothing else to copy, and
+        -- refusing context.blueprint left them doing nothing at all. The copy
+        -- is Negative, so a second one needs no room.
+        if not context.ending_shop then return end
 
         local partner_key = Bind.wildcard_partner(card, def)
         if not (partner_key and G.P_CENTERS[partner_key]) then return end
