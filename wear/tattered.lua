@@ -109,10 +109,14 @@ end
 --- itself keeps rising either way, so nothing is lost or double-counted.
 ---
 --- Two of them stack multiplicatively - each one doubles what is left.
+---
+--- Counted through CelestasMod.find_joker, which sees a Sansin merged into
+--- another Joker as well as one on its own - SMODS.find_card sees only the
+--- host - and already leaves out debuffed cards.
 function Tattered.wear_delay()
     local factor = 1
-    for _, joker in ipairs(SMODS.find_card("j_celesta_sansin")) do
-        if not joker.debuff then factor = factor * Tattered.DELAY_MULTIPLIER end
+    for _ in ipairs(CelestasMod.find_joker("j_celesta_sansin")) do
+        factor = factor * Tattered.DELAY_MULTIPLIER
     end
     return factor
 end
@@ -162,7 +166,9 @@ local function gild(card)
     card.ability.celesta_scored = 0
     G.E_MANAGER:add_event(Event {
         func = function()
-            card:set_ability(G.P_CENTERS.m_gold, nil, true)
+            CelestasMod.unjudged(card, function()
+                card:set_ability(G.P_CENTERS.m_gold, nil, true)
+            end)
             card:juice_up(0.3, 0.5)
             return true
         end

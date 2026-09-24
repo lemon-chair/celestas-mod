@@ -62,6 +62,18 @@ function CelestasMod.merge_partners(key)
     return out
 end
 
+--- The named special joining two Jokers, if there is one.
+function CelestasMod.merge_web_special(a, b)
+    for _, def in pairs(Bind.SPECIALS or {}) do
+        local halves = def.halves or {}
+        if (halves[1] == a and halves[2] == b)
+            or (halves[1] == b and halves[2] == a) then
+            return def
+        end
+    end
+    return nil
+end
+
 --------------------------------------------------------------------------------
 -- Where the branches go
 --------------------------------------------------------------------------------
@@ -140,15 +152,35 @@ function CelestasMod.merge_web_branch(from, to)
 end
 
 local BRANCH_WIDTH = 0.06
+-- Thinner than this and a zoomed-out web's branches stop reading as lines.
+local BRANCH_MIN_WIDTH = 0.025
 local BRANCH_COLOUR = { 1, 1, 1, 0.75 }
+
+--------------------------------------------------------------------------------
+-- How far out the web is zoomed
+--------------------------------------------------------------------------------
+--
+-- A 3x3 web is about as much as the screen holds at full size - each cell is
+-- 1.35 cards wide and 1.2 tall - and every ring added past that grows it by
+-- two cells each way. Glassesjournal's twenty-seven partners need a 9x9, three
+-- times too big in both directions. So a bigger web is drawn smaller: cards,
+-- cells and branches all scale by the same factor, and any web takes about
+-- the room a 3x3 does. The cards stay ordinary cards, so hovering one still
+-- shows its description at full size.
+local WEB_FIT = 3
+
+--- The zoom for a web `size` cells across: 1 up to a 3x3, less past it.
+function CelestasMod.merge_web_scale(size)
+    return math.min(1, WEB_FIT / size)
+end
 
 --- Drawn in room units: prep_draw scales by G.TILESCALE * G.TILESIZE before
 --- anything else (misc_functions.lua:794), so doing the same here puts a point
 --- given in VT coordinates exactly where a card at that VT is drawn.
-local function draw_branches(centre, partners)
+local function draw_branches(centre, partners, scale)
     love.graphics.push()
     love.graphics.scale(G.TILESCALE * G.TILESIZE)
-    love.graphics.setLineWidth(BRANCH_WIDTH)
+    love.graphics.setLineWidth(math.max(BRANCH_MIN_WIDTH, BRANCH_WIDTH * (scale or 1)))
     love.graphics.setColor(BRANCH_COLOUR)
     for _, area in ipairs(partners) do
         local x1, y1, x2, y2 = CelestasMod.merge_web_branch(centre.VT, area.VT)
@@ -165,24 +197,64 @@ end
 
 --- One card in a CardArea of its own, the way the collection holds each of
 --- its cards (SMODS ui.lua:1904), so hovering it shows its description.
-local function holder(key)
-    local area = CardArea(G.ROOM.T.x, G.ROOM.T.h, G.CARD_W, G.CARD_H * 0.95,
+--- Makes `card` describe the MERGE rather than itself when hovered.
+---
+--- Swapped at generate_UIBox_ability_table rather than at the popup: Card:hover
+--- builds that table and hands it to G.UIDEF.card_h_popup (card.lua:4629),
+--- which draws the whole panel from it - so replacing `main` alone keeps the
+--- name, the rarity badge and every other piece of the panel exactly as the
+--- game draws it everywhere else.
+---
+--- An undiscovered pair says so and nothing more. The rows come from a
+--- localization entry rather than being built by hand here, so they are the
+--- same shape as any other description and need no special handling.
+local function describe_merge(card, def, seen)
+    local ref = card.generate_UIBox_ability_table
+    card.generate_UIBox_ability_table = function(self, ...)
+        local aut = ref(self, ...)
+        if type(aut) ~= "table" then return aut end
+        local main = seen
+            and Bind.desc_rows("celesta_bind_" .. tostring(def.key), def)
+            or Bind.desc_rows("celesta_bind_hidden", nil)
+        if main then aut.main = main end
+        return aut
+    end
+end
+
+local function holder(key, scale, def, seen)
+    scale = scale or 1
+    -- card_w as well as the size: a 'title' area centres its card using
+    -- card_w, which defaults to a full card (cardarea.lua:33, :509), so a
+    -- shrunken card sat a fraction of a card to the right of its area - and
+    -- of where the branches meet.
+    local area = CardArea(G.ROOM.T.x, G.ROOM.T.h, G.CARD_W * scale, G.CARD_H * 0.95 * scale,
                           { card_limit = 1, type = "title", highlight_limit = 0,
+                            card_w = G.CARD_W * scale,
                             [WEB_FLAG] = true })
     local center = G.P_CENTERS[key]
     if center then
-        local card = Card(area.T.x + area.T.w / 2, area.T.y, G.CARD_W, G.CARD_H,
+        local card = Card(area.T.x + area.T.w / 2, area.T.y,
+                          G.CARD_W * scale, G.CARD_H * scale,
                           G.P_CARDS.empty, center)
+        if def then
+            describe_merge(card, def, seen)
+            -- Vanilla's own "this card is spent" shading (card.lua:4843), so
+            -- an undiscovered partner reads as unfound at a glance rather than
+            -- only once it is hovered.
+            card.greyed = not seen
+        end
         area:emplace(card)
     end
     return area
 end
 
 --- A cell of the grid: a card, or the same space left empty.
-local function cell(area)
+local function cell(area, scale)
+    scale = scale or 1
     return {
         n = G.UIT.C,
-        config = { align = "cm", minw = G.CARD_W * 1.35, minh = G.CARD_H * 1.2 },
+        config = { align = "cm", minw = G.CARD_W * 1.35 * scale,
+                   minh = G.CARD_H * 1.2 * scale },
         nodes = area and { { n = G.UIT.O, config = { object = area } } } or {},
     }
 end
@@ -192,11 +264,14 @@ function CelestasMod.merge_web_definition(key)
     local partner_keys = CelestasMod.merge_partners(key)
     local size, cells = CelestasMod.merge_web_layout(#partner_keys)
     local mid = math.floor((size + 1) / 2)
+    local scale = CelestasMod.merge_web_scale(size)
 
-    local centre = holder(key)
+    local centre = holder(key, scale)
     local at, partners = {}, {}
     for i, k in ipairs(partner_keys) do
-        local area = holder(k)
+        local def = CelestasMod.merge_web_special(key, k)
+        local seen = def and Bind.special_seen(def.key) or false
+        local area = holder(k, scale, def, seen)
         partners[#partners + 1] = area
         at[cells[i][1] .. ":" .. cells[i][2]] = area
     end
@@ -206,14 +281,14 @@ function CelestasMod.merge_web_definition(key)
     -- and each one stops at the edge of both cards - so a line never crosses a
     -- card whichever of them the UI happens to draw first.
     centre.draw = function(self, ...)
-        draw_branches(self, partners)
+        draw_branches(self, partners, scale)
         return CardArea.draw(self, ...)
     end
 
     local rows = {}
     for r = 1, size do
         local cols = {}
-        for c = 1, size do cols[#cols + 1] = cell(at[r .. ":" .. c]) end
+        for c = 1, size do cols[#cols + 1] = cell(at[r .. ":" .. c], scale) end
         rows[#rows + 1] = { n = G.UIT.R, config = { align = "cm" }, nodes = cols }
     end
 

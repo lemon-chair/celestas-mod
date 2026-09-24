@@ -21,13 +21,20 @@ local PER_PAGE = 5
 -- What to list
 --------------------------------------------------------------------------------
 
---- Every pair with an ability of its own, named and wildcard alike, sorted by
---- the name shown so the order does not move when a pair is added.
+--- Every merge with an ability of its own - quad, named pair and wildcard
+--- alike - sorted so the order does not move when one is added.
+---
+--- Quads first, so the six groups land on the first page. They are the ones
+--- worth finding: a pair is two Jokers the player will stumble into, and a
+--- group of four is something they have to go and assemble.
 local function all_pairs()
     local out = {}
+    for _, def in pairs(Bind.QUADS or {}) do out[#out + 1] = def end
     for _, def in pairs(Bind.SPECIALS or {}) do out[#out + 1] = def end
     for _, def in ipairs(Bind.WILDCARDS or {}) do out[#out + 1] = def end
     table.sort(out, function(a, b)
+        local a_quad, b_quad = a.is_quad and 1 or 0, b.is_quad and 1 or 0
+        if a_quad ~= b_quad then return a_quad > b_quad end
         return tostring(a.key) < tostring(b.key)
     end)
     return out
@@ -47,13 +54,19 @@ end
 --- any of this mod's 127, and listing those separately would bury the eighteen
 --- pairs that are actually distinct under a wall of near-identical entries
 --- saying the same thing.
+--- ...and a quad is all four of them, joined the same way. Four names is a
+--- long line, but it is the only thing that says which four to go and find.
 local function pair_title(def)
     local halves = def.halves or {}
     local first = joker_name(halves[1])
     if not halves[2] then
         return first .. " + " .. localize("celesta_any_joker")
     end
-    return first .. " + " .. joker_name(halves[2])
+    local title = first
+    for index = 2, #halves do
+        title = title .. " + " .. joker_name(halves[index])
+    end
+    return title
 end
 
 --------------------------------------------------------------------------------
@@ -145,38 +158,16 @@ end
 --- whose description cannot be built shows its name and nothing else, which is
 --- worse than the description and far better than a crash in the Collection.
 local function description_nodes(def)
-    local vars = {}
-    if type(def.loc_vars) == "function" then
-        local stub = { ability = { extra = {} }, config = { center = {} } }
-        local ok, res = pcall(def.loc_vars, def, stub, def.config or {})
-        if ok and type(res) == "table" and type(res.vars) == "table" then
-            vars = res.vars
-        end
-    end
 
-    -- no_name is not cosmetic here, it is the whole of a leak.
-    --
-    -- generate_card_ui builds the card's NAME as well as its description
-    -- (common_events.lua:2436), and a name is built out of DynaText, which
-    -- puts itself into G.I.MOVEABLE the moment it is constructed
-    -- (text.lua:60). Game:draw then draws every MOVEABLE that has no parent,
-    -- at the room origin (game.lua:2767).
-    --
-    -- This page wants the description and nothing else, so it dropped the name
-    -- on the floor - and a dropped name is never parented and never removed.
-    -- One per described pair per build meant every page turn painted another
-    -- copy of the pair's title into the corner of the screen, on top of the
-    -- last, for the rest of the session. Asking for no name never builds it.
-    vars.no_name = true
-
-    local ok, aut = pcall(generate_card_ui,
-        { set = "Other", key = "celesta_bind_" .. tostring(def.key) },
-        nil, vars, "Other", nil, false)
-    if not (ok and type(aut) == "table" and type(aut.main) == "table") then
+    -- Built in merge/bind.lua, which the web shares - including the reason
+    -- the name is deliberately never built.
+    local main = Bind.desc_rows("celesta_bind_" .. tostring(def.key), def)
+    if not main then
         CelestasMod.warn_once("bind_collection_" .. tostring(def.key),
             ("The Special Merges tab could not describe %s"):format(tostring(def.key)))
         return nil
     end
+    local aut = { main = main }
 
     -- aut.main is a list of RAW rows - each is a list of text parts, not a UI
     -- node - and every consumer in the game turns them into nodes before

@@ -25,12 +25,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # The arena sheets are 256x256 weather frames, and Exo's frame is deliberately
 # larger than a card so it reads as overhanging the edges - masking either to
 # 71x95 corners would quietly destroy them.
-SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts", "frozen",
+SHARED = {"jokers", "consumables", "decks", "sleeves", "icon", "seals", "driftwood_fronts", "frozen",
           "enh_exo_frame", "fx_downpour", "fx_snowstorm",
           # A suit sheet is thirteen card-sized cells in a row, not one card,
           # and its UI pip is neither - masking either to a 71x95 silhouette
           # would cut the whole row down to its first cell's corners.
           "suit_stars", "suit_stars_ui", "suit_leaf", "suit_leaf_ui",
+          "suit_true_stars", "suit_true_stars_ui",
           # Boosfer is a circle, not a card, and frozen_round is the frost pane
           # cut to match it. The card silhouette would shave 1px off the widest
           # point of both.

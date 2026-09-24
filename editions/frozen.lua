@@ -44,7 +44,9 @@ function CelestasMod.thaw(card)
     card.ability.celesta_frozen = nil
     -- Smug Alana strips a sticker as the ice comes off; kept here rather than
     -- in the joker so the melt has one definition wherever it is triggered.
-    if next(SMODS.find_card("j_celesta_smugalana")) then
+    -- joker_in_play rather than SMODS.find_card, which never sees the
+    -- absorbed half of a merge.
+    if CelestasMod.joker_in_play("j_celesta_smugalana") then
         CelestasMod.strip_random_sticker(card)
     end
 end
@@ -183,7 +185,9 @@ function Card:calculate_joker(context, ...)
     if CelestasMod.is_frozen(self) and self.ability.set == "Joker"
         and not rolling[self] then
         -- Vulpixie cancels the failure outright rather than improving the odds.
-        if not next(SMODS.find_card("j_celesta_vulpixie")) then
+        -- joker_in_play rather than SMODS.find_card, which never sees the
+        -- absorbed half of a merge.
+        if not CelestasMod.joker_in_play("j_celesta_vulpixie") then
             -- Getter contexts ask a question rather than producing an effect;
             -- failing those would corrupt display and probability lookups
             -- rather than "fail to trigger".

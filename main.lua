@@ -29,6 +29,9 @@ assert(SMODS.load_file("globals.lua"))()
 SMODS.Atlas { key = 'jokers',      path = 'jokers.png',      px = 71, py = 95 }
 SMODS.Atlas { key = 'consumables', path = 'consumables.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'decks',       path = 'decks.png',       px = 71, py = 95 }
+-- Card Sleeves' frame is two pixels wider than a card. Registered whether or
+-- not Card Sleeves is installed: an unused atlas costs nothing.
+SMODS.Atlas { key = 'sleeves',     path = 'sleeves.png',     px = 73, py = 95 }
 SMODS.Atlas { key = 'modicon',     path = 'icon.png',        px = 32, py = 32 }
 
 -- Seal emblems, card-shaped cells (built by tools/gen_seals.py).
@@ -55,6 +58,14 @@ SMODS.Atlas { key = 'driftwood_fronts', path = 'driftwood_fronts.png', px = 71, 
 SMODS.Atlas { key = 'blind_clover', path = 'blind_clover.png', px = 34, py = 34,
               frames = 21, atlas_table = 'ANIMATION_ATLAS' }
 SMODS.Atlas { key = 'blind_greed', path = 'blind_greed.png', px = 34, py = 34,
+              frames = 21, atlas_table = 'ANIMATION_ATLAS' }
+SMODS.Atlas { key = 'blind_goat', path = 'blind_goat.png', px = 34, py = 34,
+              frames = 21, atlas_table = 'ANIMATION_ATLAS' }
+SMODS.Atlas { key = 'blind_frog', path = 'blind_frog.png', px = 34, py = 34,
+              frames = 21, atlas_table = 'ANIMATION_ATLAS' }
+SMODS.Atlas { key = 'blind_star', path = 'blind_star.png', px = 34, py = 34,
+              frames = 21, atlas_table = 'ANIMATION_ATLAS' }
+SMODS.Atlas { key = 'blind_heart', path = 'blind_heart.png', px = 34, py = 34,
               frames = 21, atlas_table = 'ANIMATION_ATLAS' }
 
 -- Arena effect sprite sheets (generated from GIFs by tools/gen_fx.py).
@@ -88,6 +99,8 @@ SMODS.Atlas { key = 'frozen_round', path = 'frozen_round.png', px = 71, py = 95 
 assert(SMODS.load_file('suits/shared.lua'))()
 assert(SMODS.load_file('suits/stars.lua'))()
 assert(SMODS.load_file('suits/leaf.lua'))()
+-- After stars.lua: the one way into True Stars starts from an Ace of Stars.
+assert(SMODS.load_file('suits/true_stars.lua'))()
 
 --------------------------------------------------------------------------------
 -- Arena effects — screen-wide, round-scoped weather. Loaded before jokers
@@ -95,6 +108,13 @@ assert(SMODS.load_file('suits/leaf.lua'))()
 --------------------------------------------------------------------------------
 
 assert(SMODS.load_file('arena/arena.lua'))()
+
+-- The Deck of Sins' stats. Before jokers and before items/decks.lua, which
+-- defines the deck itself and only has to hand the stats a run to count in.
+assert(SMODS.load_file('sins/sins.lua'))()
+-- After sins.lua: both read the stats that file defines.
+assert(SMODS.load_file('sins/effects.lua'))()
+assert(SMODS.load_file('sins/sidebar.lua'))()
 
 -- Enhancements load before jokers: Shoto, Saruei and MOTHERv3 all
 -- reference CelestasMod.ENHANCEMENT_KEYS.
@@ -116,6 +136,8 @@ assert(SMODS.load_file('merge/web.lua'))()
 assert(SMODS.load_file('consumables/raise.lua'))()
 assert(SMODS.load_file('consumables/enhancers.lua'))()
 assert(SMODS.load_file('consumables/occult.lua'))()
+-- After sins/sins.lua, whose lockout it lifts.
+assert(SMODS.load_file('consumables/unholy.lua'))()
 -- Gene hands out a seal rather than an enhancement; it reads the seal's key at
 -- use time, so it does not need seals/seals.lua to have loaded first.
 assert(SMODS.load_file('consumables/gene.lua'))()
@@ -154,6 +176,9 @@ end
 -- placeholder art — add it back to this list to re-enable. Its code, atlas and
 -- localization are all still in place.
 for _, file in ipairs({ 'seals/seals.lua', 'items/decks.lua',
+                        -- After decks.lua: each sleeve is built from its
+                        -- deck. Does nothing without Card Sleeves.
+                        'items/sleeves.lua',
                         'items/challenges.lua',
                         -- Names Joker keys, so it reads best after the Jokers
                         -- exist; it only rearranges a menu, so it does not

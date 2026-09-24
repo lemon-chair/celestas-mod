@@ -221,6 +221,186 @@ SMODS.Blind {
 }
 
 --------------------------------------------------------------------------------
+-- The Goat and The Frog - what a played card is made of
+--------------------------------------------------------------------------------
+--
+-- Both act in press_play, which vanilla raises as the hand is played and
+-- before evaluate_play scores it (the Hook discards from there) - so a card
+-- scores as whatever it has been turned into, not as what it was. Vanilla
+-- returns from Blind:press_play before reaching a Blind's own when the Blind
+-- is disabled, so neither needs to check for that.
+--
+-- Every rewrite goes through CelestasMod.unjudged. set_ability ends by
+-- re-judging the card against the Blind, and a card being rewritten mid-hand
+-- is exactly the case The Pillar killed hands over; these two Blinds debuff
+-- nothing themselves, but the habit is the point - the next one might.
+
+--- The cards being played, at the moment press_play runs.
+---
+--- NOT G.play.cards. draw_card only QUEUES the move out of the hand - its
+--- body sits inside an Event with a delay (common_events.lua) - so when a
+--- Blind's press_play is called the cards are still in G.hand.highlighted and
+--- G.play is empty. Reading G.play there is reading an empty table, which is
+--- why The Frog removed nothing at all and The Goat shuffled nothing (which
+--- looks exactly like working).
+---
+--- G.play is still preferred when it has anything in it, so a mod that has
+--- already moved the hand is followed rather than second-guessed.
+local function played_cards()
+    local play = (G.play and G.play.cards) or {}
+    if #play > 0 then return play end
+    return (G.hand and G.hand.highlighted) or {}
+end
+
+local GOAT_SEED = "celesta_goat"
+
+--- A shuffled copy, Fisher-Yates off the run's own stream so a seeded run
+--- deals the same hand twice.
+local function goat_shuffle(list)
+    local out = {}
+    for i, v in ipairs(list) do out[i] = v end
+    for i = #out, 2, -1 do
+        local j = math.floor(pseudorandom(pseudoseed(GOAT_SEED)) * i) + 1
+        if j > i then j = i end
+        out[i], out[j] = out[j], out[i]
+    end
+    return out
+end
+
+SMODS.Blind {
+    key = "goat",
+    atlas = "blind_goat",
+    pos = { x = 0, y = 0 },
+
+    dollars = 5,
+    mult = 2,
+    -- From Ante 4 on: after Ante 3, not before it.
+    boss = { min = 4, max = 10 },
+    boss_colour = HEX("8A8A8A"),
+    discovered = true,
+
+    loc_vars = function(self) return { vars = {} } end,
+    collection_loc_vars = function(self) return { vars = {} } end,
+
+    press_play = function(self)
+        local cards = played_cards()
+        if #cards < 2 then return end
+
+        -- What the hand is carrying, in hand order.
+        local centers, editions = {}, {}
+        for i, card in ipairs(cards) do
+            centers[i] = (card.config and card.config.center) or G.P_CENTERS.c_base
+            editions[i] = card.edition and card.edition.key or false
+        end
+
+        -- Shuffled independently: an edition and an enhancement that arrived
+        -- on the same card have no reason to leave on the same one.
+        centers = goat_shuffle(centers)
+        editions = goat_shuffle(editions)
+
+        for i, card in ipairs(cards) do
+            CelestasMod.unjudged(card, function()
+                card:set_ability(centers[i] or G.P_CENTERS.c_base, nil, true)
+                -- set_edition(key, immediate, silent); false clears one.
+                card:set_edition(editions[i] or nil, true, true)
+            end)
+        end
+    end,
+}
+
+SMODS.Blind {
+    key = "frog",
+    atlas = "blind_frog",
+    pos = { x = 0, y = 0 },
+
+    dollars = 5,
+    mult = 2,
+    boss = { min = 4, max = 10 },
+    boss_colour = HEX("C86FC9"),
+    discovered = true,
+
+    loc_vars = function(self) return { vars = {} } end,
+    collection_loc_vars = function(self) return { vars = {} } end,
+
+    press_play = function(self)
+        local base = G.P_CENTERS and G.P_CENTERS.c_base
+        if not base then return end
+        for _, card in ipairs(played_cards()) do
+            if card.config and card.config.center ~= base then
+                CelestasMod.unjudged(card, function()
+                    card:set_ability(base, nil, true)
+                end)
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- The Star and The Heart - half of what the hand earned
+--------------------------------------------------------------------------------
+--
+-- A Blind IS a scoring target: SMODS.get_card_areas('individual') puts
+-- G.GAME.blind in the list whenever it has a chip sprite, and Blind:calculate
+-- hands the context to the Blind's own definition (SMODS utils.lua:2170). So
+-- these answer contexts the way a Joker does.
+--
+-- context.final_scoring_step is raised once, after every card and every Joker
+-- has scored (state_events.lua:749) - which is what "after scoring" means.
+-- Halving there takes half of the finished total rather than half of the base,
+-- which is what The Flint does and is a different, much weaker, Blind.
+--
+-- Both check `disabled` themselves. Blind:calculate does not, unlike
+-- press_play - so without it Adfree would hold the Blind shut and these two
+-- would go on halving.
+
+local HALF = 0.5
+
+SMODS.Blind {
+    key = "star",
+    atlas = "blind_star",
+    pos = { x = 0, y = 0 },
+
+    dollars = 5,
+    mult = 2,
+    -- min 2 keeps it away from Ante 1, which is the run's first Boss.
+    boss = { min = 2, max = 10 },
+    boss_colour = HEX("5B3FA8"),
+    discovered = true,
+
+    loc_vars = function(self) return { vars = {} } end,
+    collection_loc_vars = function(self) return { vars = {} } end,
+
+    calculate = function(self, blind, context)
+        if blind.disabled then return end
+        if context.final_scoring_step then
+            return { x_chips = HALF }
+        end
+    end,
+}
+
+SMODS.Blind {
+    key = "heart",
+    atlas = "blind_heart",
+    pos = { x = 0, y = 0 },
+
+    dollars = 5,
+    mult = 2,
+    boss = { min = 2, max = 10 },
+    boss_colour = HEX("D94F9A"),
+    discovered = true,
+
+    loc_vars = function(self) return { vars = {} } end,
+    collection_loc_vars = function(self) return { vars = {} } end,
+
+    calculate = function(self, blind, context)
+        if blind.disabled then return end
+        if context.final_scoring_step then
+            return { x_mult = HALF }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
 -- Boss Blinds added to a run already in progress
 --------------------------------------------------------------------------------
 --

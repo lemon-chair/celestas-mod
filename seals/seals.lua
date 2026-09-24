@@ -50,6 +50,7 @@ SMODS.Seal {
 
 --------------------------------------------------------------------------------
 -- Star — when NON-scoring, copies the card to its left into the deck.
+-- How MANY copies is Ray + CottontailVA's business; see merge/bind.lua.
 --------------------------------------------------------------------------------
 
 SMODS.Seal {
@@ -75,28 +76,40 @@ SMODS.Seal {
             local left = hand[index - 1]
             if not left then return end
 
-            -- Duplication sequence lifted from vanilla DNA, but emplaced into
-            -- G.deck rather than G.hand.
-            G.playing_card = (G.playing_card and G.playing_card + 1) or 1
-            local copy = copy_card(left, nil, nil, G.playing_card)
-            copy:add_to_deck()
-            G.deck.config.card_limit = G.deck.config.card_limit + 1
-            table.insert(G.playing_cards, copy)
-            G.deck:emplace(copy)
-            copy.states.visible = nil
+            -- How many, rather than one: Ray + CottontailVA answers two.
+            -- Asked through CelestasMod so the seal does not have to know
+            -- that merges exist, and asked once per trigger so a merge made
+            -- or unmade mid-round takes effect straight away.
+            local wanted = CelestasMod.star_seal_copies
+                and CelestasMod.star_seal_copies() or 1
+            if wanted < 1 then return end
 
-            G.E_MANAGER:add_event(Event {
-                func = function()
-                    copy:start_materialize()
-                    return true
-                end
-            })
+            local made = {}
+            for _ = 1, wanted do
+                -- Duplication sequence lifted from vanilla DNA, but emplaced
+                -- into G.deck rather than G.hand.
+                G.playing_card = (G.playing_card and G.playing_card + 1) or 1
+                local copy = copy_card(left, nil, nil, G.playing_card)
+                copy:add_to_deck()
+                G.deck.config.card_limit = G.deck.config.card_limit + 1
+                table.insert(G.playing_cards, copy)
+                G.deck:emplace(copy)
+                copy.states.visible = nil
+
+                G.E_MANAGER:add_event(Event {
+                    func = function()
+                        copy:start_materialize()
+                        return true
+                    end
+                })
+                made[#made + 1] = copy
+            end
 
             return {
                 message = localize("k_copied_ex"),
                 colour = G.C.CHIPS,
                 card = card,
-                playing_cards_created = { copy },
+                playing_cards_created = made,
             }
         end
     end,
@@ -156,6 +169,13 @@ SMODS.Seal {
             local pick = pseudorandom_element(candidates, pseudoseed("celesta_ectoplast_pick"))
             pick.joker:set_edition(pick.edition, true)
             pick.joker:juice_up(0.3, 0.5)
+
+            -- Spite's merges count these. Said here rather than at the roll:
+            -- what they are paid for is a Joker actually being upgraded, and
+            -- a roll that lands with nothing left to upgrade is not that.
+            if CelestasMod.ectoplast_triggered then
+                CelestasMod.ectoplast_triggered(card, pick.joker)
+            end
 
             return {
                 message = localize("celesta_upgraded"),

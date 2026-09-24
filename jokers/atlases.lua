@@ -2,6 +2,13 @@
 --- Add or remove art in assets/ and re-run the script instead.
 
 SMODS.Atlas {
+    key = "adfree",
+    path = "adfree.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "aicandii",
     path = "aicandii.png",
     px = 71,
@@ -205,6 +212,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "cdawg",
+    path = "cdawg.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "cerbervt",
     path = "cerbervt.png",
     px = 71,
@@ -310,6 +324,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "dokibird",
+    path = "dokibird.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "dokidomiki",
     path = "dokidomiki.png",
     px = 71,
@@ -361,6 +382,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "elleira",
     path = "elleira.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "ellie_minibot",
+    path = "ellie_minibot.png",
     px = 71,
     py = 95,
 }
@@ -422,15 +450,15 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
-    key = "fleshy",
-    path = "fleshy.png",
+    key = "fireonirei",
+    path = "fireonirei.png",
     px = 71,
     py = 95,
 }
 
 SMODS.Atlas {
-    key = "fraiki",
-    path = "fraiki.png",
+    key = "fleshy",
+    path = "fleshy.png",
     px = 71,
     py = 95,
 }
@@ -786,6 +814,20 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "momo",
+    path = "momo.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "momo_cat",
+    path = "momo_cat.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "monikacinnyroll",
     path = "monikacinnyroll.png",
     px = 71,
@@ -830,6 +872,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "nana_ruru",
     path = "nana_ruru.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "nanoless",
+    path = "nanoless.png",
     px = 71,
     py = 95,
 }
@@ -1122,6 +1171,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "silvervale",
+    path = "silvervale.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "sinder",
     path = "sinder.png",
     px = 71,
@@ -1159,6 +1215,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "snapscube",
     path = "snapscube.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "snuffy",
+    path = "snuffy.png",
     px = 71,
     py = 95,
 }
@@ -1213,6 +1276,20 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "toma",
+    path = "toma.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "torioriane",
+    path = "torioriane.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "trickywi",
     path = "trickywi.png",
     px = 71,
@@ -1257,6 +1334,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "vexoria",
     path = "vexoria.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "vgn",
+    path = "vgn.png",
     px = 71,
     py = 95,
 }

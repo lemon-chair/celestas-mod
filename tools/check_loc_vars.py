@@ -75,6 +75,11 @@ loc_colour = function() end
 Game = {}; function Game:update() end; function Game:draw() end
 -- Globals the mod wraps; present in the real game.
 Card = {}; function Card:set_sprites() end
+function Card:get_chip_bonus() return 0 end
+function Card:generate_UIBox_ability_table() return {} end
+function Card:set_debuff() end
+-- The funnel every Boss Blind debuff goes through, which Fleshy wraps.
+Blind = {}; function Blind:debuff_card() end
 evaluate_poker_hand = function() return {} end
 SMODS.Rank = { obj_buffer = {} }
 SMODS.Ranks = {}
@@ -319,6 +324,11 @@ def main():
     for _, d in dict(bind.SPECIALS).items():
         pair_defs[d.key] = d
     for _, d in dict(bind.WILDCARDS).items():
+        pair_defs[d.key] = d
+    # ...and the quad merges, which are the same thing with four members. They
+    # were invisible here until a quad shipped with a {V:1} and no colour to
+    # put in it, which is exactly what this check exists to catch.
+    for _, d in dict(bind.QUADS).items():
         pair_defs[d.key] = d
 
     problems, checked = [], 0

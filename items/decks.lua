@@ -4,7 +4,24 @@
 --- reroll_cost, ante_scaling, no_faces, ... Use `apply` for anything else.
 ---
 --- The `decks` atlas is one row of card-sized cells, in this order:
----     0 Admin   1 Plaid   2 Ecstasy   3 Hell
+---     0 Admin   1 Plaid   2 Ecstasy   3 Hell   4 Blizzard   5 Rain
+---     6 Verdant 7 Rock    8 Sins
+
+local DECK_PREFIX = SMODS.current_mod.prefix
+
+--- True while the run is being played on this mod's deck `name` - as the deck
+--- itself, or as its Card Sleeves sleeve (items/sleeves.lua). The deck is the
+--- chain vanilla's own deck checks walk (misc_functions.lua:1086); the sleeve
+--- is the key Card Sleeves keeps on G.GAME, so a saved run keeps it too.
+function CelestasMod.run_has_deck(name)
+    if not G.GAME then return false end
+    local back = G.GAME.selected_back
+    local center = back and back.effect and back.effect.center
+    if center and center.key == 'b_' .. DECK_PREFIX .. '_' .. name then
+        return true
+    end
+    return G.GAME.selected_sleeve == 'sleeve_' .. DECK_PREFIX .. '_' .. name
+end
 
 --------------------------------------------------------------------------------
 -- Admin Deck - the bench.
@@ -224,14 +241,9 @@ CelestasMod.ECSTASY_SHOP = {
     { key = 'c_soul',             odds = 200, seed = 'celesta_ecstasy_soul' },
 }
 
-local ECSTASY_KEY = 'b_' .. SMODS.current_mod.prefix .. '_ecstasy'
-
---- True while the run is being played on the Ecstasy Deck.
---- The same chain vanilla's own deck checks walk (misc_functions.lua:1086).
+--- True while the run is being played on the Ecstasy Deck, or its sleeve.
 local function on_ecstasy()
-    local back = G.GAME and G.GAME.selected_back
-    return back and back.effect and back.effect.center
-        and back.effect.center.key == ECSTASY_KEY
+    return CelestasMod.run_has_deck('ecstasy')
 end
 
 local celesta_ecstasy_shop_ref = create_card_for_shop
@@ -509,8 +521,6 @@ end
 -- are back in the pool: by then there has been a shop, and the deck is meant
 -- to be brutal.
 
-local HELL_KEY = 'b_' .. SMODS.current_mod.prefix .. '_hell'
-
 -- Never, at any Ante.
 local HELL_BANNED = {
     'bl_' .. SMODS.current_mod.prefix .. '_clover',
@@ -522,11 +532,9 @@ local HELL_FIRST_BOSS_BANNED = {
     'bl_' .. SMODS.current_mod.prefix .. '_greed',
 }
 
---- True while the run is being played on the Hell Deck.
+--- True while the run is being played on the Hell Deck, or its sleeve.
 local function on_hell()
-    local back = G.GAME and G.GAME.selected_back
-    return back and back.effect and back.effect.center
-        and back.effect.center.key == HELL_KEY
+    return CelestasMod.run_has_deck('hell')
 end
 
 local celesta_hell_boss_ref = get_new_boss
@@ -627,5 +635,38 @@ SMODS.Back {
                 return true
             end
         })
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Deck of Sins - seven counters, and the four Jokers that start them.
+--------------------------------------------------------------------------------
+--
+-- The stats themselves are sins/sins.lua: what they count, how they level and
+-- the sidebar that shows them. All this has to do is open the shop up and get
+-- out of the way.
+--
+-- Overstock and Overstock Plus are `config.vouchers`, which Back:apply_to_run
+-- redeems for free (back.lua:289) the way the Zodiac Deck gets its three. Two
+-- of them take the Joker shelf from two slots to four - which is exactly the
+-- four Jokers sins.lua puts in the first shop, so the offer fills the shelf
+-- and leaves the player choosing between them rather than affording them all.
+
+SMODS.Back {
+    key = "sins",
+    atlas = "decks",
+    pos = { x = 8, y = 0 },
+
+    unlocked = true,
+    discovered = true,
+
+    config = { vouchers = { "v_overstock_norm", "v_overstock_plus" } },
+
+    -- A Back is a scoring target: SMODS.get_card_areas('individual') puts the
+    -- selected one in the list, so every calculate_context dispatch reaches
+    -- here and the deck answers contexts the way a Joker does. What each stat
+    -- is worth lives in sins/effects.lua.
+    calculate = function(self, back, context)
+        return CelestasMod.Sins.calculate(back, context)
     end,
 }

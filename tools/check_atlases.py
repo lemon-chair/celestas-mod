@@ -28,13 +28,21 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Sheets whose cell size is deliberately not the card size, with the reason.
 NON_CARD = {
     "modicon": "32x32 mod badge",
+    # Card Sleeves' own frame size (CardSleeves.lua registers its sheet at
+    # 73x95), which is what a sleeve is drawn at.
+    "sleeves": "73x95 Card Sleeves sleeve",
     "blind_clover": "34x34 animated blind chip",
     "blind_greed": "34x34 animated blind chip",
+    "blind_goat": "34x34 animated blind chip",
+    "blind_frog": "34x34 animated blind chip",
+    "blind_star": "34x34 animated blind chip",
+    "blind_heart": "34x34 animated blind chip",
     "fx_downpour": "256x256 weather frames",
     "fx_snowstorm": "256x256 weather frames",
     # The suit pip is drawn into a fixed 0.3x0.3 rect, so its cell size is free
     # and the art's own 13x13 grid is used rather than resampling into 18x18.
     "suit_stars_ui": "13x13 suit pip",
+    "suit_true_stars_ui": "13x13 suit pip",
     "suit_leaf_ui": "13x13 suit pip",
     # Drawn over a card rather than as one, at the card's own scale: 95 across
     # is 95/71 of a card wide, which is the overhang XM-05 Thanatos is for.

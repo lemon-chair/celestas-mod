@@ -40,6 +40,7 @@ DECKS = [
     ("rain", "rain"),
     ("verdant", "verdant"),
     ("rock", "rock"),
+    ("sins", "sins"),
 ]
 
 

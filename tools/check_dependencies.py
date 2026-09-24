@@ -35,10 +35,13 @@ FOREIGN = {
     # to_big IS a global of Talisman's, and the one way to do arithmetic on a
     # score that has outgrown a Lua number.
     "to_big": "Talisman",
+    # Card Sleeves' class, which items/sleeves.lua registers a sleeve per deck
+    # through - and only when it is there.
+    "CardSleeves": "CardSleeves",
 }
 
 # Reached only from behind a `type(x) == ...` check, and never declared.
-OPTIONAL = {"Cryptid"}
+OPTIONAL = {"Cryptid", "CardSleeves"}
 
 
 def strip_noise(line):

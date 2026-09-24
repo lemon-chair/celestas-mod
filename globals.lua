@@ -7,6 +7,10 @@ G.C.CELESTA = {
     TEAL    = HEX("00B8A9"),
     GOLD    = HEX("F2C94C"),
     WHITE   = HEX("FFFFFF"),
+    -- The True Stars suit's own colour, hue 300. Kept here with the rest so
+    -- the loc hook below has one place to read from; suits/true_stars.lua
+    -- samples the same value off the art.
+    TRUE_STAR = HEX("D411D4"),
 }
 
 --------------------------------------------------------------------------------
@@ -67,6 +71,48 @@ function CelestasMod.unjudged(card, fn)
     if not ok then error(err, 0) end
 end
 
+--------------------------------------------------------------------------------
+-- TEMPORARY [pillar] trace - remove once the Eros report is pinned down.
+--------------------------------------------------------------------------------
+--
+-- Names whoever debuffs a card that is being PLAYED, which is the thing the
+-- report describes and the one thing the source cannot settle: SMODS' own
+-- set_ability clears played_this_ante before it re-judges (card.lua:392-400,
+-- then :490), so neither Eros nor LaynaLazar can reach The Pillar through it -
+-- something else in the stack is doing it, and this says what.
+--
+-- Logged at most a dozen times a session, with the traceback of the call that
+-- did it.
+
+local celesta_pillar_trace_ref = (type(Blind) == "table") and Blind.debuff_card
+local celesta_pillar_traced = 0
+
+if celesta_pillar_trace_ref then
+    function Blind:debuff_card(card, from_blind)
+        local was = card and card.debuff
+        local ret = celesta_pillar_trace_ref(self, card, from_blind)
+
+        if card and card.debuff and not was and celesta_pillar_traced < 12
+            and card.ability and card.ability.played_this_ante then
+            celesta_pillar_traced = celesta_pillar_traced + 1
+            sendInfoMessage(
+                ("[pillar] %s of %s debuffed by %s | area=%s state=%s enh=%s%s")
+                    :format(
+                        tostring(card.base and card.base.value),
+                        tostring(card.base and card.base.suit),
+                        tostring(self.name),
+                        (card.area == G.play and "play")
+                            or (card.area == G.hand and "hand") or "other",
+                        tostring(G.STATE),
+                        tostring(card.config and card.config.center
+                            and card.config.center.key),
+                        debug.traceback("", 2)),
+                "CelestasMod")
+        end
+        return ret
+    end
+end
+
 -- Hooks
 
 local loc_colour_ref = loc_colour
@@ -79,6 +125,7 @@ function loc_colour(_c, _default)
     G.ARGS.LOC_COLOURS.celesta_teal   = G.C.CELESTA.TEAL
     G.ARGS.LOC_COLOURS.celesta_gold   = G.C.CELESTA.GOLD
     G.ARGS.LOC_COLOURS.celesta_white  = G.C.CELESTA.WHITE
+    G.ARGS.LOC_COLOURS.celesta_true_star = G.C.CELESTA.TRUE_STAR
     return loc_colour_ref(_c, _default)
 end
 
@@ -138,6 +185,34 @@ end
 ---
 --- Debuffed cards are left out unless asked for, which is what SMODS.find_card
 --- does and what every caller here was already relying on.
+--- Whether a card may answer a lookup at all.
+---
+--- A replacing pair speaks for both halves, so neither of them is in play as
+--- itself - the same test with_partner makes before it runs an absorbed
+--- half's hooks at all. Debuffed cards are out unless asked for, which is
+--- what SMODS.find_card does and what every caller here relies on.
+local function lookup_eligible(card, count_debuffed)
+    local Bind = CelestasMod.Bind
+    if Bind and Bind.replacing_special and Bind.replacing_special(card) then
+        return false
+    end
+    return (count_debuffed or not card.debuff) and true or false
+end
+
+--- True when `card` is in play AS `key`, either half of a merge counting.
+---
+--- The same rule find_joker counts by, written once and exported for the few
+--- callers that cannot afford find_joker: a question asked of every card in
+--- every hand the game scores cannot build a table each time.
+function CelestasMod.card_is_joker(card, key, count_debuffed)
+    if not (card and lookup_eligible(card, count_debuffed)) then return false end
+    local center = card.config and card.config.center
+    if center and center.key == key then return true end
+    local Bind = CelestasMod.Bind
+    return (Bind and Bind.is_merged and Bind.is_merged(card)
+        and card.ability.celesta_bind.key == key) and true or false
+end
+
 function CelestasMod.find_joker(key, count_debuffed)
     local out = {}
     local Bind = CelestasMod.Bind
@@ -146,16 +221,19 @@ function CelestasMod.find_joker(key, count_debuffed)
 
     for _, area in ipairs(areas) do
         for _, card in ipairs((area and area.cards) or {}) do
-            -- A replacing pair speaks for both halves, so neither of them is
-            -- in play as itself - the same test with_partner makes before it
-            -- runs an absorbed half's hooks at all.
-            local replaced = Bind and Bind.replacing_special
-                and Bind.replacing_special(card)
-            if not replaced and (count_debuffed or not card.debuff) then
+            if lookup_eligible(card, count_debuffed) then
                 local center = card.config and card.config.center
                 if center and center.key == key then
                     out[#out + 1] = { card = card, ability = card.ability }
-                elseif Bind and Bind.is_merged and Bind.is_merged(card)
+                end
+
+                -- A SECOND entry rather than an elseif. Two of the same Joker
+                -- can be merged into one card, and that card is two of them:
+                -- two ability tables, two lots of whatever they scale. An
+                -- elseif here reported one, so a Haruka bound to a Haruka
+                -- doubled Tarots once instead of twice, and the same for
+                -- every other caller that counts rather than just asking.
+                if Bind and Bind.is_merged and Bind.is_merged(card)
                     and card.ability.celesta_bind.key == key then
                     out[#out + 1] = {
                         card = card,
@@ -198,7 +276,7 @@ end
 -- so a fifth one added there and not here fails rather than going quiet.
 CelestasMod.GRANT_LEDGERS = {
     "celesta_seraph_granted",     -- SmittenSeraph: Joker and consumable slots
-    "celesta_shiabun_granted",    -- Shiabun and Eidolon Wyrm: selection limit
+    "celesta_shiabun_granted",    -- Shiabun, Eidolon Wyrm, Slime God and Snuffy: selection limit
     "celesta_aethal_granted",     -- Aethal: shop slots
     "celesta_vantacrow_granted",  -- Vantacrow: hands, discards and hand size
 }

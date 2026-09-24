@@ -82,18 +82,12 @@ end
 --- Asked at the moment a Gash breaks rather than cached: Nostro can be
 --- bought, sold or debuffed between one break and the next.
 ---
---- Not a Nostro inside a merge that replaces it, for the reason sinder_active
---- gives: find_card sees only the host, so a pair would otherwise keep Nostro's
---- effect in one merge order and lose it in the other.
+--- Through CelestasMod.joker_in_play, for the reason sinder_active gives:
+--- SMODS.find_card sees only the host of a merge, so a Nostro merged into
+--- another Joker let the Gash break. joker_in_play sees both halves, and
+--- leaves out a debuffed card and a Nostro inside a merge that replaces it.
 function CelestasMod.nostro_active()
-    local Bind = CelestasMod.Bind
-    for _, joker in ipairs(SMODS.find_card("j_celesta_nostro")) do
-        if not joker.debuff
-            and not (Bind and Bind.replacing_special and Bind.replacing_special(joker)) then
-            return true
-        end
-    end
-    return false
+    return CelestasMod.joker_in_play("j_celesta_nostro")
 end
 
 --- Strips a card back to a plain playing card - no enhancement, no edition,
@@ -731,20 +725,13 @@ SMODS.Enhancement {
 --- Asked at the moment a Driftwood would break rather than cached: Sinder can
 --- be bought, sold or debuffed between one end of round and the next.
 ---
---- Not a Sinder inside a merge that replaces it. SMODS.find_card matches the
---- card's own centre, so it finds Sinder as the HOST of such a merge but never
---- as the absorbed half - and a pair's effect is meant to stand in for both
---- halves either way round, which Sinder + Trickywi, paid for broken
---- Driftwood, depends on.
+--- Through CelestasMod.joker_in_play rather than SMODS.find_card. find_card
+--- matches the card's own centre, so it found Sinder as the HOST of a merge
+--- but never as the absorbed half, and a Sinder merged into another Joker let
+--- Driftwood break. joker_in_play sees both halves, and leaves out a debuffed
+--- card and a Sinder inside a merge that replaces it.
 function CelestasMod.sinder_active()
-    local Bind = CelestasMod.Bind
-    for _, joker in ipairs(SMODS.find_card("j_celesta_sinder")) do
-        if not joker.debuff
-            and not (Bind and Bind.replacing_special and Bind.replacing_special(joker)) then
-            return true
-        end
-    end
-    return false
+    return CelestasMod.joker_in_play("j_celesta_sinder")
 end
 
 CelestasMod.DRIFTWOOD_ODDS = 2

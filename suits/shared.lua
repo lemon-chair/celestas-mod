@@ -152,6 +152,43 @@ function CelestasMod.deal_conversion_suits()
     return true
 end
 
+--- Conversion suits are kept out of every card a run CREATES as well as out
+--- of the starting deck: a Standard pack, a Joker that makes a card, anything
+--- that rolls a front with pseudorandom_element(G.P_CARDS)
+--- (common_events.lua:2459). The start_run hide below covers the deck the run
+--- begins with; without this one, a suit that is never dealt would still turn
+--- up in the second Standard pack of the run.
+---
+--- Windowed rather than permanent, for the reason the other hide is: a
+--- conversion looks its prototype up by key through SMODS.change_base, so the
+--- table has to be whole everywhere except inside this one call.
+local celesta_suits_create_card_ref = create_card
+
+function create_card(_type, area, legendary, _rarity, skip_materialize,
+                     soulable, forced_key, key_append)
+    -- Only the two types that roll a front, and never a forced key: that is
+    -- somebody naming the exact card, not something being rolled.
+    if forced_key or not (_type == "Base" or _type == "Enhanced")
+        or not next(CelestasMod.CONVERSION_SUITS) then
+        return celesta_suits_create_card_ref(_type, area, legendary, _rarity,
+            skip_materialize, soulable, forced_key, key_append)
+    end
+
+    local hidden = {}
+    for key, proto in pairs(G.P_CARDS) do
+        if CelestasMod.CONVERSION_SUITS[proto.suit] then hidden[key] = proto end
+    end
+    for key in pairs(hidden) do G.P_CARDS[key] = nil end
+
+    -- pcall for the reason the start_run hide uses one: a failure inside must
+    -- not leave the prototypes missing for the rest of the session.
+    local ok, ret = pcall(celesta_suits_create_card_ref, _type, area, legendary,
+        _rarity, skip_materialize, soulable, forced_key, key_append)
+    for key, proto in pairs(hidden) do G.P_CARDS[key] = proto end
+    if not ok then error(ret, 0) end
+    return ret
+end
+
 local celesta_suits_start_run_ref = Game.start_run
 function Game:start_run(args)
     -- A save is restored from the card list it stores, not from P_CARDS, in a

@@ -68,6 +68,8 @@ Lost.CONVERSIONS = {
     ["j_hanging_chad"] = joker("error_missing_chad"),
     [joker("arielle")] = joker("elleira"),
     [joker("kumi")] = joker("doodle_kumi"),
+    [joker("momo")] = joker("momo_cat"),
+    [joker("kokonuts")] = joker("vgn"),
 }
 
 --- The same table read the other way: which Joker a Corrupt one used to be.
@@ -438,10 +440,6 @@ SMODS.Joker {
 
     config = { extra = { x_mult = 3, repetitions = 6, joker_slots = 4 } },
 
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 2 },
-
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_steel
         local extra = card.ability.extra
@@ -697,10 +695,6 @@ SMODS.Joker {
     config = { extra = { repetitions = 2, e_mult = 1, e_mult_gain = 0.06,
                          joker_slots = 4 } },
 
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 2 },
-
     loc_vars = function(self, info_queue, card)
         local extra = card.ability.extra
         local name, colour = CelestasMod.suit_name_and_colour(
@@ -903,10 +897,6 @@ SMODS.Joker {
 
     config = { extra = { repetitions = 2 } },
 
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 1 },
-
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.repetitions } }
     end,
@@ -1095,10 +1085,6 @@ SMODS.Joker {
 
     config = { extra = { repetitions = 6, joker_slots = 4 } },
 
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 1 },
-
     loc_vars = function(self, info_queue, card)
         local extra = card.ability.extra
         return { vars = { extra.repetitions, extra.joker_slots } }
@@ -1235,6 +1221,13 @@ local ELLEIRA_KEY = "j_" .. PREFIX .. "_elleira"
 --- Walked by hand rather than through find_joker: is_suit is asked of every
 --- card in every hand the game scores, several times over, and find_joker
 --- builds a table on each call.
+---
+--- The centre key alone is enough here, unlike everywhere else in this mod.
+--- A Joker absorbed by a Bind wears the HOST's centre and would be invisible
+--- to this - but Elleira sets celesta_no_bind, as every Lost Joker does, so
+--- Bind.can_bind refuses it and there is no absorbed Elleira to miss. If that
+--- ever changes this has to become CelestasMod.card_is_joker; test_merged_
+--- passives.py checks the no_bind flag so the pair of facts cannot drift.
 local function elleira_out()
     for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
         local center = held.config and held.config.center
@@ -1354,6 +1347,144 @@ SMODS.Joker {
 
     remove_from_deck = function(self, card, from_debuff)
         bump_limit(G.jokers, card.ability.extra.joker_slots)
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Momo, the cat
+--------------------------------------------------------------------------------
+--
+-- Momo's Flushes, gone all the way: every played hand is a Flush Five.
+--
+-- Answered on evaluate_poker_hand, the pass Steamodded gives a Joker to rename
+-- the hand (overrides.lua:1543). The name alone would score a Flush Five on a
+-- Pair's two cards, so the hand is also told it CONTAINS everything a Flush
+-- Five does - for the Jokers that ask - and every played card is added to the
+-- scoring hand through modify_scoring_hand, the way Evil Neuro adds its pair.
+-- That one is asked only while the hand is really played: the selection
+-- preview asks it too, and an answer there is a trigger.
+
+--- What a Flush Five contains, the hand types a Joker may ask about.
+local FLUSH_FIVE_CONTAINS = {
+    "Flush Five", "Five of a Kind", "Four of a Kind",
+    "Three of a Kind", "Pair", "Flush",
+}
+
+SMODS.Joker {
+    key = "momo_cat",
+    atlas = "momo_cat",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    -- Hidden in the collection until one has been made, and locked rather
+    -- than merely undiscovered: a locked centre is the one the game will
+    -- print a per-card reason for (card.lua:720 beats 723), which is where
+    -- "use a Lost Soul on <Joker>" goes. See reveal() above.
+    unlocked = false,
+    discovered = false,
+    -- A rule about the hand, which a copy would only state twice.
+    blueprint_compat = false,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+    celesta_lost_shop = "j_" .. PREFIX .. "_momo_cat",
+
+    config = { extra = { joker_slots = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, card.ability.extra.joker_slots)
+    end,
+
+    calculate = function(self, card, context)
+        if context.evaluate_poker_hand then
+            local full = context.full_hand or {}
+            if #full == 0 then return end
+            local hands = {}
+            for name, found in pairs(context.poker_hands or {}) do hands[name] = found end
+            for _, name in ipairs(FLUSH_FIVE_CONTAINS) do
+                if not (hands[name] and next(hands[name])) then hands[name] = { full } end
+            end
+            return { replace_scoring_name = "Flush Five", replace_poker_hands = hands }
+        end
+
+        if context.modify_scoring_hand and not context.blueprint
+            and CelestasMod.hand_is_being_played() then
+            return { add_to_hand = true }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- vgn
+--------------------------------------------------------------------------------
+--
+-- KokoNuts, seventeen times over: every round starts with seventeen Lucky 7s
+-- of Spades added to the deck. Made by KokoNuts's own merges' routine
+-- (CelestasMod.koko_sevens in merge/bind.lua), which builds them in G.play
+-- where they can be seen and draws them into the deck one by one.
+--
+-- The art is square, 71 across, and sits in the middle of its card cell the
+-- way Red Boosfer's does.
+
+SMODS.Joker {
+    key = "vgn",
+    atlas = "vgn",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    -- Hidden in the collection until one has been made, and locked rather
+    -- than merely undiscovered: a locked centre is the one the game will
+    -- print a per-card reason for (card.lua:720 beats 723), which is where
+    -- "use a Lost Soul on <Joker>" goes. See reveal() above.
+    unlocked = false,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+    celesta_lost_shop = "j_" .. PREFIX .. "_vgn",
+
+    config = { extra = { sevens = 17, joker_slots = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_lucky
+        local extra = card.ability.extra
+        return { vars = { extra.sevens, extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, card.ability.extra.joker_slots)
+    end,
+
+    calculate = function(self, card, context)
+        if context.setting_blind
+            and not (context.blueprint_card or card).getting_sliced
+            and CelestasMod.koko_sevens then
+            CelestasMod.koko_sevens(context.blueprint_card or card,
+                card.ability.extra.sevens, "celesta_vgn", false)
+        end
     end,
 }
 

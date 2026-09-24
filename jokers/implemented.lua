@@ -73,6 +73,9 @@ local function arar_forced()
     return nil
 end
 
+-- Shared with Arar + FroggyLoch in merge/bind.lua, which favours the same Tarot.
+CelestasMod.arar_forced = arar_forced
+
 SMODS.Joker {
     key = "arar",
     atlas = "arar",
@@ -86,12 +89,19 @@ SMODS.Joker {
     eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
-        return {}
+        return CelestasMod.with_true_star_line("j_celesta_arar", {})
     end,
 
     add_to_deck = announces("j_celesta_arar"),
 
     calculate = function(self, card, context)
+        -- True Stars in the deck are worth X Mult here; suits/true_stars.lua
+        -- says what counts as one.
+        if context.joker_main then
+            local x_mult = CelestasMod.true_star_x_mult()
+            if x_mult > 1 then return { x_mult = x_mult } end
+        end
+
         -- Fires once per round, right after the opening hand is dealt.
         -- (Set by state_events.lua as
         --  `not G.GAME.current_round.any_hand_drawn and G.GAME.facing_blind`.)
@@ -269,10 +279,6 @@ SMODS.Joker {
 
     config = { extra = { odds = 2, repetitions = 2 } },
 
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 3 },
-
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_steel
         local numerator, denominator = SMODS.get_probability_vars(
@@ -412,7 +418,7 @@ SMODS.Joker {
     blueprint_compat = true,
     eternal_compat = true,
 
-    config = { extra = { mult = 0, mult_gain = 2 } },
+    config = { extra = { mult = 0, mult_gain = 4 } },
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_mult
@@ -431,7 +437,12 @@ SMODS.Joker {
                     and not played.celesta_stripped then
                     removed[#removed + 1] = played
                     played.celesta_stripped = true
-                    played:set_ability(G.P_CENTERS.c_base, nil, true)
+                    -- Under unjudged: set_ability re-judges the card, and
+                    -- The Pillar debuffs anything played this Ante - which is
+                    -- every card in the hand being played.
+                    CelestasMod.unjudged(played, function()
+                        played:set_ability(G.P_CENTERS.c_base, nil, true)
+                    end)
                     G.E_MANAGER:add_event(Event {
                         func = function()
                             played:juice_up()
@@ -484,10 +495,6 @@ SMODS.Joker {
 
     config = { extra = { odds = 2, repetitions = 1 } },
 
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 3 },
-
     loc_vars = function(self, info_queue, card)
         local numerator, denominator = SMODS.get_probability_vars(
             card, 1, card.ability.extra.odds, "celesta_froggyloch")
@@ -529,10 +536,6 @@ SMODS.Joker {
     eternal_compat = true,
 
     config = { extra = { repetitions = 2 } },
-
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 1 },
 
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.repetitions } }
@@ -692,7 +695,7 @@ SMODS.Joker {
     end,
 }
 
---- IMPLEMENTED: cottontail, spite, fraiki, beepers
+--- IMPLEMENTED: cottontail, spite, uzuri, beepers
 --- (declared explicitly because these are registered from a loop, so
 ---  tools/gen_roster.py cannot read their keys from the source)
 
@@ -717,7 +720,7 @@ local SEAL_GRANTERS = {
         end,
     },
     {
-        key = "fraiki", seal = "Rose", cost = 6,
+        key = "uzuri", seal = "Rose", cost = 6,
         eligible = function(c) return not c:is_face() and not c.seal end,
     },
     {
@@ -954,7 +957,10 @@ SMODS.Joker {
             local other = context.other_card
             if other and not SMODS.has_enhancement(other, CelestasMod.ENHANCEMENT_KEYS.Gash)
                 and SMODS.pseudorandom_probability(card, "celesta_shoto", 1, card.ability.extra.odds) then
-                other:set_ability(G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Gash], nil, true)
+                -- Under unjudged, for the reason FeFe gives.
+                CelestasMod.unjudged(other, function()
+                    other:set_ability(G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Gash], nil, true)
+                end)
                 -- Spare it from breaking on the hand it was gashed in; the
                 -- Gash enhancement consumes this flag on its next destroy
                 -- check. Without it a card could be gashed and destroyed in
@@ -1221,14 +1227,14 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Deme [Rare] - X0.25 Mult per consecutive single-card hand.
+-- Deme [Uncommon] - X0.25 Mult per consecutive single-card hand.
 --------------------------------------------------------------------------------
 
 SMODS.Joker {
     key = "demenishki",
     atlas = "demenishki",
     pos = { x = 0, y = 0 },
-    rarity = 3, cost = 8,
+    rarity = 2, cost = 6,
     unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
@@ -1263,14 +1269,14 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- MOTHERv3 [Rare] - after each hand, Exo a random unenhanced held card.
+-- MOTHERv3 [Common] - after each hand, Exo a random unenhanced held card.
 --------------------------------------------------------------------------------
 
 SMODS.Joker {
     key = "motherv3",
     atlas = "motherv3",
     pos = { x = 0, y = 0 },
-    rarity = 3, cost = 8,
+    rarity = 1, cost = 5,
     unlocked = false, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
@@ -1395,12 +1401,19 @@ SMODS.Joker {
 
     loc_vars = function(self, info_queue, card)
         local n, d = SMODS.get_probability_vars(card, 1, card.ability.extra.odds, "celesta_shoomimi")
-        return { vars = { n, d } }
+        return CelestasMod.with_true_star_line("j_celesta_shoomimi", { vars = { n, d } })
     end,
 
     add_to_deck = announces("j_celesta_shoomimi"),
 
     calculate = function(self, card, context)
+        -- True Stars in the deck are worth X Mult here; suits/true_stars.lua
+        -- says what counts as one.
+        if context.joker_main then
+            local x_mult = CelestasMod.true_star_x_mult()
+            if x_mult > 1 then return { x_mult = x_mult } end
+        end
+
         if context.reroll_shop and not context.blueprint then
             if SMODS.pseudorandom_probability(card, "celesta_shoomimi", 1, card.ability.extra.odds) then
                 G.consumeables.config.card_limit = G.consumeables.config.card_limit + 1
@@ -1517,8 +1530,12 @@ SMODS.Joker {
     end,
 
     calculate = function(self, card, context)
+        -- Contains, not is: a Full House or a Four of a Kind holds a Three of
+        -- a Kind too, and context.poker_hands lists every hand the played one
+        -- contains - the question vanilla's own "contains" Jokers ask.
         if context.before and not context.blueprint
-            and context.scoring_name == "Three of a Kind" then
+            and context.poker_hands
+            and next(context.poker_hands["Three of a Kind"] or {}) then
             if #G.consumeables.cards + (G.GAME.consumeable_buffer or 0)
                 >= G.consumeables.config.card_limit then
                 return
@@ -1546,20 +1563,26 @@ SMODS.Joker {
 --- Pick a new target poker hand, avoiding an immediate repeat. Mirrors how
 --- vanilla To Do List rerolls, including the is_poker_hand_visible filter so
 --- hands the run has not unlocked are never chosen.
-local function cweamcat_repick(card)
+---
+--- `holder` is whichever table keeps the target in `.hand`: CweamCat's extra,
+--- or BerryCrepe + CweamCat's pair state.
+local function cweamcat_repick(holder)
     local hands = {}
     for k, _ in pairs(G.GAME.hands) do
         if SMODS.is_poker_hand_visible(k) then hands[#hands + 1] = k end
     end
     if #hands == 0 then return end
-    local old = card.ability.extra.hand
+    local old = holder.hand
     local pick = old
     for _ = 1, 10 do
         pick = pseudorandom_element(hands, pseudoseed("celesta_cweamcat"))
         if pick ~= old then break end
     end
-    card.ability.extra.hand = pick
+    holder.hand = pick
 end
+
+-- Shared with BerryCrepe + CweamCat in merge/bind.lua.
+CelestasMod.cweamcat_repick = cweamcat_repick
 
 SMODS.Joker {
     key = "cweamcat",
@@ -1582,7 +1605,7 @@ SMODS.Joker {
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        cweamcat_repick(card)
+        cweamcat_repick(card.ability.extra)
     end,
 
     calculate = function(self, card, context)
@@ -1601,7 +1624,7 @@ SMODS.Joker {
         end
 
         if context.after and not context.blueprint then
-            cweamcat_repick(card)
+            cweamcat_repick(card.ability.extra)
             return
         end
 
@@ -1680,10 +1703,6 @@ SMODS.Joker {
 
     config = { extra = { repetitions = 1 } },
 
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 1 },
-
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.j_blueprint
         info_queue[#info_queue + 1] = G.P_CENTERS.j_brainstorm
@@ -1740,14 +1759,14 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Nagzz [Uncommon] - halves every listed probability.
+-- Nagzz [Common] - halves every listed probability.
 --------------------------------------------------------------------------------
 
 SMODS.Joker {
     key = "nagzz",
     atlas = "nagzz",
     pos = { x = 0, y = 0 },
-    rarity = 2, cost = 6,
+    rarity = 1, cost = 5,
     unlocked = true, discovered = false,
     blueprint_compat = false, eternal_compat = true,
 
@@ -1788,11 +1807,11 @@ SMODS.Joker {
     unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
-    config = { extra = { x_mult = 1, x_mult_gain = 0.2 } },
+    config = { extra = { x_chips = 1, x_chips_gain = 0.75 } },
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Gash]
-        return { vars = { card.ability.extra.x_mult_gain, card.ability.extra.x_mult } }
+        return { vars = { card.ability.extra.x_chips_gain, card.ability.extra.x_chips } }
     end,
 
     calculate = function(self, card, context)
@@ -1810,10 +1829,10 @@ SMODS.Joker {
             if broken > 0 then
                 SMODS.scale_card(card, {
                     ref_table = card.ability.extra,
-                    ref_value = "x_mult",
-                    scalar_value = "x_mult_gain",
-                    message_key = "a_xmult",
-                    message_colour = G.C.MULT,
+                    ref_value = "x_chips",
+                    scalar_value = "x_chips_gain",
+                    message_key = "a_xchips",
+                    message_colour = G.C.CHIPS,
                     operation = function(ref_table, ref_value, initial, scaling)
                         ref_table[ref_value] = initial + scaling * broken
                     end,
@@ -1821,14 +1840,14 @@ SMODS.Joker {
             end
         end
 
-        if context.joker_main and card.ability.extra.x_mult > 1 then
-            return { x_mult = card.ability.extra.x_mult }
+        if context.joker_main and card.ability.extra.x_chips > 1 then
+            return { x_chips = card.ability.extra.x_chips }
         end
     end,
 }
 
 --------------------------------------------------------------------------------
--- x3Dustco [Legendary] - at the end of the shop, creates a Joker from this mod.
+-- x3Dustco [Legendary] - at the end of the shop, a Negative Joker from this mod.
 --------------------------------------------------------------------------------
 
 local MOD_JOKER_PREFIX = "j_" .. SMODS.current_mod.prefix .. "_"
@@ -1890,10 +1909,10 @@ SMODS.Joker {
     calculate = function(self, card, context)
         if context.ending_shop and not context.blueprint then
             if not G.jokers then return end
-            if #G.jokers.cards + (G.GAME.joker_buffer or 0)
-                >= G.jokers.config.card_limit then
-                return
-            end
+            -- No room check and no joker_buffer: what this makes is Negative,
+            -- and a Negative Joker brings its own slot with it (its edition's
+            -- add_to_deck raises the limit), so a full row is not a reason not
+            -- to make one.
 
             -- Built from the live Joker pool rather than a hardcoded list, so
             -- it picks up anything added later automatically. add_to_pool is
@@ -1917,12 +1936,14 @@ SMODS.Joker {
 
             local chosen = x3_weighted_pick(buckets)
             if not chosen then return end
-            G.GAME.joker_buffer = (G.GAME.joker_buffer or 0) + 1
             G.E_MANAGER:add_event(Event {
                 func = function()
-                    local made = SMODS.add_card { key = chosen }
+                    -- The edition is set before add_to_deck runs (SMODS'
+                    -- create_card, utils.lua:392), which is what grants the
+                    -- slot in time for the card that is using it.
+                    local made = SMODS.add_card {
+                        key = chosen, edition = "e_negative" }
                     if made then made:start_materialize() end
-                    G.GAME.joker_buffer = 0
                     return true
                 end
             })
@@ -1950,20 +1971,43 @@ SMODS.Joker {
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Limestone]
-        return {}
+        return CelestasMod.with_true_star_line("j_celesta_limealicious", {})
     end,
 
     calculate = function(self, card, context)
+        -- True Stars in the deck are worth X Mult here; suits/true_stars.lua
+        -- says what counts as one.
+        if context.joker_main then
+            local x_mult = CelestasMod.true_star_x_mult()
+            if x_mult > 1 then return { x_mult = x_mult } end
+        end
+
         -- Same shape as vanilla Marble Joker: build it in G.play so the player
         -- sees it, then animate it into the deck.
         if context.setting_blind
             and not (context.blueprint_card or card).getting_sliced then
+            -- TEMPORARY trace: why only one of several Laimus seems to add a card.
+            local function laimu_trace(what)
+                if not sendInfoMessage then return end
+                local limestones = 0
+                for _, held in ipairs(G.playing_cards or {}) do
+                    if SMODS.has_enhancement(held, CelestasMod.ENHANCEMENT_KEYS.Limestone) then
+                        limestones = limestones + 1
+                    end
+                end
+                sendInfoMessage(("[laimu] %s: laimu sort_id=%s blueprint=%s play=%s deck=%s limestone_in_deck_count=%s")
+                    :format(what, tostring(card.sort_id), tostring(context.blueprint_card ~= nil),
+                            tostring(G.play and #G.play.cards), tostring(G.deck and #G.deck.cards),
+                            tostring(limestones)), "CelestasMod")
+            end
+            laimu_trace("setting_blind")
             G.E_MANAGER:add_event(Event {
                 func = function()
                     local new_card = create_playing_card(
                         { front = pseudorandom_element(G.P_CARDS, pseudoseed("celesta_lime")),
                           center = G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Limestone] },
                         G.play, nil, nil, { G.C.SECONDARY_SET.Enhanced })
+                    laimu_trace("created " .. tostring(new_card and new_card.sort_id))
 
                     SMODS.calculate_effect({
                         message = localize("celesta_plus_limestone"),
@@ -1972,7 +2016,14 @@ SMODS.Joker {
 
                     G.E_MANAGER:add_event(Event {
                         func = function()
+                            laimu_trace("before draw")
                             draw_card(G.play, G.deck, 90, "up", nil)
+                            G.E_MANAGER:add_event(Event {
+                                func = function()
+                                    laimu_trace("after draw")
+                                    return true
+                                end
+                            })
                             return true
                         end
                     })
@@ -1997,10 +2048,6 @@ SMODS.Joker {
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 1 } },
-
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 1 },
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_stone
@@ -2184,14 +2231,14 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Pomatomaster [Rare] - Exo... Eutrophic, on the lowest held card.
+-- Pomatomaster [Common] - Exo... Eutrophic, on the lowest held card.
 --------------------------------------------------------------------------------
 
 SMODS.Joker {
     key = "pomatomaster",
     atlas = "pomatomaster",
     pos = { x = 0, y = 0 },
-    rarity = 3, cost = 8,
+    rarity = 1, cost = 5,
     unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
@@ -2310,14 +2357,14 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- AiCandii [Uncommon] - paid for the discards you did not need.
+-- AiCandii [Common] - paid for the discards you did not need.
 --------------------------------------------------------------------------------
 
 SMODS.Joker {
     key = "aicandii",
     atlas = "aicandii",
     pos = { x = 0, y = 0 },
-    rarity = 2, cost = 6,
+    rarity = 1, cost = 5,
     unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
@@ -2394,10 +2441,6 @@ SMODS.Joker {
 
     config = { extra = { repetitions = 1 } },
 
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 1 },
-
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.repetitions } }
     end,
@@ -2418,7 +2461,7 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Smug Alana [Rare] - melting ice takes a sticker with it.
+-- Smug Alana [Uncommon] - melting ice takes a sticker with it.
 --------------------------------------------------------------------------------
 --
 -- The strip itself lives in CelestasMod.thaw (editions/frozen.lua), so melting
@@ -2429,7 +2472,7 @@ SMODS.Joker {
     key = "smugalana",
     atlas = "smugalana",
     pos = { x = 0, y = 0 },
-    rarity = 3, cost = 8,
+    rarity = 2, cost = 6,
     unlocked = true, discovered = false,
     blueprint_compat = false, eternal_compat = true,
 
@@ -2537,10 +2580,6 @@ SMODS.Joker {
 
     config = { extra = { repetitions = 2 } },
 
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 1 },
-
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Exo]
         return { vars = { card.ability.extra.repetitions } }
@@ -2562,406 +2601,127 @@ SMODS.Joker {
 
 --------------------------------------------------------------------------------
 -- Vedal [Legendary]
--- Multiplies every value your other Jokers produce by X1.5, and cannot be
--- copied.
+-- Scaling Jokers scale as n^x, and x goes up by one every time one scales.
 --------------------------------------------------------------------------------
-
-CelestasMod.VEDAL_SCALE = 1.1
-
--- EVERY number a Joker hands back is scaled - Mult, Chips, multipliers,
--- Talisman's exponents, dollars, hand size, the lot. There is no list of
--- blessed keys any more: keeping one meant Vedal quietly ignored whatever it
--- had not been told about, which is most of what a Joker can give.
 --
--- Two keys are held out, and only these two. Neither of them is a value.
-local VEDAL_NEVER = {
-    -- The divisor of a chance. "1 in 5" is one number, not two: scaling both
-    -- leaves the odds exactly where they were. The numerator is scaled through
-    -- mod_probability instead, where it moves the roll AND the text together.
-    denominator = true,
-    -- Scaled in the same place, for the same reason. Doing it here as well
-    -- would apply X1.5 twice to a chance that came back through an effect.
-    numerator = true,
-}
-
--- The most times a Joker of this mod may be made to retrigger something.
+-- Cryptid's Scalae is the shape this follows. Every Joker that grows a number
+-- over a run goes through SMODS.scale_card (utils.lua:2865) - it reads the
+-- rate out of the card, applies it, and prints the message - so one hook there
+-- reaches every scaling Joker in the game, this mod's and everyone else's,
+-- without having to know anything about any of them.
 --
--- A retrigger count is the one number Vedal touches that is WORK rather than
--- arithmetic. Steamodded spends it as a loop:
---     for h = 1, effect.repetitions do table.insert(ret, ...) end
--- (utils.lua:1498), one fresh table per repetition. Every other key costs the
--- same whatever it says; this one costs whatever it SAYS, and it feeds itself
--- - each retrigger is another evaluation, each evaluation grows Vedal, and the
--- next card's count is drawn from the grown multiplier.
+-- Where Scalae raises a fixed degree once a round, this raises it once per
+-- scale, per Joker, per value: the nth time a Joker scales a number, it scales
+-- by its own rate times n^x, and x goes up by one straight afterwards. x
+-- starts at 1, so the first scale is untouched and the acceleration is all
+-- afterwards:
 --
--- Boosfer with Arielle out is where that showed. Arielle makes is_suit answer
--- yes to everything, so every scored card is a Star and every one of them gets
--- the retrigger, and a Vedal sitting at X14 turned a five card hand into a
--- loop that allocated until LuaJIT could not. Twice, three minutes apart, with
--- no crash screen - drawing one needs memory too.
+--     +1 Mult a hand  ->  +1, +4, +27, +256
+--     +4 Chips a hand ->  +4, +16, +108, +1024
 --
--- 40 is Boosfer's ceiling by request, and it is applied to every retrigger
--- this mod hands back rather than to that one Joker: sixty-odd others return
--- repetitions through the same loop, and a bound that only covers the Joker
--- that was caught is not a bound.
-CelestasMod.VEDAL_REPETITION_CAP = 40
+-- Hooked at SMODS.scale_card rather than through a calc_scaling on the centre,
+-- which is the door Scalae uses. calc_scaling is dispatched off
+-- _card.config.center, and a merged Vedal is not its own centre any more - the
+-- host's is - so an absorbed Vedal would have gone quietly dead. Asking
+-- find_joker instead is the lookup this mod keeps for exactly that, and it
+-- answers for either half. It also means two Vedals advance the exponent once
+-- between them rather than twice, which dispatching per card would not.
 
---- Every Vedal in play and able to act.
---- Asked at the moment the answer is wanted rather than cached: one can be
---- bought, sold or debuffed between one trigger and the next.
---- Entries of { card, ability }, not cards: an absorbed Vedal's numbers live
---- in its own half of the merge, and scaling the host's `extra.total` instead
---- would grow whichever Joker it happened to be bound to.
-local function vedal_cards()
-    return CelestasMod.find_joker("j_celesta_vedal")
-end
+local VEDAL_KEY = "j_celesta_vedal"
 
-local function vedal_active()
-    return next(vedal_cards()) ~= nil
-end
+--- How much x goes up by after each scale.
+CelestasMod.VEDAL_EXPONENT_STEP = 1
 
--- The largest the multiplier is allowed to get.
---
--- It compounds by half again on every trigger, so it leaves what a Lua number
--- can hold within a couple of thousand of them, and inf on a card reads as a
--- broken Joker rather than a big one.
---
--- Held as a plain Lua NUMBER rather than one of Talisman's big ones, which the
--- first version of this did. A big number is a table, and Lua 5.1 only
--- consults a comparison metamethod when both operands are the same type - so
--- the moment one reached SMODS's `pseudorandom(seed) < numerator / denominator`
--- (utils.lua:2736) it took the run down. Everything Vedal multiplies goes on
--- to be compared against something by somebody; a plain number is the only
--- form that is safe everywhere, and Talisman promotes what it needs to on its
--- own once the values it owns get large.
-CelestasMod.VEDAL_CAP = 1e300
+--- The exponent the FIRST scale uses, which is why a Joker's opening scale is
+--- the one it would have had without Vedal.
+CelestasMod.VEDAL_FIRST_EXPONENT = 1
 
---- The multiplier a Vedal is carrying, as a number.
---- Coerced rather than trusted: a save written by the version that stored a
---- big number here still has one.
-local function vedal_total(joker)
-    local extra = joker and joker.ability and joker.ability.extra
-    local total = extra and extra.total
-    if type(total) == "number" then return total end
-    if type(total) == "table" and type(total.to_number) == "function" then
-        local ok, n = pcall(total.to_number, total)
-        if ok and type(n) == "number" and n == n then
-            return math.min(n, CelestasMod.VEDAL_CAP)
-        end
-        return CelestasMod.VEDAL_CAP
-    end
-    return nil
-end
-
---- What every Vedal in play multiplies by between them, right now.
-local function vedal_multiplier()
-    local total = nil
-    for _, joker in ipairs(vedal_cards()) do
-        local mine = vedal_total(joker)
-        if mine then total = math.min((total or 1) * mine, CelestasMod.VEDAL_CAP) end
-    end
-    return total
-end
-
---- A chance, scaled and then capped at certainty.
+--- What `other` has done so far for the value being scaled.
 ---
---- There is nothing to gain by handing back a numerator larger than the
---- denominator - the chance is already every time - and a great deal to lose:
---- an enormous one is where a plain number turns into inf, and inf/denominator
---- is not a probability. Capping keeps it a number a die roll can be compared
---- against.
-local function vedal_odds(context, mult)
-    local n = context.numerator or 0
-    local d = context.denominator or 1
-    if type(n) ~= "number" or type(d) ~= "number" then return n end
-    local grown = n * mult
-    if grown ~= grown or grown >= d then return d end
-    return grown
-end
-
---- Compounds every Vedal in play, and answers with what they now multiply by.
+--- Kept on the scaling Joker's own ability table, so selling that Joker takes
+--- its progress with it and a save carries it. Keyed by the scalar's NAME,
+--- because one Joker can grow several numbers independently and they each
+--- deserve their own count - Cryptid's Compound Interest scales two.
 ---
---- Called once per trigger it actually boosts - which is what "each time one
---- triggers" means - and never from the description path: a card sitting under
---- the cursor is not a Joker going off, and counting hovers would run the
---- number away without anything happening on the board.
-local function vedal_grow()
-    local total = nil
-    for _, joker in ipairs(vedal_cards()) do
-        local extra = joker.ability and joker.ability.extra
-        if extra then
-            extra.total = math.min((vedal_total(joker) or 1) * CelestasMod.VEDAL_SCALE,
-                                   CelestasMod.VEDAL_CAP)
-            total = math.min((total or 1) * extra.total, CelestasMod.VEDAL_CAP)
-        end
+--- `scalar` is the rate as it was BEFORE Vedal first touched it. Every step is
+--- computed from that rather than from the rate now on the card, which this
+--- has already rewritten; reading it back would fold the exponent into itself
+--- and the number would leave the universe on about the third scale.
+local function vedal_progress(other, name, current_scalar)
+    local info = other.ability.celesta_vedal
+    if not info then
+        info = {}
+        other.ability.celesta_vedal = info
     end
-    return total
+
+    local seen = info[name]
+    if not seen then
+        seen = { scalar = current_scalar, n = 0,
+                 x = CelestasMod.VEDAL_FIRST_EXPONENT }
+        info[name] = seen
+    end
+    return seen
 end
 
---- Cheap pre-check, so the common case costs a handful of table lookups.
---- Nearly every joker evaluation returns a table with nothing scalable in it,
---- and this hook sits on the hottest path in the game - the same path that
---- once locked the game up mid-score.
-local function vedal_has_target(effect)
-    for key, v in pairs(effect) do
-        -- Zero is left out because scaling it changes nothing; a multiplier
-        -- sitting at 1 is NOT, because that is where every scaling Joker in
-        -- this mod starts. Leaving those alone made Vedal look broken on a
-        -- fresh board - the numbers a player checks first were exactly the
-        -- ones it was refusing to touch.
-        if type(v) == "number" and v ~= 0 and not VEDAL_NEVER[key] then
-            return true
-        end
-    end
-    return false
+--- n^x, in Talisman's arithmetic where it is loaded.
+---
+--- n^n passes what a double can hold at about n = 144, which is an ordinary
+--- number of hands for a Joker that scales every one of them. Talisman is a
+--- declared dependency and its numbers go where doubles cannot; without it
+--- this is a plain power, and a Joker that scales that many times will reach
+--- infinity, which is the same thing that happens to everything else in the
+--- run at that point.
+local function vedal_power(n, x)
+    if type(to_big) == "function" then return to_big(n) ^ x end
+    return n ^ x
 end
 
-local celesta_vedal_calculate_joker_ref = Card.calculate_joker
-function Card:calculate_joker(context, ...)
-    local effect, post = celesta_vedal_calculate_joker_ref(self, context, ...)
+--- Rewrites the rate `card` is about to scale by, if Vedal is out to do it.
+---
+--- The rate is written back into the Joker's own table rather than handed
+--- back, because that is where SMODS.scale_card reads it from - and leaving it
+--- written is deliberate: the card's tooltip then advertises the rate it will
+--- actually grow by, and a Vedal sold mid-run leaves behind what it already
+--- did, the way Scalae does.
+local function vedal_rewrite(card, args)
+    if not (card and args and args.scalar_value) then return end
+    if not (card.ability and card.ability.set == "Joker") then return end
 
-    -- Only the outermost evaluation is scaled. SMODS.blueprint_effect runs the
-    -- copied joker with context.blueprint set and then hands that same table
-    -- back up through the copier own calculate_joker, where context.blueprint
-    -- is nil again. Scaling both would apply X1.5 twice per copy.
-    if type(effect) ~= "table" or context.blueprint then return effect, post end
-    if self.ability.set ~= "Joker" then return effect, post end
-    if self.config.center.key == "j_celesta_vedal" then return effect, post end
-    -- This mod's Jokers only. Reaching into other mods' Jokers meant reaching
-    -- into machinery this cannot see: Compound Interest scales inside
-    -- calc_dollar_bonus rather than calculate, and froze while Vedal was out.
-    -- Rather than keep guessing at how a boost here reaches a scale there,
-    -- Vedal now stays within what this mod owns, and says so on the card.
-    if not CelestasMod.is_ours(self.config.center) then return effect, post end
-    if not vedal_has_target(effect) then return effect, post end
-    if not vedal_active() then return effect, post end
+    -- Vedal does not scale Vedal, either half of a merged one. Counted with
+    -- debuffed included: a debuffed Vedal does no work, but it is still not
+    -- something the other one should be accelerating.
+    if CelestasMod.card_is_joker(card, VEDAL_KEY, true) then return end
+    if not next(CelestasMod.find_joker(VEDAL_KEY)) then return end
 
-    -- Scaled onto a copy rather than in place: a joker is free to return its
-    -- own ability table, and scaling that would permanently inflate its stats
-    -- instead of this one trigger.
-    local mult = vedal_grow()
-    if not mult then return effect, post end
+    local scalar_table = args.scalar_table or args.ref_table
+        or (card.ability and card.ability.extra)
+    if type(scalar_table) ~= "table" then return end
 
-    local scaled = {}
-    for k, v in pairs(effect) do
-        if type(v) == "number" and v ~= 0 and not VEDAL_NEVER[k] then
-            scaled[k] = v * mult
-        else
-            scaled[k] = v
-        end
-    end
+    local current = scalar_table[args.scalar_value]
+    -- A rate that is not arithmetic is not something to raise to a power. The
+    -- lesson is Adfree's: another mod put a joke string where SMODS expects a
+    -- number, and multiplying it took the run down.
+    local meta = type(current) == "table" and getmetatable(current)
+    if type(current) ~= "number" and not (meta and meta.__mul) then return end
 
-    -- Bounded here rather than in the Jokers, because here is the only place
-    -- that sees the number Steamodded will actually loop over. See
-    -- VEDAL_REPETITION_CAP.
-    if type(scaled.repetitions) == "number" then
-        scaled.repetitions = math.min(scaled.repetitions,
-                                      CelestasMod.VEDAL_REPETITION_CAP)
-    end
-
-    return scaled, post
+    local seen = vedal_progress(card, tostring(args.scalar_value), current)
+    seen.n = seen.n + 1
+    scalar_table[args.scalar_value] = seen.scalar * vedal_power(seen.n, seen.x)
+    seen.x = seen.x + CelestasMod.VEDAL_EXPONENT_STEP
 end
 
---------------------------------------------------------------------------------
--- The payout that never goes through calculate
---------------------------------------------------------------------------------
---
--- Every other trigger a Joker has - in a round, in the shop, at blind select,
--- on sale, on a booster opening - arrives at Card:calculate_joker, because
--- Steamodded rewrote each of those loops into SMODS.calculate_context and that
--- ends up here (utils.lua:1902). The hook above therefore covers all of them
--- already; there is no "only while scoring" to fix.
---
--- One thing does not come that way. A Joker that pays at the cash-out does it
--- from Card:calculate_dollar_bonus (card.lua:1655), which returns a bare
--- number and never builds an effect table at all - so the hook above cannot
--- see it, and "every value" quietly meant "every value except the money",
--- which is the one a player actually counts.
---
--- Wrapped here rather than folded into the hook above because it is a
--- different function with a different shape: no context, no table, and a
--- debuffed card answers nil rather than an empty effect.
+local celesta_vedal_scale_ref = SMODS.scale_card
 
-local celesta_vedal_dollar_ref = Card.calculate_dollar_bonus
-function Card:calculate_dollar_bonus(...)
-    local dollars = celesta_vedal_dollar_ref(self, ...)
-
-    if type(dollars) ~= "number" or dollars == 0 then return dollars end
-    if self.ability.set ~= "Joker" then return dollars end
-    if self.config.center.key == "j_celesta_vedal" then return dollars end
-    if not CelestasMod.is_ours(self.config.center) then return dollars end
-    local mult = vedal_grow()
-    if not mult then return dollars end
-
-    return dollars * mult
-end
-
---------------------------------------------------------------------------------
--- Showing the boost on the Jokers it boosts
---------------------------------------------------------------------------------
-
--- Vedal changes what a Joker SCORES, and nothing about that reaches the
--- Joker's tooltip - so a boosted Bloodstone still advertised X1.5 while paying
--- X2.25, and a scaling Joker's "(Currently ...)" line never moved.
---
--- The hard part is knowing WHICH number to scale. A joker's loc_vars is an
--- unlabelled ordered list: Bloodstone's is
---     { probabilities.normal, extra.odds, extra.Xmult }   -- 2, 2, 1.5
--- and only the third may move. Scaling all three turns "2 in 2 chance" into
--- "3 in 3", which is both wrong and meaningless.
---
--- The description text is what disambiguates them. Balatro marks every number
--- with the colour it prints in, and a value Vedal touches is always written in
--- mult or chip markup:
---     "{X:mult,C:white}X#3#{} Mult"        -> scale
---     "{C:chips}+#1#{} Chips"              -> scale
---     "{C:green}#1# in #2#{} chance"       -> leave alone
---     "{C:attention}#1#{} cards"           -> leave alone
--- So the markup immediately before each #n# decides it.
-
--- Steamodded patches generate_card_ui to take a NINTH argument, the card being
--- described (lovely/center.toml). That is both how this knows whose tooltip it
--- is looking at, and a trap: a wrapper declaring the stock eight silently drops
--- it, and the game crashes indexing a nil card on the next hover. Everything
--- past the arguments actually used is forwarded untouched, so another one
--- appearing cannot break this again.
--- A modded Joker's numbers do NOT arrive here.
---
--- specific_vars is what Card:generate_UIBox_ability_table worked out, and that
--- function only knows vanilla Jokers - it is a chain of `elseif
--- self.ability.name == 'Blueprint'` and friends. A modded centre matches none
--- of them, so it passes nil, and the real numbers are fetched a layer deeper:
--- generate_card_ui hands the centre to SMODS.Center:generate_ui, which calls
--- the centre's OWN loc_vars and reads res.vars (game_object.lua:1194).
---
--- So this used to require specific_vars.vars to be a table, which for one of
--- this mod's Jokers it never is. The whole display half was dead - on merged
--- cards and unmerged ones alike - and the suite did not notice because its
--- stand-in for generate_UIBox_ability_table invented the shape the real one
--- does not produce.
---
--- The fix has to sit where the numbers actually are, so the centre's loc_vars
--- is lent a scaling wrapper for exactly the length of this call and put back
--- afterwards. Lent rather than replaced for good: another mod may hold a
--- reference to it, and a Vedal sold mid-run has to stop mattering at once.
-
-local celesta_vedal_card_ui_ref = generate_card_ui
-
--- Centres currently wearing the wrapper, so a nested describe - the info_queue
--- pass re-enters generate_card_ui - cannot scale the same numbers twice.
-local vedal_scaling = setmetatable({}, { __mode = "k" })
-
--- LuaJIT's global, table's in 5.4. The game is the former; the suites run the
--- latter, and a wrapper that only compiles under one of them is a wrapper the
--- tests cannot reach.
-local celesta_unpack = unpack or table.unpack
-
-function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges,
-                          hide_desc, main_start, main_end, card, ...)
-    -- Captured rather than closed over: Lua will not let a nested function
-    -- read the enclosing one's `...`, and everything past `card` still has to
-    -- reach the real generate_card_ui untouched.
-    local rest = { n = select("#", ...), ... }
-    local function plain()
-        return celesta_vedal_card_ui_ref(_c, full_UI_table, specific_vars,
-                                         card_type, badges, hide_desc,
-                                         main_start, main_end, card,
-                                         celesta_unpack(rest, 1, rest.n))
-    end
-
-    -- Only Jokers actually in the row: one in the shop is not owned yet, and
-    -- advertising a boost it will not get until bought would be a lie.
-    if not (card and card.area == G.jokers
-        and type(_c) == "table" and _c.set == "Joker"
-        and _c.key ~= "j_celesta_vedal"
-        -- A Joker whose numbers are a passive rather than a returned effect
-        -- cannot be boosted by scaling its tooltip, so the ones that scale
-        -- themselves say so and are left alone here. Scaling them again would
-        -- print one number over an effect worth another.
-        and not _c.celesta_vedal_own_scaling
-        and not vedal_scaling[_c]
-        and CelestasMod.is_ours(_c)
-        and vedal_active()) then
-        return plain()
-    end
-
-    -- numeric_vars, not scalable_vars: Vedal scales every number on one of
-    -- this mod's Jokers, so the value-colour filter the Tattered wear uses is
-    -- the wrong question here. A count is a number too.
-    local marked = CelestasMod.numeric_vars(_c.set, _c.key)
-    if not marked then return plain() end
-
-    -- Read, never grown. Hovering a card is not a Joker triggering.
-    local scale = vedal_multiplier()
-    if not scale then return plain() end
-
-    --- The retrigger count, brought back to what the Joker will actually do.
-    ---
-    --- The cap lands on the effect table, which is where Steamodded reads the
-    --- number and spends it. The description is scaled here instead, a long
-    --- way from there, so without this a capped Joker goes on advertising the
-    --- uncapped figure: Boosfer offered 1.215e6 retriggers over a Joker doing
-    --- 40 of them, which is the same "says one number, does another" this
-    --- whole wrapper exists to stop.
-    ---
-    --- WHICH var is the count cannot be worked out from the list - it is
-    --- unlabelled, and a count of cards looks exactly like a count of
-    --- retriggers - so each Joker that prints one says where it is, in
-    --- celesta_repetition_vars.
-    local function cap_reps(vars)
-        local where = _c.celesta_repetition_vars
-        if not where then return vars end
-        for _, i in ipairs(where) do
-            if type(vars[i]) == "number" then
-                vars[i] = math.min(vars[i], CelestasMod.VEDAL_REPETITION_CAP)
-            end
-        end
-        return vars
-    end
-
-    -- The vanilla-shaped path, kept: a caller that DOES pass vars in is still
-    -- answered, and this is the one that carries a debuffed card's flags.
-    if type(specific_vars) == "table" and type(specific_vars.vars) == "table" then
-        local copy = {}
-        for k, v in pairs(specific_vars) do copy[k] = v end
-        copy.vars = cap_reps(CelestasMod.scale_vars(specific_vars.vars, marked, scale))
-        specific_vars = copy
-    end
-
-    local loc_vars_ref = _c.loc_vars
-    if type(loc_vars_ref) ~= "function" then return plain() end
-
-    vedal_scaling[_c] = true
-    _c.loc_vars = function(self, info_queue, target, ...)
-        local res = loc_vars_ref(self, info_queue, target, ...)
-        if type(res) == "table" and type(res.vars) == "table" then
-            -- Copied, not scaled in place: several loc_vars hand back a list
-            -- built straight off the card's ability, and scaling that would
-            -- change the real thing every time the card was hovered.
-            res.vars = cap_reps(CelestasMod.scale_vars(res.vars, marked, scale))
-        end
-        return res
-    end
-
-    local ok, out, post = pcall(plain)
-
-    -- Put back before anything else, including on the way out of an error:
-    -- leaving a Joker's loc_vars permanently wrapped would scale its numbers
-    -- again on the next hover, and again after that.
-    _c.loc_vars = loc_vars_ref
-    vedal_scaling[_c] = nil
-
+function SMODS.scale_card(card, args, ...)
+    -- Before the reference, because scale_card reads the rate out of the
+    -- table on its first line and everything after - the arithmetic and the
+    -- message the player sees - uses that one read.
+    local ok, err = pcall(vedal_rewrite, card, args)
     if not ok then
-        -- A boost is cosmetic; a crash on hover is not. Whatever went wrong
-        -- with the scaled numbers, the honest thing is to draw the card the
-        -- way it would have been drawn without Vedal and leave a line in the
-        -- log, rather than take the run down over a tooltip.
-        CelestasMod.warn_once("vedal_describe_" .. tostring(_c.key),
-            ("Vedal could not scale %s's description, showing it unscaled: %s")
-                :format(tostring(_c.key), tostring(out)))
-        return plain()
+        CelestasMod.warn_once("vedal_scale",
+            ("Vedal could not scale that: %s"):format(tostring(err)))
     end
-    return out, post
+    return celesta_vedal_scale_ref(card, args, ...)
 end
 
 SMODS.Joker {
@@ -2973,72 +2733,14 @@ SMODS.Joker {
     -- The one joker in the mod that opts out of copying, per its own text.
     blueprint_compat = false, eternal_compat = true,
 
-    -- `total` is what it multiplies by NOW, compounded on every trigger it
-    -- boosts. Kept on the card so selling it takes the growth with it, and so
-    -- a save carries it.
-    --
-    -- The per-trigger step is NOT kept here. backfill_config only fills in
-    -- what a card is missing, so a copy of it stored on an existing Vedal
-    -- would survive a change to the constant and leave the card advertising
-    -- the old step while growing by the new one.
-    config = { extra = { total = 1 } },
-
     loc_vars = function(self, info_queue, card)
-        return { vars = { CelestasMod.VEDAL_SCALE,
-                          card.ability.extra.total or 1 } }
-    end,
-
-    -- An odds is a value too, and this is the one place it can be scaled for
-    -- REAL rather than only on the card face: SMODS asks every Joker to modify
-    -- a probability both before rolling it and before printing it
-    -- (utils.lua:2728), so one answer here moves the chance and the text that
-    -- advertises it together, and they cannot drift apart.
-    --
-    -- Answered from Vedal's own calculate rather than from the hook above
-    -- because a debuffed Joker is never asked at all - the debuff check is
-    -- vanilla's, at the top of Card:calculate_joker - so this inherits it.
-    calculate = function(self, card, context)
-        if not context.mod_probability then return end
-        -- from_roll marks the ask that is about to become a die roll. The same
-        -- context is raised to work out the number a card PRINTS, and growing
-        -- there would run the multiplier away on hovers alone.
-        if not context.from_roll then
-            local showing = vedal_multiplier()
-            if not showing then return end
-            local roller_c = context.trigger_obj and context.trigger_obj.config
-            local center_c = roller_c and roller_c.center
-            -- Owned Jokers only, the rule the description wrapper follows: one
-            -- in the shop, a booster pack or the collection is not boosted, so
-            -- it does not print a boosted chance either.
-            if not (center_c and CelestasMod.is_ours(center_c)
-                and center_c.key ~= "j_celesta_vedal"
-                and context.trigger_obj.area == G.jokers
-                and context.trigger_obj.ability
-                and context.trigger_obj.ability.set == "Joker") then
-                return
-            end
-            return { numerator = vedal_odds(context, showing) }
-        end
-
-        -- Whoever is about to roll. Jokers from this mod only, which is the
-        -- same rule the scaling follows: a Driftwood card's break chance is
-        -- this mod's too, but it is not a Joker and the card does not claim it.
-        local roller = context.trigger_obj
-        local center = roller and roller.config and roller.config.center
-        if not (center and CelestasMod.is_ours(center)) then return end
-        if center.key == "j_celesta_vedal" then return end
-        if not (roller.ability and roller.ability.set == "Joker") then return end
-        if roller.area ~= G.jokers then return end
-
-        local mult = vedal_grow()
-        if not mult then return end
-        return { numerator = vedal_odds(context, mult) }
+        return { vars = { CelestasMod.VEDAL_EXPONENT_STEP } }
     end,
 }
 
 --------------------------------------------------------------------------------
 -- Liffeh [Common]
--- 1 in 4 chance to gain an extra Tarot card whenever you gain one.
+-- 1 in 4 chance to gain a Negative copy of any Tarot card you gain.
 --------------------------------------------------------------------------------
 
 CelestasMod.LIFFEH_ODDS = 4
@@ -3078,31 +2780,29 @@ function Card:add_to_deck(from_debuff)
     local liffeh = liffeh_active()
     if not liffeh then return end
 
-    -- Same room check vanilla makes before creating a Tarot. consumeable_buffer
-    -- reserves the slot across the event boundary so two sources cannot both
-    -- claim the last one.
-    local buffer = G.GAME.consumeable_buffer or 0
-    if #G.consumeables.cards + buffer >= G.consumeables.config.card_limit then return end
+    -- The copy is Negative, and a Negative consumable brings its own slot, so
+    -- there is no room to run out of and no consumeable_buffer to reserve.
+    local key = self.config and (self.config.center_key
+        or (self.config.center and self.config.center.key))
+    if not key then return end
 
     if not SMODS.pseudorandom_probability(
         liffeh, "celesta_liffeh", 1, CelestasMod.LIFFEH_ODDS, "celesta_liffeh") then
         return
     end
 
-    G.GAME.consumeable_buffer = buffer + 1
     G.E_MANAGER:add_event(Event {
         trigger = "before",
         delay = 0.0,
         func = function()
             liffeh_creating = true
-            -- A random Tarot rather than a copy of the one that triggered it:
-            -- "an extra Tarot card", the way a purple seal gives one.
-            local extra = create_card("Tarot", G.consumeables, nil, nil, nil, nil,
-                                      nil, "celesta_liffeh")
-            extra:add_to_deck()
-            G.consumeables:emplace(extra)
+            -- A Negative duplicate of the card that triggered it, not a fresh
+            -- roll: the key is captured above rather than read here, because
+            -- by the time this event runs the Tarot may already have been
+            -- used and turned into something else.
+            SMODS.add_card { key = key, area = G.consumeables,
+                             edition = "e_negative" }
             liffeh_creating = false
-            G.GAME.consumeable_buffer = math.max(0, (G.GAME.consumeable_buffer or 1) - 1)
             return true
         end,
     })
@@ -3311,6 +3011,9 @@ local function axialmatt_raised()
     return best_card, best_nominal
 end
 
+-- Shared with Ray + AxialMatt in merge/bind.lua, which raises this card too.
+CelestasMod.axialmatt_raised = axialmatt_raised
+
 SMODS.Joker {
     key = "axialmatt",
     atlas = "axialmatt",
@@ -3430,6 +3133,14 @@ local function haruka_apply(count)
 end
 
 --- Counts the Harukas in play, ignoring one card.
+---
+--- Through CelestasMod.find_joker, never a walk of G.jokers.cards asking each
+--- card its centre key. An ABSORBED half has no centre key of its own - the
+--- merged card wears the HOST's - so the hand-rolled version this replaces
+--- could not see a Haruka that had been merged as the second Joker, and the
+--- Tarots quietly went back to their base numbers. find_joker is the lookup
+--- this mod keeps for exactly that; see globals.lua.
+---
 --- The exclusion is what makes this correct from both callbacks, because
 --- vanilla is not symmetric about when the card is in G.jokers:
 ---   * bought      - add_to_deck runs BEFORE emplace, so it is not in the area
@@ -3438,13 +3149,17 @@ end
 ---   * debuffed    - remove_from_deck runs while self.debuff is still false
 --- Excluding the card in question makes all four read "everyone else", and
 --- the caller adds one back when the card is arriving.
+---
+--- A merge is a fifth shape and needs no case of its own. Bind applies the
+--- absorbed half's passive while that half is STILL in the row, so the count
+--- momentarily reads one too many - and then the half dissolves, its own
+--- remove_from_deck runs last, and the answer settles. That is safe only
+--- because haruka_apply recomputes from the captured originals every time
+--- rather than multiplying what is already there.
 local function haruka_count(excluding)
     local n = 0
-    for _, joker in ipairs(G.jokers and G.jokers.cards or {}) do
-        if joker ~= excluding and not joker.debuff
-            and joker.config.center.key == HARUKA_KEY then
-            n = n + 1
-        end
+    for _, held in ipairs(CelestasMod.find_joker(HARUKA_KEY)) do
+        if held.card ~= excluding then n = n + 1 end
     end
     return n
 end
@@ -3665,7 +3380,7 @@ SMODS.Joker {
 
     -- bank is the chips carried toward the next step, so a hand of 15 chips
     -- pays once and leaves 5 behind rather than throwing the remainder away.
-    config = { extra = { mult = 0, mult_gain = 10, chips_per_step = 32, bank = 0 } },
+    config = { extra = { mult = 0, mult_gain = 10, chips_per_step = 100, bank = 0 } },
 
     loc_vars = function(self, info_queue, card)
         local extra = card.ability.extra
@@ -3810,10 +3525,6 @@ SMODS.Joker {
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 1 } },
-
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 1 },
 
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.repetitions } }
@@ -3986,10 +3697,17 @@ SMODS.Joker {
     config = { extra = {} },
 
     loc_vars = function(self, info_queue, card)
-        return {}
+        return CelestasMod.with_true_star_line("j_celesta_camila", {})
     end,
 
     calculate = function(self, card, context)
+        -- True Stars in the deck are worth X Mult here; suits/true_stars.lua
+        -- says what counts as one.
+        if context.joker_main then
+            local x_mult = CelestasMod.true_star_x_mult()
+            if x_mult > 1 then return { x_mult = x_mult } end
+        end
+
         -- Two Bind pairs change what this does rather than replacing it, and
         -- they say so on their own def rather than reimplementing the body:
         -- camila_any_count widens "a single card" to any number, and
@@ -4022,6 +3740,10 @@ SMODS.Joker {
                 card.ability.extra.stored, CelestasMod.snapshot_card(doomed))
             return {
                 remove = true,
+                -- A pair may name a price for the card. Paid here, on the one
+                -- pass that actually takes one, so a widened pair pays per
+                -- card taken and a hand that triggers nothing pays nothing.
+                dollars = pair and pair.camila_dollars or nil,
                 message = localize("celesta_taken"),
                 colour = G.C.PURPLE,
                 card = card,
@@ -4329,13 +4051,14 @@ end
 --- add_to_deck before emplace, sold strips the card first, debuff and undebuff
 --- each run while the flag still says the opposite - so every path asks for
 --- "everyone else" and the arriving ones add themselves back.
+---
+--- Through find_joker, because an absorbed half has no centre key of its own:
+--- a Clover merged as the second Joker was invisible to the walk this
+--- replaces. See globals.lua.
 local function clover_count(excluding)
     local n = 0
-    for _, joker in ipairs(G.jokers and G.jokers.cards or {}) do
-        if joker ~= excluding and not joker.debuff
-            and joker.config.center.key == "j_celesta_clover" then
-            n = n + 1
-        end
+    for _, held in ipairs(CelestasMod.find_joker("j_celesta_clover")) do
+        if held.card ~= excluding then n = n + 1 end
     end
     return n
 end
@@ -4404,10 +4127,6 @@ SMODS.Joker {
 
     config = { extra = { repetitions = 2 } },
 
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 1 },
-
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.repetitions } }
     end,
@@ -4455,10 +4174,6 @@ SMODS.Joker {
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 1 } },
-
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 1 },
 
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.repetitions } }
@@ -4647,10 +4362,15 @@ SMODS.Joker {
 --------------------------------------------------------------------------------
 
 --- True when a Milky is in play and able to act.
+---
+--- card_is_joker rather than the centre key: a Milky merged as the second
+--- Joker wears the host's centre and was invisible to the walk this replaces.
+--- Walked here rather than through find_joker only to keep the exclusion,
+--- which find_joker has no way to express.
 local function milky_active(excluding)
     for _, joker in ipairs(G.jokers and G.jokers.cards or {}) do
-        if joker ~= excluding and not joker.debuff
-            and joker.config.center.key == "j_celesta_milky" then
+        if joker ~= excluding
+            and CelestasMod.card_is_joker(joker, "j_celesta_milky") then
             return true
         end
     end
@@ -4809,7 +4529,8 @@ SMODS.Joker {
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_bonus
-        return { vars = { card.ability.extra.chip_gain, card.ability.extra.chips } }
+        return CelestasMod.with_true_star_line("j_celesta_eros",
+            { vars = { card.ability.extra.chip_gain, card.ability.extra.chips } })
     end,
 
     calculate = function(self, card, context)
@@ -4827,7 +4548,12 @@ SMODS.Joker {
                     -- one pass: set_ability is deferred into an event, so the
                     -- second look would still see the enhancement.
                     played.celesta_stripped = true
-                    played:set_ability(G.P_CENTERS.c_base, nil, true)
+                    -- Under unjudged: set_ability re-judges the card, and
+                    -- The Pillar debuffs anything played this Ante - which is
+                    -- every card in the hand being played.
+                    CelestasMod.unjudged(played, function()
+                        played:set_ability(G.P_CENTERS.c_base, nil, true)
+                    end)
                     G.E_MANAGER:add_event(Event {
                         func = function()
                             played:juice_up()
@@ -4852,14 +4578,24 @@ SMODS.Joker {
             end
         end
 
-        if context.joker_main and card.ability.extra.chips > 0 then
-            return { chips = card.ability.extra.chips }
+        if context.joker_main then
+            -- One return carries both: a Joker answers a context once, so the
+            -- Chips it has banked and the True Star multiplier travel together
+            -- rather than as two branches racing each other.
+            local chips = card.ability.extra.chips
+            local x_mult = CelestasMod.true_star_x_mult()
+            if chips > 0 or x_mult > 1 then
+                return {
+                    chips = chips > 0 and chips or nil,
+                    x_mult = x_mult > 1 and x_mult or nil,
+                }
+            end
         end
     end,
 }
 
 --------------------------------------------------------------------------------
--- Sinder [Uncommon] - Driftwood stops breaking.
+-- Sinder [Common] - Driftwood stops breaking.
 --------------------------------------------------------------------------------
 
 -- The behaviour lives on the Driftwood enhancement, which asks
@@ -4868,7 +4604,7 @@ SMODS.Joker {
     key = "sinder",
     atlas = "sinder",
     pos = { x = 0, y = 0 },
-    rarity = 2, cost = 6,
+    rarity = 1, cost = 5,
     unlocked = false, discovered = false,
     -- Nothing to copy: it is a passive the enhancement reads, not a trigger.
     blueprint_compat = false, eternal_compat = true,
@@ -4881,14 +4617,14 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Suto [Rare] - the whole played hand turns Wild.
+-- Suto [Uncommon] - the whole played hand turns Wild.
 --------------------------------------------------------------------------------
 
 SMODS.Joker {
     key = "suto",
     atlas = "suto",
     pos = { x = 0, y = 0 },
-    rarity = 3, cost = 8,
+    rarity = 2, cost = 6,
     unlocked = false, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
@@ -4919,7 +4655,10 @@ SMODS.Joker {
                     -- same pass would otherwise see the card as unconverted
                     -- and spend its message on work already done.
                     target.celesta_suto_claimed = true
-                    target:set_ability(G.P_CENTERS.m_wild, nil, true)
+                    -- Under unjudged, for the reason FeFe gives.
+                    CelestasMod.unjudged(target, function()
+                        target:set_ability(G.P_CENTERS.m_wild, nil, true)
+                    end)
                     local claimed = target
                     G.E_MANAGER:add_event(Event {
                         func = function()
@@ -5069,10 +4808,6 @@ SMODS.Joker {
 
     config = { extra = { repetitions = 1 } },
 
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 1 },
-
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_wild
         return { vars = { card.ability.extra.repetitions } }
@@ -5092,14 +4827,14 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Kirana [Uncommon] - paid for holding 3s.
+-- Kirana [Common] - paid for holding 3s.
 --------------------------------------------------------------------------------
 
 SMODS.Joker {
     key = "kirana",
     atlas = "kirana",
     pos = { x = 0, y = 0 },
-    rarity = 2, cost = 6,
+    rarity = 1, cost = 5,
     unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
@@ -5254,10 +4989,17 @@ SMODS.Joker {
     -- ends up pointed at the same rightmost Joker.
     blueprint_compat = true, eternal_compat = true,
 
+    -- The tooltip of what it copies, for a real card only, and never another
+    -- Mari Yume. A tooltip entry is described by calling ITS loc_vars with no
+    -- card, so a Mari Yume at the end of the row - a second one, or one merged
+    -- into the rightmost Joker - named itself, which named itself again, and
+    -- the game ran out of stack.
     loc_vars = function(self, info_queue, card)
+        if not card then return {} end
         local target = G.jokers and G.jokers.cards and G.jokers.cards[#G.jokers.cards]
-        if target and target ~= card then
-            info_queue[#info_queue + 1] = target.config.center
+        local center = target and target.config and target.config.center
+        if target and target ~= card and center and center ~= self then
+            info_queue[#info_queue + 1] = center
         end
         return {}
     end,
@@ -5472,10 +5214,6 @@ SMODS.Joker {
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { odds = 4, repetitions = 1 } },
-
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 3 },
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.BIND_KEY]
@@ -6067,6 +5805,9 @@ local YOKA_PAIR_LEAVE_ALONE = {
     boosters = true,    -- HeavenlyFather + Nostro
     vouchers = true,    -- ...and its other half
     discount = true,    -- Kumi + HeavenlyFather, read by Card:set_cost
+    shop = true,        -- HeavenlyFather + Aethal
+    shop_held = true,   -- ...and what of it actually landed
+    last_round = true,  -- Ellie Minibot + Shoomimi: which shop it last paid in
 }
 
 --- Everything below this line that is not Cryptid's is a fallback, and only
@@ -6183,10 +5924,6 @@ SMODS.Joker {
 
     config = { extra = { repetitions = 1 } },
 
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 1 },
-
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_SEALS.Blue
         return { vars = { card.ability.extra.repetitions } }
@@ -6284,7 +6021,7 @@ SMODS.Joker {
     key = "glowypumpkin",
     atlas = "glowypumpkin",
     pos = { x = 0, y = 0 },
-    rarity = 4, cost = 20,
+    rarity = 3, cost = 8,
     unlocked = true, discovered = false,
     blueprint_compat = false, eternal_compat = true,
 
@@ -6363,7 +6100,7 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Geega [Rare] - a debuffed Joker is worth something after all.
+-- Geega [Uncommon] - a debuffed Joker is worth something after all.
 --------------------------------------------------------------------------------
 --
 -- Card:set_debuff is where every route in ends up: a Blind debuffing the row,
@@ -6392,7 +6129,7 @@ SMODS.Joker {
     key = "geega",
     atlas = "geega",
     pos = { x = 0, y = 0 },
-    rarity = 3, cost = 9,
+    rarity = 2, cost = 6,
     unlocked = true, discovered = false,
     blueprint_compat = false, eternal_compat = true,
 
@@ -6403,22 +6140,18 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Cerber [Uncommon] - the biggest card goes round again.
+-- Cerber [Common] - the biggest card goes round again.
 --------------------------------------------------------------------------------
 
 SMODS.Joker {
     key = "cerbervt",
     atlas = "cerbervt",
     pos = { x = 0, y = 0 },
-    rarity = 2, cost = 6,
+    rarity = 1, cost = 5,
     unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 2 } },
-
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 1 },
 
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.repetitions } }
@@ -6546,7 +6279,7 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- BuffPup [Common] - paid by the deck, not by the hand.
+-- Buffpup [Common] - paid by the deck, not by the hand.
 --------------------------------------------------------------------------------
 --
 -- Counted off the whole run deck rather than the hand, so it is worth exactly
@@ -6605,10 +6338,6 @@ SMODS.Joker {
     config = { extra = { repetitions = 1 } },
 
     in_pool = leaf_gated,
-
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 1 },
 
     loc_vars = function(self, info_queue, card)
         local name, colour = leaf_name_and_colour()
@@ -6825,7 +6554,7 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Matarakan [Uncommon] - a savings account with a deadline.
+-- Matarakan [Common] - a savings account with a deadline.
 --------------------------------------------------------------------------------
 --
 -- The money from a sale goes into the Joker instead of into the player's
@@ -6846,7 +6575,7 @@ SMODS.Joker {
     key = "matarakan",
     atlas = "matarakan",
     pos = { x = 0, y = 0 },
-    rarity = 2, cost = 6,
+    rarity = 1, cost = 5,
     unlocked = true, discovered = false,
     -- Copying it would copy the payout without the deposits.
     blueprint_compat = false, eternal_compat = false,
@@ -7090,6 +6819,10 @@ local function minikomew_in_debt(debt)
     return debt > 0
 end
 
+-- Shared with MinikoMew's merges in merge/bind.lua, which read the same debt.
+CelestasMod.minikomew_debt = minikomew_debt
+CelestasMod.minikomew_in_debt = minikomew_in_debt
+
 SMODS.Joker {
     key = "minikomew",
     atlas = "minikomew",
@@ -7149,26 +6882,70 @@ local function ruben_extra_value(card)
     return per * #(((G.jokers or {}).cards) or {})
 end
 
+--- True for a card whose sell value this Joker is raising.
+---
+--- Cheapest test first: almost every card in the game is not a Joker at all,
+--- and this is asked of all of them on every frame.
+---
+--- A merged card keeps the HOST's centre key, so this finds Ruben when Ruben
+--- was the left-hand half and would not when it was the right - which would
+--- make the sell value depend on the order the player happened to highlight
+--- them in. A replacing pair speaks for both halves, so the answer is the
+--- same either way: none of it.
+local function ruben_applies(card)
+    if not (card.ability and card.ability.set == "Joker"
+        and card.area == G.jokers
+        and card.config and card.config.center_key == RUBEN_KEY) then
+        return false
+    end
+    local Bind = CelestasMod and CelestasMod.Bind
+    if Bind and Bind.replacing_special and Bind.replacing_special(card) then
+        return false
+    end
+    return true
+end
+
+-- Added at set_cost, never stored.
+--
+-- ability.extra_value is vanilla's supported field for this and the total used
+-- to be written into it. The trouble is WHERE that field lives: one level down
+-- card.ability, which is exactly where Cryptid's misprintize walks and
+-- randomises every number it finds - the same reach the Misprint note in
+-- merge/bind.lua is about. A derived total sitting in a field another mod
+-- rewrites drifts away from the description, which recomputes the same total
+-- every time it is drawn. The card read "+$94.2" and sold for $31.
+--
+-- Derived at the point of use instead. The description and the price now come
+-- from one function, so they cannot disagree whatever else touches the card.
+local celesta_ruben_cost_ref = Card.set_cost
+function Card:set_cost(...)
+    local mine = ruben_applies(self)
+    -- A run saved by the version that stored the total still carries it, and
+    -- vanilla's set_cost adds extra_value on top of whatever this adds below.
+    if mine then self.ability.extra_value = 0 end
+
+    local ret = celesta_ruben_cost_ref(self, ...)
+
+    if mine then
+        self.sell_cost = (self.sell_cost or 0) + ruben_extra_value(self)
+        self.sell_cost_label = self.facing == "back" and "?" or self.sell_cost
+    end
+    return ret
+end
+
+--- The joker count each Ruben was last priced against, so set_cost is called
+--- when the row changes rather than on every frame. Weak-keyed: a sold Joker
+--- should not be kept alive by this.
+local ruben_counted = setmetatable({}, { __mode = "k" })
+
 local celesta_ruben_update_ref = Card.update
 function Card:update(dt)
     celesta_ruben_update_ref(self, dt)
 
-    -- Cheapest test first: almost every card in the game is not a Joker at
-    -- all, and this runs for all of them on every frame.
-    if self.ability and self.ability.set == "Joker" and self.area == G.jokers
-        and self.config and self.config.center_key == RUBEN_KEY then
-        local want = ruben_extra_value(self)
-        -- A merged card keeps the HOST's centre key, so this hook still finds
-        -- Ruben when Ruben was the left-hand half - and would not when it was
-        -- the right, which would make the sell value depend on the order the
-        -- player happened to highlight them in. A replacing pair speaks for
-        -- both halves, so the answer is the same either way: none of it.
-        if CelestasMod and CelestasMod.Bind and CelestasMod.Bind.replacing_special
-            and CelestasMod.Bind.replacing_special(self) then
-            want = 0
-        end
-        if (self.ability.extra_value or 0) ~= want then
-            self.ability.extra_value = want
+    if ruben_applies(self) then
+        local n = #(((G.jokers or {}).cards) or {})
+        if ruben_counted[self] ~= n then
+            ruben_counted[self] = n
             self:set_cost()
         end
     end
@@ -7331,44 +7108,23 @@ local function bump_limit(area, delta)
     end
 end
 
+-- Shared with Ellie Minibot + Shoomimi in merge/bind.lua, which grants a slot.
+CelestasMod.bump_limit = bump_limit
+
 --- What this card is worth right now, in whole slots.
 ---
---- Vedal scales every number one of this mod's Jokers shows, but it does it to
---- the DESCRIPTION: it lends loc_vars a wrapper on the way to the tooltip. A
---- slot is not a value returned from calculate, so nothing carried the boost
---- through to the tray, and a scaled Seraph advertised room it never handed
---- out - which is the whole of what "changes visually and not actually" was.
----
---- The scaling therefore happens HERE, where the tooltip and the grant both
---- read it, and the centre opts out of the description wrapper below. One
---- number, worked out once, with no way for the two to drift.
----
 --- Rounded, because a slot is a thing you either have or do not. The game
---- tests `#cards < card_limit`, so a limit of 8.3 lets a ninth Joker in while
---- the card claims 8.3 - the same mismatch again, one decimal place down.
+--- tests `#cards < card_limit`, so a limit of 8.3 would let a ninth Joker in
+--- while the card claimed 8.3.
 ---
---- This was switched off for two runs while an out-of-memory crash was being
---- chased, on nothing better than the fact that both crashes were the first
---- sessions to carry it. The cause turned out to be elsewhere and to have
---- nothing to do with slots - Vedal was scaling Boosfer's RETRIGGER COUNT,
---- which Steamodded spends as a loop, so see VEDAL_NEVER above. Nothing in
---- the game, Steamodded, Talisman, CardSleeves or this mod loops over
---- card_limit; all five were checked before it went back on.
----
---- The flag stays, because it is the switch to reach for if the slots are
---- ever suspected again. Both halves - the grant and the tooltip - read it,
---- so they cannot come apart either way.
-local SERAPH_FOLLOWS_VEDAL = true
-
+--- This used to be multiplied by Vedal, which at the time scaled every number
+--- this mod's Jokers showed. Vedal does not do that any more - it changes how
+--- scaling Jokers scale and nothing else - so the two numbers are now simply
+--- what the card says.
 local function seraph_slots(card)
-    -- Only a Joker in the row is boosted, which is the condition the
-    -- description wrapper uses too: one in the shop or in the collection is
-    -- not owned yet, and neither of them is holding any slots.
-    local scale = (SERAPH_FOLLOWS_VEDAL and G.jokers
-        and card.area == G.jokers and vedal_multiplier()) or 1
     local extra = card.ability.extra
-    return math.floor(extra.joker_slots * scale + 0.5),
-           math.floor(extra.consumable_slots * scale + 0.5)
+    return math.floor(extra.joker_slots + 0.5),
+           math.floor(extra.consumable_slots + 0.5)
 end
 
 --- Brings the run's slots in line with what this card currently promises.
@@ -7402,10 +7158,6 @@ SMODS.Joker {
     blueprint_compat = false, eternal_compat = true,
 
     config = { extra = { joker_slots = 3, consumable_slots = 1 } },
-
-    -- Scaled by seraph_slots rather than by the description wrapper, so the
-    -- tooltip prints the slots the run actually has.
-    celesta_vedal_own_scaling = true,
 
     loc_vars = function(self, info_queue, card)
         local jokers, consumables = seraph_slots(card)
@@ -7638,7 +7390,7 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Pipi [Uncommon] - two cards, both counted, both twice.
+-- Pipi [Common] - two cards, both counted, both twice.
 --------------------------------------------------------------------------------
 --
 -- Two separate contexts, because they are two separate questions.
@@ -7664,7 +7416,7 @@ SMODS.Joker {
     key = "pipi",
     atlas = "pipi",
     pos = { x = 0, y = 0 },
-    rarity = 2, cost = 6,
+    rarity = 1, cost = 5,
     unlocked = true, discovered = false,
     -- Widening the scoring hand is a yes/no answer; a copy cannot say yes
     -- harder, and the retrigger it could copy is not worth the confusion of
@@ -7774,10 +7526,6 @@ SMODS.Joker {
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { repetitions = 1 } },
-
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 1 },
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_gold
@@ -7955,10 +7703,6 @@ SMODS.Joker {
 
     in_pool = star_gated,
 
-    -- Which of the numbers loc_vars hands back is a retrigger count, so the
-    -- tooltip shows the capped one. See VEDAL_REPETITION_CAP.
-    celesta_repetition_vars = { 1 },
-
     loc_vars = function(self, info_queue, card)
         local name, colour = star_name_and_colour()
         return { vars = { card.ability.extra.repetitions,
@@ -8097,7 +7841,7 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- JuniperActias [Common] - grows on every Star that joins the deck.
+-- JuniperActias [Uncommon] - grows on every Star that joins the deck.
 --------------------------------------------------------------------------------
 --
 -- Counted rather than surveyed: this is about cards ARRIVING, not about how
@@ -8114,7 +7858,7 @@ SMODS.Joker {
     key = "juniperactias",
     atlas = "juniperactias",
     pos = { x = 0, y = 0 },
-    rarity = 1, cost = 5,
+    rarity = 2, cost = 6,
     unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
@@ -8399,10 +8143,18 @@ SMODS.Joker {
     config = { extra = { scale = 2 } },
 
     loc_vars = function(self, info_queue, card)
-        return { vars = { card.ability.extra.scale } }
+        return CelestasMod.with_true_star_line("j_celesta_trickywi",
+            { vars = { card.ability.extra.scale } })
     end,
 
     calculate = function(self, card, context)
+        -- True Stars in the deck are worth X Mult here; suits/true_stars.lua
+        -- says what counts as one.
+        if context.joker_main then
+            local x_mult = CelestasMod.true_star_x_mult()
+            if x_mult > 1 then return { x_mult = x_mult } end
+        end
+
         if not (context.ending_shop and not context.blueprint) then return end
 
         local row = G.jokers and G.jokers.cards
@@ -8584,12 +8336,21 @@ SMODS.Joker {
 -- `discards` and `hand_size` are names neither vanilla nor Cryptid treats
 -- specially.
 --
--- Hands are moved the way Troubadour moves them, round_resets only, and
--- deliberately NOT eased into the round in progress: ease_hands_played does
--- not clamp, so a Boss debuffing this mid-round could take the hand the player
--- was about to play. round_resets is read into hands_left at the start of
--- every Blind (state_events.lua:245). Discards and hand size are moved the way
--- vanilla moved them for this card (card.lua:759-764).
+-- All three are moved into the round in progress AS WELL as into
+-- round_resets. round_resets alone is only read at the start of a round
+-- (state_events.lua:245), so hands used to be the one number of the three
+-- that did not arrive with the card: the discards were eased in and the hand
+-- size changed at once, while the hands the card leads with did not show up
+-- until the round after. Anything that hands this Joker over mid-round - a
+-- Buffoon pack, Riff-Raff, a Bind merge, a Lost Soul shop - made that gap
+-- visible, and it reads exactly like the card not working.
+--
+-- ease_hands_played does not clamp (common_events.lua:165), which is the
+-- reason it was left out before and is now handled rather than avoided:
+-- giving hands is always safe, and taking them back is held at zero so a
+-- round that has already spent them cannot be pushed below nothing and left
+-- unable to end. Discards and hand size are moved the way vanilla moved them
+-- for this card (card.lua:759-764).
 
 local VANTACROW_GRANTED = "celesta_vantacrow_granted"
 
@@ -8625,10 +8386,26 @@ local function vantacrow_adopt(card, applied)
     end
 end
 
+--- Brings the round in progress along with round_resets, never below zero.
+--- Between rounds there is nothing to ease: new_round overwrites hands_left
+--- from round_resets moments later, so this is only ever the in-round half.
+local function vantacrow_ease_hands(hands)
+    local round = G.GAME.current_round
+    if not (round and type(round.hands_left) == "number") then return end
+    if hands < 0 then hands = -math.min(-hands, round.hands_left) end
+    if hands == 0 then return end
+    if ease_hands_played then
+        ease_hands_played(hands)
+    else
+        round.hands_left = round.hands_left + hands
+    end
+end
+
 --- Moves the run by these amounts.
 local function vantacrow_move(hands, discards, hand_size)
     if hands ~= 0 then
         G.GAME.round_resets.hands = G.GAME.round_resets.hands + hands
+        vantacrow_ease_hands(hands)
     end
     if discards ~= 0 then
         G.GAME.round_resets.discards = G.GAME.round_resets.discards + discards
@@ -8853,7 +8630,13 @@ SMODS.Joker {
 local AETHAL_GRANTED = "celesta_aethal_granted"
 
 --- Brings the shop's width in line with what this card promises.
+---
+--- Not while a Bind pair has taken the card over. The merge takes the slots
+--- back through remove_from_deck, but vanilla still sends `update` to the
+--- host's centre, so without this a host Aethal granted them straight back.
 local function aethal_sync(card)
+    local bind = CelestasMod.Bind
+    if bind and bind.replacing_special and bind.replacing_special(card) then return end
     if not (G.GAME and G.GAME.shop and change_shop_size) then return end
     local held = card.ability[AETHAL_GRANTED] or 0
     local want = card.ability.extra.slots
@@ -9214,6 +8997,23 @@ local function glasses_active()
     return CelestasMod.joker_in_play(GLASSES_KEY)
 end
 
+--- The deal-first rules of every Glassesjournal merge in play
+--- (merge/bind.lua), gathered once per deal. A debuffed merge has none.
+local function glasses_pair_rules()
+    local rules = {}
+    local Bind = CelestasMod.Bind
+    if not (Bind and Bind.special_of) then return rules end
+    for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
+        if not held.debuff then
+            local def = Bind.special_of(held)
+            if def and type(def.deal_first) == "function" then
+                rules[#rules + 1] = def.deal_first
+            end
+        end
+    end
+    return rules
+end
+
 --- Where a card goes in the deal, low to high; the highest is dealt first.
 ---
 --- 3 is the Gene Seal's and outranks the Joker's two, because the seal is put
@@ -9223,13 +9023,17 @@ end
 ---
 --- seals/seals.lua loads after this file, so the key is read here at call time
 --- rather than captured at load - it does not exist yet when this runs.
-local function deal_rank(card, glasses)
+---
+--- A Glassesjournal merge's cards share Steel's place: both are a standing rule
+--- over a category, and within one place the shuffle's order stands.
+local function deal_rank(card, glasses, rules)
     local gene = CelestasMod.SEAL_KEYS and CelestasMod.SEAL_KEYS.Gene
     if gene and card.seal == gene then return 3 end
-    if glasses then
-        if SMODS.has_enhancement(card, "m_steel") then return 2 end
-        if card.get_id and card:get_id() == 14 then return 1 end
+    if glasses and SMODS.has_enhancement(card, "m_steel") then return 2 end
+    for _, rule in ipairs(rules or {}) do
+        if rule(card) then return 2 end
     end
+    if glasses and card.get_id and card:get_id() == 14 then return 1 end
     return 0
 end
 
@@ -9238,12 +9042,13 @@ local function deal_reorder()
     if not deck or #deck < 2 then return end
 
     local glasses = glasses_active()
+    local rules = glasses_pair_rules()
     -- One bucket per rank, filled in deck order, so the sort is stable within
     -- a rank without needing a comparator that can tie.
     local buckets = { [0] = {}, {}, {}, {} }
     local ranked = false
     for _, card in ipairs(deck) do
-        local rank = deal_rank(card, glasses)
+        local rank = deal_rank(card, glasses, rules)
         if rank > 0 then ranked = true end
         local bucket = buckets[rank]
         bucket[#bucket + 1] = card
@@ -9369,9 +9174,13 @@ SMODS.Joker {
     config = { extra = { limit = 3, x_mult_gain = 1, needed = 5 } },
 
     loc_vars = function(self, info_queue, card)
-        return { vars = { card.ability.extra.limit,
-                          card.ability.extra.x_mult_gain,
-                          card.ability.extra.needed } }
+        -- Its own value, not the shared one: the Wyrm's line is per card in
+        -- the played hand, so there is no full-deck total to show.
+        return CelestasMod.with_true_star_line("j_celesta_eidolonwyrm",
+            { vars = { card.ability.extra.limit,
+                       card.ability.extra.x_mult_gain,
+                       card.ability.extra.needed } },
+            CelestasMod.TRUE_STAR_WYRM_X)
     end,
 
     add_to_deck = function(self, card, from_debuff)
@@ -9401,13 +9210,24 @@ SMODS.Joker {
             -- to: an empty one means no hand scored.
             local hand = context.scoring_hand or {}
             local above = #hand - card.ability.extra.needed
-            if above <= 0 then return end
 
             -- Counted from X1 rather than from nothing: the first card over
             -- the line is worth a whole X1 on top, so six cards is X2 and
             -- eight is X4. Multiplying the rate by the count alone would make
             -- six cards X1, which is the do-nothing multiplier.
-            local x_mult = 1 + card.ability.extra.x_mult_gain * above
+            local x_mult = above > 0
+                and (1 + card.ability.extra.x_mult_gain * above) or 1
+
+            -- True Stars in the PLAYED hand, multiplied on rather than added,
+            -- so two of them are X2.25. Over full_hand, because the line says
+            -- the played hand - this is not the scored-card rule above, which
+            -- is deliberately about what scored.
+            for _, played in ipairs(context.full_hand or hand) do
+                if CelestasMod.is_true_star(played) then
+                    x_mult = x_mult * CelestasMod.TRUE_STAR_WYRM_X
+                end
+            end
+
             if x_mult == 1 then return end
             return { x_mult = x_mult }
         end
@@ -9541,6 +9361,30 @@ SMODS.Joker {
 -- Guarded the way the shop hook in jokers/lost.lua is: there is always a
 -- Card:sell_card in the game, and there is not always one in a harness that
 -- has sliced this file open to read a single Joker.
+--- How many Rare Jokers have been sold this run. Written by the sale hook
+--- below; read by Silvervale and its merges.
+function CelestasMod.rares_sold()
+    return (G.GAME and G.GAME.celesta_rares_sold) or 0
+end
+
+--- Notes a Common from this mod on the run's list, if it is not on it already.
+---
+--- CDawg retains one of each, however many copies were sold: two Fufus are one
+--- Fufu's worth of ability, and the orbit would show the same face twice with
+--- nothing to tell them apart. jokers/cdawg.lua reads the list back.
+local function record_common_sold(center)
+    if not (G.GAME and center and center.rarity == 1
+        and CelestasMod.is_ours(center) and center.key) then
+        return
+    end
+    local sold = G.GAME.celesta_commons_sold or {}
+    G.GAME.celesta_commons_sold = sold
+    for _, key in ipairs(sold) do
+        if key == center.key then return end
+    end
+    sold[#sold + 1] = center.key
+end
+
 local celesta_grimmi_sell_ref = Card and Card.sell_card
 if celesta_grimmi_sell_ref then
     function Card:sell_card(...)
@@ -9550,6 +9394,13 @@ if celesta_grimmi_sell_ref then
             local config = self.config or {}
             G.GAME.celesta_last_joker_sold = config.center_key
                 or (config.center and config.center.key)
+            -- Silvervale's count, kept here for the same reason as the name:
+            -- it is every Rare sold this RUN, including the ones sold before
+            -- a Silvervale was there to hear it.
+            if config.center and config.center.rarity == 3 then
+                G.GAME.celesta_rares_sold = (G.GAME.celesta_rares_sold or 0) + 1
+            end
+            record_common_sold(config.center)
         end
 
         return ret
@@ -9805,5 +9656,1154 @@ SMODS.Joker {
             return { message = localize("celesta_plus_enhancement"),
                      colour = G.C.SECONDARY_SET.Enhanced, card = card }
         end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- FireOniRei [Rare] - a card fewer in hand, and every sticker burnt off after
+-- a Boss.
+--------------------------------------------------------------------------------
+--
+-- The hand size is vanilla's own ability.h_size, Juggler's field: applied by
+-- Card:add_to_deck and given back by remove_from_deck (card.lua:759 and :824),
+-- and applied for an absorbed half by Bind's intrinsic_passive. A penalty has
+-- no business scaling, and h_size is the one name Cryptid's manipulate and
+-- Yoka Siri both leave alone - which is why Vantacrow had to move OFF it.
+--
+-- "Defeated" is end_of_round on a Boss without game_over. game_over is decided
+-- before any Joker runs and a Mr. Bones save only clears it after the pass
+-- (state_events.lua:108-109), so a round survived that way strips nothing.
+--
+-- Every sticker SMODS knows of comes off through its own apply, the way
+-- Card:remove_sticker does it, so a modded sticker that granted something
+-- takes it back. Pinned keeps its flag on the card rather than the ability,
+-- so both are looked at. A merged Joker also holds its absorbed half's own
+-- copy under celesta_bind, and unmerging hands that copy back
+-- (merge/bind.lua:3689), so that copy goes too.
+
+--- Strips every sticker off `joker`. True if it was wearing any.
+local function fireonirei_strip(joker)
+    if not (joker and joker.ability) then return false end
+    local stripped = false
+
+    for key, sticker in pairs(SMODS.Stickers or {}) do
+        if joker.ability[key] or joker[key] then
+            sticker:apply(joker, false)
+            joker.ability[key] = nil
+            joker[key] = nil
+            stripped = true
+        end
+    end
+
+    local bound = joker.ability.celesta_bind
+    local half = type(bound) == "table" and bound.ability
+    if type(half) == "table" then
+        for key in pairs(SMODS.Stickers or {}) do
+            if half[key] then
+                half[key] = nil
+                stripped = true
+            end
+        end
+        if not half.perishable then half.perish_tally = nil end
+    end
+
+    -- Perishable keeps a countdown beside its flag; left behind it would
+    -- debuff the Joker on its own later.
+    if not joker.ability.perishable then joker.ability.perish_tally = nil end
+    return stripped
+end
+
+SMODS.Joker {
+    key = "fireonirei",
+    atlas = "fireonirei",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = false,
+    -- The stickers are gone after the first pass; a copy has nothing to add.
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { h_size = -1 },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.h_size } }
+    end,
+
+    calculate = function(self, card, context)
+        -- main_eval is the once-per-round Joker pass.
+        if not (context.end_of_round and context.main_eval) then return end
+        if context.blueprint or context.game_over then return end
+        local blind = G.GAME and G.GAME.blind
+        if not (blind and blind.boss) then return end
+
+        -- In an event, not here and now. Merged as the absorbed half, this runs
+        -- while Bind has lent the card the half's ability table, so its own
+        -- card's stickers - on the host's table - would be out of reach.
+        G.E_MANAGER:add_event(Event {
+            func = function()
+                for _, joker in ipairs(G.jokers and G.jokers.cards or {}) do
+                    if fireonirei_strip(joker) then joker:juice_up(0.3, 0.4) end
+                end
+                return true
+            end,
+        })
+    end,
+}
+
+
+--------------------------------------------------------------------------------
+-- Ellie Minibot [Legendary] - nothing this mod rolls for can miss.
+--------------------------------------------------------------------------------
+--
+-- Answered on fix_probability, the last pass Steamodded runs before a chance is
+-- rolled or printed (utils.lua:2725): the numerator is set to the denominator,
+-- so "1 in 6" reads, and rolls, as "6 in 6". It runs after every additive
+-- change - Nagzz, Oops! All 6s - so nothing afterwards can undo it. Vedal's
+-- listed-odds boost works the same way from the other pass.
+--
+-- "This mod's Jokers" is the Joker a chance is rolled FOR, trigger_obj, which
+-- covers a merged card whichever half is this mod's. The Clover's roll names
+-- the card it is deciding about rather than the blind, so it is known by its
+-- identifier instead - and guaranteeing it means every card gets to trigger.
+
+local ELLIE_CLOVER = "celesta_clover"
+
+--- True when a chance belongs to one of this mod's Jokers, or to The Clover.
+local function ellie_covers(context)
+    if context.identifier == ELLIE_CLOVER then return true end
+    local obj = context.trigger_obj
+    local ability = type(obj) == "table" and obj.ability
+    if not (type(ability) == "table" and ability.set == "Joker") then return false end
+    local center = obj.config and obj.config.center
+    if center and CelestasMod.is_ours(center) then return true end
+    local bound = ability.celesta_bind
+    local partner = type(bound) == "table" and type(bound.key) == "string"
+        and G.P_CENTERS[bound.key]
+    return partner and CelestasMod.is_ours(partner) or false
+end
+
+SMODS.Joker {
+    key = "ellie_minibot",
+    atlas = "ellie_minibot",
+    pos = { x = 0, y = 0 },
+    rarity = 4, cost = 20,
+    unlocked = true, discovered = false,
+    -- A guarantee is already everything; a copy has nothing to add.
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        if not context.fix_probability then return end
+        if not ellie_covers(context) then return end
+        -- Only a number, or a Talisman big number. The denominator is whatever
+        -- the roller passed, and Cryptid's RNJoker passes a sentence.
+        local d = context.denominator
+        if type(d) ~= "number" and not (type(d) == "table" and getmetatable(d)) then
+            return
+        end
+        return { numerator = d }
+    end,
+}
+
+
+--------------------------------------------------------------------------------
+-- Froot [Rare] - the more Wild the deck, the harder it hits.
+--------------------------------------------------------------------------------
+--
+-- Fufu's shape, counting a different thing: read off the full deck every time
+-- it is asked, so a card made Wild or taken out of the deck counts from the
+-- next hand without anything to keep in step. has_enhancement rather than a
+-- centre compare, so a card Wild by any route counts, the way Jummy's does.
+
+--- Wild Cards in the full deck.
+local function froot_wilds()
+    local count = 0
+    for _, held in ipairs(G.playing_cards or {}) do
+        if SMODS.has_enhancement(held, "m_wild") then count = count + 1 end
+    end
+    return count
+end
+
+SMODS.Joker {
+    key = "froot",
+    atlas = "froot",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = false,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { x_mult_gain = 0.4 } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_wild
+        local gain = card.ability.extra.x_mult_gain
+        return { vars = { gain, 1 + gain * froot_wilds() } }
+    end,
+
+    calculate = function(self, card, context)
+        if not context.joker_main then return end
+        local x_mult = 1 + card.ability.extra.x_mult_gain * froot_wilds()
+        if x_mult > 1 then return { x_mult = x_mult } end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Momo [Uncommon] - every hand is a Flush.
+--------------------------------------------------------------------------------
+--
+-- Answered where the game asks: get_flush, which Steamodded's _flush hand part
+-- calls for every evaluation (game_object.lua:2791). With a Momo in play every
+-- played card is the flush, whatever its suit and however few there are, so
+-- the hands built on a flush follow on their own - a Straight is a Straight
+-- Flush, a Full House a Flush House - and every card of it scores, because
+-- the flush is part of the hand.
+--
+-- joker_in_play, so a Momo merged into another Joker still counts. Guarded the
+-- way the sale hook above is: a harness that slices this file has no get_flush.
+
+-- Written out, as the other Jokers at the tail of this file do: harnesses
+-- slice from the middle to the end, where SMODS.current_mod is not set.
+local MOMO_KEY = "j_celesta_momo"
+
+local celesta_momo_flush_ref = get_flush
+if celesta_momo_flush_ref then
+    function get_flush(hand)
+        if type(hand) == "table" and #hand > 0
+            and CelestasMod.joker_in_play and CelestasMod.joker_in_play(MOMO_KEY) then
+            local every = {}
+            for i, played in ipairs(hand) do every[i] = played end
+            return { every }
+        end
+        return celesta_momo_flush_ref(hand)
+    end
+end
+
+SMODS.Joker {
+    key = "momo",
+    atlas = "momo",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = false,
+    -- A passive the hand evaluation reads; there is nothing to copy.
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Silvervale [Legendary] - every Rare sold this run is X1 Mult.
+--------------------------------------------------------------------------------
+--
+-- The count is the run's, kept by the sale hook above, so Rares sold before
+-- Silvervale arrived count too, and nothing on the card has to be kept.
+
+SMODS.Joker {
+    key = "silvervale",
+    atlas = "silvervale",
+    pos = { x = 0, y = 0 },
+    rarity = 4, cost = 20,
+    unlocked = true, discovered = false,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { x_mult_gain = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        local gain = card.ability.extra.x_mult_gain
+        return { vars = { gain, 1 + gain * CelestasMod.rares_sold() } }
+    end,
+
+    calculate = function(self, card, context)
+        if not context.joker_main then return end
+        local x_mult = 1 + card.ability.extra.x_mult_gain * CelestasMod.rares_sold()
+        if x_mult > 1 then return { x_mult = x_mult } end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- LucyPyre [Uncommon] - every Blind asks for a tenth less.
+--------------------------------------------------------------------------------
+--
+-- Hooked on get_blind_amount for the reason items/challenges.lua gives for the
+-- Printer's quota: it is the one function BOTH places asking for a quota go
+-- through - the Blind itself and the panel on the Blind select screen - so the
+-- number offered and the number required cannot disagree. Writing
+-- G.GAME.blind.chips at setting_blind instead would quietly lower a number the
+-- player had already been shown, and had already chosen to skip or play
+-- against. The Ante ladder in the run info reads it too, and so shows what
+-- LucyPyre will actually be asking for.
+--
+-- Two of them stack multiplicatively - each takes a tenth of what is LEFT, so
+-- two are X0.81 rather than X0.8 - and are counted through
+-- CelestasMod.find_joker, which sees a LucyPyre merged into another Joker as
+-- well as one sitting on its own and already leaves out a debuffed one. The
+-- percentage is read off each copy's own half, since that is the table a
+-- merged half keeps its config in.
+--
+-- Installed from Game:start_run rather than at load, and this is not a detail.
+-- Talisman REPLACES get_blind_amount (talisman.lua:342): it captures the
+-- previous one but only calls it when to_big gives a plain number, so with its
+-- big numbers on - which is this install's setting - everything wrapped before
+-- it is simply dropped. This mod has priority 0 and sorts ahead of Talisman,
+-- so a wrapper installed at load is always the one that gets dropped. By the
+-- time a run starts every mod has loaded, so installing there puts this
+-- OUTSIDE whatever they left behind. The identity guard keeps a second run
+-- from stacking another copy on top.
+--
+-- Deliberately NOT guarded on the answer being a plain number: past a certain
+-- Ante it is one of Talisman's big numbers, and those multiply through their
+-- own metamethod. Nothing here COMPARES it, which is the thing Lua 5.1
+-- refuses across types.
+
+local LUCYPYRE_KEY = "j_celesta_lucypyre"
+
+--- What every Blind's quota is multiplied by while LucyPyre is held.
+function CelestasMod.lucypyre_scale()
+    local scale = 1
+    for _, found in ipairs(CelestasMod.find_joker(LUCYPYRE_KEY)) do
+        local percent = ((found.ability or {}).extra or {}).percent or 0
+        scale = scale * (1 - percent / 100)
+    end
+
+    -- ...and whatever a merge is reducing it by on top. Deme + LucyPyre is one
+    -- such, and it is a REPLACING pair - so its card is not a LucyPyre to the
+    -- loop above and its reduction has to arrive from somewhere else. See
+    -- merge/bind.lua.
+    if CelestasMod.bind_blind_scale then
+        scale = scale * CelestasMod.bind_blind_scale()
+    end
+
+    return math.max(0, scale)
+end
+
+local lucypyre_wrapper
+--- See the note on generations in sins/sins.lua: a second copy of this in
+--- the chain would multiply the quota by the scale twice, so two runs in
+--- one session halved the blind rather than taking a tenth off it.
+local lucypyre_gen = 0
+
+function CelestasMod.install_lucypyre_hook()
+    if get_blind_amount == lucypyre_wrapper then return end
+    local ref = get_blind_amount
+    if type(ref) ~= "function" then return end
+
+    lucypyre_gen = lucypyre_gen + 1
+    local mine = lucypyre_gen
+    lucypyre_wrapper = function(ante, ...)
+        local amount = ref(ante, ...)
+        if mine ~= lucypyre_gen then return amount end
+        -- Asked for before the run has a Joker row, on the splash screen.
+        if not (G.jokers and G.jokers.cards) then return amount end
+        local scale = CelestasMod.lucypyre_scale()
+        if scale == 1 then return amount end
+        return amount * scale
+    end
+    get_blind_amount = lucypyre_wrapper
+end
+
+SMODS.Joker {
+    key = "lucypyre",
+    atlas = "lucypyre",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = false,
+    -- A passive the quota lookup reads, not a trigger; there is nothing to copy.
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { percent = 10 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.percent } }
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Dooby [Uncommon] - paid for walking out of the shop with a full wallet.
+--------------------------------------------------------------------------------
+--
+-- "No money was spent" is a question about MONEY, not about actions, so it is
+-- answered by watching the wallet rather than by counting purchases.
+-- context.buying_card would say a free card bought under Clearance Sale was
+-- spending, and would miss a reroll besides; ease_dollars is where vanilla
+-- sends every purchase, reroll, pack and voucher alike, so one hook covers all
+-- of them and a $0 reroll correctly costs nothing.
+--
+-- Watched globally rather than from Dooby's own calculate, so that buying
+-- Dooby ITSELF counts: the Joker is not in the row yet when its own price is
+-- paid, and a card that pays out on the shop it was bought in would be free
+-- money every time.
+--
+-- Stamped with the round number rather than raised and cleared, which is what
+-- arena.lua does with G.GAME.round for the same reason: each shop sits on its
+-- own round number, so last shop's stamp expires on its own and there is no
+-- reset to get wrong - no second Dooby can clear the flag out from under the
+-- first, and a reload cannot lose it.
+
+local DOOBY_KEY = "j_celesta_dooby"
+
+--- True for an amount that leaves the player's hands. Talisman's big numbers
+--- have to go through to_big, which Lua 5.1 will not compare against a plain
+--- number - and only Talisman makes them, so it is there whenever this is.
+local function dooby_outgoing(mod)
+    if type(mod) == "number" then return mod < 0 end
+    if type(mod) == "table" and to_big then return to_big(mod) < to_big(0) end
+    return false
+end
+
+--- True when money has left the player's hands during the shop now open.
+function CelestasMod.shop_had_spending()
+    if not (G.GAME and G.GAME.round) then return false end
+    return G.GAME.celesta_shop_spent == G.GAME.round
+end
+
+--- Remembers that money left the player's hands in the shop now open.
+local function dooby_note_spending()
+    if G.GAME and G.GAME.round then
+        G.GAME.celesta_shop_spent = G.GAME.round
+    end
+end
+
+-- Installed from Game:start_run for the reason LucyPyre's is: every other mod
+-- has loaded by then, so this sits outside their wrappers instead of under
+-- them. Talisman does call the ease_dollars it captured while its animations
+-- are on, but that is a setting the player can flip, and UnStable and Cryptid
+-- are in this chain too - being outermost is the only version that does not
+-- depend on what four other mods happen to do.
+local dooby_wrapper
+--- ...and the same here. Noting the spending twice is harmless in itself,
+--- but the guard is the same one that was wrong for Sloth.
+local dooby_gen = 0
+
+function CelestasMod.install_dooby_hook()
+    if ease_dollars == dooby_wrapper then return end
+    local ref = ease_dollars
+    if type(ref) ~= "function" then return end
+
+    dooby_gen = dooby_gen + 1
+    local mine = dooby_gen
+    dooby_wrapper = function(mod, ...)
+        if mine == dooby_gen and G.STATE == G.STATES.SHOP
+            and dooby_outgoing(mod) then
+            dooby_note_spending()
+        end
+        return ref(mod, ...)
+    end
+    ease_dollars = dooby_wrapper
+end
+
+-- Installed together, before the run the first quota is asked for.
+local celesta_late_start_run_ref = Game.start_run
+function Game:start_run(args)
+    CelestasMod.install_lucypyre_hook()
+    CelestasMod.install_dooby_hook()
+    return celesta_late_start_run_ref(self, args)
+end
+
+SMODS.Joker {
+    key = "dooby",
+    atlas = "dooby",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = false,
+    -- MoopyBuns' shape: a copier may score the X Mult, but `not
+    -- context.blueprint` below keeps it from banking the growth a second time
+    -- onto the original, which is where the scaling actually lives.
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { x_mult_gain = 0.25, x_mult = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.x_mult_gain,
+                          card.ability.extra.x_mult } }
+    end,
+
+    calculate = function(self, card, context)
+        -- Steamodded raises this for each thing bought - a Joker, a
+        -- consumable, a voucher, a pack (button_callbacks.lua:2512), just
+        -- before the price is charged at :2526, and it is the same context
+        -- MoopyBuns counts. Heard as well as the wallet, not instead of it:
+        -- this is the ordinary way money leaves in a shop, and hearing it here
+        -- does not depend on a global wrapper surviving four other mods.
+        -- `cost ~= 0` is vanilla's own test for whether it charges at all, so
+        -- a card made free still costs nothing.
+        if context.buying_card and not context.blueprint then
+            local bought = context.card
+            if bought and (bought.cost or 0) ~= 0 then
+                dooby_note_spending()
+            end
+        end
+
+        if context.ending_shop and not context.blueprint then
+            if CelestasMod.shop_had_spending() then return end
+            card.ability.extra.x_mult =
+                card.ability.extra.x_mult + card.ability.extra.x_mult_gain
+            return {
+                message = localize { type = "variable", key = "a_xmult",
+                                     vars = { card.ability.extra.x_mult } },
+                colour = G.C.MULT, card = card,
+            }
+        end
+
+        -- X1 is no multiplier at all; returning it would put a flourish over
+        -- the Joker every hand for doing nothing.
+        if context.joker_main and card.ability.extra.x_mult > 1 then
+            return { x_mult = card.ability.extra.x_mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Adfree [Uncommon] - the Boss sits out the opening hand.
+--------------------------------------------------------------------------------
+--
+-- Blind:disable() is deliberately NOT used. It is a one-way door: it undoes
+-- the Blind's setup outright - The Wall's chips halved, The Manacle's hand
+-- size handed back, The Needle's hands restored (blind.lua:687 onward) - and
+-- there is no matching enable to put any of it back. `disabled` is the flag
+-- every one of those effects is gated on, so setting the flag alone is "the
+-- Boss does nothing right now" without spending anything that cannot be
+-- un-spent.
+--
+-- Ben's shape otherwise: one hold routine that every route goes through and
+-- that does nothing unless the answer is changing, so no path can apply it
+-- twice and none can hand it back twice. The routes are setting_blind, after
+-- (the hand just finished), end_of_round, and the two deck hooks - which
+-- covers debuffing for free, because that is how vanilla implements it.
+
+local ADFREE_KEY = "j_celesta_adfree"
+local ADFREE_HELD = "celesta_adfree_held"
+local ADFREE_OVER = "celesta_adfree_opening_hand_over"
+
+--- True while the round's opening hand has not been played yet.
+---
+--- The counter alone will not do it, and this is the whole of the bug this
+--- Joker had. context.after is raised from INSIDE evaluate_play
+--- (state_events.lua:869), while current_round.hands_played is incremented by
+--- a separate, later event queued alongside it (:523). So at the one moment
+--- this Joker has to let go, the hand that just finished has not been counted
+--- yet - and reading the counter there kept the Boss shut for a second hand
+--- as well.
+---
+--- The flag is what context.after writes, and it is asked first. The counter
+--- stays underneath it for the case the flag cannot cover: a save loaded
+--- part-way through a round, where no flag was ever written but the counter
+--- is already right.
+local function adfree_first_hand()
+    if G.GAME and G.GAME[ADFREE_OVER] then return false end
+    local round = G.GAME and G.GAME.current_round
+    return round and (round.hands_played or 0) == 0 or false
+end
+
+--- Holds the Boss shut, or lets it go. Only ever lets go of a Blind THIS card
+--- shut: one already disabled by Chicot, or by anything else, is left alone.
+local function adfree_hold(on)
+    local blind = G.GAME and G.GAME.blind
+    if not blind then return false end
+    local held = G.GAME[ADFREE_HELD]
+
+    if on then
+        if held or blind.disabled or not blind.boss then return false end
+        blind.disabled = true
+        G.GAME[ADFREE_HELD] = true
+    else
+        if not held then return false end
+        blind.disabled = false
+        G.GAME[ADFREE_HELD] = nil
+    end
+
+    -- Re-judged so the cards agree with the Blind: set_blind with `reset`
+    -- skips choosing one and walks every card through debuff_card again
+    -- (blind.lua:220), which is the route card.lua already takes whenever a
+    -- Joker changes what a card is.
+    G.E_MANAGER:add_event(Event {
+        func = function()
+            if G.GAME.blind then G.GAME.blind:set_blind(nil, true, nil) end
+            return true
+        end
+    })
+    return true
+end
+
+--- Works the answer out from the world rather than from whoever called, so
+--- selling one of two Adfrees does not hand the Boss back early.
+local function adfree_sync()
+    adfree_hold(adfree_first_hand()
+        and CelestasMod.joker_in_play(ADFREE_KEY)
+        and G.GAME.blind and G.GAME.blind.boss and true or false)
+end
+
+CelestasMod.adfree_sync = adfree_sync
+
+SMODS.Joker {
+    key = "adfree",
+    atlas = "adfree",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = false,
+    -- A copy would hold a Blind that is already held; there is nothing to copy.
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        adfree_sync()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        -- Queued: on a sale this runs while the card is still in the row, so
+        -- the count is asked once the row has settled.
+        G.E_MANAGER:add_event(Event { func = function() adfree_sync() return true end })
+    end,
+
+    calculate = function(self, card, context)
+        -- A new Blind is a new opening hand.
+        if context.setting_blind and not context.blueprint then
+            G.GAME[ADFREE_OVER] = nil
+            adfree_sync()
+        end
+
+        -- context.after is the end of a played hand. The flag rather than the
+        -- counter, for the reason on adfree_first_hand - and set before the
+        -- sync rather than being the sync's own business, so every other route
+        -- into it (a Joker bought, sold or debuffed later in this same hand)
+        -- gets the same answer.
+        if context.after and not context.blueprint then
+            G.GAME[ADFREE_OVER] = true
+            adfree_sync()
+        end
+
+        if context.end_of_round and not context.blueprint then
+            G.GAME[ADFREE_OVER] = nil
+            adfree_hold(false)
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- The True Stars suit Jokers
+--------------------------------------------------------------------------------
+--
+-- Two of the three can do nothing at all without a True Star in the deck, and
+-- a True Star is not something a run stumbles into - it takes a Strength on an
+-- Ace of Stars and nothing else - so they are gated the way the Star and Leaf
+-- Jokers above are, through in_pool. AngelSteps is not: it has nothing to do
+-- with the suit beyond shipping alongside it.
+
+--- Keeps a Joker out of the pools until the deck holds a True Star. See
+--- star_gated above for why this goes through in_pool rather than a gate
+--- field.
+local function true_star_gated(self, args)
+    return CelestasMod.has_true_star()
+end
+
+--------------------------------------------------------------------------------
+-- AngelSteps [Uncommon] - the base score, the other way round.
+--------------------------------------------------------------------------------
+--
+-- `mult` and `hand_chips` are the globals evaluate_play keeps the running base
+-- score in, and Steamodded raises context.modify_hand from inside
+-- Blind:modify_hand with both already written to _G - so writing them here is
+-- how a Joker does what The Flint does, at the one moment the base score is
+-- still the base score and nothing has been added to it yet.
+--
+-- Returning a message rather than nothing: the flag that makes evaluate_play
+-- re-draw the score readout is `modded`, and Steamodded raises it from
+-- whether anything was calculated. Without it the hand would score swapped
+-- while the readout still showed the old numbers.
+
+SMODS.Joker {
+    key = "angelsteps",
+    atlas = "angelsteps",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = false,
+    -- A second swap is the first one undone.
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        if context.modify_hand then
+            mult, hand_chips = hand_chips, mult
+            return { message = localize("celesta_swapped"), colour = G.C.CHIPS }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Kiri [Uncommon] - every True Star scores.
+--------------------------------------------------------------------------------
+--
+-- Same shape as Unnamed above: modify_scoring_hand is asked once per card in
+-- the played hand, and add_to_hand puts one into the scoring hand that the
+-- poker hand left out - which is what vanilla's Splash does for everything.
+--
+-- Guarded on the hand actually being played, because the same context is
+-- raised while a hand is only highlighted, to draw the preview.
+
+SMODS.Joker {
+    key = "kiri",
+    atlas = "kiri",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = false,
+    -- It is a question about the hand, and a copy would answer the same one.
+    blueprint_compat = false, eternal_compat = true,
+
+    in_pool = true_star_gated,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        if context.modify_scoring_hand and context.other_card
+            and CelestasMod.is_true_star(context.other_card)
+            and CelestasMod.hand_is_being_played() then
+            return { add_to_hand = true }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Elara [Uncommon] - X3 the Chips a True Star holds.
+--------------------------------------------------------------------------------
+--
+-- get_chip_bonus() is where a card's Chips live: its rank, its enhancement's
+-- bonus and any perma_bonus a Hiker or a Bind has put on it. The card has
+-- already paid that once by the time a Joker is asked, so the top-up is TWO
+-- times it, not three - three would be X4.
+
+SMODS.Joker {
+    key = "elara",
+    atlas = "elara",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = false,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { x_chips = 3 } },
+
+    in_pool = true_star_gated,
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.x_chips } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.individual and context.cardarea == G.play
+            and CelestasMod.is_true_star(context.other_card) then
+            local other = context.other_card
+            local stored = other.get_chip_bonus and other:get_chip_bonus() or 0
+            if stored <= 0 then return end
+            return {
+                chips = stored * (card.ability.extra.x_chips - 1),
+                card = other,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Nanoless [Rare] - a True Star's Chips arrive as Mult.
+--------------------------------------------------------------------------------
+--
+-- Paid as a negative and a positive in one answer, which is the only shape
+-- available: the card has ALREADY paid its Chips by the time a Joker is asked
+-- about it. SMODS.calculate_main_scoring evaluates the scoring card first and
+-- then walks the Jokers with context.individual, so there is nothing to
+-- intercept - only something to take back.
+--
+-- Taking it back here rather than zeroing Card:get_chip_bonus, which would
+-- have been the tidier-looking hook: that number is read by Elara, by Evil
+-- Neuro and by the Deck of Sins' Pride stat, and none of those asked for a
+-- True Star to be worth nothing. The redirection is this Joker's business and
+-- stays inside it.
+--
+-- "Its Chips" is get_chip_bonus - rank, enhancement and any perma_bonus -
+-- which is the same quantity Elara calls stored Chips. What another Joker
+-- pays for the card is that Joker's, and is not moved.
+
+SMODS.Joker {
+    key = "nanoless",
+    atlas = "nanoless",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = false,
+    blueprint_compat = true, eternal_compat = true,
+
+    in_pool = true_star_gated,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    calculate = function(self, card, context)
+        if context.individual and context.cardarea == G.play
+            and CelestasMod.is_true_star(context.other_card) then
+            local other = context.other_card
+            local chips = other.get_chip_bonus and other:get_chip_bonus() or 0
+            if chips <= 0 then return end
+            return { chips = -chips, mult = chips, card = other }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Toma [Common] - a True Star pays out, half the time.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "toma",
+    atlas = "toma",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = false,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { odds = 2, dollars = 5 } },
+
+    in_pool = true_star_gated,
+
+    loc_vars = function(self, info_queue, card)
+        local numerator, denominator = SMODS.get_probability_vars(
+            card, 1, card.ability.extra.odds, "celesta_toma")
+        return { vars = { numerator, denominator, card.ability.extra.dollars } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.individual and context.cardarea == G.play
+            and CelestasMod.is_true_star(context.other_card)
+            and SMODS.pseudorandom_probability(
+                card, "celesta_toma", 1, card.ability.extra.odds) then
+            return { dollars = card.ability.extra.dollars,
+                     card = context.other_card }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- ToriOriane [Common] - a flat pair of numbers on a True Star.
+--------------------------------------------------------------------------------
+
+SMODS.Joker {
+    key = "torioriane",
+    atlas = "torioriane",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = false,
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { mult = 6, chips = 6 } },
+
+    in_pool = true_star_gated,
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.mult, card.ability.extra.chips } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.individual and context.cardarea == G.play
+            and CelestasMod.is_true_star(context.other_card) then
+            return {
+                mult = card.ability.extra.mult,
+                chips = card.ability.extra.chips,
+                card = context.other_card,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Fleshy [Uncommon] - a Boss Blind cannot touch a True Star.
+--------------------------------------------------------------------------------
+--
+-- Blind:debuff_card is the whole of what this has to answer. Every way a Boss
+-- Blind marks a card goes through it: the suit, rank, face and enhancement
+-- rules in vanilla's own body, The Pillar's played-this-Ante flag, Verdant
+-- Leaf's blanket, and any modded Blind at all, which Steamodded routes through
+-- the same function by way of its recalc_debuff (blind.lua:669). Hooking here
+-- is therefore narrower than it looks - it is Boss Blinds and nothing else,
+-- which is what was asked for. A debuff from somewhere that is not a Blind
+-- never reaches this function and is left alone.
+
+local FLESHY_KEY = "j_celesta_fleshy"
+
+--- True when a Fleshy other than `excluding` is in play.
+---
+--- find_joker, so a Fleshy inside a merge counts as either half, and a
+--- debuffed one does not count at all - Crimson Heart picking Fleshy should
+--- take the shield down with it.
+local function fleshy_present(excluding)
+    for _, held in ipairs(CelestasMod.find_joker(FLESHY_KEY)) do
+        if held.card ~= excluding then return true end
+    end
+    return false
+end
+
+--- Forced during the re-judge below, because vanilla is not symmetric about
+--- when a Joker is in G.jokers: add_to_deck runs before the card is emplaced
+--- and remove_from_deck runs after it is stripped (see the Haruka note
+--- above), so at the one moment the answer has to change, asking the row
+--- gives last moment's answer.
+local fleshy_forced = nil
+
+local function fleshy_shields()
+    if fleshy_forced ~= nil then return fleshy_forced end
+    return fleshy_present(nil)
+end
+
+--- Puts every True Star in the deck back in front of the Blind in play.
+---
+--- Selling Fleshy mid-Blind has to re-apply what the Blind was going to do,
+--- and buying one mid-Blind has to lift it; nothing else re-judges a card on
+--- its own. Only True Stars are re-judged, because no other card's answer can
+--- have changed.
+local function fleshy_rejudge(shielded)
+    local blind = G.GAME and G.GAME.blind
+    if not (blind and blind.debuff_card and G.playing_cards) then return end
+
+    fleshy_forced = shielded
+    local ok, err = pcall(function()
+        for _, playing in ipairs(G.playing_cards) do
+            if CelestasMod.is_true_star(playing) then
+                blind:debuff_card(playing)
+            end
+        end
+    end)
+    fleshy_forced = nil
+    if not ok then error(err, 0) end
+end
+
+local celesta_fleshy_debuff_ref = Blind.debuff_card
+
+function Blind:debuff_card(card, from_blind)
+    if CelestasMod.is_true_star(card) and fleshy_shields() then
+        -- set_debuff(false) rather than an early return with nothing done:
+        -- this is the same line vanilla ends on for a card its Blind does not
+        -- want (blind.lua:721), and it is what LIFTS a debuff the Blind
+        -- applied before Fleshy arrived.
+        card:set_debuff(false)
+        return
+    end
+    return celesta_fleshy_debuff_ref(self, card, from_blind)
+end
+
+SMODS.Joker {
+    key = "fleshy",
+    atlas = "fleshy",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = false,
+    blueprint_compat = false, eternal_compat = true,
+
+    add_to_deck = function(self, card, from_debuff)
+        fleshy_rejudge(true)
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        fleshy_rejudge(fleshy_present(card))
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Nico Viras [Uncommon] - the shop's reroll price climbs half as fast.
+--------------------------------------------------------------------------------
+--
+-- calculate_reroll_cost is the one place the price is worked out
+-- (common_events.lua:2630): it adds a dollar to the round's running increase
+-- and rebuilds the price from it. Everything that rerolls - the shop button,
+-- Chaos the Clown, a Director's Cut - comes through here, so one hook covers
+-- them all.
+--
+-- The increase is halved AFTER vanilla has added to it, and then the price is
+-- rebuilt by calling vanilla again with the increment skipped. Doing it that
+-- way rather than writing the price directly means vanilla still owns both
+-- sums, including the temp_reroll_cost a Voucher may have put in the way.
+
+local NICOVIRAS_KEY = "j_celesta_nicoviras"
+
+--- What a reroll adds to the price while this Joker is out.
+CelestasMod.NICOVIRAS_STEP = 0.5
+
+local celesta_nicoviras_reroll_ref = calculate_reroll_cost
+
+function calculate_reroll_cost(skip_increment, ...)
+    local round = G.GAME and G.GAME.current_round
+    if skip_increment or not round
+        or not next(CelestasMod.find_joker(NICOVIRAS_KEY)) then
+        return celesta_nicoviras_reroll_ref(skip_increment, ...)
+    end
+
+    local before = round.reroll_cost_increase or 0
+    local ret = celesta_nicoviras_reroll_ref(skip_increment, ...)
+    local added = (round.reroll_cost_increase or 0) - before
+    -- A free reroll returns before the increase is touched, and so does
+    -- anything else that decides this one is not chargeable.
+    if added <= 0 then return ret end
+
+    round.reroll_cost_increase = before + added * CelestasMod.NICOVIRAS_STEP
+    celesta_nicoviras_reroll_ref(true, ...)
+    return ret
+end
+
+SMODS.Joker {
+    key = "nicoviras",
+    atlas = "nicoviras",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = false,
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { step = CelestasMod.NICOVIRAS_STEP } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.step } }
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Dokibird [Rare] - one card scores, and the rest are spent on it.
+--------------------------------------------------------------------------------
+--
+-- UnStable's Social Experiment is the shape: take the Chips off a played card,
+-- double them, and put them on another one permanently.
+--
+-- Hooked at context.destroy_card rather than by dissolving the cards here.
+-- That is the game's own question - SMODS walks the played cards after the
+-- final scoring step and asks every Joker whether each one should go
+-- (utils.lua:2044) - so saying yes gets the animation, the removal from the
+-- deck and the remove_playing_cards pass that other Jokers watch, all for
+-- free. It also hands over context.cardarea == 'unscored' for exactly the
+-- cards this is about, which is the distinction the card is written in.
+--
+-- "Stored Chips" is what a card is worth in Chips - its rank, its
+-- enhancement's bonus and any permanent bonus on top - which is
+-- get_chip_bonus, the same reading Elara's description means by the phrase.
+-- The gain is written to perma_bonus, which is where a Chip bonus that
+-- outlives the hand lives.
+
+--- A played card with this many stored Chips or more is left alone.
+CelestasMod.DOKIBIRD_CAP = 100
+
+--- ...and one under it is worth this much to the card that did score.
+CelestasMod.DOKIBIRD_RATE = 2
+
+--- The one card that scored, if the hand is the shape this Joker wants.
+---
+--- Only the one-scoring-card half is tested. "With at least one unscoring
+--- card" is the other half of the rule and needs no test: the caller only
+--- reaches this from the unscored branch, and a card being unscored IS an
+--- unscoring card in the hand.
+local function dokibird_target(context)
+    local scoring = context.scoring_hand
+    if not (scoring and #scoring == 1) then return nil end
+    return scoring[1]
+end
+
+SMODS.Joker {
+    key = "dokibird",
+    atlas = "dokibird",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = false,
+    -- A copy would be asked the same question about the same cards and would
+    -- pay the doubling a second time.
+    blueprint_compat = false, eternal_compat = true,
+
+    config = { extra = { cap = CelestasMod.DOKIBIRD_CAP,
+                         rate = CelestasMod.DOKIBIRD_RATE } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.cap, card.ability.extra.rate } }
+    end,
+
+    calculate = function(self, card, context)
+        if not (context.destroy_card and context.cardarea == "unscored"
+            and not context.blueprint and not context.retrigger_joker) then
+            return
+        end
+
+        local target = dokibird_target(context)
+        if not target then return end
+
+        local doomed = context.destroy_card
+        local stored = doomed.get_chip_bonus and doomed:get_chip_bonus() or 0
+        -- Nothing to take is not a card to destroy, and the cap is what the
+        -- card advertises: a big card is left where it is.
+        if stored <= 0 or stored >= card.ability.extra.cap then return end
+
+        local gain = stored * card.ability.extra.rate
+        target.ability.perma_bonus = (target.ability.perma_bonus or 0) + gain
+
+        return {
+            remove = true,
+            message = localize { type = "variable", key = "a_chips",
+                                 vars = { gain } },
+            colour = G.C.CHIPS,
+            card = target,
+        }
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Snuffy [Rare] - select as many extra cards as you have Hands left.
+--------------------------------------------------------------------------------
+--
+-- Granted through selection_sync above, which is the ONE way this mod moves
+-- the card selection limit. Writing G.hand.config.highlighted_limit directly
+-- would not survive contact with it: SMODS.change_play_limit keeps its own
+-- play and discard limits and then SETS highlighted_limit to the larger of the
+-- two, so the next Joker to raise the limit properly would wipe whatever had
+-- been written by hand.
+--
+-- The ledger field is Shiabun's, shared by everything here that raises this
+-- limit. It is per CARD, so two Jokers keeping their own receipts under the
+-- same name do not collide.
+
+--- How many extra picks this card should be handing out right now.
+local function snuffy_want()
+    local round = G.GAME and G.GAME.current_round
+    return math.max(0, (round and round.hands_left) or 0)
+end
+
+SMODS.Joker {
+    key = "snuffy",
+    atlas = "snuffy",
+    pos = { x = 0, y = 0 },
+    rarity = 3, cost = 8,
+    unlocked = true, discovered = false,
+    -- Nothing to copy: the limit belongs to this card, and its own hooks give
+    -- it and take it back.
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { snuffy_want() } }
+    end,
+
+    -- Polled rather than hooked to whatever spends a Hand. The number changes
+    -- at the start of a round, when a hand is played, when a Joker or Voucher
+    -- hands one back, and when a Blind takes one away; a poll is right for all
+    -- of them and cannot be wrong for the one that gets added next.
+    --
+    -- added_to_deck gated the way SmittenSeraph's is, so a copy in the shop or
+    -- the Collection does not hand out a limit it does not own.
+    update = function(self, card, front)
+        if card.added_to_deck then selection_sync(card, snuffy_want()) end
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        selection_sync(card, snuffy_want())
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        selection_release(card)
     end,
 }

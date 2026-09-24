@@ -30,6 +30,12 @@ CELL = 34          # at 1x
 BLINDS = {
     "clover": "the_clover.png",
     "greed": "the_greed2.png",
+    # The 2x file is the source: gen_blinds halves it for 1x, and 64 -> 32 is
+    # exact, so neither scale resamples unevenly.
+    "goat": "the_goat2x.png",
+    "frog": "the_frog2x.png",
+    "star": "the_star2x.png",
+    "heart": "the_heart2x.png",
 }
 
 

@@ -122,7 +122,7 @@ end
 --------------------------------------------------------------------------------
 
 Unlocks.STAT_EXTRA = 2
-Unlocks.SCORE = 1200000
+Unlocks.SCORE = 12000
 Unlocks.CONSUMABLE_SLOTS = 4
 Unlocks.SUIT_COUNT = 40
 Unlocks.ENHANCED_COUNT = 26
@@ -190,7 +190,7 @@ Unlocks.RULES = {
     [J .. "beepers"] = { state = function() return any_card(has_seal("Foppy")) end },
     [J .. "cottontail"] = { state = function() return any_card(has_seal("Star")) end },
     [J .. "spite"] = { state = function() return any_card(has_seal("Ectoplast")) end },
-    [J .. "fraiki"] = { state = function() return any_card(has_seal("Rose")) end },
+    [J .. "uzuri"] = { state = function() return any_card(has_seal("Rose")) end },
 
     [J .. "fefe"] = suit_rule("Hearts"),
     [J .. "vexoria"] = suit_rule("Spades"),

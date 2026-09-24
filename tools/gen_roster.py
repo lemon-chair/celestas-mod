@@ -21,16 +21,17 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import round_corners  # noqa: E402  (needs the path set above)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SHARED = {"jokers", "consumables", "decks", "icon", "seals", "driftwood_fronts",
+SHARED = {"jokers", "consumables", "decks", "sleeves", "icon", "seals", "driftwood_fronts",
           "frozen", "frozen_round",
           # wear overlays, drawn on top of a playing card
           "tatter", "lucky_card_tatter", "limestone_tatter",
           "bind", "milk_bottle", "burgundy_brew",
           # the added suits: a 13-cell rank row and a UI pip each
           "suit_stars", "suit_stars_ui",
+          "suit_true_stars", "suit_true_stars_ui",
           "suit_leaf", "suit_leaf_ui",
           # the consumables that make them, and the rest of the standalones
-          "star_fury", "tree", "raise",
+          "star_fury", "tree", "raise", "unholy",
           # the Tarots that hand out this mod's enhancements, Occult, and Gene
           # (which hands out a seal rather than an enhancement)
           "citrus", "miracle_matter", "knife", "polish", "occult", "gene",
@@ -53,6 +54,8 @@ DISPLAY_NAMES = {
     "auteru": "Auteru",
     "juniperactias": "Juniper Actias",
     "obkatiekat": "ObKatieKat",
+    "cdawg": "CDawg",
+    "nicoviras": "Nico Viras",
     # the art is named for the creator; the card is not
     "lordaethelstan": "Aethal",
     "astrum_aureus": "Astrum Aureus",
@@ -86,7 +89,7 @@ DISPLAY_NAMES = {
     "kourra": "Kourra",
     "shiabun": "Shiabun",
     "pipi": "Pipi",
-    "buffpup": "BuffPup",
+    "buffpup": "Buffpup",
     "maplechicken": "MapleChicken",
     "fufu": "Fufu",
     "isaa": "Isaa",
@@ -116,7 +119,7 @@ DISPLAY_NAMES = {
     "sigrid_bird": "Sigrid & Bird",
     "nana_ruru": "Nana & Ruru",
     "henya": "Henya",
-    "el_xox": "El_Xox",
+    "el_xox": "El XoX",
     "fream": "Fream",
     "kirana": "Kirana",
     "kael": "Kael",
@@ -134,7 +137,7 @@ DISPLAY_NAMES = {
     "rinpenrose": "Rin Penrose",
     "harukakaribu": "Haruka Karibu",
     "axialmatt": "AxialMatt",
-    "mintfantome": "Mint Fantome",
+    "mintfantome": "Mint Fantôme",
     "aicandii": "AiCandii",
     "amalee": "AmaLee",
     "bearthewitch": "Bear The Witch",
@@ -145,7 +148,7 @@ DISPLAY_NAMES = {
     "cottontail": "CottontailVA",
     "cweamcat": "CweamCat",
     "cyyuvtuber": "Cy Yu",
-    "el_xox": "El_XoX",
+    "el_xox": "El XoX",
     "froggyloch": "FroggyLoch",
     "hannahhyrule": "Hannah Hyrule",
     "heavenlyfather": "HeavenlyFather",
@@ -157,6 +160,7 @@ DISPLAY_NAMES = {
     "kokonuts": "KokoNuts",
     "limealicious": "Laimu",
     "laynalazar": "LaynaLazar",
+    "lucypyre": "LucyPyre",
     "monikacinnyroll": "MonikaCinnyroll",
     "onigiri": "OniGiri",
     "pandabearlily": "PandaBearLily",
@@ -361,6 +365,70 @@ ARTLESS_KEYS = [
     "j_celesta_blessed_phoenix_egg_ready",
 ]
 
+# The seven Jokers that say something extra while the deck holds a True Star.
+#
+# Each one needs a SECOND description - loc_vars points at the Joker's own key
+# with "_true" on the end - and that description is the Joker's own text plus
+# two lines. So it is DERIVED from whatever the base entry says rather than
+# written out again: editing a Joker's description keeps the pair in step, and
+# there is no second copy to forget about.
+#
+# The number is where the extra variables land. loc_vars appends them, so they
+# carry on from however many the Joker already had.
+TRUE_STAR_JOKERS = {
+    "j_celesta_arar": 0,
+    "j_celesta_camila": 0,
+    "j_celesta_limealicious": 0,
+    "j_celesta_trickywi": 1,
+    "j_celesta_eros": 2,
+    "j_celesta_shoomimi": 2,
+}
+
+# The Eidolon Wyrm's is the odd one: per card in the PLAYED HAND, so it has a
+# flat rate and no running total, and it takes one variable rather than two.
+TRUE_STAR_WYRM = "j_celesta_eidolonwyrm"
+
+TRUE_STAR_DECK_LINES = (
+    '                    "{C:celesta_true_star,E:1}X#%d# Mult{} for each'
+    ' {C:celesta_true_star,E:1}True Star{}",\n'
+    '                    "card in the full deck {C:inactive}(Currently'
+    ' {X:mult,C:white}X#%d#{C:inactive} Mult)",\n'
+)
+
+TRUE_STAR_HAND_LINES = (
+    '                    "{C:celesta_true_star,E:1}X#4#{} extra Mult for each",\n'
+    '                    "{C:celesta_true_star,E:1}True Star{} card in the'
+    ' played hand",\n'
+)
+
+
+def true_star_block(key, block):
+    """The `_true` twin of one localization block, built from that block.
+
+    The `unlock` section is deliberately dropped: an unlock condition is looked
+    up by the Joker's own key, never by the one loc_vars points at, so a copy
+    of it here would be a key nothing ever reads.
+    """
+    name = re.search(r"^ +name = .*$", block, re.M).group(0)
+    open_at = block.index("                text = {\n")
+    body_at = open_at + len("                text = {\n")
+    close_at = block.index("\n                },", body_at)
+
+    if key == TRUE_STAR_WYRM:
+        extra = TRUE_STAR_HAND_LINES
+    else:
+        n = TRUE_STAR_JOKERS[key]
+        extra = TRUE_STAR_DECK_LINES % (n + 1, n + 2)
+
+    return ("            %s_true = {\n" % key
+            + name + "\n"
+            + "                text = {\n"
+            + block[body_at:close_at + 1]
+            + extra
+            + "                },\n"
+            + "            },\n")
+
+
 LOC_TAIL = '''        },
 
         Tarot = {
@@ -463,6 +531,18 @@ LOC_TAIL = '''        },
                     "{C:attention}Joker{} into its lost version",
                 },
             },
+            c_celesta_unholy = {
+                name = "Unholy Stone",
+                text = {
+                    "Every {C:attention}Sin{} may reach",
+                    "level {C:attention}#1#{}, instead of",
+                    "only one from each set",
+                },
+                unlock = {
+                    "Win a run on {C:attention}White Stake{}",
+                    "with the {C:attention}Deck of Sins{}",
+                },
+            },
             c_celesta_raise = {
                 name = "Raise",
                 text = {
@@ -502,6 +582,34 @@ LOC_TAIL = '''        },
                 text = {
                     "Cards and Jokers have a",
                     "{C:green}#1# in #2#{} chance to trigger",
+                },
+            },
+            bl_celesta_frog = {
+                name = "The Frog",
+                text = {
+                    "Removes enhancements",
+                    "from played cards",
+                },
+            },
+            bl_celesta_goat = {
+                name = "The Goat",
+                text = {
+                    "Shuffles editions and",
+                    "enhancements of played cards",
+                },
+            },
+            bl_celesta_heart = {
+                name = "The Heart",
+                text = {
+                    "Scored Mult is halved",
+                    "after scoring",
+                },
+            },
+            bl_celesta_star = {
+                name = "The Star",
+                text = {
+                    "Scored Chips are halved",
+                    "after scoring",
                 },
             },
             bl_celesta_greed = {
@@ -622,7 +730,7 @@ LOC_TAIL = '''        },
                 },
             },
             celesta_bind_buffpup_shiabun = {
-                name = "BuffPup + Shiabun",
+                name = "Buffpup + Shiabun",
                 text = {
                     "{C:attention}+1{} card selection limit for",
                     "every {C:attention}#1#{} {V:1}#2#{} cards",
@@ -730,6 +838,51 @@ LOC_TAIL = '''        },
                     "to your full deck",
                 },
             },
+            celesta_bind_koko_cerber = {
+                name = "KokoNuts + Cerber",
+                text = {
+                    "Retrigger each played {C:attention}7{} {C:attention}#1#{} times",
+                },
+            },
+            celesta_bind_heavenly_aethal = {
+                name = "HeavenlyFather + Aethal",
+                text = {
+                    "{C:attention}+#1#{} shop slots,",
+                    "{C:attention}+#2#{} Booster Pack slots and",
+                    "{C:attention}+#3#{} Voucher slots",
+                    "available in the shop",
+                },
+            },
+            celesta_bind_berry_cweam = {
+                name = "BerryCrepe + CweamCat",
+                text = {
+                    "This Joker gains {C:mult}+#1#{} Mult",
+                    "if played hand is a {C:attention}#2#{}",
+                    "{C:inactive}(hand changes after each hand played)",
+                    "{C:inactive}(Currently {C:mult}+#3#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_arar_froggy = {
+                name = "Arar + FroggyLoch",
+                text = {
+                    "At the start of each round, each",
+                    "unenhanced card held in hand has a",
+                    "{C:green}#1# in #2#{} chance to gain an {C:attention}enhancement{}:",
+                    "the one made by the {C:tarot}Tarot{} in the",
+                    "{C:attention}first{} consumable slot, or a random",
+                    "one if there is none",
+                },
+            },
+            celesta_bind_arar_maya = {
+                name = "Arar + Maya",
+                text = {
+                    "At the start of each round, a random",
+                    "unenhanced card held in hand becomes a",
+                    "{C:attention}Steel Card{} with a {C:red}Red Seal{}",
+                    "{C:green}#1# in #2#{} chance for a",
+                    "{C:attention}Foppy Seal{} instead",
+                },
+            },
             celesta_bind_hannah_koko = {
                 name = "Hannah Hyrule + KokoNuts",
                 text = {
@@ -772,20 +925,22 @@ LOC_TAIL = '''        },
                     "{C:inactive}(Currently {C:attention}#3#{C:inactive})",
                 },
             },
-            celesta_bind_yuzu_sinder = {
-                name = "Yuzu + Sinder",
-                text = {
-                    "{C:green}#1# in #2#{} chance for {C:attention}Driftwood{}",
-                    "cards held in hand to give",
-                    "{C:money}$#3#{} when a hand is played",
-                },
-            },
             celesta_bind_yuzu_bao = {
                 name = "Yuzu + Bao",
                 text = {
                     "During a {C:blue}Downpour{}, {C:green}#1# in #2#{}",
                     "chance for cards held in hand",
                     "to give {C:money}$#3#{} when a hand is played",
+                },
+            },
+            celesta_bind_yuzu_tricky = {
+                name = "Yuzu + Trickywi",
+                text = {
+                    "{C:green}#1# in #2#{} chance for {C:attention}Scoria{}",
+                    "cards held in hand to give money equal",
+                    "to this Joker's sell value when a",
+                    "hand is played",
+                    "{C:inactive}(Currently {C:money}$#3#{C:inactive})",
                 },
             },
             celesta_bind_yuzu_nihmune = {
@@ -827,35 +982,6 @@ LOC_TAIL = '''        },
                     "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
                 },
             },
-            celesta_bind_sinder_shylily = {
-                name = "Sinder + ShyLily",
-                text = {
-                    "Retrigger played {C:attention}Driftwood{}",
-                    "cards {C:attention}#1#{} times",
-                },
-            },
-            celesta_bind_sinder_tricky = {
-                name = "Sinder + Trickywi",
-                text = {
-                    "When a {C:attention}Driftwood{} card",
-                    "is destroyed, earn {C:money}$#1#{}",
-                },
-            },
-            celesta_bind_sinder_vienna = {
-                name = "Sinder + Vienna",
-                text = {
-                    "{C:green}#1# in #2#{} chance for played",
-                    "{C:attention}Driftwood{} cards to give",
-                    "{X:mult,C:white}^#3#{} Mult when scored",
-                },
-            },
-            celesta_bind_sinder_nihmune = {
-                name = "Sinder + Nihmune",
-                text = {
-                    "Converts scoring unenhanced",
-                    "{C:clubs}Club{} cards to {C:attention}Driftwood{}",
-                },
-            },
             celesta_bind_yoka_boop = {
                 name = "Yoka Siri + ItsDeadlyBoop",
                 text = {
@@ -891,6 +1017,580 @@ LOC_TAIL = '''        },
                     "to scoring {C:hearts}Heart{} cards",
                     "Converts scoring cards to {C:hearts}Hearts{}",
                     "after the hand finishes scoring",
+                },
+            },
+            celesta_bind_glasses_koko = {
+                name = "Glassesjournal + KokoNuts",
+                text = {
+                    "{C:attention}7s{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_gluttonous = {
+                name = "Glassesjournal + Gluttonous Joker",
+                text = {
+                    "{C:clubs}Clubs{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_wrathful = {
+                name = "Glassesjournal + Wrathful Joker",
+                text = {
+                    "{C:spades}Spades{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_lusty = {
+                name = "Glassesjournal + Lusty Joker",
+                text = {
+                    "{C:hearts}Hearts{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_greedy = {
+                name = "Glassesjournal + Greedy Joker",
+                text = {
+                    "{C:diamonds}Diamonds{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_auteru = {
+                name = "Glassesjournal + Auteru",
+                text = {
+                    "{V:1}#1#{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_cosmic = {
+                name = "Glassesjournal + Cosmic",
+                text = {
+                    "{V:1}#1#{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_fream = {
+                name = "Glassesjournal + Fream",
+                text = {
+                    "{C:attention}Wild Cards{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_eros = {
+                name = "Glassesjournal + Eros",
+                text = {
+                    "{C:attention}Bonus Cards{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_layna = {
+                name = "Glassesjournal + LaynaLazar",
+                text = {
+                    "{C:attention}Mult Cards{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_kael = {
+                name = "Glassesjournal + Kael",
+                text = {
+                    "{C:attention}10s{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_stone = {
+                name = "Glassesjournal + Stone Joker",
+                text = {
+                    "{C:attention}Stone Cards{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_glass = {
+                name = "Glassesjournal + Glass Joker",
+                text = {
+                    "{C:attention}Glass Cards{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_shoto = {
+                name = "Glassesjournal + Shoto",
+                text = {
+                    "{C:attention}Gash Cards{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_midas = {
+                name = "Glassesjournal + Midas Mask",
+                text = {
+                    "{C:attention}Gold Cards{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_laimu = {
+                name = "Glassesjournal + Laimu",
+                text = {
+                    "{C:attention}Limestone Cards{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_baron = {
+                name = "Glassesjournal + Baron",
+                text = {
+                    "{C:attention}Kings{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_giwi = {
+                name = "Glassesjournal + Giwi",
+                text = {
+                    "{C:attention}Queens{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_moon = {
+                name = "Glassesjournal + Shoot the Moon",
+                text = {
+                    "{C:attention}Queens{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_wee = {
+                name = "Glassesjournal + Wee Joker",
+                text = {
+                    "{C:attention}2s{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_road = {
+                name = "Glassesjournal + Hit the Road",
+                text = {
+                    "{C:attention}Jacks{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_lucky = {
+                name = "Glassesjournal + Lucky Cat",
+                text = {
+                    "{C:attention}Lucky Cards{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_sock = {
+                name = "Glassesjournal + Sock and Buskin",
+                text = {
+                    "{C:attention}Face cards{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_sixth = {
+                name = "Glassesjournal + Sixth Sense",
+                text = {
+                    "{C:attention}6s{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_eight = {
+                name = "Glassesjournal + 8 Ball",
+                text = {
+                    "{C:attention}8s{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_cloud = {
+                name = "Glassesjournal + Cloud 9",
+                text = {
+                    "{C:attention}9s{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_glasses_kirana = {
+                name = "Glassesjournal + Kirana",
+                text = {
+                    "{C:attention}3s{} are dealt",
+                    "before other cards",
+                },
+            },
+            celesta_bind_koko_layna = {
+                name = "KokoNuts + LaynaLazar",
+                text = {
+                    "Removes {C:attention}Lucky{} enhancements",
+                    "from scoring cards, this Joker",
+                    "gains {C:mult}+#1#{} Mult per",
+                    "enhancement removed",
+                    "{C:inactive}(Currently {C:mult}+#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_koko_cottontail = {
+                name = "KokoNuts + CottontailVA",
+                text = {
+                    "At the start of each round, add a",
+                    "{C:attention}Lucky{} {C:attention}7{} of {C:spades}Spades{} with a",
+                    "{C:attention}Star Seal{} to your deck",
+                },
+            },
+            celesta_bind_crelly_layna = {
+                name = "Crelly + LaynaLazar",
+                text = {
+                    "Removes {C:attention}Mult{} enhancements",
+                    "from scoring cards, this Joker",
+                    "gains {X:mult,C:white}X#1#{} Mult per",
+                    "enhancement removed",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_spite_megalodon = {
+                name = "Spite + Megalodon",
+                text = {
+                    "This Joker gains {C:mult}+#1#{} Mult every time",
+                    "an {C:attention}Ectoplast Seal{} successfully triggers",
+                    "{C:inactive}(Currently {C:mult}+#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_spite_cottontail = {
+                name = "Spite + CottontailVA",
+                text = {
+                    "{C:green}#1# in #2#{} chance to add either a",
+                    "{C:attention}Star Seal{} or an {C:attention}Ectoplast Seal{}",
+                    "to a scoring card with no seal",
+                },
+            },
+            celesta_bind_spite_vexoria = {
+                name = "Spite + Vexoria",
+                text = {
+                    "{C:green}#1# in #2#{} chance to add an",
+                    "{C:attention}Ectoplast Seal{} to a scored",
+                    "{C:spades}Spade{} card with no seal",
+                },
+            },
+            celesta_bind_spite_tricky = {
+                name = "Spite + Trickywi",
+                text = {
+                    "At the end of the shop, {C:green}#1# in #2#{} chance",
+                    "to make the Joker to the {C:attention}left{} {C:dark_edition}Negative{}",
+                    "Otherwise it is destroyed and earns",
+                    "{C:attention}#3#X{} its {C:money}sell value{}",
+                },
+            },
+            celesta_bind_spite_elxox = {
+                name = "Spite + El XoX",
+                text = {
+                    "At the end of the round, gain {C:money}$#1#{}",
+                    "for each {C:attention}Ectoplast Seal{} that",
+                    "successfully triggered that round",
+                },
+            },
+            celesta_bind_koko_tricky = {
+                name = "KokoNuts + Trickywi",
+                text = {
+                    "After the shop, {C:green}#1# in #2#{} chance to",
+                    "{C:attention}destroy{} the Joker to the left and",
+                    "receive {C:attention}#3#X{} its {C:money}sell value{}",
+                },
+            },
+            celesta_bind_yuzu_laimu = {
+                name = "Yuzu + Laimu",
+                text = {
+                    "At the end of the round, gain {C:money}$#1#{}",
+                    "for each {C:attention}Limestone{} card",
+                    "in your {C:attention}full deck{}",
+                    "{C:inactive}(Currently {C:money}$#2#{C:inactive})",
+                },
+            },
+            celesta_bind_yuzu_camila = {
+                name = "Yuzu + Camila",
+                text = {
+                    "If the first played hand contains",
+                    "{C:attention}1{} card, destroy it and gain {C:money}$#1#{}",
+                },
+            },
+            celesta_bind_yuzu_shoto = {
+                name = "Yuzu + Shoto",
+                text = {
+                    "{C:attention}Gashed{} cards held in hand have a",
+                    "{C:green}#1# in #2#{} chance to give {C:money}$#3#{}",
+                    "when a hand is played",
+                },
+            },
+            celesta_bind_arielle_ray = {
+                name = "Arielle + Ray",
+                text = {
+                    "Jokers that give {C:mult}+3{} Mult for a",
+                    "{C:attention}suit{} instead give {C:mult}+#1#{} Mult",
+                    "when any card is scored",
+                },
+            },
+            celesta_bind_arielle_henya = {
+                name = "Arielle + Henya",
+                text = {
+                    "Cards give {C:money}$#1#{} when scored",
+                },
+            },
+            celesta_bind_arielle_buffpup = {
+                name = "Arielle + Buffpup",
+                text = {
+                    "{C:chips}+#1#{} Chips for each card",
+                    "in your {C:attention}full deck{}",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_ray_cottontail = {
+                name = "Ray + CottontailVA",
+                text = {
+                    "{C:attention}Star Seal{} cards give",
+                    "{C:attention}#1#{} copies of the card to",
+                    "their {C:attention}left{} when unscoring",
+                },
+            },
+            celesta_bind_geega_henya = {
+                name = "Geega + Henya",
+                text = {
+                    "{C:attention}Debuffed{} Jokers sell for",
+                    "{C:attention}#1#X{} their normal amount",
+                },
+            },
+            celesta_bind_quad_beastiez = {
+                name = "The Beastiez",
+                text = {
+                    "Scored {C:attention}8{}s of {V:1}#3#{} or",
+                    "{C:celesta_true_star}True Stars{} give {X:mult,C:white}X#1#{} Mult",
+                    "and {C:attention}+#2#{} hand size for the round",
+                },
+            },
+            celesta_bind_quad_tootie_pies = {
+                name = "Tootie Pies",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult per",
+                    "{C:attention}Lucky 7 of Spades{}, {C:attention}Star Seal{} card",
+                    "or {C:attention}Mult{} card in your full deck",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_quad_piss_boys = {
+                name = "Piss Boys",
+                text = {
+                    "Adds {C:attention}#1#X{} the rank of the lowest",
+                    "and highest card {C:attention}held in hand{}",
+                    "to both {C:chips}Chips{} and {C:mult}Mult{}",
+                },
+            },
+            celesta_bind_quad_sinful = {
+                name = "Sinful Joker",
+                text = {
+                    "Scored cards give {C:mult}+#1#{} Mult",
+                    "and then {X:mult,C:white}X#2#{} Mult",
+                },
+            },
+            celesta_bind_quad_geode = {
+                name = "Geode",
+                text = {
+                    "Scored cards give {C:money}$#1#{}, {C:chips}+#2#{} Chips,",
+                    "{C:mult}+#3#{} Mult, and a {C:green}#4# in #5#{} chance",
+                    "for {X:mult,C:white}X#6#{} Mult",
+                },
+            },
+            celesta_bind_quad_lab_brats = {
+                name = "Lab Brats",
+                text = {
+                    "{C:attention}+1{} consumable slot per {C:money}$#1#{},",
+                    "{C:attention}+1{} Joker slot per {C:money}$#2#{}, and earn",
+                    "that many dollars at end of round",
+                },
+            },
+            celesta_bind_quad_wildcard_club = {
+                name = "The Wildcard Club",
+                text = {
+                    "Starts a {C:blue}Snowstorm{} at the start of the round",
+                    "This Joker cannot be {C:blue}frozen{}, and during a",
+                    "{C:blue}Snowstorm{} gains {X:mult,C:white}^#1#{} Mult per {C:chips}#2#{} Chips scored",
+                    "{C:inactive}(Currently {X:mult,C:white}^#3#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_quad_vchiban = {
+                name = "VchiBan",
+                text = {
+                    "{C:attention}+#1#{} card selection limit, equal to",
+                    "your {C:red}Discards{} remaining",
+                    "Scored {V:1}#5#{} cards have a {C:green}#2# in #3#{} chance",
+                    "to give {X:chips,C:white}X#4#{} Chips",
+                },
+            },
+            celesta_bind_buffpup_ironmouse = {
+                name = "Buffpup + Ironmouse",
+                text = {
+                    "Scored {V:1}#4#{} cards have a {C:green}#1# in #2#{}",
+                    "chance to give {X:mult,C:white}^#3#{} Mult",
+                },
+            },
+            celesta_bind_buffpup_aicandii = {
+                name = "Buffpup + AiCandii",
+                text = {
+                    "This Joker gains {C:chips}+#1#{} Chips per {V:1}#2#{}",
+                    "card held in hand at the end of the round",
+                    "{C:inactive}(Currently {C:chips}+#3#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_haruka_henya = {
+                name = "Haruka Karibu + Henya",
+                text = {
+                    "Earn {C:money}$#1#{} every time a",
+                    "{C:attention}Consumable{} card is used",
+                },
+            },
+            celesta_bind_haruka_nyanners = {
+                name = "Haruka Karibu + Nyanners",
+                text = {
+                    "{C:chips}+#1#{} Chips for each held",
+                    "{C:attention}Consumable{} card",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_cdawg_ironmouse = {
+                name = "CDawg + Ironmouse",
+                text = {
+                    "This Joker gains {X:mult,C:white}^#1#{} Mult for each",
+                    "{C:attention}Common{} Joker sold this run",
+                    "{C:inactive}(Currently {X:mult,C:white}^#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_quad_sloppy_sisters = {
+                name = "Sloppy Sisters",
+                text = {
+                    "When the played hand finishes scoring,",
+                    "each {C:attention}Limestone{} card held in hand",
+                    "gives its {C:mult}Mult{} times the number",
+                    "of cards played",
+                },
+            },
+            celesta_bind_kairyu_piapiufo = {
+                name = "Kairyu + PiaPiUFO",
+                text = {
+                    "Gain {C:attention}+#1#{} hand size for every",
+                    "{C:attention}#2#{} {V:1}#3#{} cards discarded this round",
+                    "{C:inactive}(Currently {C:attention}+#4#{C:inactive} hand size)",
+                },
+            },
+            celesta_bind_kairyu_torioriane = {
+                name = "Kairyu + ToriOriane",
+                text = {
+                    "Gain {C:attention}+#1#{} hand size for every",
+                    "{C:celesta_true_star}True Star{} card discarded this round",
+                    "{C:inactive}(Currently {C:attention}+#2#{C:inactive} hand size)",
+                },
+            },
+            celesta_bind_piapiufo_beribug = {
+                name = "PiaPiUFO + BeriBug",
+                text = {
+                    "Scored {C:attention}8{}s give",
+                    "{X:mult,C:white}X#1#{} Mult",
+                },
+            },
+            celesta_bind_torioriane_beribug = {
+                name = "ToriOriane + BeriBug",
+                text = {
+                    "Retrigger all scored",
+                    "{C:celesta_true_star}True Star{} cards",
+                },
+            },
+            celesta_bind_piapiufo_torioriane = {
+                name = "PiaPiUFO + ToriOriane",
+                text = {
+                    "Scored {C:celesta_true_star}True Star{} cards give",
+                    "{X:mult,C:white}X#1#{} Mult and {X:chips,C:white}X#2#{} Chips",
+                },
+            },
+            celesta_bind_mooni_mother = {
+                name = "Mooni + MOTHERv3",
+                text = {
+                    "Earn {C:money}$#1#{} for each",
+                    "discarded {C:attention}Exo{} card",
+                },
+            },
+            -- What the merge web shows when the pair has not been made.
+            -- An entry rather than a string built in code, so it is the same
+            -- shape as any other description and the popup needs no special
+            -- case for it.
+            celesta_bind_hidden = {
+                name = "",
+                text = {
+                    "{C:inactive}Hidden until merged.",
+                },
+            },
+            celesta_bind_ray_axial = {
+                name = "Ray + AxialMatt",
+                text = {
+                    "Adds {C:attention}double{} the rank",
+                    "of the {C:attention}highest{} and {C:attention}lowest{}",
+                    "ranked cards held in hand",
+                    "to {C:mult}Mult{}",
+                },
+            },
+            celesta_bind_ellie_miniko = {
+                name = "Ellie Minibot + Minikomew",
+                text = {
+                    "{C:mult}+#1#{} Mult for every {C:money}$1{}",
+                    "your money is below {C:money}$0{}",
+                    "{C:inactive}(Currently {C:mult}+#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_ellie_shoomimi = {
+                name = "Ellie Minibot + Shoomimi",
+                text = {
+                    "The first {C:attention}reroll{} in each shop",
+                    "gives {C:dark_edition}+#1#{} Joker slot",
+                },
+            },
+            celesta_bind_ellie_chrchie = {
+                name = "Ellie Minibot + Chrchie",
+                text = {
+                    "Earn {C:money}$#1#{} at the end of the round",
+                    "for each card {C:attention}played{} that round",
+                    "{C:inactive}(Currently {C:attention}#2#{C:inactive} cards)",
+                },
+            },
+            celesta_bind_shoomimi_miniko = {
+                name = "Shoomimi + Minikomew",
+                text = {
+                    "{C:green}#1# in #2#{} chance for a",
+                    "shop {C:attention}reroll{} to cost nothing",
+                },
+            },
+            celesta_bind_chrchie_miniko = {
+                name = "Chrchie + Minikomew",
+                text = {
+                    "At the end of the round, if your",
+                    "money is below {C:money}$0{},",
+                    "raise it to {C:money}$0{}",
+                },
+            },
+            celesta_bind_ironmouse_melody = {
+                name = "Ironmouse + Projekt Melody",
+                text = {
+                    "This Joker gains {X:mult,C:white}^#1#{} Mult",
+                    "after each round, or {X:mult,C:white}^#2#{} Mult",
+                    "after skipping a Blind",
+                    "{C:inactive}(Currently {X:mult,C:white}^#3#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_ironmouse_silver = {
+                name = "Ironmouse + Silvervale",
+                text = {
+                    "This Joker gains {X:mult,C:white}^#1#{} Mult",
+                    "for each {C:rare}Rare{} Joker sold this run",
+                    "{C:inactive}(Currently {X:mult,C:white}^#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_melody_silver = {
+                name = "Projekt Melody + Silvervale",
+                text = {
+                    "Earn {C:money}$#1#{} at end of round",
+                    "Payout increases by {C:money}$#2#{} for each",
+                    "{C:rare}Rare{} Joker sold this run",
+                },
+            },
+            celesta_bind_moo_yomi = {
+                name = "Moo Merrily + Yomi Quinnely",
+                text = {
+                    "At the start of each round,",
+                    "creates a {C:spectral}Burgundy Brew{}",
+                    "{C:inactive}(Must have room)",
                 },
             },
             celesta_bind_ray_layna = {
@@ -949,6 +1649,13 @@ LOC_TAIL = '''        },
                     "start of each round",
                     "Earn {C:money}$#1#{} for each {C:dark_edition}Negative{}",
                     "consumable obtained",
+                },
+            },
+            celesta_bind_berry_chrchie = {
+                name = "BerryCrepe + Chrchie",
+                text = {
+                    "Scored cards permanently",
+                    "gain {C:money}$#1#{}",
                 },
             },
             celesta_bind_berry_shoomimi = {
@@ -1098,7 +1805,7 @@ LOC_TAIL = '''        },
                 },
             },
             celesta_bind_rose_buff = {
-                name = "Rosedoodle + BuffPup",
+                name = "Rosedoodle + Buffpup",
                 text = {
                     "Played {V:1}#4#{} cards have a {C:green}#1# in #2#{}",
                     "chance to give {X:mult,C:white}X#3#{} Mult",
@@ -1232,6 +1939,15 @@ LOC_TAIL = '''        },
                     "{X:mult,C:white}X0.25{} Mult, or {X:mult,C:white}X0.5{} if {C:dark_edition}Foil{},",
                     "{X:mult,C:white}X0.75{} if {C:dark_edition}Holographic{}, {X:mult,C:white}X1{} if {C:dark_edition}Polychrome{}",
                     "{C:inactive}(Currently {X:mult,C:white}X#1#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_deme_lucypyre = {
+                name = "Deme + LucyPyre",
+                text = {
+                    "This Joker gains {C:attention}+#1#%{} {C:attention}Blind{}",
+                    "size reduction per consecutive",
+                    "hand played with exactly {C:attention}one{} card",
+                    "{C:inactive}(Currently {C:attention}#2#%{C:inactive} Blind Size Reduction)",
                 },
             },
             celesta_bind_deme_boosfer = {
@@ -1400,6 +2116,16 @@ LOC_TAIL = '''        },
                     "Earn no {C:attention}interest{}",
                 },
             },
+            b_celesta_sins = {
+                name = "Deck of Sins",
+                text = {
+                    "Start with {C:attention}Overstock{}",
+                    "and {C:attention}Overstock Plus{}",
+                    "The first shop holds all four",
+                    "{C:attention}suit Jokers{} — buying one",
+                    "removes the rest for the run",
+                },
+            },
             b_celesta_rock = {
                 name = "Rock Deck",
                 text = {
@@ -1431,6 +2157,152 @@ LOC_TAIL = '''        },
                     "with a {C:red}Red Seal{}",
                     "Start with {C:attention}#1#{} Jokers and consumables",
                     "{C:attention}+1{} consumable slot",
+                },
+            },
+        },
+
+        -- Card Sleeves (items/sleeves.lua). Each sleeve says what its deck
+        -- says; `_alt` is what it says on its own deck, where it adds nothing.
+        Sleeve = {
+            sleeve_celesta_founders = {
+                name = "Admin Sleeve",
+                text = {
+                    "Every card is a {C:attention}Steel King of Hearts{}",
+                    "with a {C:red}Red Seal{}",
+                    "Start with {C:attention}#1#{} Jokers and consumables",
+                    "{C:attention}+1{} consumable slot",
+                },
+            },
+            sleeve_celesta_founders_alt = {
+                name = "Admin Sleeve",
+                text = {
+                    "No extra effect with",
+                    "the {C:attention}Admin Deck{}",
+                },
+            },
+            sleeve_celesta_plaid = {
+                name = "Plaid Sleeve",
+                text = {
+                    "Start with a full set of",
+                    "all {C:attention}#1#{} suits",
+                    "{C:attention}+#3#{} hand size",
+                    "{C:inactive}(#2# cards)",
+                },
+            },
+            sleeve_celesta_plaid_alt = {
+                name = "Plaid Sleeve",
+                text = {
+                    "No extra effect with",
+                    "the {C:attention}Plaid Deck{}",
+                },
+            },
+            sleeve_celesta_ecstasy = {
+                name = "Ecstasy Sleeve",
+                text = {
+                    "Only {C:attention}Celesta's Mod{} Jokers appear",
+                    "Start with a {C:spectral}Bind{}",
+                    "{C:green}1 in #1#{} chance for a {C:spectral}Bind{} and",
+                    "{C:green}1 in #2#{} for {C:spectral}The Soul{} in the shop",
+                },
+            },
+            sleeve_celesta_ecstasy_alt = {
+                name = "Ecstasy Sleeve",
+                text = {
+                    "No extra effect with",
+                    "the {C:attention}Ecstasy Deck{}",
+                },
+            },
+            sleeve_celesta_hell = {
+                name = "Hell Sleeve",
+                text = {
+                    "{C:attention}#1#{} hand",
+                    "{C:red}-#2#{} Joker slot, {C:red}-#3#{} consumable slot",
+                    "Earn no {C:attention}interest{}",
+                },
+            },
+            sleeve_celesta_hell_alt = {
+                name = "Hell Sleeve",
+                text = {
+                    "No extra effect with",
+                    "the {C:attention}Hell Deck{}",
+                },
+            },
+            sleeve_celesta_blizzard = {
+                name = "Blizzard Sleeve",
+                text = {
+                    "It is always a {C:attention}Snowstorm",
+                    "Jokers that care about a",
+                    "{C:attention}Snowstorm{} are {C:attention}#1#X{} as likely",
+                    "to appear",
+                },
+            },
+            sleeve_celesta_blizzard_alt = {
+                name = "Blizzard Sleeve",
+                text = {
+                    "No extra effect with",
+                    "the {C:attention}Blizzard Deck{}",
+                },
+            },
+            sleeve_celesta_rain = {
+                name = "Rain Sleeve",
+                text = {
+                    "It is always a {C:attention}Downpour",
+                    "Jokers that care about a",
+                    "{C:attention}Downpour{} are {C:attention}#1#X{} as likely",
+                    "to appear",
+                },
+            },
+            sleeve_celesta_rain_alt = {
+                name = "Rain Sleeve",
+                text = {
+                    "No extra effect with",
+                    "the {C:attention}Rain Deck{}",
+                },
+            },
+            sleeve_celesta_verdant = {
+                name = "Verdant Sleeve",
+                text = {
+                    "{C:common}Common{} Jokers no",
+                    "longer appear",
+                },
+            },
+            sleeve_celesta_verdant_alt = {
+                name = "Verdant Sleeve",
+                text = {
+                    "No extra effect with",
+                    "the {C:attention}Verdant Deck{}",
+                },
+            },
+            sleeve_celesta_rock = {
+                name = "Rock Sleeve",
+                text = {
+                    "{C:spades}Spades{} and {C:clubs}Clubs{} start as",
+                    "{C:attention}Stone Cards{}, {C:hearts}Hearts{} and",
+                    "{C:diamonds}Diamonds{} as {C:attention}Limestone Cards{}",
+                },
+            },
+            sleeve_celesta_rock_alt = {
+                name = "Rock Sleeve",
+                text = {
+                    "No extra effect with",
+                    "the {C:attention}Rock Deck{}",
+                },
+            },
+            sleeve_celesta_sins = {
+                name = "Sins Sleeve",
+                text = {
+                    "Start with {C:attention}Overstock{}",
+                    "and {C:attention}Overstock Plus{}",
+                    "The first shop holds all four",
+                    "{C:attention}suit Jokers{} — buying one",
+                    "removes the rest for the run",
+                },
+            },
+            sleeve_celesta_sins_alt = {
+                name = "Sins Sleeve",
+                text = {
+                    "No extra effect with",
+                    "the {C:attention}Deck of Sins{}",
                 },
             },
         },
@@ -1530,9 +2402,26 @@ LOC_TAIL = '''        },
             celesta_clubs = "All Clubs!",
             celesta_plus_seven = "+7 of Spades",
             celesta_downpour = "Downpour!",
+            celesta_swapped = "Swapped!",
             -- The Special Merges collection tab.
             celesta_special_merges = "Special Merges",
-            celesta_merge_unknown = "Merge these two to find out",
+            -- The Deck of Sins' stat sidebar.
+            -- The Deck of Sins' stat sidebar, and the upgrade list a stat
+            -- opens when it is clicked. These are read through
+            -- localize{type="variable"}, so they carry #1# but no colour
+            -- markup - the sidebar colours each line by whether it is
+            -- unlocked.
+            celesta_sin_to_next = "To next level:",
+            celesta_sin_level_short = "Lv",
+            celesta_unholy_used = "Unbound!",
+            celesta_sin_greed = "Greed",
+            celesta_sin_lust = "Lust",
+            celesta_sin_wrath = "Wrath",
+            celesta_sin_gluttony = "Gluttony",
+            celesta_sin_pride = "Pride",
+            celesta_sin_envy = "Envy",
+            celesta_sin_sloth = "Sloth",
+            celesta_merge_unknown = "Undiscovered",
             celesta_any_joker = "Any",
             celesta_aces = "All Aces!",
             celesta_stored = "Stored!",
@@ -1550,6 +2439,27 @@ LOC_TAIL = '''        },
         -- without Cryptid installed.
         v_dictionary = {
             celesta_powmult = "^#1# Mult",
+            -- Deme + LucyPyre's running total, floated as it climbs.
+            celesta_blind_percent = "-#1#% Blind",
+            -- The Deck of Sins' upgrade lines. These are read through
+            -- localize{type="variable"}, which looks in v_dictionary and
+            -- NOT in dictionary - so they belong here, next to the only
+            -- other one this mod has.
+            celesta_sin_tier_chips = "+#1# Chips when scored",
+            celesta_sin_tier_mult = "+#1# Mult when scored",
+            celesta_sin_tier_dollars = "$#1# when scored",
+            celesta_sin_tier_retriggers = "Retriggered #1# more time(s)",
+            celesta_sin_tier_pride_base = "+#1# base Chips per hand level",
+            celesta_sin_tier_pride_x = "X#1# Chips after scoring",
+            celesta_sin_tier_pride_retrigger = "Bonus cards retriggered #1# times",
+            celesta_sin_tier_envy_base = "+#1# base Mult per hand level",
+            celesta_sin_tier_envy_x = "X#1# Mult after scoring",
+            celesta_sin_tier_envy_retrigger = "Mult cards retriggered #1# times",
+            celesta_sin_tier_sloth_dollars = "$#1# at end of round",
+            celesta_sin_tier_sloth_discount = "Shop prices #1#% off",
+            celesta_sin_tier_sloth_interest = "X#1# interest",
+            celesta_sin_tier_sloth_rares = "Rare Jokers appear more often",
+            celesta_sin_tier_sloth_legendary = "Legendary Jokers appear in the shop",
         },
     },
 }
@@ -1611,6 +2521,12 @@ def main():
                          '            },\n'
                          % (key, display_name(key[len("j_celesta_"):])))
             added += 1
+
+        # ...and the True Star twin, built from whichever block that was.
+        if key in TRUE_STAR_JOKERS or key == TRUE_STAR_WYRM:
+            parts.append(true_star_block(key, parts[-1]))
+            added += 1
+
     write("localization/en-us.lua", LOC_HEAD + "".join(parts) + LOC_TAIL)
 
     print("%d images | %d implemented by hand | %d placeholder jokers"
