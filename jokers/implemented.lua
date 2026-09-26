@@ -2857,12 +2857,17 @@ CelestasMod.LIFFEH_ODDS = 4
 -- bonus of its own.
 local liffeh_creating = false
 
---- The first Liffeh in play that is able to act.
+--- The first Liffeh in play that is able to act, or the CDawg holding one.
 local function liffeh_active()
     -- The card in the row rather than the half's ability: what this is for is
     -- the probability roll below, which wants the object the run can see.
     local found = CelestasMod.find_joker("j_celesta_liffeh")[1]
-    return found and found.card or nil
+    if found then return found.card end
+    -- ...and a sold one CDawg is still running. Nothing here is a calculate,
+    -- so CDawg's own lend never reaches it; see jokers/cdawg.lua. The roll and
+    -- the popup land on CDawg, which is the card doing it.
+    return CelestasMod.cdawg_running
+        and CelestasMod.cdawg_running("j_celesta_liffeh") or nil
 end
 
 -- Every route by which a Tarot is gained - The Fool, purple seals, The

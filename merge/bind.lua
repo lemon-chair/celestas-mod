@@ -5320,6 +5320,21 @@ function Bind.unmerge(card, losing)
             surviving_ability.perish_tally = card.ability.perish_tally
         end
 
+        -- SMODS keeps two slot-bookkeeping fields on every ability table and
+        -- Card:set_ability is the only thing that writes them (card.lua:376),
+        -- so a table installed wholesale has to bring them itself.
+        -- CardArea:update sums both across the row every frame without a nil
+        -- guard (smods src/utils.lua:3182), and a card missing one crashes the
+        -- game rather than miscounting.
+        --
+        -- The merged card's own values, not zeroes: the row has already
+        -- counted those slots, and zeroing here would take them off the player
+        -- for having unmerged.
+        for _, field in ipairs({ "card_limit", "extra_slots_used" }) do
+            surviving_ability[field] = card.ability[field]
+                or surviving_ability[field] or 0
+        end
+
         card.config.center = center
         card.config.center_key = center.key
         card.ability = surviving_ability

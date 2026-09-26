@@ -36,6 +36,36 @@ function CelestasMod.commons_sold()
     return #CelestasMod.commons_sold_keys()
 end
 
+--- The CDawg that is running `key`, if one is.
+---
+--- For the Jokers whose behaviour is NOT a calculate. CDawg runs a retained
+--- Common by lending its own card that centre and calling calculate, which
+--- reaches everything written as one - and nothing written as a hook
+--- somewhere else. Those ask "is one of me in the Joker row", and a retained
+--- Joker is in no row: it was sold. So they ask this as well.
+---
+--- The CDawg card is what comes back rather than a boolean, because that is
+--- what those hooks want it for: the probability roll needs an object the run
+--- can see, and the popup belongs over the card actually doing the thing.
+---
+--- A Joker CDawg will never retain is never in the list to begin with - the
+--- sale is not recorded for one (jokers/implemented.lua) - so there is no
+--- never-check to repeat here.
+function CelestasMod.cdawg_running(key)
+    if not key then return nil end
+
+    local held = false
+    for _, sold in ipairs(CelestasMod.commons_sold_keys()) do
+        if sold == key then held = true break end
+    end
+    if not held then return nil end
+
+    -- find_joker rather than a walk of G.jokers: it skips a debuffed CDawg
+    -- and finds one bound into a merge, both of which this has to honour.
+    local found = CelestasMod.find_joker("j_celesta_cdawg")[1]
+    return found and found.card or nil
+end
+
 --------------------------------------------------------------------------------
 -- Running them
 --------------------------------------------------------------------------------
