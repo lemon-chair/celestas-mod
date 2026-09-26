@@ -587,3 +587,58 @@ if G.UIDEF and G.UIDEF.deck_preview then
         return celesta_deck_preview_ref(...)
     end
 end
+
+
+--------------------------------------------------------------------------------
+-- The slot bookkeeping Steamodded totals every frame
+--------------------------------------------------------------------------------
+--
+-- CardArea:count_property adds a named ability field across every card in an
+-- area straight onto a running number (smods src/utils.lua:3182), and
+-- CardArea:update calls it for `card_limit` and `extra_slots_used` twice a
+-- frame. There is no nil guard, so a card missing either field crashes:
+--
+--     src/utils.lua:3185: attempt to perform arithmetic on a nil value
+--
+-- Card:set_ability is the only thing that ever writes those two
+-- (card.lua:376), so any card handed an ability table another way is short of
+-- them. This mod lends and installs ability tables in several places and is
+-- careful to carry them, but the crash has been seen twice in real runs and
+-- reading has not found the card - so the check goes on the function that
+-- crashes rather than on a guess about which card it is.
+--
+-- On count_property rather than on CardArea:emplace, deliberately. A card
+-- whose ability is replaced while it sits in the row - which is most of the
+-- ways this mod touches one - never passes through emplace again, and a guard
+-- there would miss exactly the case that is hardest to find by reading.
+--
+-- Zero is the conservative repair. The field means "extra slots this card
+-- grants", and a card that cannot say has not granted any.
+
+--- Makes sure `card` can answer for `field`, and says so once per centre.
+function CelestasMod.ensure_slot_field(card, field)
+    if not (card and type(card.ability) == "table") then return end
+    if type(card.ability[field]) == "number" then return end
+
+    card.ability[field] = 0
+    local key = (card.config and (card.config.center_key
+        or (card.config.center and card.config.center.key))) or "?"
+    CelestasMod.warn_once("slot_field_" .. tostring(field) .. "_" .. tostring(key),
+        ("%s is in a CardArea with no ability.%s, which Steamodded totals "
+         .. "every frame; filled in 0 to stop it crashing. Something handed "
+         .. "this card an ability table without going through set_ability.")
+            :format(tostring(key), tostring(field)))
+end
+
+-- Wrapped defensively. CardArea:count_property belongs to Steamodded, so it is
+-- a name that can move: if it ever does, this degrades to no guard rather than
+-- taking the mod down at load.
+local celesta_slot_count_ref = CardArea and CardArea.count_property
+if type(celesta_slot_count_ref) == "function" then
+    function CardArea:count_property(property, ...)
+        for _, card in ipairs(self.cards or {}) do
+            CelestasMod.ensure_slot_field(card, property)
+        end
+        return celesta_slot_count_ref(self, property, ...)
+    end
+end

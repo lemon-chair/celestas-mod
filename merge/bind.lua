@@ -5473,21 +5473,6 @@ function Card:calculate_joker(context, ...)
     -- Only the centre's own calculate is hidden, not the ref, so frozen rolls,
     -- tattered counting and every other mod's wrapper still see the
     -- evaluation - which is the reason the ref is called first at all.
-    -- TEMPORARY trace: why an absorbed Chrchie never counts. Remove once found.
-    local bound_key = type(self.ability) == "table"
-        and type(self.ability.celesta_bind) == "table" and self.ability.celesta_bind.key
-    if (bound_key == "j_celesta_chrchie"
-            or (self.config and self.config.center_key == "j_celesta_chrchie"))
-        and (context.before or context.end_of_round) and sendInfoMessage then
-        sendInfoMessage(("[chrchie] enter %s host=%s bound=%s merged=%s running=%s special=%s main_eval=%s blueprint=%s full_hand=%s"):format(
-            context.before and "before" or "end_of_round",
-            tostring(self.config and self.config.center_key), tostring(bound_key),
-            tostring(Bind.is_merged(self)), tostring(running[self] or false),
-            tostring((Bind.special_of(self) or {}).key), tostring(context.main_eval),
-            tostring(context.blueprint), tostring(context.full_hand and #context.full_hand)),
-            "CelestasMod")
-    end
-
     local effect, post
     if Bind.is_merged(self) and not running[self] then
         effect, post = without_center_hook(self, "calculate", function()
@@ -5557,12 +5542,6 @@ function Card:calculate_joker(context, ...)
     running[self] = true
     local saved_center, saved_ability = self.config.center, self.ability
     local saved_key = self.config.center_key
-    -- TEMPORARY trace (see above).
-    local chrchie_trace = center.key == "j_celesta_chrchie"
-        and (context.before or context.end_of_round) and sendInfoMessage
-    local lent = self.ability.celesta_bind.ability
-    local chrchie_was = chrchie_trace and type(lent) == "table"
-        and type(lent.extra) == "table" and lent.extra.cards
     -- Recorded before the swap, for the reason partner_special gives: the
     -- lent ability has no celesta_bind, so without this the absorbed half
     -- cannot see the pair it is running under.
@@ -5577,15 +5556,6 @@ function Card:calculate_joker(context, ...)
     self.config.center_key = saved_key
     partner_special[self] = saved_special
     running[self] = nil
-    if chrchie_trace then
-        local now = self.ability.celesta_bind and self.ability.celesta_bind.ability
-        sendInfoMessage(("[chrchie] absorbed %s ok=%s ret=%s cards %s -> %s same_table=%s"):format(
-            context.before and "before" or "end_of_round", tostring(ok),
-            type(partner) == "table" and tostring(partner.dollars) or tostring(partner),
-            tostring(chrchie_was),
-            tostring(type(now) == "table" and type(now.extra) == "table" and now.extra.cards),
-            tostring(now == lent)), "CelestasMod")
-    end
 
     if not ok then
         CelestasMod.warn_once("bind_calc_" .. tostring(center.key),
