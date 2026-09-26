@@ -622,6 +622,33 @@ function Bind.mark_special_seen(key)
     return true
 end
 
+--- Records every merge there is as made, and saves once. The Config tab's
+--- button, beside the two that unlock and discover every Joker.
+---
+--- Here rather than in the caller because the store is this file's: reaching
+--- it from outside would mean mark_special_seen per merge, and that saves the
+--- profile on every write.
+---
+--- Returns how many were newly marked, so a second press can say nothing
+--- happened rather than write and save again.
+function Bind.mark_every_special_seen()
+    local store = seen_store()
+    if not store then return 0 end
+
+    local marked = 0
+    for _, group in ipairs({ Bind.QUADS, Bind.SPECIALS, Bind.WILDCARDS }) do
+        for _, def in pairs(group or {}) do
+            if def.key and not store[def.key] then
+                store[def.key] = true
+                marked = marked + 1
+            end
+        end
+    end
+
+    if marked > 0 and G.save_progress then G:save_progress() end
+    return marked
+end
+
 --- The pair's saved state, created from its config on first use.
 ---
 --- Deliberately kept under ability.celesta_bind rather than in ability.extra,

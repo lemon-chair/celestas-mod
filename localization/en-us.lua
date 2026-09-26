@@ -4976,6 +4976,7 @@ return {
             celesta_cfg_downpour = "Force Downpour (debug)",
             celesta_cfg_unlock_all = "Unlock All Jokers",
             celesta_cfg_discover_all = "Discover All Jokers",
+            celesta_cfg_unlock_merges = "Unlock All Merges",
             celesta_cfg_notice = "Show the speed notice at startup",
             -- The startup speed notice (main.lua). One key per line because a
             -- text node holds a line and nothing in the UI wraps, so the

@@ -268,6 +268,21 @@ G.FUNCS.celesta_discover_all_jokers = function(e)
     end
 end
 
+--- Marks every merge as found, so the Collection's Special Merges tab shows
+--- all of them rather than a page of "???".
+---
+--- A merge is not unlocked or discovered the way a Joker is - there is no
+--- centre to set a flag on. What the tab reads is whether this profile has
+--- ever MADE the pair, which lives in Bind's own per-profile store, so this
+--- asks Bind to fill it in rather than reaching into the profile itself.
+G.FUNCS.celesta_unlock_all_merges = function(e)
+    local Bind = CelestasMod.Bind
+    if not (Bind and Bind.mark_every_special_seen) then return end
+    if Bind.mark_every_special_seen() > 0 and G.FILE_HANDLER then
+        G.FILE_HANDLER.force = true
+    end
+end
+
 --- The art this mod did not draw itself, credited by line.
 ---
 --- Localized like every other string in the mod, which for a list of names
@@ -492,6 +507,12 @@ MOD.config_tab = function()
             UIBox_button {
                 label = { localize('celesta_cfg_discover_all') },
                 button = 'celesta_discover_all_jokers',
+                minw = 4,
+                colour = G.C.RED,
+            },
+            UIBox_button {
+                label = { localize('celesta_cfg_unlock_merges') },
+                button = 'celesta_unlock_all_merges',
                 minw = 4,
                 colour = G.C.RED,
             },
