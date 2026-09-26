@@ -3884,7 +3884,15 @@ if celesta_bind_ease_dollars_ref then
                 mod = mod * (Bind.special_state(holder, def).scale or 2)
             end
         end
-        return celesta_bind_ease_dollars_ref(mod, ...)
+        local out = celesta_bind_ease_dollars_ref(mod, ...)
+        -- ...and Lab Brats' slots follow the wallet, so this is where they
+        -- follow it. Its own calculate only runs during a scoring pass, which
+        -- left the slots saying whatever the money said the last time a hand
+        -- was played - so buying, selling or cashing out moved nothing until
+        -- the next hand. AFTER the call, because the count is read off
+        -- G.GAME.dollars and that is what has just changed.
+        if CelestasMod.lab_brats_sync then CelestasMod.lab_brats_sync() end
+        return out
     end
 end
 
@@ -6786,9 +6794,22 @@ quad({
 --- The slots Lab Brats is holding open, as a difference against what it has
 --- already handed out - the same ledger rule the hand size uses, and for the
 --- same reason: both limits are saved with the run.
+---
+--- Through CelestasMod.bump_limit rather than by writing config.card_limit,
+--- and that is the whole of why this used to do nothing. Steamodded makes
+--- card_limit a DERIVED property (lovely/card_limit.toml:30): reading it
+--- returns `total_slots - extra_slots_used` and writing it back-computes
+--- `mod = value - base - extra_slots`. Adding to it is therefore a
+--- read-modify-write of a number the game rebuilds from `mod` on the next
+--- frame, and it drops `extra_slots_used` on every pass - so on a row that
+--- uses extra slots, which a Joker row holding this mod's slot-granters does,
+--- the grant shrinks away underneath itself. bump_limit adds to `mod`, which
+--- is stored rather than derived, and explains itself at length in
+--- jokers/implemented.lua.
 local function lab_sync(state)
     if not (G.GAME and G.jokers and G.jokers.config
         and G.consumeables and G.consumeables.config) then return end
+    if not CelestasMod.bump_limit then return end
     local dollars = G.GAME.dollars or 0
     local want_consumable = math.floor(dollars / (state.per_consumable or 5))
     local want_joker = math.floor(dollars / (state.per_joker or 10))
@@ -6797,13 +6818,11 @@ local function lab_sync(state)
 
     local had_c, had_j = state.consumable_applied or 0, state.joker_applied or 0
     if want_consumable ~= had_c then
-        G.consumeables.config.card_limit =
-            G.consumeables.config.card_limit + (want_consumable - had_c)
+        CelestasMod.bump_limit(G.consumeables, want_consumable - had_c)
         state.consumable_applied = want_consumable
     end
     if want_joker ~= had_j then
-        G.jokers.config.card_limit =
-            G.jokers.config.card_limit + (want_joker - had_j)
+        CelestasMod.bump_limit(G.jokers, want_joker - had_j)
         state.joker_applied = want_joker
     end
 end
@@ -6833,11 +6852,14 @@ quad({
         -- mid-hand and at the cash-out, and the slots have to follow it.
         lab_sync(state)
 
+        -- "that many" is the slots THIS handed out, which is what the two
+        -- sentences before it are about. It used to read the two areas' whole
+        -- limits, which is the base slots plus every other Joker's grant as
+        -- well - and those limits are derived now, so they are not a number
+        -- this quad can claim to own anyway.
         if context.end_of_round and context.main_eval and not context.blueprint then
-            local total = (G.jokers and G.jokers.config
-                and G.jokers.config.card_limit or 0)
-                + (G.consumeables and G.consumeables.config
-                    and G.consumeables.config.card_limit or 0)
+            local total = (state.consumable_applied or 0)
+                + (state.joker_applied or 0)
             if total > 0 then return { dollars = total, card = card } end
         end
     end,
@@ -6848,13 +6870,12 @@ quad({
     end,
 
     remove_from_deck = function(def, card, state, from_debuff)
-        if G.consumeables and G.consumeables.config then
-            G.consumeables.config.card_limit =
-                G.consumeables.config.card_limit - (state.consumable_applied or 0)
-        end
-        if G.jokers and G.jokers.config then
-            G.jokers.config.card_limit =
-                G.jokers.config.card_limit - (state.joker_applied or 0)
+        -- Given back the same way it was handed out, or the two would not
+        -- cancel: one writing `mod` and the other a derived `card_limit`
+        -- leaves the row holding slots nothing owns.
+        if CelestasMod.bump_limit then
+            CelestasMod.bump_limit(G.consumeables, -(state.consumable_applied or 0))
+            CelestasMod.bump_limit(G.jokers, -(state.joker_applied or 0))
         end
         state.consumable_applied, state.joker_applied = 0, 0
     end,
