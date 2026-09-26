@@ -139,6 +139,28 @@ function CelestasMod.warn_once(key, message)
     sendWarnMessage(message, "CelestasMod")
 end
 
+--- a > b, whichever kind of number either side is.
+---
+--- Lua 5.1 will not compare a table with a number: it does not reach the
+--- metamethod, it raises. Talisman's numbers ARE tables, so any value that may
+--- have passed through it has to be compared here rather than with `>`.
+--- Arithmetic is the other way round - that does reach the metamethod - which
+--- is why only the comparisons need this.
+---
+--- Learned from a crash: Vedal's counted door hands back one of Talisman's
+--- numbers, and five Jokers guarding "is this worth announcing?" with `> 1`
+--- took the run down the moment one was in the row.
+function CelestasMod.more_than(a, b)
+    if type(a) == "table" or type(b) == "table" then
+        -- Only Talisman makes those, so it is loaded if one is here. Guarded
+        -- anyway: a crash inside a guard is worse than a Joker that stays
+        -- quiet.
+        if type(to_big) ~= "function" then return false end
+        return to_big(a) > to_big(b)
+    end
+    return a > b
+end
+
 --- True while a played hand is actually being scored, rather than previewed.
 ---
 --- modify_scoring_hand - the context a Joker answers to widen the scoring hand,
@@ -280,6 +302,48 @@ CelestasMod.GRANT_LEDGERS = {
     "celesta_aethal_granted",     -- Aethal: shop slots
     "celesta_vantacrow_granted",  -- Vantacrow: hands, discards and hand size
 }
+
+--------------------------------------------------------------------------------
+-- Rules a merge adds to a Joker
+--------------------------------------------------------------------------------
+--
+-- Two Jokers let a merge widen what they do, by keeping a list of extra rules
+-- that merge/bind.lua appends to. The lists live HERE rather than beside those
+-- Jokers, and that is the whole point of them being here: bind.lua is loaded
+-- before jokers/ (main.lua:138 against :188), so a list declared beside its
+-- Joker does not exist yet when bind.lua tries to append to it.
+--
+-- That is not hypothetical. KURO_RULES was declared in implemented.lua, and
+-- bind.lua's registration was wrapped in `if CelestasMod.KURO_RULES then` -
+-- which was false every single load, so Kuro + Arielle never disabled a Boss
+-- Blind in a real run. The suite missed it because it builds its own
+-- CelestasMod with the table already present.
+--
+-- globals.lua is loaded first (main.lua:22), so anything declared here is
+-- there for whoever reaches it. No guards: appending to a missing list should
+-- be a crash that names itself, not a registration that quietly does not
+-- happen.
+
+--- Extra answers to "is the Boss Blind held shut this Ante?", each a function
+--- returning true when its own rule is met. jokers/implemented.lua asks them
+--- all in CelestasMod.kuro_sync.
+CelestasMod.KURO_RULES = {}
+
+--- Extra factors on how fast Vedal's exponent climbs, each a function
+--- returning a multiplier. jokers/implemented.lua multiplies them together in
+--- CelestasMod.vedal_step.
+CelestasMod.VEDAL_SCALE_RULES = {}
+
+--- Extra factors on what a Eutrophic card copies, each a function taking the
+--- copying card and returning a multiplier. enhancements/enhancements.lua
+--- takes the first that answers, in CelestasMod.eutrophic_scale.
+CelestasMod.EUTROPHIC_SCALE_RULES = {}
+
+--- Anything other than a loose Tobs that widens what a Eutrophic mimics, each
+--- a function answering true. Tobs's own merges are here: a replacing pair
+--- speaks for both halves, so a merged Tobs is not in play as itself and the
+--- pairs would otherwise switch off the very thing they are about.
+CelestasMod.EUTROPHIC_WIDE_RULES = {}
 
 --------------------------------------------------------------------------------
 -- Config backfill

@@ -126,6 +126,66 @@ function Arena.is_active(key)
     return Arena.active() == key
 end
 
+--------------------------------------------------------------------------------
+-- What the weather DOES, beyond looking like weather
+--------------------------------------------------------------------------------
+--
+-- A Snowstorm grows the hand: every hand played under one leaves another card
+-- in the next.
+--
+-- The rule belongs to the STORM rather than to any Joker - it holds with an
+-- empty Joker row - so the mod itself answers for it.
+-- SMODS.get_mods_scoring_targets (utils.lua:2114) puts a mod carrying a
+-- `calculate` into the same pass Backs, Blinds and Stakes are evaluated in, so
+-- a rule with no card behind it still receives every context. That function is
+-- assigned at the bottom of this section, and it is the mod's ONLY one: a
+-- second rule that wants it has to be added inside it rather than written over
+-- the top.
+--
+-- The cards are LENT for the round and taken back at the end of it, rather
+-- than lasting as long as the storm. The Blizzard Deck's Snowstorm never
+-- stops, and a hand that grows by one every hand for a whole run is a
+-- different card from the one this is.
+
+Arena.SNOWSTORM_HAND_SIZE = 1
+
+--- How many cards the weather has lent the hand. On G.GAME so it is saved
+--- with the run, beside the card limit it is paired with - a run loaded
+--- mid-storm owes back exactly what it borrowed.
+local LENT = "celesta_arena_hand_size"
+
+--- Lend one more card, if there is weather asking for it. Returns how many.
+function Arena.grow_hand()
+    if not (G.GAME and G.hand and Arena.is_active("snowstorm")) then return 0 end
+    local by = Arena.SNOWSTORM_HAND_SIZE
+    if by <= 0 then return 0 end
+    G.GAME[LENT] = (G.GAME[LENT] or 0) + by
+    G.hand:change_size(by)
+    return by
+end
+
+--- Take back everything the weather lent. Idempotent: what is owed is
+--- remembered rather than recomputed, so a second call has nothing left to
+--- take and a storm that ends twice cannot shrink the hand twice.
+function Arena.release_hand()
+    if not G.GAME then return 0 end
+    local lent = G.GAME[LENT] or 0
+    G.GAME[LENT] = nil
+    if lent ~= 0 and G.hand then G.hand:change_size(-lent) end
+    return lent
+end
+
+MOD.calculate = function(self, context)
+    -- context.after is the end of a played hand, raised once from inside
+    -- evaluate_play (state_events.lua:869) - which is before the deal that
+    -- follows it, so the card lent here is a card drawn.
+    if context.after then
+        Arena.grow_hand()
+    elseif context.end_of_round then
+        Arena.release_hand()
+    end
+end
+
 function Arena.start(key)
     if not Arena.definitions[key] then
         sendWarnMessage("No arena effect named " .. tostring(key), "CelestasMod")
@@ -142,6 +202,11 @@ function Arena.start(key)
 end
 
 function Arena.stop()
+    -- Belt and braces: the round's end has already given these back by the
+    -- time the shop clears the weather, and release_hand is idempotent - but
+    -- a storm must not be able to end while still holding cards of the
+    -- player's, whichever route ends it.
+    Arena.release_hand()
     if G.GAME then
         G.GAME.celesta_arena = nil
         G.GAME.celesta_arena_round = nil

@@ -149,6 +149,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "black_hole_sun_fufu",
+    path = "black_hole_sun_fufu.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "blank_joker",
     path = "blank_joker.png",
     px = 71,
@@ -200,6 +207,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "buffpup",
     path = "buffpup.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "calamitas",
+    path = "calamitas.png",
     px = 71,
     py = 95,
 }
@@ -296,6 +310,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "cutout",
+    path = "cutout.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "cweamcat",
     path = "cweamcat.png",
     px = 71,
@@ -326,13 +347,6 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "dokibird",
     path = "dokibird.png",
-    px = 71,
-    py = 95,
-}
-
-SMODS.Atlas {
-    key = "dokidomiki",
-    path = "dokidomiki.png",
     px = 71,
     py = 95,
 }
@@ -394,20 +408,6 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
-    key = "ellyvtuber",
-    path = "ellyvtuber.png",
-    px = 71,
-    py = 95,
-}
-
-SMODS.Atlas {
-    key = "elorapard",
-    path = "elorapard.png",
-    px = 71,
-    py = 95,
-}
-
-SMODS.Atlas {
     key = "eros",
     path = "eros.png",
     px = 71,
@@ -464,15 +464,15 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
-    key = "fream",
-    path = "fream.png",
+    key = "fraudulent_card",
+    path = "fraudulent_card.png",
     px = 71,
     py = 95,
 }
 
 SMODS.Atlas {
-    key = "freyaamari",
-    path = "freyaamari.png",
+    key = "fream",
+    path = "fream.png",
     px = 71,
     py = 95,
 }
@@ -576,8 +576,22 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
-    key = "huntressspectre",
-    path = "huntressspectre.png",
+    key = "herojim",
+    path = "herojim.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "hidden_tech",
+    path = "hidden_tech.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "hime",
+    path = "hime.png",
     px = 71,
     py = 95,
 }
@@ -695,6 +709,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "kuro",
+    path = "kuro.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "kyaree",
     path = "kyaree.png",
     px = 71,
@@ -725,6 +746,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "lordaethelstan",
     path = "lordaethelstan.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "lucia",
+    path = "lucia.png",
     px = 71,
     py = 95,
 }
@@ -809,6 +837,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "mintfantome",
     path = "mintfantome.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "mogu",
+    path = "mogu.png",
     px = 71,
     py = 95,
 }
@@ -919,6 +954,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "nimi",
+    path = "nimi.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "nostro",
     path = "nostro.png",
     px = 71,
@@ -935,6 +977,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "obkatiekat",
     path = "obkatiekat.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "obkhaoskat",
+    path = "obkhaoskat.png",
     px = 71,
     py = 95,
 }
@@ -1206,13 +1255,6 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
-    key = "smuggiess",
-    path = "smuggiess.png",
-    px = 71,
-    py = 95,
-}
-
-SMODS.Atlas {
     key = "snapscube",
     path = "snapscube.png",
     px = 71,
@@ -1276,6 +1318,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "tobs",
+    path = "tobs.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "toma",
     path = "toma.png",
     px = 71,
@@ -1306,6 +1355,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "unwanted_rebate",
     path = "unwanted_rebate.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "urschleim",
+    path = "urschleim.png",
     px = 71,
     py = 95,
 }

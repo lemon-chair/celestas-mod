@@ -231,6 +231,55 @@ SMODS.Enhancement {
 -- Eutrophic — copies the abilities of the leftmost card.
 --------------------------------------------------------------------------------
 
+--- The card a Eutrophic copies: the leftmost of whatever area it is sitting
+--- in, so one in the played hand copies the leftmost played card and one held
+--- in hand copies the leftmost held card.
+---
+--- Hime is the one thing that moves this - it points a held Eutrophic at the
+--- leftmost PLAYED card - and it does so by setting the override below for the
+--- length of one scoring rather than by teaching the enhancement about a
+--- Joker. Everything else asks and gets the ordinary answer.
+CelestasMod.eutrophic_target = nil
+
+--- True while something widens what a Eutrophic copies.
+---
+--- By default a Eutrophic mimics the stored Chips and the stored Mult of the
+--- card it is copying, and that is all: two numbers. Tobs widens it to the
+--- card's ENHANCEMENT - its multipliers and its own behaviour - and its
+--- EDITION.
+---
+--- joker_in_play rather than SMODS.find_card, for the reason sinder_active
+--- gives: find_card sees only the host of a merge, and a Tobs bound into
+--- another Joker is still a Tobs.
+function CelestasMod.eutrophic_mimics_more()
+    if CelestasMod.joker_in_play
+        and CelestasMod.joker_in_play("j_celesta_tobs") then
+        return true
+    end
+    for _, rule in ipairs(CelestasMod.EUTROPHIC_WIDE_RULES or {}) do
+        local ok, wide = pcall(rule)
+        if ok and wide then return true end
+    end
+    return false
+end
+
+--- What a copied value is multiplied by. One, unless something says otherwise
+--- - Tobs + Toma doubles it for a True Star.
+function CelestasMod.eutrophic_scale(card)
+    for _, rule in ipairs(CelestasMod.EUTROPHIC_SCALE_RULES or {}) do
+        local ok, factor = pcall(rule, card)
+        if ok and type(factor) == "number" and factor > 0 then return factor end
+    end
+    return 1
+end
+
+function CelestasMod.eutrophic_source(card)
+    if CelestasMod.eutrophic_target then return CelestasMod.eutrophic_target end
+    local area = card and card.area
+    if not (area and area.cards) then return nil end
+    return area.cards[1]
+end
+
 SMODS.Enhancement {
     key = "eutrophic",
     atlas = "enh_eutrophic",
@@ -248,9 +297,7 @@ SMODS.Enhancement {
             play_scoring_sound(CelestasMod.ENHANCEMENT_SOUNDS.Eutrophic)
         end
 
-        local area = card.area
-        if not area or not area.cards then return end
-        local left = area.cards[1]
+        local left = CelestasMod.eutrophic_source(card)
         -- Nothing to copy if this IS the leftmost card, which also stops a row
         -- of Eutrophics recursing into each other.
         if not left or left == card then return end
@@ -270,26 +317,54 @@ SMODS.Enhancement {
         -- that is why copying a plain King used to contribute nothing at all.
         -- They also fold in enhancement config and any permanent bonuses a
         -- seal has stacked up.
+        local wider = CelestasMod.eutrophic_mimics_more()
+
         if context.main_scoring and context.cardarea == G.play then
             effect = {}
-            local chips   = left.get_chip_bonus  and left:get_chip_bonus() or 0
-            local mult    = left.get_chip_mult   and left:get_chip_mult() or 0
-            local x_mult  = left.get_chip_x_mult and left:get_chip_x_mult(context) or 1
-            local x_chips = left.get_chip_x_bonus and left:get_chip_x_bonus() or 1
+            local by = CelestasMod.eutrophic_scale(card)
+            local chips = left.get_chip_bonus and left:get_chip_bonus() or 0
+            local mult  = left.get_chip_mult  and left:get_chip_mult()  or 0
 
-            if chips ~= 0 then effect.chips = chips end
-            if mult ~= 0 then effect.mult = mult end
+            if chips ~= 0 then effect.chips = chips * by end
+            if mult ~= 0 then effect.mult = mult * by end
+
+            -- The multipliers are the ENHANCEMENT's, not what the card has
+            -- stored, so they come with Tobs rather than by default.
+            --
             -- Guarded at 1: these getters return 1 for "nothing", and passing
             -- that through would print a pointless X1 popup every score.
-            if x_mult > 1 then effect.x_mult = x_mult end
-            if x_chips > 1 then effect.x_chips = x_chips end
+            if wider then
+                local x_mult = left.get_chip_x_mult and left:get_chip_x_mult(context) or 1
+                local x_chips = left.get_chip_x_bonus and left:get_chip_x_bonus() or 1
+                if x_mult > 1 then effect.x_mult = x_mult end
+                if x_chips > 1 then effect.x_chips = x_chips end
+            end
 
             if not next(effect) then effect = nil end
         end
 
+        -- The EDITION, which is Tobs's other half. Steamodded dispatches an
+        -- edition through the card it is on (Card:calculate_edition,
+        -- utils.lua:1637), so the edition is lent to THIS card for the length
+        -- of the call - the same borrow the centre gets below, and the reason
+        -- a modded edition is mimicked as readily as Foil is.
+        if wider and left.edition and card.calculate_edition then
+            local saved = card.edition
+            card.edition = left.edition
+            local ok, copied = pcall(card.calculate_edition, card, context)
+            card.edition = saved
+            if ok and copied then
+                effect = effect or {}
+                for k, v in pairs(copied) do
+                    if k ~= "card" then effect[k] = v end
+                end
+            end
+        end
+
         -- Then the copied centre's own behaviour, run against THIS card so its
-        -- effects land here rather than on the card being copied.
-        if type(center.calculate) == "function" then
+        -- effects land here rather than on the card being copied. This IS the
+        -- enhancement being mimicked, so it waits for Tobs too.
+        if wider and type(center.calculate) == "function" then
             -- An enhancement reads its own config off card.ability.extra, so
             -- handing it Eutrophic's ability crashes anything expecting its
             -- own fields - Cryptid's Abstract does exactly that. Lend it the

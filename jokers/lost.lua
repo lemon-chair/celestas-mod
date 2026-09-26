@@ -70,6 +70,11 @@ Lost.CONVERSIONS = {
     [joker("kumi")] = joker("doodle_kumi"),
     [joker("momo")] = joker("momo_cat"),
     [joker("kokonuts")] = joker("vgn"),
+    ["j_joker"] = joker("herojim"),
+    ["j_stencil"] = joker("cutout"),
+    ["j_credit_card"] = joker("fraudulent_card"),
+    [joker("obkatiekat")] = joker("obkhaoskat"),
+    [joker("fufu")] = joker("black_hole_sun_fufu"),
 }
 
 --- The same table read the other way: which Joker a Corrupt one used to be.
@@ -584,7 +589,7 @@ SMODS.Joker {
     celesta_lost = true,
     celesta_lost_shop = true,
 
-    config = { extra = { e_mult = 1.666, joker_slots = 4 } },
+    config = { extra = { e_mult = 1.66, joker_slots = 4 } },
 
     loc_vars = function(self, info_queue, card)
         local extra = card.ability.extra
@@ -612,6 +617,160 @@ SMODS.Joker {
                 return
             end
             return { e_mult = card.ability.extra.e_mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- ObKhaosKat
+--------------------------------------------------------------------------------
+--
+-- Iron Moose's shape - four slots gone, a shop of one card, and an exponent -
+-- with a condition on the exponent. Four slots gone is what makes "every slot
+-- filled" reachable at all, and it is also what makes it fragile: one Joker
+-- sold and the card pays nothing. That trade is the whole of it.
+--
+-- Negative Jokers sit outside the limit, so a row holding one is over the
+-- limit rather than at it, and the test is >= for that reason.
+
+--- True when there is no room left in the Joker row.
+local function obkhaoskat_full()
+    local row = G.jokers
+    if not (row and row.cards and row.config) then return false end
+    local limit = row.config.card_limit
+    if type(limit) ~= "number" then return false end
+    return #row.cards >= limit
+end
+
+SMODS.Joker {
+    key = "obkhaoskat",
+    atlas = "obkhaoskat",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    -- Hidden in the collection until one has been made, and locked rather
+    -- than merely undiscovered, as Iron Moose is: a locked centre is the one
+    -- the game prints a per-card reason for, which is where "use a Lost Soul
+    -- on ObKatieKat" goes.
+    unlocked = false,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+    celesta_lost_shop = true,
+
+    config = { extra = { e_chips = 1.66, joker_slots = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        local extra = card.ability.extra
+        return { vars = { extra.e_chips, extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, card.ability.extra.joker_slots)
+    end,
+
+    calculate = function(self, card, context)
+        if context.joker_main and obkhaoskat_full() then
+            -- get_chip_e_BONUS, not get_chip_e_chips: Talisman names its
+            -- ^Chips half after the chip bonus a playing card carries
+            -- (talisman.lua:860) rather than after the scoring key it feeds,
+            -- and only the ^Mult half is named for its key. Sandstone shipped
+            -- with the wrong one of those and paid its ordinary Chips for
+            -- months. Talisman is a declared dependency, so this branch says
+            -- so rather than scoring nothing in silence.
+            if Card.get_chip_e_bonus == nil then
+                CelestasMod.warn_once("obkhaoskat_no_talisman",
+                    "ObKhaosKat scores ^Chips, which needs Talisman; "
+                    .. "without it the Joker does nothing")
+                return
+            end
+            return { e_chips = card.ability.extra.e_chips }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Black Hole Sun Fufu
+--------------------------------------------------------------------------------
+--
+-- Fufu's own arithmetic with a far larger number, the way Iron Moose is
+-- Ironmouse's: X1 plus the rate per distinct suit the deck is printed with.
+--
+-- "X6.66 Mult for each unique suit" counted from X1 rather than from nothing,
+-- which is what that phrasing means everywhere else in this mod - Eidolon Wyrm
+-- writes out the reason. Multiplying the rate by the count alone would make a
+-- one-suit deck X6.66 and a suitless one X0, and compounding it per suit would
+-- make a plain four-suit deck worth about two thousand.
+--
+-- Live-counted, again as Fufu's is: "in your full deck" is a question about
+-- the deck as it is now, so converting the last Heart away costs the Mult back
+-- rather than leaving it banked. CelestasMod.unique_suits_in_deck asks the
+-- enhancement rather than the base, because a Stone card still carries a suit
+-- underneath one.
+
+--- X1 plus the gain per distinct suit the deck is printed with.
+local function black_hole_x_mult(card)
+    return 1 + card.ability.extra.x_mult_gain
+        * CelestasMod.unique_suits_in_deck()
+end
+
+SMODS.Joker {
+    key = "black_hole_sun_fufu",
+    atlas = "black_hole_sun_fufu",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    -- Hidden in the collection until one has been made, and locked rather
+    -- than merely undiscovered, as the rest are: a locked centre is the one
+    -- the game prints a per-card reason for, which is where "use a Lost Soul
+    -- on Fufu" goes.
+    unlocked = false,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+    celesta_lost_shop = true,
+
+    config = { extra = { x_mult_gain = 6.66, joker_slots = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.x_mult_gain,
+                          black_hole_x_mult(card),
+                          card.ability.extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, card.ability.extra.joker_slots)
+    end,
+
+    calculate = function(self, card, context)
+        if context.joker_main then
+            local x_mult = black_hole_x_mult(card)
+            -- X1 is no multiplier at all - a deck of nothing but Stone cards
+            -- has no suits - and returning it would put a flourish over the
+            -- Joker every hand for doing nothing.
+            if x_mult > 1 then return { x_mult = x_mult } end
         end
     end,
 }
@@ -846,8 +1005,9 @@ SMODS.Joker {
 -- Blueprint copies the Joker to its right. This one makes every Joker to its
 -- right go again, twice.
 --
--- The ONLY Corrupt Joker that leaves the run's shape alone: no Joker slots
--- taken, no shop held shut. It carries celesta_lost, which is what makes it
+-- One of the three Corrupt Jokers that leave the run's shape alone -
+-- Cutout and Fraudulent Card below are the others: no Joker slots taken,
+-- no shop held shut. It carries celesta_lost, which is what makes it
 -- unsellable and draws its description inverted, and nothing else - so it has
 -- no celesta_lost_shop and no joker_slots at all rather than a zero, because
 -- a zero would still be a number somebody could scale.
@@ -1485,6 +1645,257 @@ SMODS.Joker {
             CelestasMod.koko_sevens(context.blueprint_card or card,
                 card.ability.extra.sevens, "celesta_vgn", false)
         end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Herojim
+--------------------------------------------------------------------------------
+--
+-- The Joker, corrupted. +4 Mult becomes X4, and the shop sells nothing else.
+--
+-- celesta_lost_shop = true is "whatever I used to be", which the filler reads
+-- back through Lost.BASE_OF - so this needs no key of its own and cannot
+-- drift from the conversion declared at the top of the file. The base is
+-- vanilla's j_joker, which the filler has never cared about: Unwanted Rebate
+-- and Schematic are vanilla-based too.
+
+SMODS.Joker {
+    key = "herojim",
+    atlas = "herojim",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    -- Hidden in the collection until one has been made, and locked rather
+    -- than merely undiscovered: a locked centre is the one the game will
+    -- print a per-card reason for (card.lua:720 beats 723), which is where
+    -- "use a Lost Soul on <Joker>" goes.
+    unlocked = false,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+    celesta_lost_shop = true,
+
+    config = { extra = { x_mult = 4, joker_slots = 4 } },
+
+    loc_vars = function(self, info_queue, card)
+        local extra = card.ability.extra
+        return { vars = { extra.x_mult, extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        bump_limit(G.jokers, card.ability.extra.joker_slots)
+    end,
+
+    calculate = function(self, card, context)
+        if context.joker_main then
+            return { x_mult = card.ability.extra.x_mult }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Cutout
+--------------------------------------------------------------------------------
+--
+-- Joker Stencil, turned inside out: it paid for the slots you had left empty,
+-- and this pays for the ones you filled.
+--
+-- The SECOND Corrupt Joker to leave the run's shape alone, and for a sharper
+-- reason than Schematic's or Fraudulent Card's. Every other one takes four Joker slots, which would
+-- leave a five-slot row holding one card - this one - and "X1 Mult for each
+-- filled Joker slot" would read X1 for the rest of the run. A Joker that can
+-- only ever be worth its own slot is not a harder version of anything. So no
+-- joker_slots at all rather than a zero, the way Schematic states it: a zero
+-- is still a number somebody could scale.
+--
+-- No shop filler either. Herojim above fills the shop because that is what it
+-- was asked to do; this one was asked for a multiplier and nothing else.
+--
+-- Counted live rather than kept on the card. Vanilla maintains Joker Stencil's
+-- x_mult from Card:update every frame (card.lua:4508) because its own scoring
+-- branch reads the stored number; nothing here needs it stored, and a number
+-- that is only ever derived cannot go stale between the tooltip and the score.
+
+--- How many Joker slots are filled - which is every card in the row, this one
+--- included. That is the whole of "Cutout included": it sits in the row, so it
+--- counts, where Joker Stencil's clause has to ADD its own slot back to a
+--- count of the empty ones.
+local function cutout_filled()
+    return #((G.jokers and G.jokers.cards) or {})
+end
+
+SMODS.Joker {
+    key = "cutout",
+    atlas = "cutout",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    unlocked = false,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+
+    config = { extra = { x_mult = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        -- The second is the TOTAL, not the count: it is the number the
+        -- card is about to score, which is what (Currently X…) means
+        -- everywhere else.
+        local extra = card.ability.extra
+        return { vars = { extra.x_mult, extra.x_mult * cutout_filled() } }
+    end,
+
+    calculate = function(self, card, context)
+        if not context.joker_main then return end
+        local filled = cutout_filled()
+        if filled <= 0 then return end
+        return { x_mult = card.ability.extra.x_mult * filled }
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Fraudulent Card
+--------------------------------------------------------------------------------
+--
+-- Credit Card, corrupted. The overdraft goes from $20 to $66, and the account
+-- is never in credit again: anything earned above nothing does not arrive.
+--
+-- The THIRD Corrupt Joker to leave the run's shape alone, and the only one
+-- asked to rather than argued into it: no Joker slots taken, no shop held
+-- shut. Schematic and Cutout are the others.
+--
+-- bankrupt_at is how far below nothing the game will let the player go, and it
+-- is NEGATIVE for an overdraft: every purchase is tested against
+-- `dollars - bankrupt_at` (button_callbacks.lua:58), so Credit Card's own
+-- add_to_deck subtracts its $20 (card.lua:767) and gives it back on the way
+-- out. This is that, at $66.
+
+local FRAUD_KEY = joker("fraudulent_card")
+
+--- True when a Fraudulent Card is in play.
+---
+--- find_joker, so a debuffed one does not count - a debuffed Credit Card gives
+--- its overdraft back, and this should stop capping at the same moment.
+local function fraud_present()
+    return next(CelestasMod.find_joker(FRAUD_KEY)) ~= nil
+end
+
+--- What the account can still take before it is back at nothing, or nil when
+--- the money is not a plain number - which only Talisman can have made it, and
+--- which the cap below handles instead.
+local function fraud_room()
+    local dollars = (G.GAME and G.GAME.dollars) or 0
+    if type(dollars) ~= "number" then return nil end
+    return math.max(0, -dollars)
+end
+
+--- True when there is money above nothing to take away.
+local function fraud_in_credit()
+    local dollars = (G.GAME and G.GAME.dollars) or 0
+    if to_big then return to_big(dollars) > to_big(0) end
+    return type(dollars) == "number" and dollars > 0
+end
+
+-- Every gain and every loss goes through ease_dollars (common_events.lua:70),
+-- so a gain is TRIMMED here to what the account can still take. Trimmed rather
+-- than allowed and clawed back: at -$66 a $70 payout reads "+$66" and lands on
+-- nothing, which is the truth of it, where the other way round reads "+$70"
+-- and then "-$4".
+--
+-- Wrapped at load, which puts this INSIDE whatever another mod wraps later -
+-- and inside is where a clamp belongs, as close to the addition as it can get.
+local celesta_fraud_dollars_ref = ease_dollars
+
+if type(celesta_fraud_dollars_ref) == "function" then
+    function ease_dollars(mod, ...)
+        -- `mod > 0` is a fast path, not a guard: math.min never trims a
+        -- negative mod, because room is never below zero. It is here so that
+        -- a loss - and every purchase is one - does not walk the Joker row
+        -- looking for a card that could not have changed it anyway.
+        if type(mod) == "number" and mod > 0 and fraud_present() then
+            local room = fraud_room()
+            if room then mod = math.min(mod, room) end
+        end
+        return celesta_fraud_dollars_ref(mod, ...)
+    end
+end
+
+-- ...and the cap itself, which is not the same thing as the trim above.
+--
+-- The end of a round queues several payouts at once - the blind's reward, the
+-- interest, each Joker's own - and each is trimmed against the money as it was
+-- when it was QUEUED, so the last of them can still land above nothing. This
+-- is the rule rather than the presentation of it: asked every frame, silent
+-- when there is nothing to do, and no popup, because the trim has already said
+-- what arrived.
+local celesta_fraud_update_ref = Game.update
+
+function Game:update(dt)
+    celesta_fraud_update_ref(self, dt)
+    if not (G.GAME and fraud_present() and fraud_in_credit()) then return end
+
+    G.GAME.dollars = 0
+    -- The HUD keeps its own copy of the number, and is told the way
+    -- ease_dollars tells it (common_events.lua:86).
+    local ui = G.HUD and G.HUD.get_UIE_by_ID
+        and G.HUD:get_UIE_by_ID("dollar_text_UI")
+    if ui and ui.config and ui.config.object and ui.config.object.update then
+        ui.config.object:update()
+    end
+    if G.HUD and G.HUD.recalculate then G.HUD:recalculate() end
+end
+
+SMODS.Joker {
+    key = "fraudulent_card",
+    atlas = "fraudulent_card",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    unlocked = false,
+    discovered = false,
+    -- Nothing to copy: the overdraft belongs to this card, and its own hooks
+    -- give it and take it back.
+    blueprint_compat = false,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+
+    config = { extra = { debt = 66 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.debt } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        G.GAME.bankrupt_at = (G.GAME.bankrupt_at or 0)
+            - card.ability.extra.debt
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        G.GAME.bankrupt_at = (G.GAME.bankrupt_at or 0)
+            + card.ability.extra.debt
     end,
 }
 

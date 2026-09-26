@@ -23,6 +23,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BOOTSTRAP = '''
 jokers, seals, enhancements, blinds, atlases = {}, {}, {}, {}, {}
 consumables, backs = {}, {}
+consumable_types, boosters = {}, {}
 sounds = {}
 -- Challenges have no descriptions entry - only a name, under
 -- misc.challenge_names - so they are recorded to keep main.lua loadable and
@@ -51,6 +52,14 @@ SMODS = {
     return t
   end,
   Consumable = function(t) consumables[t.key] = t end,
+  -- A consumable type carries no descriptions entry of its own - its name and
+  -- its Collection button are dictionary keys - so like a Suit this is
+  -- recorded only to keep main.lua loadable.
+  ConsumableType = function(t) consumable_types[t.key] = t end,
+  -- A Booster's config.extra is a NUMBER rather than a table of them, so
+  -- fake_card below cannot build a stand-in for one and its loc_vars is not
+  -- called here. The Stamp Pack's own vars are checked by test_stamps.py.
+  Booster = function(t) boosters[t.key] = t end,
   Back = function(t) backs[t.key] = t end,
   Challenge = function(t) challenges[t.key] = t end,
   ConsumableTypes = {},
@@ -80,6 +89,9 @@ function Card:generate_UIBox_ability_table() return {} end
 function Card:set_debuff() end
 -- The funnel every Boss Blind debuff goes through, which Fleshy wraps.
 Blind = {}; function Blind:debuff_card() end
+-- ...and the one a drawn card is asked about, which a stamp's
+-- face-down downside wraps.
+function Blind:stay_flipped() end
 evaluate_poker_hand = function() return {} end
 SMODS.Rank = { obj_buffer = {} }
 SMODS.Ranks = {}

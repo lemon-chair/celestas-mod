@@ -78,6 +78,24 @@ local function cdawg_ability(card, key, center)
     return held
 end
 
+--- True when `center` is not something CDawg keeps at all.
+local function cdawg_never(center)
+    return center and center.celesta_cdawg_never and true or false
+end
+
+--- True when `center` keeps this context to itself.
+---
+--- Declared on the centre rather than listed here, so a Joker with a part that
+--- cannot be run from somebody else's card says so where that part is written.
+local function cdawg_skips(center, context)
+    local skip = center and center.celesta_cdawg_skip
+    if type(skip) ~= "table" then return false end
+    for key in pairs(skip) do
+        if context[key] then return true end
+    end
+    return false
+end
+
 --- Runs `center` against `card` and hands back whatever it returned.
 local function cdawg_run(card, center, ability, context)
     local saved_center, saved_key, saved_ability =
@@ -119,13 +137,29 @@ end
 --- Radians a second, clockwise.
 local ORBIT_SPIN = 0.9
 
---- How much smaller a retained face is drawn than the card it turns around.
-local ORBIT_SCALE = -0.62
+--- How big a retained face is drawn, as a fraction of the card it turns
+--- around.
+local ORBIT_SIZE = 0.38
 
---- ...and how far out, as a fraction of the card's width and height. Wider
---- than tall, because the card is taller than it is wide and a circle would
---- pass through the top and bottom of it.
-local ORBIT_X, ORBIT_Y = 0.72, 0.56
+--- ...which is what draw_shader's `ms` wants: it scales by 1 + ms
+--- (engine/sprite.lua:208).
+local ORBIT_SCALE = ORBIT_SIZE - 1
+
+--- ...and how far out its centre sits, as a fraction of the card.
+---
+--- DERIVED, not chosen. At exactly (1 - size)/2 the sprite's outer edge runs
+--- along the card's own edge, so the orbit is contained however the size is
+--- changed. It was two picked numbers before - 0.72 of the width and 0.56 of
+--- the height - which put every face wholly OUTSIDE the card: with a dozen
+--- Commons retained the ring covered the Jokers either side, and the last one
+--- drawn (the most recently sold) sat on top of the lot.
+---
+--- Card units, not pixels, so this holds at any resolution and at whatever
+--- size the card is being drawn.
+local ORBIT_INSET = (1 - ORBIT_SIZE) / 2
+
+--- Read by the tests, which check the two cannot drift back apart.
+CelestasMod.CDAWG_ORBIT = { size = ORBIT_SIZE, inset = ORBIT_INSET }
 
 --- One sprite per atlas, built on first use: the atlases do not exist while
 --- this file is loading.
@@ -173,6 +207,17 @@ function Card:draw(layer)
     -- Nothing to show on the back of a card, and the shadow pass is the card's
     -- silhouette rather than its face.
     if self.facing == "back" or layer == "shadow" then return end
+    -- ...and nothing in the Collection. The orbit is a reading of the RUN -
+    -- which Commons have been sold in it - and a card in the Collection is not
+    -- in a run at all, so it was showing one run's faces over a card that
+    -- belongs to none. It covers the art, too, which is the point of it in the
+    -- row and only in the way on a page of Jokers to look at.
+    --
+    -- area.config.collection is vanilla's own test for that (card.lua:98), and
+    -- merge/web.lua already reads it the same way.
+    if self.area and self.area.config and self.area.config.collection then
+        return
+    end
 
     local keys = CelestasMod.commons_sold_keys()
     local n = #keys
@@ -197,10 +242,98 @@ function Card:draw(layer)
             sprite.role.draw_major = self
             sprite:draw_shader("dissolve", nil, nil, nil, major,
                                ORBIT_SCALE, nil,
-                               math.sin(angle) * major.VT.w * ORBIT_X,
-                               -math.cos(angle) * major.VT.h * ORBIT_Y)
+                               math.sin(angle) * major.VT.w * ORBIT_INSET,
+                               -math.cos(angle) * major.VT.h * ORBIT_INSET)
         end
     end
+end
+
+--------------------------------------------------------------------------------
+-- What the retained Jokers are holding
+--------------------------------------------------------------------------------
+--
+-- A Joker that keeps a running total says so on its own card - "(Currently +14
+-- Chips)" and the like - and a retained one is still keeping it, in the ability
+-- table CDawg holds for it. So those lines are put on CDawg's card too, one per
+-- total, each with the name of the Joker it belongs to.
+--
+-- Which line is a total is read off the RAW localization text, because that is
+-- where the word "Currently" still is: by the time the row is built it is parts
+-- and colours. The row is then built with the Joker's OWN loc_vars against
+-- CDawg's copy of its ability, so the number is the one this CDawg has grown.
+
+--- The word a running total is written with. English only, and deliberately:
+--- it is looked for in this mod's own descriptions and vanilla's, both of
+--- which are written in it, and a translation would want its own list here
+--- rather than a guess.
+local TOTAL_MARKER = "Currently"
+
+--- Rows for one retained Joker's running totals, or nil if it keeps none.
+local function cdawg_total_rows(card, key)
+    local center = G.P_CENTERS[key]
+    local loc = G.localization and G.localization.descriptions
+        and G.localization.descriptions.Joker
+        and G.localization.descriptions.Joker[key]
+    if not (center and loc and loc.text) then return nil end
+
+    local wanted = {}
+    for i, line in ipairs(loc.text) do
+        if type(line) == "string" and line:find(TOTAL_MARKER, 1, true) then
+            wanted[#wanted + 1] = i
+        end
+    end
+    if #wanted == 0 then return nil end
+
+    local stub = { ability = cdawg_ability(card, key, center),
+                   config = { center = center, center_key = key } }
+    local vars = {}
+    if type(center.loc_vars) == "function" then
+        local ok, res = pcall(center.loc_vars, center, {}, stub)
+        if ok and type(res) == "table" and type(res.vars) == "table" then
+            vars = res.vars
+        end
+    end
+
+    -- localize rather than generate_card_ui: this wants the lines and nothing
+    -- else, and generate_card_ui would run the centre's loc_vars a second time
+    -- against a card that is not CDawg.
+    local rows = {}
+    local ok = pcall(localize, { type = "descriptions", set = "Joker",
+                                 key = key, vars = vars, nodes = rows })
+    if not ok then return nil end
+
+    local name = localize { type = "name_text", set = "Joker", key = key }
+    local out = {}
+    for _, i in ipairs(wanted) do
+        local row = rows[i]
+        if row then
+            -- The name after the total, in the same inactive grey the total is
+            -- written in, so the pair reads as one line.
+            row[#row + 1] = { n = G.UIT.T, config = {
+                text = " - " .. tostring(name),
+                colour = G.C.UI.TEXT_INACTIVE, scale = 0.32 } }
+            out[#out + 1] = { n = G.UIT.R, config = { align = "cl" },
+                              nodes = row }
+        end
+    end
+    if #out == 0 then return nil end
+    return out
+end
+
+--- Every retained Joker's totals, as the one extra node loc_vars may add.
+---
+--- main_end is appended to the description as a SINGLE node (Steamodded's
+--- game_object.lua:1858), so several lines have to arrive inside one column
+--- rather than as several rows.
+local function cdawg_totals(card)
+    local rows = {}
+    for _, key in ipairs(CelestasMod.commons_sold_keys()) do
+        for _, row in ipairs(cdawg_total_rows(card, key) or {}) do
+            rows[#rows + 1] = row
+        end
+    end
+    if #rows == 0 then return nil end
+    return { { n = G.UIT.C, config = { align = "m" }, nodes = rows } }
 end
 
 --------------------------------------------------------------------------------
@@ -218,7 +351,10 @@ SMODS.Joker {
     blueprint_compat = false, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
-        return { vars = { CelestasMod.commons_sold() } }
+        return {
+            vars = { CelestasMod.commons_sold() },
+            main_end = cdawg_totals(card),
+        }
     end,
 
     calculate = function(self, card, context)
@@ -229,7 +365,8 @@ SMODS.Joker {
         local combine = CelestasMod.Bind and CelestasMod.Bind.combine
         for _, key in ipairs(keys) do
             local center = G.P_CENTERS[key]
-            if center then
+            if center and not cdawg_never(center)
+                and not cdawg_skips(center, context) then
                 local effect = cdawg_run(card, center,
                     cdawg_ability(card, key, center), context)
                 if effect then

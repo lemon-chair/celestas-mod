@@ -67,6 +67,18 @@ SMODS.Atlas { key = 'blind_star', path = 'blind_star.png', px = 34, py = 34,
               frames = 21, atlas_table = 'ANIMATION_ATLAS' }
 SMODS.Atlas { key = 'blind_heart', path = 'blind_heart.png', px = 34, py = 34,
               frames = 21, atlas_table = 'ANIMATION_ATLAS' }
+SMODS.Atlas { key = 'blind_robot', path = 'blind_robot.png', px = 34, py = 34,
+              frames = 21, atlas_table = 'ANIMATION_ATLAS' }
+SMODS.Atlas { key = 'blind_brick', path = 'blind_brick.png', px = 34, py = 34,
+              frames = 21, atlas_table = 'ANIMATION_ATLAS' }
+SMODS.Atlas { key = 'blind_wyrm', path = 'blind_wyrm.png', px = 34, py = 34,
+              frames = 21, atlas_table = 'ANIMATION_ATLAS' }
+SMODS.Atlas { key = 'blind_horn', path = 'blind_horn.png', px = 34, py = 34,
+              frames = 21, atlas_table = 'ANIMATION_ATLAS' }
+SMODS.Atlas { key = 'blind_gem', path = 'blind_gem.png', px = 34, py = 34,
+              frames = 21, atlas_table = 'ANIMATION_ATLAS' }
+SMODS.Atlas { key = 'blind_flower', path = 'blind_flower.png', px = 34, py = 34,
+              frames = 21, atlas_table = 'ANIMATION_ATLAS' }
 
 -- Arena effect sprite sheets (generated from GIFs by tools/gen_fx.py).
 SMODS.Atlas { key = 'fx_downpour', path = 'fx_downpour.png',  px = 256, py = 256 }
@@ -151,6 +163,15 @@ assert(SMODS.load_file('consumables/lost_soul.lua'))()
 assert(SMODS.load_file('consumables/targets.lua'))()
 
 --------------------------------------------------------------------------------
+-- Stamps — a consumable type of their own, the pack they come out of, and the
+-- marks they leave on a Joker. downsides.lua first: it holds the costs a stamp
+-- is chosen against, and stamps.lua reads the list at load.
+--------------------------------------------------------------------------------
+
+assert(SMODS.load_file('stamps/downsides.lua'))()
+assert(SMODS.load_file('stamps/stamps.lua'))()
+
+--------------------------------------------------------------------------------
 -- Jokers — auto-loaded from jokers/.
 -- Sorted, which does two things. atlases.lua registers before anything
 -- references it, and zz_vtubers.lua - the placeholder roster - loads LAST, so
@@ -218,6 +239,35 @@ G.FUNCS.celesta_unlock_all_jokers = function(e)
     end
 end
 
+--- Discovers every Joker this mod adds, and only those.
+---
+--- Discovery is a separate flag from unlocking: an unlocked Joker can turn up
+--- in a run, and an undiscovered one is still a "?" in the Collection. The
+--- button above sets one and this sets the other.
+---
+--- Set straight onto the centres rather than through discover_card, which
+--- raises an alert per card and adds each to the round's new-collection score
+--- - neither of which means anything for a button pressed in the menu.
+---
+--- set_discover_tallies is what discover_card ends on, and the one piece of it
+--- that cannot be skipped: the Collection's "n of m" counters are read from
+--- what it computes, so without it every page would keep the old numbers.
+G.FUNCS.celesta_discover_all_jokers = function(e)
+    local changed = false
+    for key, center in pairs(G.P_CENTERS) do
+        if center.set == 'Joker' and not center.discovered
+            and key:sub(1, #JOKER_PREFIX) == JOKER_PREFIX then
+            center.discovered = true
+            changed = true
+        end
+    end
+    if changed then
+        if set_discover_tallies then set_discover_tallies() end
+        G:save_progress()
+        if G.FILE_HANDLER then G.FILE_HANDLER.force = true end
+    end
+end
+
 MOD.config_tab = function()
     return {
         n = G.UIT.ROOT,
@@ -241,6 +291,12 @@ MOD.config_tab = function()
             UIBox_button {
                 label = { localize('celesta_cfg_unlock_all') },
                 button = 'celesta_unlock_all_jokers',
+                minw = 4,
+                colour = G.C.RED,
+            },
+            UIBox_button {
+                label = { localize('celesta_cfg_discover_all') },
+                button = 'celesta_discover_all_jokers',
                 minw = 4,
                 colour = G.C.RED,
             },

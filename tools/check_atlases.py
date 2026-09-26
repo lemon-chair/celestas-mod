@@ -37,6 +37,12 @@ NON_CARD = {
     "blind_frog": "34x34 animated blind chip",
     "blind_star": "34x34 animated blind chip",
     "blind_heart": "34x34 animated blind chip",
+    "blind_robot": "34x34 animated blind chip",
+    "blind_brick": "34x34 animated blind chip",
+    "blind_wyrm": "34x34 animated blind chip",
+    "blind_horn": "34x34 animated blind chip",
+    "blind_gem": "34x34 animated blind chip",
+    "blind_flower": "34x34 animated blind chip",
     "fx_downpour": "256x256 weather frames",
     "fx_snowstorm": "256x256 weather frames",
     # The suit pip is drawn into a fixed 0.3x0.3 rect, so its cell size is free

@@ -36,6 +36,11 @@ SHARED = {"jokers", "consumables", "decks", "sleeves", "icon", "seals", "driftwo
           # cut to match it. The card silhouette would shave 1px off the widest
           # point of both.
           "boosfer", "red_boosfer", "frozen_round",
+          # Urschleim is a blob drawn 71x85 and centred in the cell, so the
+          # card's corners are nowhere near it - and the mask's 1px inset
+          # would eat the faint glow at the widest point of it, the same way
+          # it would shave Boosfer.
+          "urschleim",
           # eighteen card-sized cells in a row, and the pips inside them are
           # not cards at all
           "blank_joker_layers",
@@ -52,7 +57,15 @@ SHARED = {"jokers", "consumables", "decks", "sleeves", "icon", "seals", "driftwo
           # it. Its corners are already the card silhouette, so masking is a
           # no-op today - listing it here is what keeps that true if the art
           # is ever redrawn, rather than leaving the promise to luck.
-          "face"}
+          "face",
+          # The stamp sheets are two cells - the stamp over a blank
+          # card, which is the card in a Stamp Pack, and the stamp
+          # alone, which is the mark drawn on a Joker. The pack art
+          # is 57x93 and not a card at all.
+          "stamp_mult", "stamp_chips", "stamp_x_mult", "stamp_x_chips",
+          "stamp_e_mult", "stamp_e_chips", "stamp_money",
+          "stamp_retrigger", "stamp_pack",
+}
 CARD_W, CARD_H = 71, 95
 
 # Transparent run inwards from the left edge, per row, for a 71x95 sprite.
@@ -72,6 +85,57 @@ def build_mask(scale):
             px[CARD_W - 1 - x, y] = 0
     if scale != 1:
         m = m.resize((CARD_W * scale, CARD_H * scale), Image.NEAREST)
+    return m
+
+
+#: Art that does not fill its cell and so never reaches the corners the card
+#: mask cuts. vgn is a photograph in a band across the middle of the cell:
+#: masking the CELL left the photo's own square corners untouched and it read
+#: as a rectangle pasted onto a rounded card.
+#:
+#: Named rather than detected. Plenty of art is inset on purpose - Boosfer is a
+#: circle at 71x71, Urschleim a blob at 71x85 - and rounding the bounding box
+#: of a shape that is already round would take bites out of it.
+BLOCK_ROUNDED = {"vgn"}
+
+
+def block_profile(height):
+    """PROFILE's corner over a block of `height` rows rather than a whole card.
+
+    The same cap - a cleared row, then 4, 2, 2 - with the run of single pixels
+    between them as long as the block needs. A block too short to hold both
+    caps is given the plain one-pixel inset instead of being bitten into.
+    """
+    cap = [CARD_W, 4, 2, 2]
+    if height <= 2 * len(cap):
+        return [1] * height
+    return cap + [1] * (height - 2 * len(cap)) + list(reversed(cap))
+
+
+def block_mask(alpha, scale):
+    """A mask that rounds the corners of whatever `alpha` actually covers.
+
+    Measured in 1x units and upscaled, so the 1x and 2x sheets round
+    identically rather than one of them a pixel differently.
+    """
+    m = Image.new("L", alpha.size, 255)
+    box = alpha.getbbox()
+    if not box:
+        return m
+    x0, y0, x1, y1 = box
+    bw, bh = (x1 - x0) // scale, (y1 - y0) // scale
+    if bw <= 0 or bh <= 0:
+        return m
+
+    block = Image.new("L", (bw, bh), 255)
+    px = block.load()
+    for y, run in enumerate(block_profile(bh)):
+        for x in range(min(run, bw)):
+            px[x, y] = 0
+            px[bw - 1 - x, y] = 0
+    if scale != 1:
+        block = block.resize((bw * scale, bh * scale), Image.NEAREST)
+    m.paste(block, (x0, y0))
     return m
 
 
@@ -120,6 +184,10 @@ def main(check=False, quiet=False):
             old = im.split()[3]
             # mask wins where it is 0; existing transparency is otherwise kept
             new = Image.composite(old, Image.new("L", size, 0), mask)
+            # ...and art that never reaches those corners is rounded at its own.
+            if os.path.splitext(os.path.basename(p))[0] in BLOCK_ROUNDED:
+                new = Image.composite(new, Image.new("L", size, 0),
+                                      block_mask(new, scale))
             if new.tobytes() == old.tobytes():
                 skipped += 1
                 continue

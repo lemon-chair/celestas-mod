@@ -7,12 +7,6 @@
 --- deliberately absent from this list.
 
 local ROSTER = {
-    { key = "dokidomiki", rarity = 1, cost = 4, mult = 4 },
-    { key = "ellyvtuber", rarity = 1, cost = 4, mult = 4 },
-    { key = "elorapard", rarity = 1, cost = 4, mult = 4 },
-    { key = "freyaamari", rarity = 1, cost = 4, mult = 4 },
-    { key = "huntressspectre", rarity = 1, cost = 4, mult = 4 },
-    { key = "smuggiess", rarity = 1, cost = 4, mult = 4 },
 }
 
 for _, entry in ipairs(ROSTER) do

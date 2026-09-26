@@ -169,6 +169,7 @@ Unlocks.RULES = {
     [J .. "aquwa"] = won_with("rain"),
     [J .. "amalee"] = won_with("blizzard"),
     [J .. "mellowmabel"] = won_with("plaid"),
+    [J .. "fufu"] = won_with("plaid"),
     [J .. "nana_ruru"] = {
         event = function(args) return args.type == "win" and all_jokers_merged() end,
     },

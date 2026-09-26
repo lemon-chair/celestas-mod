@@ -401,6 +401,399 @@ SMODS.Blind {
 }
 
 --------------------------------------------------------------------------------
+-- The Robot - a Seal is a liability
+--------------------------------------------------------------------------------
+--
+-- recalc_debuff rather than debuff_card: Steamodded prefers it and warns about
+-- the other (blind.lua:678), and it is asked of every playing card and every
+-- Joker as the Blind is set and again whenever a card changes
+-- (SMODS.recalc_debuff). The answer IS the whole state - returning false
+-- un-debuffs - so a Joker, which has no seal, simply answers no.
+--
+-- `card.seal` is the field every seal lives in, this mod's five included:
+-- SMODS.Seal writes the prefixed key there, so asking whether there is one at
+-- all catches them without naming any.
+
+SMODS.Blind {
+    key = "robot",
+    atlas = "blind_robot",
+    pos = { x = 0, y = 0 },
+
+    dollars = 5,
+    mult = 2,
+    -- From Ante 4 on: after Ante 3, not before it.
+    boss = { min = 4, max = 10 },
+    boss_colour = HEX("305DFF"),
+    discovered = true,
+
+    loc_vars = function(self) return { vars = {} } end,
+    collection_loc_vars = function(self) return { vars = {} } end,
+
+    recalc_debuff = function(self, card, from_blind)
+        return card.seal ~= nil
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- The Brick - the hand shrinks as it is spent
+--------------------------------------------------------------------------------
+--
+-- The Manacle takes one card off the hand for the whole Blind; this takes one
+-- more for every hand played, so by the fourth hand there are three fewer
+-- cards to play it with.
+--
+-- What has been taken is written down rather than recomputed, and given back
+-- in full when the Blind ends. The Manacle's own shape - change_size(-1) at
+-- set_blind, change_size(1) at defeat and at disable - with a running total in
+-- place of its one card, because a Blind disabled by Chicot half way through
+-- has to hand back however many it had taken by then.
+--
+-- On G.GAME so it is saved with the run, beside the card limit itself.
+
+local BRICK_TAKEN = "celesta_brick_taken"
+
+--- Take one more card off the hand.
+local function brick_take()
+    if not (G.GAME and G.hand) then return end
+    G.GAME[BRICK_TAKEN] = (G.GAME[BRICK_TAKEN] or 0) + 1
+    G.hand:change_size(-1)
+end
+
+--- Give back everything this Blind took. Idempotent: what is owed is
+--- remembered rather than worked out, so defeat and disable cannot each hand
+--- the same cards back.
+local function brick_release()
+    if not G.GAME then return end
+    local taken = G.GAME[BRICK_TAKEN] or 0
+    G.GAME[BRICK_TAKEN] = nil
+    if taken > 0 and G.hand then G.hand:change_size(taken) end
+end
+
+SMODS.Blind {
+    key = "brick",
+    atlas = "blind_brick",
+    pos = { x = 0, y = 0 },
+
+    dollars = 5,
+    mult = 2,
+    -- From Ante 2 on: after Ante 1.
+    boss = { min = 2, max = 10 },
+    boss_colour = HEX("F49B45"),
+    discovered = true,
+
+    loc_vars = function(self) return { vars = {} } end,
+    collection_loc_vars = function(self) return { vars = {} } end,
+
+    set_blind = function(self)
+        -- Nothing taken yet, and nothing owed from a Blind before this one.
+        brick_release()
+    end,
+
+    -- press_play is the hand being played, and it runs before the draw that
+    -- follows - so the card taken here is a card not dealt back.
+    press_play = function(self)
+        brick_take()
+    end,
+
+    defeat = function(self) brick_release() end,
+    disable = function(self) brick_release() end,
+}
+
+--------------------------------------------------------------------------------
+-- The Wyrm - nothing in the consumable tray works
+--------------------------------------------------------------------------------
+--
+-- Consumables are the one thing Blind:set_blind does NOT walk: it debuffs
+-- every playing card and every Joker (blind.lua:217-224) and never looks at
+-- the tray. So this Blind debuffs them itself, from a pass that works the
+-- answer out from the world rather than from whoever called - which also
+-- covers a Tarot bought during the Blind, a run loaded mid-Blind, and the
+-- Blind being switched off by Chicot.
+--
+-- And debuffing a consumable had to be taught to mean something: vanilla's
+-- Card:can_use_consumeable never looks at `debuff` (card.lua:1763), so a
+-- greyed-out Tarot was still usable. That refusal is written as a general
+-- rule rather than as this Blind's own - a debuffed card does nothing is what
+-- debuffed MEANS, and anything else that debuffs one should get the same.
+
+local WYRM_KEY = "bl_" .. SMODS.current_mod.prefix .. "_wyrm"
+
+--- True while The Wyrm is the Blind being played.
+--- Read fresh each time rather than latched, as The Clover's is: a Blind can
+--- be disabled mid-round, and a latched flag would keep suppressing after it.
+local function wyrm_active()
+    local blind = G.GAME and G.GAME.blind
+    if not (blind and blind.config and blind.config.blind) then return false end
+    if blind.disabled then return false end
+    return blind.config.blind.key == WYRM_KEY
+end
+
+--- Marks the consumables this Blind debuffed, so it only ever un-debuffs its
+--- own: one already debuffed by something else is left alone.
+local WYRM_MARK = "celesta_wyrm_debuffed"
+
+--- Brings the tray in line with whether The Wyrm is out.
+local function wyrm_sync()
+    local tray = G.consumeables and G.consumeables.cards
+    if not tray then return end
+    local wanted = wyrm_active()
+    for _, held in ipairs(tray) do
+        if wanted then
+            if not held.debuff then
+                held[WYRM_MARK] = true
+                held:set_debuff(true)
+            end
+        elseif held[WYRM_MARK] then
+            held[WYRM_MARK] = nil
+            held:set_debuff(false)
+        end
+    end
+end
+
+CelestasMod.wyrm_sync = wyrm_sync
+
+-- Asked every frame, and answers with a single comparison in every round this
+-- Blind is not being played. The tray is a handful of cards, so the walk when
+-- it IS costs nothing worth measuring - and it is what makes a consumable that
+-- arrives mid-Blind arrive debuffed.
+local celesta_wyrm_update_ref = Game.update
+function Game:update(dt)
+    celesta_wyrm_update_ref(self, dt)
+    wyrm_sync()
+end
+
+-- A debuffed consumable cannot be used. Vanilla never asks, so this is the
+-- only thing standing between a greyed-out Tarot and a working one.
+local celesta_wyrm_can_use_ref = Card.can_use_consumeable
+function Card:can_use_consumeable(any_state, skip_check)
+    if self.debuff and self.ability and self.ability.consumeable then
+        return false
+    end
+    return celesta_wyrm_can_use_ref(self, any_state, skip_check)
+end
+
+SMODS.Blind {
+    key = "wyrm",
+    atlas = "blind_wyrm",
+    pos = { x = 0, y = 0 },
+
+    dollars = 5,
+    mult = 2,
+    -- From Ante 2 on: after Ante 1.
+    boss = { min = 2, max = 10 },
+    boss_colour = HEX("013140"),
+    discovered = true,
+
+    loc_vars = function(self) return { vars = {} } end,
+    collection_loc_vars = function(self) return { vars = {} } end,
+
+    -- The pass above does the work at every other moment; these three are the
+    -- ones where waiting a frame would be visible.
+    set_blind = function(self) wyrm_sync() end,
+    defeat = function(self) wyrm_sync() end,
+    disable = function(self) wyrm_sync() end,
+}
+
+--------------------------------------------------------------------------------
+-- The Horn - the row is nailed down
+--------------------------------------------------------------------------------
+--
+-- A Joker is reordered by dragging it, and a Moveable is only draggable while
+-- its own states.drag.can is true (engine/moveable.lua:218, and the controller
+-- checks the same flag before it starts one). So locking the row is that flag,
+-- off, on every Joker in it.
+--
+-- Clicking is a separate state, and deliberately left alone: highlighting a
+-- Joker is how a Bind merge and a Stamp are aimed, and neither of those moves
+-- anything. This Blind is about position.
+--
+-- The same shape as The Wyrm's pass, and for the same reasons: worked out from
+-- the world each frame, so a Joker bought mid-Blind arrives locked, and only
+-- ever unlocking what it locked.
+
+local HORN_KEY = "bl_" .. SMODS.current_mod.prefix .. "_horn"
+local HORN_MARK = "celesta_horn_locked"
+
+local function horn_active()
+    local blind = G.GAME and G.GAME.blind
+    if not (blind and blind.config and blind.config.blind) then return false end
+    if blind.disabled then return false end
+    return blind.config.blind.key == HORN_KEY
+end
+
+local function horn_sync()
+    local row = G.jokers and G.jokers.cards
+    if not row then return end
+    local wanted = horn_active()
+    for _, held in ipairs(row) do
+        local drag = held.states and held.states.drag
+        if drag then
+            if wanted then
+                if drag.can then
+                    held[HORN_MARK] = true
+                    drag.can = false
+                end
+            elseif held[HORN_MARK] then
+                held[HORN_MARK] = nil
+                drag.can = true
+            end
+        end
+    end
+end
+
+CelestasMod.horn_sync = horn_sync
+
+local celesta_horn_update_ref = Game.update
+function Game:update(dt)
+    celesta_horn_update_ref(self, dt)
+    horn_sync()
+end
+
+SMODS.Blind {
+    key = "horn",
+    atlas = "blind_horn",
+    pos = { x = 0, y = 0 },
+
+    dollars = 5,
+    mult = 2,
+    -- From Ante 2 on: after Ante 1.
+    boss = { min = 2, max = 10 },
+    boss_colour = HEX("BAA566"),
+    discovered = true,
+
+    loc_vars = function(self) return { vars = {} } end,
+    collection_loc_vars = function(self) return { vars = {} } end,
+
+    -- The pass above covers every other moment; these are the three where
+    -- waiting a frame would be visible.
+    set_blind = function(self) horn_sync() end,
+    defeat = function(self) horn_sync() end,
+    disable = function(self) horn_sync() end,
+}
+
+--------------------------------------------------------------------------------
+-- The Gem - an edition is a liability
+--------------------------------------------------------------------------------
+--
+-- Every edition, Negative included: `card.edition` is the one field any of
+-- them lives in, so asking whether there is one at all catches Foil, Holo,
+-- Polychrome, Negative and anything another mod adds without naming any.
+--
+-- Cards AND Jokers, which needs nothing extra: Blind:set_blind walks both and
+-- asks recalc_debuff of each (blind.lua:217-224).
+--
+-- Frozen is not an edition and is not caught here. That is deliberate - this
+-- mod keeps it off the edition field precisely so it can sit on top of one
+-- (editions/frozen.lua), and a Blind that reads editions should read editions.
+
+SMODS.Blind {
+    key = "gem",
+    atlas = "blind_gem",
+    pos = { x = 0, y = 0 },
+
+    dollars = 5,
+    mult = 2,
+    -- From Ante 4 on: after Ante 3, not before it.
+    boss = { min = 4, max = 10 },
+    boss_colour = HEX("960672"),
+    discovered = true,
+
+    loc_vars = function(self) return { vars = {} } end,
+    collection_loc_vars = function(self) return { vars = {} } end,
+
+    recalc_debuff = function(self, card, from_blind)
+        return card.edition ~= nil
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- The Flower - the ends of the row wither
+--------------------------------------------------------------------------------
+--
+-- The leftmost and rightmost Jokers, which with one Joker in the row is that
+-- one Joker twice over - and it is debuffed, because it is both.
+--
+-- The position is not a property of the card, so unlike every other
+-- recalc_debuff Blind this one has to be asked again when the ROW changes and
+-- the cards do not. Steamodded re-judges a card when that card changes; it has
+-- no reason to re-judge a card because its neighbour was sold. So the ends are
+-- watched, and every Joker is re-judged when they move.
+--
+-- Which makes reordering the play: the row can still be rearranged under this
+-- Blind, and moving the Joker that matters out of the ends is how it is
+-- beaten. The Horn is the one that takes that away.
+
+local FLOWER_KEY = "bl_" .. SMODS.current_mod.prefix .. "_flower"
+
+local function flower_active()
+    local blind = G.GAME and G.GAME.blind
+    if not (blind and blind.config and blind.config.blind) then return false end
+    if blind.disabled then return false end
+    return blind.config.blind.key == FLOWER_KEY
+end
+
+--- True when `card` is at either end of the Joker row.
+local function flower_at_an_end(card)
+    local row = (G.jokers and G.jokers.cards) or {}
+    if #row == 0 then return false end
+    return card == row[1] or card == row[#row]
+end
+
+--- What the ends are now, as a string that changes when either does.
+local function flower_ends()
+    local row = (G.jokers and G.jokers.cards) or {}
+    if #row == 0 then return "-" end
+    return tostring(row[1]) .. "/" .. tostring(row[#row])
+end
+
+local flower_seen = nil
+
+--- Re-judges the row when its ends move. Every Joker, not just the ends: the
+--- card that WAS an end has to be let go at the same moment the new one is
+--- taken, and by then it is not an end to find.
+local function flower_sync()
+    if not flower_active() then flower_seen = nil return end
+    local ends = flower_ends()
+    if ends == flower_seen then return end
+    flower_seen = ends
+    local blind = G.GAME and G.GAME.blind
+    if not blind then return end
+    for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
+        blind:debuff_card(held, true)
+    end
+end
+
+CelestasMod.flower_sync = flower_sync
+
+local celesta_flower_update_ref = Game.update
+function Game:update(dt)
+    celesta_flower_update_ref(self, dt)
+    flower_sync()
+end
+
+SMODS.Blind {
+    key = "flower",
+    atlas = "blind_flower",
+    pos = { x = 0, y = 0 },
+
+    dollars = 5,
+    mult = 2,
+    -- From Ante 2 on: after Ante 1.
+    boss = { min = 2, max = 10 },
+    boss_colour = HEX("59002D"),
+    discovered = true,
+
+    loc_vars = function(self) return { vars = {} } end,
+    collection_loc_vars = function(self) return { vars = {} } end,
+
+    recalc_debuff = function(self, card, from_blind)
+        -- Jokers only. A playing card is never in the row, so it answers no
+        -- and is left alone.
+        return flower_at_an_end(card)
+    end,
+}
+
+--------------------------------------------------------------------------------
 -- Boss Blinds added to a run already in progress
 --------------------------------------------------------------------------------
 --

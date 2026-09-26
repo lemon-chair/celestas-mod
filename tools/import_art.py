@@ -23,10 +23,15 @@ is one of the ways that went wrong:
   * 1x and 2x must DIFFER, and each must be its own size. Handing the same
     file twice is the other easy slip.
 
-Round art - Boosfer's, and Red Boosfer's - is drawn square, 71x71, because a
-circle has no corners to fill. A square source of the right width is centred
-in the card cell, which is where Boosfer's own sits: (95-71)/2 = 12 rows of
-nothing above and below.
+Art that is not card-shaped is drawn SHORT rather than stretched: Boosfer is a
+circle at 71x71, Urschleim a blob at 71x85. A source of the right width and no
+taller than the cell is centred in it, which is where Boosfer's own sits:
+(95-71)/2 = 12 rows of nothing above and below. Stretching it to fill the cell
+instead is the one thing that must not happen, so nothing here resizes.
+
+The two sources still have to agree: 2x is twice 1x in both directions, which
+is what turns a mistyped export into a refusal rather than a card that is
+quietly the wrong shape.
 
 `--replace` allows an existing name to be overwritten, and says what it did.
 It does not relax any of the checks above.
@@ -80,13 +85,20 @@ def main(argv):
             sys.exit("no such file: %s" % src)
         size, _ = fingerprint(src)
         want = SIZES[folder]
-        if size != want and size != (want[0], want[0]):
-            sys.exit("%s is %dx%d, and %s art must be %dx%d - or %dx%d if it "
-                     "is round" % (src, size[0], size[1], folder,
-                                   want[0], want[1], want[0], want[0]))
+        if size[0] != want[0] or not (0 < size[1] <= want[1]):
+            sys.exit("%s is %dx%d, and %s art must be %d wide and no more "
+                     "than %d tall - a shorter one is centred in the cell"
+                     % (src, size[0], size[1], folder, want[0], want[1]))
 
     if fingerprint(src1)[1] == fingerprint(src2)[1]:
         sys.exit("the 1x and 2x sources are the same picture")
+
+    # Heights are no longer fixed, so this is what is left to catch a mistyped
+    # export: whatever shape the art is, the big one is twice the small one.
+    one_h, two_h = fingerprint(src1)[0][1], fingerprint(src2)[0][1]
+    if two_h != one_h * 2:
+        sys.exit("the 2x source is %dpx tall and the 1x is %dpx; 2x has to be "
+                 "exactly twice 1x" % (two_h, one_h))
 
     already = existing(name)
     for src in (src1, src2):
@@ -107,11 +119,12 @@ def main(argv):
             shutil.copyfile(src, dest)
             note = ""
         else:
-            # Square: round art, centred in the card cell the way Boosfer's is.
+            # Short: art that is not card-shaped, centred in the card cell the
+            # way Boosfer's is. Never resized - that is the whole point.
             cell = Image.new("RGBA", SIZES[folder], (0, 0, 0, 0))
             cell.paste(img, (0, (SIZES[folder][1] - img.size[1]) // 2))
             cell.save(dest)
-            note = " (round art, centred)"
+            note = " (%dpx tall, centred in the cell)" % img.size[1]
         print("wrote assets/%s/%s.png%s%s" % (folder, name, was, note))
 
     print("Now LOOK at them. Every check here is about what the file is, and "

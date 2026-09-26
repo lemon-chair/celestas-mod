@@ -656,6 +656,42 @@ local function bind_consumable_room()
         < G.consumeables.config.card_limit
 end
 
+--- One consumable set at random, out of every set the game has registered.
+---
+--- SORTED before the pick, because pairs() walks a table in whatever order it
+--- likes and the same seed has to give the same card twice. The fallback is
+--- for a Steamodded that has registered nothing yet: picking from an empty
+--- list is nil, and SMODS.add_card would make nothing at all.
+---
+--- Every registered set counts, this mod's own included - a Stamp arriving
+--- this way rolls its kind in set_ability like any other, so it is a working
+--- card rather than a blank one.
+local function any_consumable_set(seed)
+    local sets = {}
+    for key in pairs(SMODS.ConsumableTypes or {}) do sets[#sets + 1] = key end
+    table.sort(sets)
+    if #sets == 0 then sets = { "Tarot", "Planet", "Spectral" } end
+    return pseudorandom_element(sets, pseudoseed(seed))
+end
+
+--- How many cards in the run's deck carry `enhancement`.
+---
+--- G.playing_cards is the deck as a whole, wherever each card happens to be
+--- sitting - hand, draw pile, discard - which is what "in your full deck"
+--- means everywhere in this file. The enhancement is asked rather than the
+--- centre, so a card made Wild by any route counts, the way Jummy's does.
+---
+--- nil is 0 rather than an error: a key read off CelestasMod.ENHANCEMENT_KEYS
+--- before that table exists would otherwise take the hand down.
+local function enhanced_in_deck(enhancement)
+    if not enhancement then return 0 end
+    local count = 0
+    for _, held in ipairs(G.playing_cards or {}) do
+        if SMODS.has_enhancement(held, enhancement) then count = count + 1 end
+    end
+    return count
+end
+
 --- X1 plus the gain per Star Seal in the run's deck.
 ---
 --- Read off card.seal, which holds the PREFIXED key, and counted live rather
@@ -1471,11 +1507,7 @@ special("j_celesta_radicalmari", "j_celesta_papamutt", {
                 and context.scoring_name == "Three of a Kind") then return end
         if not bind_consumable_room() then return end
 
-        local sets = {}
-        for key in pairs(SMODS.ConsumableTypes or {}) do sets[#sets + 1] = key end
-        table.sort(sets)
-        if #sets == 0 then sets = { "Tarot", "Planet", "Spectral" } end
-        local set = pseudorandom_element(sets, pseudoseed("celesta_bind_mari_papa"))
+        local set = any_consumable_set("celesta_bind_mari_papa")
 
         G.GAME.consumeable_buffer = (G.GAME.consumeable_buffer or 0) + 1
         G.E_MANAGER:add_event(Event {
@@ -1955,15 +1987,19 @@ special("j_celesta_zentreya", "j_celesta_boosfer", {
 -- many are made and whether they arrive with an edition.
 --
 -- `editioned` is true for a rolled edition, or an edition table - { foil =
--- true } - for one that is always the same.
-local function koko_sevens(card, count, seed, editioned, seal)
+-- true } - for one that is always the same. `enhancement` is the centre the
+-- card arrives wearing, which is KokoNuts' own Lucky unless a pair says
+-- otherwise - Eros + KokoNuts makes Bonus ones, because Bonus is what Eros
+-- eats.
+local function koko_sevens(card, count, seed, editioned, seal, enhancement)
     if count <= 0 then return end
     G.E_MANAGER:add_event(Event {
         func = function()
             local made = {}
             for i = 1, count do
                 local seven = create_playing_card(
-                    { front = G.P_CARDS.S_7, center = G.P_CENTERS.m_lucky },
+                    { front = G.P_CARDS.S_7,
+                      center = enhancement or G.P_CENTERS.m_lucky },
                     G.play, nil, nil, { G.C.SECONDARY_SET.Enhanced })
                 if type(editioned) == "table" then
                     seven:set_edition(editioned, true)
@@ -2811,15 +2847,18 @@ special("j_celesta_beepers", "j_celesta_heavenlyfather", {
 })
 
 -- Kumi + BerryCrepe: BerryCrepe's permanent Mult, paid onto the cards Kumi
--- cares about - and Kumi's payout, without the destruction.
+-- cares about.
+--
+-- The Mult is permanent, which is BerryCrepe's own doing rather than an
+-- embellishment: perma_mult is where a Mult bonus that outlives the hand
+-- lives, it is scored by Card:get_chip_mult, and the card prints it as
+-- "+N Mult" on its own with no display work here.
 special("j_celesta_kumi", "j_celesta_berrycrepe", {
     key = "kumi_berry",
-    config = { mult = 2, odds = 8, dollars = 20 },
+    config = { mult = 4 },
 
     loc_vars = function(def, card, state)
-        local n, d = SMODS.get_probability_vars(
-            card, 1, state.odds, "celesta_bind_kumi_berry")
-        return { vars = { state.mult, n, d, state.dollars } }
+        return { vars = { state.mult } }
     end,
 
     calculate = function(def, card, context, state)
@@ -2828,8 +2867,7 @@ special("j_celesta_kumi", "j_celesta_berrycrepe", {
         if not (other and SMODS.has_enhancement(other, "m_gold")) then return end
 
         other.ability.perma_mult = (other.ability.perma_mult or 0) + state.mult
-
-        local effect = {
+        return {
             extra = {
                 message = localize { type = "variable", key = "a_mult",
                                      vars = { other.ability.perma_mult } },
@@ -2837,11 +2875,6 @@ special("j_celesta_kumi", "j_celesta_berrycrepe", {
             },
             card = other,
         }
-        if SMODS.pseudorandom_probability(card, "celesta_bind_kumi_berry",
-                1, state.odds, "celesta_bind_kumi_berry") then
-            effect.dollars = state.dollars
-        end
-        return effect
     end,
 })
 
@@ -3564,11 +3597,17 @@ local function yuzu_vars(card, state, key)
     return n, d
 end
 
---- ^Mult is Talisman's; asked at score time, for the reason Vienna gives.
-local function power_supported(id, name)
+--- An exponent is Talisman's; asked at score time, for the reason Vienna gives.
+---
+--- `what` is which half of the score the exponent is on, and it is only there
+--- for the message: Mult unless a pair says otherwise. ObKatieKat's eight are
+--- all ^Chips, and they ask through here rather than through a second copy of
+--- this, so the two cannot come to disagree about what "Talisman is here"
+--- means.
+local function power_supported(id, name, what)
     if Card.get_chip_e_mult ~= nil then return true end
-    CelestasMod.warn_once(id, name .. " scores ^Mult, which needs Talisman; "
-        .. "without it the pair does nothing")
+    CelestasMod.warn_once(id, name .. " scores ^" .. (what or "Mult")
+        .. ", which needs Talisman; without it the pair does nothing")
     return false
 end
 
@@ -3863,13 +3902,8 @@ special("j_celesta_yuzu", "j_celesta_juniperactias", {
 --- sitting - hand, draw pile, discard - which is what "in full deck" means,
 --- and it is the registry count_suit_in_deck walks for the same reason.
 local function limestone_in_deck()
-    local key = CelestasMod.ENHANCEMENT_KEYS and CelestasMod.ENHANCEMENT_KEYS.Limestone
-    if not key then return 0 end
-    local count = 0
-    for _, held in ipairs(G.playing_cards or {}) do
-        if SMODS.has_enhancement(held, key) then count = count + 1 end
-    end
-    return count
+    local keys = CelestasMod.ENHANCEMENT_KEYS
+    return enhanced_in_deck(keys and keys.Limestone)
 end
 
 -- Yuzu + Laimu: Laimu adds a Limestone card a round, and this is paid for
@@ -4011,8 +4045,15 @@ special("j_celesta_shenpai", "j_celesta_rtgame", {
 -- Rin's shape: the hand's total read in the `after` pass, banked, and paid a
 -- step per 32 with the remainder kept. Divided rather than looped, and a total
 -- past what a number holds stops banking rather than writing inf into a save.
-local function scored_chips()
-    local n = hand_chips
+--- A scoring global as a plain number, or 0 when it is not one this can use.
+---
+--- Talisman swaps these for big-number objects once scores outgrow a double,
+--- hence the conversion - and the finite check, because a non-finite value
+--- banked into a pair's state would be serialized into the save as inf or nan
+--- and come back as something no comparison can handle. Past that scale a pair
+--- stops banking rather than corrupting the run.
+local function scored_number(value)
+    local n = value
     if type(n) ~= "number" and type(to_number) == "function" then
         local ok, converted = pcall(to_number, n)
         n = ok and converted or nil
@@ -4020,6 +4061,15 @@ local function scored_chips()
     if type(n) ~= "number" or n ~= n or n == math.huge or n == -math.huge then return 0 end
     return n
 end
+
+--- The Chips the hand just scored.
+local function scored_chips() return scored_number(hand_chips) end
+
+--- ...and the Mult. `mult` is the global Balatro keeps the running multiplier
+--- in, and the ordinary scoring path never clears it - only the "hand not
+--- allowed" branch does (state_events.lua:786), and that never reaches the
+--- `after` pass either of these is read in.
+local function scored_mult() return scored_number(mult) end
 
 special("j_celesta_rinpenrose", "j_celesta_rtgame", {
     key = "rin_rt",
@@ -4318,12 +4368,22 @@ special("j_celesta_chrchie", "j_celesta_minikomew", {
 --- An exponent after a gain, kept to three places: the gains are tenths, and
 --- tenths added in floating point print as 1.2000000000000002.
 local function pow_after(value, gain)
-    return math.floor((value + gain) * 1000 + 0.5) / 1000
+    local total = value + gain
+    -- Rounded to three places so the card reads cleanly - but only while it is
+    -- a plain number. Talisman's are tables and math.floor refuses them
+    -- outright, which is reachable now that Vedal can accelerate one of these
+    -- counts; and a number that large has nothing left worth rounding.
+    if type(total) ~= "number" then return total end
+    return math.floor(total * 1000 + 0.5) / 1000
 end
+
 
 --- Ironmouse's ^Mult, the way every pair of hers pays it.
 local function ironmouse_pays(key, label, e_mult)
-    if e_mult <= 1 then return nil end
+    -- more_than rather than `<=`: Ironmouse + Silvervale counts a run tally
+    -- that Vedal can accelerate, and an accelerated one is a Talisman number,
+    -- which Lua 5.1 refuses to compare against 1.
+    if not CelestasMod.more_than(e_mult, 1) then return nil end
     if Card.get_chip_e_mult == nil then
         CelestasMod.warn_once(key .. "_no_talisman",
             label .. " scores ^Mult, which needs Talisman; without it the pair does nothing")
@@ -4373,12 +4433,17 @@ special("j_celesta_ironmouse", "j_celesta_silvervale", {
 
     loc_vars = function(def, card, state)
         return { vars = { state.e_mult_gain,
-                          pow_after(1, state.e_mult_gain * CelestasMod.rares_sold()) } }
+                          pow_after(1, CelestasMod.vedal_counted
+                              and CelestasMod.vedal_counted(card, state.e_mult_gain, CelestasMod.rares_sold())
+                              or state.e_mult_gain * CelestasMod.rares_sold()) } }
     end,
 
     calculate = function(def, card, context, state)
         if not context.joker_main then return end
-        local e_mult = pow_after(1, state.e_mult_gain * CelestasMod.rares_sold())
+        local sold = CelestasMod.rares_sold()
+        local e_mult = pow_after(1, CelestasMod.vedal_counted
+            and CelestasMod.vedal_counted(card, state.e_mult_gain, sold)
+            or state.e_mult_gain * sold)
         return ironmouse_pays("ironmouse_silver", "Ironmouse + Silvervale", e_mult)
     end,
 })
@@ -5745,6 +5810,12 @@ local SELECTION_PAIRS = {
         local round = G.GAME and G.GAME.current_round
         return (round and round.discards_left) or 0
     end,
+    -- Mint Fantome + Snuffy: Snuffy's own count and one more. It moves within
+    -- a round as Hands are spent, which is what this pass is here for.
+    mint_snuffy = function(state)
+        local round = G.GAME and G.GAME.current_round
+        return ((round and round.hands_left) or 0) + (state.extra or 0)
+    end,
 }
 
 --- What each card has been granted. Weak keys: a card that is gone should not
@@ -5786,6 +5857,74 @@ local function selection_limit_sync()
 end
 
 CelestasMod.Bind.selection_limit_sync = selection_limit_sync
+
+--------------------------------------------------------------------------------
+-- Booster slots that move with the run
+--------------------------------------------------------------------------------
+--
+-- The pass above, for packs, and for the same reasons. A pair whose grant is
+-- a COUNT of something cannot hand it over once in add_to_deck: the deck it is
+-- counting changes under it. So the number is asked of the world each frame
+-- and the run is moved by the difference.
+--
+-- Released by the same pass rather than by a hook: a pair that is sold,
+-- debuffed, unmerged or destroyed simply stops being in the row, and one place
+-- noticing that covers all four.
+
+local BOOSTER_PAIRS = {
+    heavenly_arielle = function(state)
+        return CelestasMod.unique_suits_in_deck() * state.per
+    end,
+}
+
+--- What each card has been granted. Weak keys, as above: a card that is gone
+--- should not be kept alive by being remembered here.
+local booster_granted = setmetatable({}, { __mode = "k" })
+
+local function booster_limit_sync()
+    if not SMODS.change_booster_limit then return end
+
+    local live = nil
+    for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
+        local def = (not held.debuff) and Bind.special_of(held)
+        local wanted = def and BOOSTER_PAIRS[def.key]
+        if wanted then
+            local ok, want = pcall(wanted, Bind.special_state(held, def))
+            if ok and type(want) == "number" then
+                live = live or {}
+                live[held] = math.max(0, math.floor(want))
+            end
+        end
+    end
+
+    for card, granted in pairs(booster_granted) do
+        if not (live and live[card]) and granted ~= 0 then
+            SMODS.change_booster_limit(-granted)
+            booster_granted[card] = nil
+        end
+    end
+
+    for card, want in pairs(live or {}) do
+        local granted = booster_granted[card] or 0
+        if want ~= granted then
+            -- change_booster_limit puts a pack straight into an OPEN shop when
+            -- the number goes up (utils.lua:2407), so a suit gained while
+            -- standing in one is a pack that appears there.
+            SMODS.change_booster_limit(want - granted)
+            booster_granted[card] = want
+        end
+    end
+end
+
+CelestasMod.Bind.booster_limit_sync = booster_limit_sync
+
+local celesta_bind_booster_update_ref = Game and Game.update
+if celesta_bind_booster_update_ref then
+    function Game:update(dt)
+        celesta_bind_booster_update_ref(self, dt)
+        booster_limit_sync()
+    end
+end
 
 local celesta_bind_selection_update_ref = Game and Game.update
 if celesta_bind_selection_update_ref then
@@ -6862,14 +7001,20 @@ special("j_celesta_cdawg", "j_celesta_ironmouse", {
 
     loc_vars = function(def, card, state)
         local sold = CelestasMod.commons_sold and CelestasMod.commons_sold() or 0
-        return { vars = { state.e_mult_gain, 1 + state.e_mult_gain * sold } }
+        return { vars = { state.e_mult_gain,
+                          1 + (CelestasMod.vedal_counted
+                              and CelestasMod.vedal_counted(card, state.e_mult_gain, sold)
+                              or state.e_mult_gain * sold) } }
     end,
 
     calculate = function(def, card, context, state)
         if not context.joker_main then return end
         local sold = CelestasMod.commons_sold and CelestasMod.commons_sold() or 0
-        local e_mult = 1 + state.e_mult_gain * sold
-        if e_mult <= 1 then return end
+        local e_mult = 1 + (CelestasMod.vedal_counted
+            and CelestasMod.vedal_counted(card, state.e_mult_gain, sold)
+            or state.e_mult_gain * sold)
+        -- more_than, for the reason ironmouse_pays gives just above.
+        if not CelestasMod.more_than(e_mult, 1) then return end
         if Card.get_chip_e_mult == nil then
             CelestasMod.warn_once("cdawg_ironmouse_no_talisman",
                 "CDawg + Ironmouse scores ^Mult, which needs Talisman; "
@@ -7002,6 +7147,2834 @@ quad({
         end
     end,
 })
+
+--------------------------------------------------------------------------------
+-- Zentreya's two
+--------------------------------------------------------------------------------
+
+--- Steel cards held in hand, which is what Zentreya is about.
+---
+--- Debuffed ones are left out: a debuffed Steel card does nothing, and
+--- counting it would pay for a card that is not paying.
+local function steel_in_hand()
+    local n = 0
+    for _, held in ipairs((G.hand and G.hand.cards) or {}) do
+        if not held.debuff and SMODS.has_enhancement(held, "m_steel") then
+            n = n + 1
+        end
+    end
+    return n
+end
+
+-- Zentreya + Bluto: Bluto retriggers the two copiers a fixed extra time, and
+-- Zentreya counts Steel cards. Together the count is the number of retriggers.
+--
+-- Same shape as Bluto's own, including the reason for `not
+-- context.retrigger_joker`: without it a retrigger would retrigger, and the
+-- count would compound until the game gave up. The copier list is read off
+-- Bluto rather than restated, so a third copier taught to Bluto is taught to
+-- this at the same time.
+--
+-- "When a hand is played" needs no test of its own - retrigger_joker_check is
+-- only raised during the joker pass of a played hand.
+special("j_celesta_zentreya", "j_celesta_bluto", {
+    key = "zentreya_bluto",
+
+    loc_vars = function(def, card, state)
+        return { vars = { steel_in_hand() } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.retrigger_joker_check and not context.retrigger_joker) then
+            return
+        end
+        local other = context.other_card
+        local center = other and other.config and other.config.center
+        local targets = CelestasMod.BLUTO_TARGETS or {}
+        if not (center and other ~= card and targets[center.key]) then return end
+
+        local steel = steel_in_hand()
+        if steel <= 0 then return end
+        return { repetitions = steel }
+    end,
+})
+
+-- Zentreya + Kumi: Kumi is the Gold card Joker and Zentreya raises what a card
+-- held in hand is worth, so a Gold card is worth more.
+--
+-- INSTEAD of, not on top of, which is why this is not a `dollars` handed back
+-- from calculate: that would pay a second time alongside the enhancement's own
+-- and the card would read "+$3" and then "+$2". Card:get_h_dollars is the one
+-- place a card held in hand is asked what it pays (card.lua:1240), so the
+-- enhancement's own number is taken back out there and the pair's put in - one
+-- payout, one popup, and any perma_h_dollars on the card still counted.
+local GOLD_PAYOUT_PAIR = "zentreya_kumi"
+
+special("j_celesta_zentreya", "j_celesta_kumi", {
+    key = GOLD_PAYOUT_PAIR,
+    config = { pay = 5 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.pay } }
+    end,
+
+    -- The whole of it is the hook below; there is nothing to do in the pass.
+    calculate = function(def, card, context, state) end,
+})
+
+--- What a Gold card is on while this pair is in the row, or nil when it is
+--- not. The leftmost wins, the way the Joker row settles every disagreement.
+local function gold_payout()
+    for _, held in ipairs(specials_held(GOLD_PAYOUT_PAIR)) do
+        local state = Bind.special_state(held.card, held.def)
+        if state and type(state.pay) == "number" then return state.pay end
+    end
+    return nil
+end
+
+local celesta_bind_h_dollars_ref = Card.get_h_dollars
+
+function Card:get_h_dollars(...)
+    local ret = celesta_bind_h_dollars_ref(self, ...)
+    -- A debuffed card pays nothing and the reference has already said so.
+    if self.debuff or not SMODS.has_enhancement(self, "m_gold") then
+        return ret
+    end
+
+    local pay = gold_payout()
+    if not pay then return ret end
+    return ret - (self.ability.h_dollars or 0) + pay
+end
+
+--------------------------------------------------------------------------------
+-- Nihmune + Michi
+--------------------------------------------------------------------------------
+--
+-- Nihmune turns cards into Clubs and Michi makes Tarots out of what is thrown
+-- away, so a discarded Club is sometimes a Tarot.
+--
+-- Michi's own shape: the buffer is claimed BEFORE the event and released
+-- inside it, because a discard sends this context once per discarded card and
+-- the slots would otherwise be counted as empty for every card in the same
+-- discard. The roll comes after the room check for the same reason it does on
+-- every other card here - a chance spent on a slot that does not exist is a
+-- chance the player never had.
+
+special("j_celesta_nihmune", "j_celesta_michi", {
+    key = "nihmune_michi",
+    config = { odds = 3 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_nihmune_michi")
+        return { vars = { n, d } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.discard and context.other_card and not context.blueprint) then
+            return
+        end
+        local other = context.other_card
+        -- is_suit rather than base.suit, so a Wild card, a smeared suit and
+        -- Nihmune's own conversions all count as the Club they play as.
+        if not (other.is_suit and other:is_suit("Clubs")) then return end
+
+        if #G.consumeables.cards + (G.GAME.consumeable_buffer or 0)
+            >= G.consumeables.config.card_limit then
+            return
+        end
+        if not SMODS.pseudorandom_probability(card, "celesta_bind_nihmune_michi",
+                1, state.odds, "celesta_bind_nihmune_michi") then
+            return
+        end
+
+        G.GAME.consumeable_buffer = (G.GAME.consumeable_buffer or 0) + 1
+        G.E_MANAGER:add_event(Event {
+            trigger = "before",
+            delay = 0.0,
+            func = function()
+                local made = SMODS.add_card {
+                    set = "Tarot", key_append = "celesta_bind_nihmune_michi" }
+                if made then made:juice_up(0.3, 0.5) end
+                G.GAME.consumeable_buffer = 0
+                return true
+            end
+        })
+        return { message = localize("k_plus_tarot"), colour = G.C.PURPLE,
+                 card = card }
+    end,
+})
+
+--------------------------------------------------------------------------------
+-- Ray + Glassesjournal
+--------------------------------------------------------------------------------
+--
+-- Ray makes a thing happen again and Glassesjournal decides what reaches the
+-- hand, so the cards this deck keeps playing are the ones it keeps drawing.
+--
+-- `deal_weight` rather than `deal_first`: every other Glassesjournal merge
+-- picks a CATEGORY out of the deck and puts it at the front, which is a yes or
+-- a no, and this ranks cards against each other. jokers/implemented.lua sorts
+-- each place by the total weight, heaviest dealt first, and leaves the
+-- shuffle's order between equals - so a deck nothing has been played out of
+-- deals exactly as it did before.
+--
+-- The count is kept on the card and starts when the pair does. Nothing in the
+-- game has been counting how often a particular card is played, so there is
+-- no honest number to backfill; a card played twice since the merge is ahead
+-- of one played once, and that is all this can truthfully know.
+--
+-- Counted at context.before, which is the whole played hand rather than the
+-- scoring part of it: a card that was played is a card that was played. Copies
+-- are refused so a Blueprint does not double the count of a hand played once.
+
+local RAY_GLASSES_PLAYS = "celesta_plays"
+
+special("j_celesta_ray", "j_celesta_glassesjournal", {
+    key = "ray_glasses",
+
+    deal_weight = function(card)
+        return (card.ability and card.ability[RAY_GLASSES_PLAYS]) or 0
+    end,
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.before and not context.blueprint) then return end
+        for _, played in ipairs(context.full_hand or {}) do
+            if played.ability then
+                played.ability[RAY_GLASSES_PLAYS] =
+                    (played.ability[RAY_GLASSES_PLAYS] or 0) + 1
+            end
+        end
+    end,
+})
+
+--------------------------------------------------------------------------------
+-- Kuro + Arielle
+--------------------------------------------------------------------------------
+--
+-- Kuro alone shuts the Boss on odd Antes; bound to Arielle it shuts the even
+-- ones instead. A replacing pair, like the rest, so the merged card is no
+-- longer a Kuro and the odd Antes come back.
+--
+-- The hold itself is jokers/implemented.lua's, shared with Adfree, so the two
+-- of them in one row cannot fight over the flag. What this adds is a rule to
+-- the list that sync asks - which is why the rule is registered here rather
+-- than the Joker file being taught that merges exist.
+
+special("j_celesta_kuro", "j_celesta_arielle", {
+    key = "kuro_arielle",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    -- The pair can form and break mid-round, so the Blind is asked again at
+    -- both moments rather than waiting for the next one to be set. Unmerging
+    -- is queued for the reason every count in this file is: it runs while the
+    -- card is still in the row.
+    on_merge = function(def, card, state)
+        if CelestasMod.kuro_sync then CelestasMod.kuro_sync() end
+    end,
+
+    on_unmerge = function(def, card, state, losing)
+        G.E_MANAGER:add_event(Event {
+            func = function()
+                if CelestasMod.kuro_sync then CelestasMod.kuro_sync() end
+                return true
+            end
+        })
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.setting_blind and not context.blueprint then
+            CelestasMod.kuro_sync()
+        end
+        if context.end_of_round and not context.blueprint then
+            CelestasMod.hold_boss("kuro", false)
+        end
+    end,
+})
+
+-- ...and the rule the sync above asks about. A debuffed pair is not in the
+-- row as far as specials_held is concerned, which is exactly right: a
+-- debuffed Joker does nothing.
+--
+-- `or {}` rather than the `if CelestasMod.KURO_RULES then` this used to have.
+-- That test was false on every single load - the list was declared in
+-- jokers/implemented.lua, which is loaded AFTER this file - so the rule was
+-- never registered and the pair did nothing in a real run. The suite missed it
+-- because it builds its own CelestasMod with the list already there.
+--
+-- The list is declared in globals.lua now, which is loaded before everything.
+-- This still says `or {}` so that the rule is registered whatever order the
+-- files end up in, and whoever gets here second finds the same table - which
+-- is the one thing a guard that skips can never do.
+CelestasMod.KURO_RULES = CelestasMod.KURO_RULES or {}
+CelestasMod.KURO_RULES[#CelestasMod.KURO_RULES + 1] = function()
+    return specials_held("kuro_arielle")[1] ~= nil
+        and CelestasMod.ante_parity_is(0)
+end
+
+--------------------------------------------------------------------------------
+-- MoopyBuns' two
+--------------------------------------------------------------------------------
+--
+-- MoopyBuns is paid by the shop; each partner decides what it is paid in.
+
+-- MoopyBuns + BerryCrepe: BerryCrepe's Mult, banked per purchase instead of
+-- per scored card.
+--
+-- `not context.blueprint` for the reason MoopyBuns' own carries it: the total
+-- lives on this card's state, so a copier answering would bank the purchase a
+-- second time.
+special("j_celesta_moopybuns", "j_celesta_berrycrepe", {
+    key = "moopy_berry",
+    config = { mult = 0, mult_gain = 4 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.mult_gain, state.mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- context.buying_card is raised once for each thing bought - a Joker,
+        -- a consumable, a voucher, a pack - which is what MoopyBuns counts.
+        if context.buying_card and not context.blueprint then
+            state.mult = state.mult + state.mult_gain
+            return {
+                message = localize { type = "variable", key = "a_mult",
+                                     vars = { state.mult } },
+                colour = G.C.MULT,
+                card = card,
+            }
+        end
+
+        if context.joker_main and state.mult > 0 then
+            return { mult = state.mult }
+        end
+    end,
+})
+
+-- MoopyBuns + KokoNuts: KokoNuts is the 7s Joker, so the Chips come off the
+-- 7s rather than off the shop.
+--
+-- Live-counted rather than banked, which is what "for each 7 in your full
+-- deck" means and what Fufu's line of the same shape does: a deck that loses
+-- its last 7 loses the Chips with it rather than leaving them banked.
+
+--- How many cards in the run's deck are PRINTED as 7s.
+---
+--- The printed rank, the way count_suit_in_deck asks for the printed suit: a
+--- deck-wide count is a question about what the deck is made of, not about
+--- what a Joker is currently making each card count as. Rankless cards -
+--- Stone, Limestone - are not 7s, and they still carry a base id underneath
+--- the enhancement, so the enhancement has to be asked rather than the base.
+local function sevens_in_deck()
+    local count = 0
+    for _, held in ipairs(G.playing_cards or {}) do
+        if held.base and held.base.id == 7 and not SMODS.has_no_rank(held) then
+            count = count + 1
+        end
+    end
+    return count
+end
+
+--- X1 plus the gain per 7 the deck is printed with.
+local function moopy_koko_x_chips(state)
+    return 1 + state.x_chips_gain * sevens_in_deck()
+end
+
+special("j_celesta_moopybuns", "j_celesta_kokonuts", {
+    key = "moopy_koko",
+    config = { x_chips_gain = 0.4 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_chips_gain, moopy_koko_x_chips(state) } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.joker_main then
+            local x_chips = moopy_koko_x_chips(state)
+            -- X1 is no multiplier at all; returning it would put a flourish
+            -- over the Joker every hand for doing nothing.
+            if x_chips > 1 then return { x_chips = x_chips } end
+        end
+    end,
+})
+
+--------------------------------------------------------------------------------
+-- Arielle + Saiiren
+--------------------------------------------------------------------------------
+--
+-- Saiiren pays the last scoring card of one rotating suit, and Arielle makes
+-- every card count as every suit - so together the suit stops mattering and
+-- what is left is simply the last scoring card. The pair says that outright
+-- rather than leaving it to be worked out from a smear, which also means it
+-- holds whatever else is done to the suits.
+--
+-- The LAST entry of the scoring hand, tested the way ShyLily tests it - which
+-- is Hanging Chad's own test against scoring_hand[1], anchored to the other
+-- end. Unscored cards arrive with cardarea set to 'unscored' and never reach
+-- this, so "scoring card" needs no test of its own.
+special("j_celesta_arielle", "j_celesta_saiiren", {
+    key = "arielle_saiiren",
+    config = { x_mult = 3 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play) then return end
+        local hand = context.scoring_hand
+        if type(hand) ~= "table" or #hand == 0 then return end
+        if context.other_card ~= hand[#hand] then return end
+        return { x_mult = state.x_mult, card = card }
+    end,
+})
+
+--------------------------------------------------------------------------------
+-- HeavenlyFather + Arielle
+--------------------------------------------------------------------------------
+--
+-- HeavenlyFather widens the shop and Arielle is the suits Joker, so the shop
+-- widens by the suits.
+--
+-- The whole of it is the live pass above - BOOSTER_PAIRS names this key - so
+-- there is nothing to hand over here and nothing to take back. A grant that is
+-- a COUNT cannot be made once in add_to_deck: the deck it counts changes under
+-- it, and a Tarot spent on the last Heart has to cost the slot back.
+--
+-- unique_suits_in_deck reads the PRINTED suit, so Arielle's own smear - every
+-- card counting as every suit - does not inflate this. It would not anyway:
+-- the pair replaces both halves, so the smear is not in play.
+special("j_celesta_heavenlyfather", "j_celesta_arielle", {
+    key = "heavenly_arielle",
+    config = { per = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.per } }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+--------------------------------------------------------------------------------
+-- Aethal + Nyanners
+--------------------------------------------------------------------------------
+--
+-- Aethal is the shop Joker and Nyanners pays Chips for each of something, so
+-- the pair pays for what the shop has been spent on.
+--
+-- Counted live off the run rather than banked, which is what "redeemed this
+-- run" means and what Nyanners' own line does with the Joker row: a Voucher
+-- redeemed after the pair was made counts, because the question is about the
+-- run rather than about the card.
+
+--- How many Vouchers this run has redeemed.
+---
+--- G.GAME.used_vouchers is the run's own record, keyed by centre and set to
+--- true as each one is redeemed (card.lua:2068) - which is also the table the
+--- shop asks before offering one a second time. A Voucher handed over by a
+--- deck or a challenge is written there too (back.lua:229), and those are
+--- redeemed as much as any bought one.
+local function vouchers_redeemed()
+    local count = 0
+    for _ in pairs((G.GAME and G.GAME.used_vouchers) or {}) do
+        count = count + 1
+    end
+    return count
+end
+
+special("j_celesta_lordaethelstan", "j_celesta_nyanners", {
+    key = "aethal_nyanners",
+    config = { chips = 75 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.chips,
+                          CelestasMod.vedal_counted
+                              and CelestasMod.vedal_counted(card, state.chips, vouchers_redeemed())
+                              or state.chips * vouchers_redeemed() } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.joker_main then
+            local redeemed = vouchers_redeemed()
+            local total = CelestasMod.vedal_counted
+                and CelestasMod.vedal_counted(card, state.chips, redeemed)
+                or state.chips * redeemed
+            -- No Vouchers is no Chips, and returning a zero would put a
+            -- flourish over the Joker every hand for doing nothing.
+            -- more_than, because an accelerated total is a Talisman number.
+            if CelestasMod.more_than(total, 0) then
+                return { chips = total }
+            end
+        end
+    end,
+})
+
+--------------------------------------------------------------------------------
+-- Grimmi
+--------------------------------------------------------------------------------
+--
+-- Grimmi on its own reads a name off the run - the Joker sold BEFORE it - and
+-- brings that back Negative. A pair does not need the record: the other half
+-- is bound into the card, so what a merged Grimmi gives back when it is sold
+-- is that half, and each of these three adds something of the half's own
+-- while it is still in the row.
+
+--- Grimmi's sale, aimed at a named Joker rather than at whatever was sold last.
+---
+--- Negative, so there is no room to check - it brings its own slot - and made
+--- from an event for the reason Grimmi's own gives: the sale is an event too,
+--- and this has to land behind it.
+local function grimmi_returns(card, context, key)
+    if not (context.selling_self and not context.blueprint) then return nil end
+    if not (key and G.P_CENTERS and G.P_CENTERS[key]) then return nil end
+    G.E_MANAGER:add_event(Event {
+        func = function()
+            local made = SMODS.add_card { key = key }
+            if made then
+                made:set_edition({ negative = true }, true)
+                made:juice_up(0.3, 0.5)
+            end
+            return true
+        end
+    })
+    return { message = localize("k_plus_joker"), colour = G.C.DARK_EDITION,
+             card = card }
+end
+
+-- Grimmi + HeavenlyFather: HeavenlyFather's shop, in Vouchers, and the man
+-- himself back when the merge is sold.
+--
+-- The slots are a passive, declared the way HeavenlyFather + Nostro declares
+-- its own: add_to_deck grants and remove_from_deck gives back, so selling the
+-- merge, debuffing it and destroying it all go through vanilla's machinery.
+-- on_merge covers the one moment vanilla cannot see - the pair coming into
+-- existence on a card already in the row - and on_unmerge its mirror.
+special("j_celesta_grimmi", "j_celesta_heavenlyfather", {
+    key = "grimmi_heavenly",
+    config = { vouchers = 5 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.vouchers } }
+    end,
+
+    calculate = function(def, card, context, state)
+        return grimmi_returns(card, context, "j_celesta_heavenlyfather")
+    end,
+
+    add_to_deck = function(def, card, state, from_debuff)
+        SMODS.change_voucher_limit(state.vouchers)
+    end,
+
+    remove_from_deck = function(def, card, state, from_debuff)
+        SMODS.change_voucher_limit(-state.vouchers)
+    end,
+
+    on_merge = function(def, card, state)
+        def.add_to_deck(def, card, state, false)
+    end,
+
+    on_unmerge = function(def, card, state)
+        def.remove_from_deck(def, card, state, false)
+    end,
+})
+
+--- Stone cards in the run's deck.
+---
+--- G.playing_cards is the deck as a whole, wherever each card happens to be
+--- sitting, which is what "in your full deck" means everywhere else in this
+--- file. The enhancement is asked rather than the base, the way every other
+--- deck-wide count here asks it.
+local function stone_in_deck() return enhanced_in_deck("m_stone") end
+
+-- Grimmi + Jowol: Jowol's Stone cards, counted across the whole deck rather
+-- than only the ones in hand, and Jowol back when the merge is sold.
+--
+-- Live-counted rather than banked, which is what "in your full deck" means
+-- and what MoopyBuns + KokoNuts does with its 7s: a deck that loses a Stone
+-- card loses the Chips with it.
+special("j_celesta_grimmi", "j_celesta_jowol", {
+    key = "grimmi_jowol",
+    config = { chips = 100 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.chips, state.chips * stone_in_deck() } }
+    end,
+
+    calculate = function(def, card, context, state)
+        local back = grimmi_returns(card, context, "j_celesta_jowol")
+        if back then return back end
+
+        if context.joker_main then
+            local total = state.chips * stone_in_deck()
+            -- A deck with no Stone card scores nothing rather than putting a
+            -- "+0 Chips" over the Joker every hand.
+            if total > 0 then return { chips = total } end
+        end
+    end,
+})
+
+--- The pair, so the sell-value hooks below can name it once.
+local GRIMMI_EGGS = "grimmi_eggs"
+
+--- What this pair adds to a card's sell value, in whole dollars.
+---
+--- Half a dollar a Heart, floored: the game deals in whole dollars and
+--- vanilla's own sell price is floored for that reason (card.lua:512). Two
+--- Hearts buy one dollar.
+---
+--- A debuffed pair does nothing, and that includes this - the rule every
+--- other passive in this file is held to.
+local function grimmi_eggs_extra(card)
+    if not (card.ability and card.ability.set == "Joker" and not card.debuff) then
+        return 0
+    end
+    local def = Bind.special_of(card)
+    if not (def and def.key == GRIMMI_EGGS) then return 0 end
+    local state = Bind.special_state(card, def)
+    return math.floor((state.per_heart or 0)
+        * CelestasMod.count_suit_in_deck("Hearts"))
+end
+
+-- Grimmi + OverEzEggs: OverEzEggs fills the deck with Hearts, and this is paid
+-- for every one of them - in what the merge is worth rather than in score.
+--
+-- Added to the ANSWER set_cost gives rather than written into
+-- ability.extra_value, which is the mistake Ruben Sargasm was carrying: that
+-- field sits one level down card.ability, exactly where Cryptid's misprintize
+-- walks, and a derived total living there drifts away from the description
+-- that recomputes it. Adding to the answer also cannot compound - a second
+-- call recomputes from the card's base cost - and a pair that is unmerged,
+-- debuffed or sold takes the raise with it without anything having to undo it.
+special("j_celesta_grimmi", "j_celesta_overezeggs", {
+    key = GRIMMI_EGGS,
+    config = { per_heart = 0.5 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.per_heart } }
+    end,
+
+    calculate = function(def, card, context, state)
+        return grimmi_returns(card, context, "j_celesta_overezeggs")
+    end,
+})
+
+local celesta_grimmi_eggs_cost_ref = Card.set_cost
+function Card:set_cost(...)
+    local ret = celesta_grimmi_eggs_cost_ref(self, ...)
+    local extra = grimmi_eggs_extra(self)
+    if extra > 0 and type(self.sell_cost) == "number" then
+        self.sell_cost = self.sell_cost + extra
+        self.sell_cost_label = self.facing == "back" and "?" or self.sell_cost
+    end
+    return ret
+end
+
+--- What each Joker was last priced against, so set_cost is called when the
+--- answer changes rather than on every frame.
+---
+--- The AMOUNT rather than the Heart count, so forming the pair, losing it,
+--- being debuffed and the deck changing are all the one question. Weak-keyed:
+--- a sold Joker should not be kept alive by this.
+local grimmi_eggs_priced = setmetatable({}, { __mode = "k" })
+
+-- Nothing calls set_cost when the deck changes, so the price would sit stale
+-- until something else happened to the card. Card:update is where vanilla
+-- solves the same problem for Temperance, and where Ruben Sargasm asks it.
+local celesta_grimmi_eggs_update_ref = Card.update
+function Card:update(dt)
+    celesta_grimmi_eggs_update_ref(self, dt)
+
+    if self.ability and self.ability.set == "Joker" then
+        local want = grimmi_eggs_extra(self)
+        if grimmi_eggs_priced[self] ~= want then
+            grimmi_eggs_priced[self] = want
+            if type(self.set_cost) == "function" then self:set_cost() end
+        end
+    end
+end
+
+--------------------------------------------------------------------------------
+-- Cy Yu
+--------------------------------------------------------------------------------
+--
+-- Cy Yu retriggers Exo cards in the played hand. Both of its pairs are that
+-- retrigger pointed somewhere else: AmaLee's weather decides when it happens,
+-- and Jowol's Stone cards replace Exo as what it happens to.
+--
+-- Neither brings its own weather. Aquwa + Megalodon is the same shape - a pair
+-- whose other half makes the weather, worth more while it is up and saying
+-- nothing about starting one - and the two pairs that DO open with weather say
+-- so on the card.
+
+--- True while a Snowstorm is up.
+local function snowing()
+    local Arena = CelestasMod.Arena
+    return (Arena and Arena.is_active and Arena.is_active("snowstorm")) and true or false
+end
+
+-- Cy Yu + AmaLee: Cy Yu's own retrigger, more of it, and only in AmaLee's
+-- weather.
+special("j_celesta_cyyuvtuber", "j_celesta_amalee", {
+    key = "cyyu_amalee",
+    config = { repetitions = 3 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.repetitions } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.repetition and context.cardarea == G.play
+                and context.other_card) then return end
+        if not snowing() then return end
+        local exo = CelestasMod.ENHANCEMENT_KEYS and CelestasMod.ENHANCEMENT_KEYS.Exo
+        if not (exo and SMODS.has_enhancement(context.other_card, exo)) then return end
+        return {
+            message = localize("k_again_ex"),
+            repetitions = state.repetitions,
+            card = card,
+        }
+    end,
+})
+
+-- Cy Yu + Jowol: Cy Yu's retrigger, aimed at Jowol's Stone cards instead of
+-- its own Exo ones.
+special("j_celesta_cyyuvtuber", "j_celesta_jowol", {
+    key = "cyyu_jowol",
+    config = { repetitions = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.repetitions } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.repetition and context.cardarea == G.play
+                and context.other_card) then return end
+        if not SMODS.has_enhancement(context.other_card, "m_stone") then return end
+        return {
+            message = localize("k_again_ex"),
+            repetitions = state.repetitions,
+            card = card,
+        }
+    end,
+})
+
+
+--------------------------------------------------------------------------------
+-- Yoclesh + Squchan, and Fenari + HeavenlyFather
+--------------------------------------------------------------------------------
+
+-- Yoclesh + Squchan: Squchan deals in Holographic Jokers and Yoclesh in
+-- Hearts, so the Holo goes onto the Hearts instead.
+--
+-- Rolled as each card scores and written onto it there, which is
+-- CottontailVA + FeFe's shape for the same thing in seals. A card that already
+-- has an edition is left alone - this gives one, it does not trade one away -
+-- and that test is what stops the same card being re-rolled every hand.
+special("j_celesta_yoclesh", "j_celesta_squchan", {
+    key = "yoclesh_squchan",
+    config = { odds = 2 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_yoclesh_squchan")
+        return { vars = { n, d } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play
+                and context.other_card) then return end
+        local other = context.other_card
+        if other.edition then return end
+        if not (other.is_suit and other:is_suit("Hearts")) then return end
+        if not SMODS.pseudorandom_probability(card, "celesta_bind_yoclesh_squchan",
+                1, state.odds, "celesta_bind_yoclesh_squchan") then return end
+        other:set_edition({ holo = true }, true)
+        return { message = localize("k_upgrade_ex"),
+                 colour = G.C.DARK_EDITION, card = card }
+    end,
+})
+
+--- The pair, so the create_card hook below can name it once.
+local FENARI_HEAVENLY = "fenari_heavenly"
+
+-- Fenari + HeavenlyFather: Fenari peels stickers off one Joker a round;
+-- HeavenlyFather is the booster pack. Together the packs stop handing them out
+-- in the first place.
+special("j_celesta_fenari", "j_celesta_heavenlyfather", {
+    key = FENARI_HEAVENLY,
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+--- Takes every sticker off a card.
+---
+--- Fenari's own peel, all of them at once: read through CelestasMod.stickers_on
+--- so a sticker another mod adds goes too, and perish_tally cleared with the
+--- flag, because Perishable keeps a countdown beside it that would debuff the
+--- Joker on its own later.
+local function strip_stickers(target)
+    local worn = CelestasMod.stickers_on(target)
+    for _, sticker in ipairs(worn) do
+        target.ability[sticker] = nil
+        if sticker == "perishable" then target.ability.perish_tally = nil end
+    end
+    return #worn > 0
+end
+
+-- create_card is where a pack's Jokers are given their stickers - the
+-- SMODS.Sticker loop at common_events.lua:2467, and vanilla's own Eternal,
+-- Perishable and Rental rolls immediately below it - so it is where they can
+-- be refused. Taken off after the fact rather than each roll being blocked:
+-- those are four separate places and one of them is a loop over every sticker
+-- any mod has registered, and this covers all of it in one line.
+local celesta_fenari_heavenly_create_ref = create_card
+function create_card(_type, area, ...)
+    local made = celesta_fenari_heavenly_create_ref(_type, area, ...)
+    if made and area == G.pack_cards
+        and made.ability and made.ability.set == "Joker" then
+        local holder = Bind.find_special(FENARI_HEAVENLY)
+        if holder and not holder.debuff then strip_stickers(made) end
+    end
+    return made
+end
+
+--------------------------------------------------------------------------------
+-- ObKatieKat
+--------------------------------------------------------------------------------
+--
+-- ObKatieKat is the ^Chips Joker, and every one of these is the other half's
+-- own payout made in ^Chips instead. None of them keeps ObKatieKat's own
+-- condition - a full Joker row - because each pair has a condition of its own
+-- and asking for both would leave most of them unreachable.
+--
+-- All eight need Talisman, which is what scores a ^ at all. Checked at score
+-- time rather than at load for the reason Vienna gives: mods load in priority
+-- order, and Talisman may not have run when this file did.
+
+--- Wild Cards in the run's deck, counted the way Froot counts them.
+local function wilds_in_deck() return enhanced_in_deck("m_wild") end
+
+-- ObKatieKat + Froot: Froot's reading of the deck, in ^Chips.
+--
+-- Live off the deck rather than banked, which is what Froot's own line means
+-- and what every other "for each card in your full deck" here does: a card
+-- that stops being Wild takes its share with it.
+special("j_celesta_obkatiekat", "j_celesta_froot", {
+    key = "katie_froot",
+    config = { e_chips_gain = 0.04 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.e_chips_gain,
+                          1 + state.e_chips_gain * wilds_in_deck() } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local e_chips = 1 + state.e_chips_gain * wilds_in_deck()
+        if e_chips <= 1 then return end
+        if not power_supported("katie_froot_no_talisman",
+                               "ObKatieKat + Froot", "Chips") then
+            return
+        end
+        return { e_chips = e_chips }
+    end,
+})
+
+-- ObKatieKat + Saiiren: Saiiren's rotating suit, paid in ^Chips.
+--
+-- The rotation is Saiiren's own, walked on the pair's index through the
+-- helpers jokers/implemented.lua exports - so a Yoclesh pins this to Hearts
+-- exactly as it pins Saiiren, and the two cannot come to disagree about which
+-- suit the round is on.
+special("j_celesta_obkatiekat", "j_celesta_saiiren", {
+    key = "katie_saiiren",
+    config = { e_chips = 1.15, suit_index = 1 },
+
+    loc_vars = function(def, card, state)
+        local suits = CelestasMod.rotation_suits()
+        local suit = CelestasMod.rotation_suit_at(suits, state.suit_index)
+        -- Singular, because the name qualifies "card" - Saiiren's own reason.
+        return { vars = { state.e_chips, localize(suit, "suits_singular"),
+                          colours = { G.C.SUITS[suit] } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        local suits = CelestasMod.rotation_suits()
+        local suit = CelestasMod.rotation_suit_at(suits, state.suit_index)
+
+        if context.individual and context.cardarea == G.play then
+            if context.other_card ~= CelestasMod.saiiren_target(context, suit) then
+                return
+            end
+            if not power_supported("katie_saiiren_no_talisman",
+                                   "ObKatieKat + Saiiren", "Chips") then
+                return
+            end
+            return { e_chips = state.e_chips, card = context.other_card }
+        end
+
+        -- main_eval keeps the rotation to once per round rather than once per
+        -- card the end-of-round pass looks at.
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            state.suit_index = CelestasMod.rotation_index(state.suit_index + 1, #suits)
+            local next_suit = CelestasMod.rotation_suit_at(suits, state.suit_index)
+            return { message = localize(next_suit, "suits_singular"),
+                     colour = G.C.SUITS[next_suit], card = card }
+        end
+    end,
+})
+
+--- The pair, so the Steel hook below can name it once.
+local KATIE_ZENTREYA = "katie_zentreya"
+
+-- ObKatieKat + Zentreya: Zentreya's Steel Cards, paid in ^Chips instead of
+-- Mult - and instead of the X1.5 the Steel Card itself gives.
+--
+-- Both passes, because a Steel Card triggers in either: G.play is Zentreya's
+-- own half, and G.hand is where the enhancement's X1.5 lives and so where the
+-- trade actually happens.
+special("j_celesta_obkatiekat", "j_celesta_zentreya", {
+    key = KATIE_ZENTREYA,
+    config = { e_chips = 1.15 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.e_chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.other_card
+                and (context.cardarea == G.play or context.cardarea == G.hand)) then
+            return
+        end
+        if not SMODS.has_enhancement(context.other_card, "m_steel") then return end
+        if not power_supported("katie_zentreya_no_talisman",
+                               "ObKatieKat + Zentreya", "Chips") then
+            return
+        end
+        return { e_chips = state.e_chips, card = context.other_card }
+    end,
+})
+
+-- The Steel Card's own X1.5 is not a Joker effect and cannot be replaced by
+-- returning something else: the game reads it straight off the card, in
+-- eval_card (common_events.lua:721) through Card:get_chip_h_x_mult. Answering
+-- nothing there is the one place it can be refused, and it leaves every other
+-- card - and every Steel Card in a run without this pair - untouched.
+local celesta_katie_zentreya_hxm_ref = Card.get_chip_h_x_mult
+function Card:get_chip_h_x_mult(...)
+    if SMODS.has_enhancement(self, "m_steel") then
+        local holder = Bind.find_special(KATIE_ZENTREYA)
+        if holder and not holder.debuff then return 0 end
+    end
+    return celesta_katie_zentreya_hxm_ref(self, ...)
+end
+
+-- ObKatieKat + Ironmouse: the two exponents, in ObKatieKat's half of the
+-- score. Ironmouse's own rate, and no condition on either half left.
+special("j_celesta_obkatiekat", "j_celesta_ironmouse", {
+    key = "katie_ironmouse",
+    config = { e_chips = 1.3 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.e_chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        if not power_supported("katie_ironmouse_no_talisman",
+                               "ObKatieKat + Ironmouse", "Chips") then
+            return
+        end
+        return { e_chips = state.e_chips }
+    end,
+})
+
+-- ObKatieKat + Michi: Michi's Purple Seals, paid when they score rather than
+-- when they are discarded.
+special("j_celesta_obkatiekat", "j_celesta_michi", {
+    key = "katie_michi",
+    config = { e_chips = 1.15 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.e_chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play
+                and context.other_card) then return end
+        if context.other_card.seal ~= "Purple" then return end
+        if not power_supported("katie_michi_no_talisman",
+                               "ObKatieKat + Michi", "Chips") then
+            return
+        end
+        return { e_chips = state.e_chips, card = context.other_card }
+    end,
+})
+
+-- ObKatieKat + Kuro: Kuro is the Boss Blind Joker, so the Boss is what pays.
+--
+-- Kuro's own hold is gone with the rest of it - a replacing pair speaks for
+-- both halves, so neither is in play as itself and CelestasMod.kuro_sync stops
+-- finding one. That is what makes this reachable at all: a Boss Kuro had shut
+-- is not a Boss to be paid for.
+--
+-- joker_main is the "after the hand has finished scoring" slot, which is where
+-- Jowol and every other Joker in this mod scores after the cards do.
+special("j_celesta_obkatiekat", "j_celesta_kuro", {
+    key = "katie_kuro",
+    config = { e_chips = 1.25 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.e_chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local blind = G.GAME and G.GAME.blind
+        if not (blind and blind.boss) then return end
+        if not power_supported("katie_kuro_no_talisman",
+                               "ObKatieKat + Kuro", "Chips") then
+            return
+        end
+        return { e_chips = state.e_chips }
+    end,
+})
+
+-- ObKatieKat + Henya: Henya pays for retriggers; this pays for them in ^Chips.
+--
+-- The scoring pass only, which is narrower than Henya alone - it pays a
+-- retrigger of a card held in hand too - and is what "scored cards" means.
+-- The count itself is Henya's, read through CelestasMod.trigger_count, so the
+-- two cannot come to disagree about what a retrigger is.
+special("j_celesta_obkatiekat", "j_celesta_henya", {
+    key = "katie_henya",
+    config = { e_chips = 1.15 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.e_chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play
+                and context.other_card and not context.end_of_round) then return end
+        if CelestasMod.trigger_count(context.other_card) <= 1 then return end
+        if not power_supported("katie_henya_no_talisman",
+                               "ObKatieKat + Henya", "Chips") then
+            return
+        end
+        return { e_chips = state.e_chips, card = context.other_card }
+    end,
+})
+
+-- ObKatieKat + Projekt Melody: ObKatieKat counts the Joker row and Projekt
+-- Melody pays at the cash-out, so the row is what it pays for.
+--
+-- Through calc_dollar_bonus, which is the hook Projekt Melody's own money
+-- comes through and where it gets its own line on the cash-out screen rather
+-- than arriving as a floating message.
+special("j_celesta_obkatiekat", "j_celesta_projektmelody", {
+    key = "katie_melody",
+    config = { dollars = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars,
+                          state.dollars * #(((G.jokers or {}).cards) or {}) } }
+    end,
+
+    calc_dollar_bonus = function(def, card, state)
+        local filled = #(((G.jokers or {}).cards) or {})
+        if filled <= 0 then return end
+        return filled * state.dollars
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+--------------------------------------------------------------------------------
+-- Smitten Seraph
+--------------------------------------------------------------------------------
+
+--- Filled Joker slots less filled consumable slots, never below nothing.
+---
+--- What is FILLED rather than what the limits are, which is what the pair
+--- says: a row of five with an empty tray is five, and filling the tray spends
+--- it back. Negative is nothing - a retrigger count below zero is not a thing
+--- the scoring pass can be handed.
+local function seraph_gap()
+    local jokers = #(((G.jokers or {}).cards) or {})
+    local consumables = #(((G.consumeables or {}).cards) or {})
+    local gap = jokers - consumables
+    return gap > 0 and gap or 0
+end
+
+-- Maple Chicken + Smitten Seraph: Maple Chicken's Leaf retrigger, counted off
+-- the two rows Smitten Seraph makes room in.
+--
+-- The played hand only, which is what the pair says - Maple Chicken alone also
+-- retriggers a Leaf held in hand.
+special("j_celesta_maplechicken", "j_celesta_smittenseraph", {
+    key = "maple_seraph",
+
+    loc_vars = function(def, card, state)
+        local name, colour = CelestasMod.suit_name_and_colour(
+            CelestasMod.LEAF_SUIT, CelestasMod.LEAF_COLOUR, true)
+        return { vars = { name, seraph_gap(), colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.repetition and context.cardarea == G.play
+                and context.other_card) then return end
+        local other = context.other_card
+        if not (other.is_suit and other:is_suit(CelestasMod.LEAF_SUIT)) then return end
+        local times = seraph_gap()
+        if times <= 0 then return end
+        return {
+            message = localize("k_again_ex"),
+            repetitions = times,
+            card = card,
+        }
+    end,
+})
+
+-- Birdyovo + Smitten Seraph: Smitten Seraph's slots, more of them, and
+-- Birdyovo's count coming round faster.
+--
+-- The slots are a passive, declared the way HeavenlyFather + Nostro declares
+-- its own - add_to_deck grants, remove_from_deck gives back, on_merge and
+-- on_unmerge cover the one moment vanilla cannot see - and they go through
+-- CelestasMod.bump_limit, which is the Joker's own way of moving a card_limit
+-- that Steamodded may be keeping behind a metatable.
+special("j_celesta_birdyovo", "j_celesta_smittenseraph", {
+    key = "birdyovo_seraph",
+    config = { joker_slots = 4, consumable_slots = 2,
+               x_mult = 2, requirement = 5, count = 0 },
+
+    loc_vars = function(def, card, state)
+        local to_go = state.requirement - (state.count % state.requirement)
+        return { vars = { state.joker_slots, state.consumable_slots,
+                          state.requirement, state.x_mult, to_go } }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- Birdyovo's own count, carried across hands and rounds: the fifth
+        -- card is the fifth the pair has ever seen.
+        if context.individual and context.cardarea == G.play then
+            -- A copy must not advance the count - the cards were scored once -
+            -- but it still pays on a card that lands on the fifth, so a
+            -- Blueprint doubles the payoff rather than shifting the rhythm.
+            if not context.blueprint then state.count = state.count + 1 end
+            if state.count % state.requirement == 0 then
+                return { x_mult = state.x_mult, card = card }
+            end
+        end
+    end,
+
+    add_to_deck = function(def, card, state, from_debuff)
+        CelestasMod.bump_limit(G.jokers, state.joker_slots)
+        CelestasMod.bump_limit(G.consumeables, state.consumable_slots)
+    end,
+
+    remove_from_deck = function(def, card, state, from_debuff)
+        CelestasMod.bump_limit(G.jokers, -state.joker_slots)
+        CelestasMod.bump_limit(G.consumeables, -state.consumable_slots)
+    end,
+
+    on_merge = function(def, card, state)
+        def.add_to_deck(def, card, state, false)
+    end,
+
+    on_unmerge = function(def, card, state)
+        def.remove_from_deck(def, card, state, false)
+    end,
+})
+
+
+--------------------------------------------------------------------------------
+-- Mint Fantome
+--------------------------------------------------------------------------------
+--
+-- Mint Fantome scores the leftmost card held in hand once the played hand has
+-- finished scoring, and its timing is the whole of it: context.after reads like
+-- the obvious hook and is too late, because vanilla commits the score at
+-- state_events.lua:1031 and fires `after` at :1070. The held-in-hand pass
+-- (:798) is the first thing to run after every played card is done and the last
+-- thing that still counts. All three of the pairs below answer that same pass.
+
+--- Set while a held card is being scored by one of these, so the pass cannot
+--- re-enter. Mint Fantome keeps its own flag for the same reason.
+local mint_scoring = false
+
+--- The leftmost card held in hand, when `other` is it and it can score.
+local function mint_leftmost(context, other)
+    if context.end_of_round or mint_scoring then return nil end
+    local target = G.hand and G.hand.cards and G.hand.cards[1]
+    if not target or other ~= target then return nil end
+    -- A debuffed card scores nothing, the same as in the played hand.
+    if target.debuff then return nil end
+    return target
+end
+
+--- Scores a held card as though it had been played, the way Mint Fantome does.
+---
+--- A FRESH context, not the live one: SMODS.score_card sets main_scoring,
+--- individual and other_card as it goes, and clobbering the table the caller is
+--- still iterating would corrupt the rest of the held pass. cardarea = G.play
+--- is what makes this scoring rather than another held trigger, so every Joker
+--- watching for a scored card sees it and the card contributes its chips, its
+--- enhancement, its edition and its seal exactly as a played card would.
+local function mint_score(target, context, id)
+    mint_scoring = true
+    local ok, err = pcall(SMODS.score_card, target, {
+        cardarea = G.play,
+        full_hand = context.full_hand,
+        scoring_hand = context.scoring_hand,
+        scoring_name = context.scoring_name,
+        poker_hands = context.poker_hands,
+    })
+    mint_scoring = false
+    if not ok then
+        CelestasMod.warn_once(id,
+            "A Mint Fantome merge could not score a held card: " .. tostring(err))
+    end
+    return ok
+end
+
+-- Mint Fantome + Matara Kan: Matara Kan deals in money, so the leftmost held
+-- card pays rather than scores.
+--
+-- Half its RANK, read through rank_value - the card's chip value, so an Ace is
+-- 11 and a face is 10, which is what a rank means everywhere else in this file.
+-- Floored, because the game deals in whole dollars.
+special("j_celesta_mintfantome", "j_celesta_matarakan", {
+    key = "mint_matara",
+    config = { share = 0.5 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.share } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.hand
+                and context.other_card) then return end
+        local target = mint_leftmost(context, context.other_card)
+        if not target then return end
+        local owed = math.floor(rank_value(target) * state.share)
+        if owed <= 0 then return end
+        return { dollars = owed, card = card }
+    end,
+})
+
+-- Mint Fantome + Laimu: Laimu fills the deck with Limestone, so every Limestone
+-- card held in hand is scored rather than only the leftmost card.
+--
+-- Each held card gets its own turn in this pass, so answering for every
+-- Limestone one scores every Limestone one - and the leftmost card is no longer
+-- special unless it happens to be Limestone too.
+special("j_celesta_mintfantome", "j_celesta_limealicious", {
+    key = "mint_laimu",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.hand
+                and context.other_card and not context.end_of_round
+                and not mint_scoring) then return end
+        local key = CelestasMod.ENHANCEMENT_KEYS
+            and CelestasMod.ENHANCEMENT_KEYS.Limestone
+        if not key then return end
+        local target = context.other_card
+        if target.debuff then return end
+        if not SMODS.has_enhancement(target, key) then return end
+        mint_score(target, context, "mint_laimu_score")
+    end,
+})
+
+-- Mint Fantome + Dokibird: Dokibird deals in what a card has stored, so the
+-- leftmost held card is scored for several times its own Chips.
+--
+-- The multiplier is lent to the CARD for the length of the scoring and taken
+-- off again, rather than the Chips being returned separately: the card really
+-- scores, so its seal, its edition and every Joker watching a scored card all
+-- see the bigger number, which is what "score it for X5 its stored Chips"
+-- means and a loose `chips` return would not.
+--
+-- perma_bonus is where a Chip bonus that outlives the hand lives, and where
+-- Dokibird itself writes. get_chip_bonus adds it whichever kind of card this
+-- is (card.lua:1172), so a Stone card held in hand is multiplied the same way
+-- as any other.
+special("j_celesta_mintfantome", "j_celesta_dokibird", {
+    key = "mint_doki",
+    config = { rate = 5 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.rate } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.hand
+                and context.other_card) then return end
+        local target = mint_leftmost(context, context.other_card)
+        if not target then return end
+
+        local stored = target.get_chip_bonus and target:get_chip_bonus() or 0
+        local lent = stored > 0 and stored * (state.rate - 1) or 0
+        local was = target.ability.perma_bonus or 0
+        target.ability.perma_bonus = was + lent
+        -- mint_score never raises - it pcalls - so the loan is always repaid.
+        mint_score(target, context, "mint_doki_score")
+        target.ability.perma_bonus = was
+    end,
+})
+
+-- Mint Fantome + Snuffy: Snuffy's extra picks, and one more.
+--
+-- The limit itself is granted by the live pass further up - SELECTION_PAIRS
+-- names this key - because the number moves WITHIN a round as Hands are spent,
+-- which an add_to_deck could not follow.
+special("j_celesta_mintfantome", "j_celesta_snuffy", {
+    key = "mint_snuffy",
+    config = { extra = 1 },
+
+    loc_vars = function(def, card, state)
+        local round = G.GAME and G.GAME.current_round
+        return { vars = { ((round and round.hands_left) or 0) + state.extra,
+                          state.extra } }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+--------------------------------------------------------------------------------
+-- Laimu
+--------------------------------------------------------------------------------
+
+--- The pair, so the enhancement hook below can name it once.
+local LAIMU_DOKI = "laimu_doki"
+
+--- What a weathered card also counts as while that pair is in the row.
+---
+--- Polish makes Sandstone out of a Stone Card and Scoria out of a Limestone one
+--- (enhancements/enhancements.lua), so this is the weathering read backwards:
+--- each counts as the card it was made from.
+---
+--- Asked rather than held in a table built at load, because it is only two
+--- questions and neither is worth a table that could go stale.
+local function weathered_from(key)
+    local keys = CelestasMod.ENHANCEMENT_KEYS
+    if not keys then return nil end
+    if key == keys.Limestone then return keys.Scoria end
+    if key == "m_stone" then return keys.Sandstone end
+    return nil
+end
+
+-- Laimu + Dokibird: the weathering undone, for the purpose of counting.
+--
+-- Answered at SMODS.has_enhancement, which is the one place the game and this
+-- mod ask whether a card IS something - the same reasoning Mellow Mabel's
+-- SMODS.smeared_check hook rests on. One hook covers every Joker, every
+-- enhancement gate and every deck count at once, rather than each of them
+-- having to be taught the rule.
+--
+-- It changes only what COUNTS as what. A Scoria card still scores Scoria's own
+-- ^Mult; it is simply a Limestone card as well, for as long as this is out.
+special("j_celesta_limealicious", "j_celesta_dokibird", {
+    key = LAIMU_DOKI,
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+local celesta_laimu_doki_enh_ref = SMODS.has_enhancement
+function SMODS.has_enhancement(card, key, ...)
+    if celesta_laimu_doki_enh_ref(card, key, ...) then return true end
+    -- Cheapest test first: this is asked of every card in every hand, and
+    -- almost every question is about a key the pair has nothing to say about.
+    local weathered = weathered_from(key)
+    if not weathered then return false end
+    local holder = Bind.find_special(LAIMU_DOKI)
+    if not (holder and not holder.debuff) then return false end
+    return celesta_laimu_doki_enh_ref(card, weathered, ...) and true or false
+end
+
+--- The pair, so the selection hook below can name it once.
+local LAIMU_SNUFFY = "laimu_snuffy"
+
+-- Laimu + Snuffy: Snuffy widens what can be selected; here Limestone cards are
+-- outside the count altogether.
+--
+-- The limit is enforced in CardArea:add_to_highlighted (cardarea.lua:172),
+-- which refuses the card outright once the hand is full. Rather than
+-- reimplementing that branch - it also plays the sound and re-parses the
+-- selection - the limit is lifted by one for the length of the call, so
+-- vanilla's own code does the work and the card goes in.
+special("j_celesta_limealicious", "j_celesta_snuffy", {
+    key = LAIMU_SNUFFY,
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+local celesta_laimu_snuffy_highlight_ref = CardArea.add_to_highlighted
+function CardArea:add_to_highlighted(card, silent)
+    local key = CelestasMod.ENHANCEMENT_KEYS
+        and CelestasMod.ENHANCEMENT_KEYS.Limestone
+    local free = self == G.hand and card and key
+        and SMODS.has_enhancement(card, key)
+        and Bind.find_special(LAIMU_SNUFFY) or nil
+    if not free or free.debuff then
+        return celesta_laimu_snuffy_highlight_ref(self, card, silent)
+    end
+
+    local saved = self.config.highlighted_limit
+    self.config.highlighted_limit = #self.highlighted + 1
+    local ok, err = pcall(celesta_laimu_snuffy_highlight_ref, self, card, silent)
+    self.config.highlighted_limit = saved
+    if not ok then error(err, 0) end
+end
+
+--------------------------------------------------------------------------------
+-- Dokibird + Snuffy
+--------------------------------------------------------------------------------
+--
+-- Dokibird's harvest, over the wider hand Snuffy makes it possible to play.
+-- Every played card under the cap goes, not only the unscoring ones, and what
+-- survives is the LEFTMOST card played rather than the one that scored - so
+-- there is no "exactly one card scores" to arrange any more, only a hand to
+-- order.
+--
+-- context.destroy_card is raised once for every card in the played hand,
+-- scoring and unscoring alike (SMODS utils.lua:2061), which is why this does
+-- not narrow by cardarea the way Dokibird alone does. Saying `remove` is what
+-- destroys the card, and it buys the animation, the removal from the deck and
+-- the remove_playing_cards pass other Jokers watch, all for free.
+--
+-- The cap and the rate are written out rather than read from
+-- CelestasMod.DOKIBIRD_CAP: this file is loaded before jokers/implemented.lua,
+-- so those constants do not exist yet. test_specials.py reads both back out of
+-- the two files and fails if they ever disagree.
+special("j_celesta_dokibird", "j_celesta_snuffy", {
+    key = "doki_snuffy",
+    config = { cap = 100, rate = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.cap, state.rate } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.destroy_card and not context.blueprint
+                and not context.retrigger_joker) then return end
+        local hand = context.full_hand
+        local target = hand and hand[1]
+        if not target then return end
+
+        local doomed = context.destroy_card
+        -- The leftmost card is the one kept, and the one paid.
+        if doomed == target then return end
+
+        local stored = doomed.get_chip_bonus and doomed:get_chip_bonus() or 0
+        -- Nothing to take is not a card to destroy, and the cap is what the
+        -- card advertises: a big card is left where it is.
+        if stored <= 0 or stored >= state.cap then return end
+
+        local gain = stored * state.rate
+        target.ability.perma_bonus = (target.ability.perma_bonus or 0) + gain
+
+        return {
+            remove = true,
+            message = localize { type = "variable", key = "a_chips",
+                                 vars = { gain } },
+            colour = G.C.CHIPS,
+            card = target,
+        }
+    end,
+})
+
+
+--------------------------------------------------------------------------------
+-- Mint Fantome, Nimi, Dooby and Dokibird
+--------------------------------------------------------------------------------
+--
+-- Four Jokers about the two things a run can be denied: a debuff, and a shop
+-- that took no money. Every pair between them is registered, so the quad at
+-- the end of this section is reachable by merging any two of them.
+
+--- True when this shop took no money, which is Dooby's whole question.
+local function shop_was_quiet()
+    return CelestasMod.shop_had_spending
+        and not CelestasMod.shop_had_spending()
+end
+
+-- Mint Fantome + Nimi: Nimi lifts a debuff, Mint Fantome scores the leftmost
+-- card held in hand - so the card is freed first and then scored.
+--
+-- The lift lands in context.before, which is raised when the hand is played
+-- and before anything scores, so the card is undebuffed for the whole hand
+-- rather than only for the moment it is scored. Mint Fantome's own pass then
+-- finds an ordinary card where it would have found a debuffed one and refused.
+special("j_celesta_mintfantome", "j_celesta_nimi", {
+    key = "mint_nimi",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.before and not context.blueprint then
+            local target = G.hand and G.hand.cards and G.hand.cards[1]
+            if not (target and target.debuff) then return end
+            target:set_debuff(false)
+            return { message = localize("celesta_undebuffed"),
+                     colour = G.C.FILTER, card = card }
+        end
+
+        if not (context.individual and context.cardarea == G.hand
+                and context.other_card) then return end
+        local target = mint_leftmost(context, context.other_card)
+        if not target then return end
+        mint_score(target, context, "mint_nimi_score")
+    end,
+})
+
+-- Mint Fantome + Dooby: Dooby counts the shops nothing was spent in, and each
+-- one is another trigger of the leftmost card held in hand.
+--
+-- Banked at ending_shop, which is Dooby's own moment: the shop is over and
+-- whether anything was bought in it is settled. The count only ever goes up,
+-- which is what makes a run of quiet shops worth having.
+special("j_celesta_mintfantome", "j_celesta_dooby", {
+    key = "mint_dooby",
+    config = { quiet = 0 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.quiet } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.ending_shop and not context.blueprint then
+            if not shop_was_quiet() then return end
+            state.quiet = (state.quiet or 0) + 1
+            return { message = localize("celesta_quiet_shop"),
+                     colour = G.C.MONEY, card = card }
+        end
+
+        if not (context.individual and context.cardarea == G.hand
+                and context.other_card) then return end
+        if (state.quiet or 0) <= 0 then return end
+        local target = mint_leftmost(context, context.other_card)
+        if not target then return end
+        for _ = 1, state.quiet do
+            mint_score(target, context, "mint_dooby_score")
+        end
+    end,
+})
+
+-- Dooby + Dokibird: Dooby's quiet shop, banked in Dokibird's Chips.
+special("j_celesta_dooby", "j_celesta_dokibird", {
+    key = "dooby_doki",
+    config = { chips = 0, chip_gain = 100 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.chip_gain, state.chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.ending_shop and not context.blueprint then
+            if not shop_was_quiet() then return end
+            state.chips = state.chips + state.chip_gain
+            return {
+                message = localize { type = "variable", key = "a_chips",
+                                     vars = { state.chips } },
+                colour = G.C.CHIPS, card = card,
+            }
+        end
+
+        if context.joker_main and state.chips > 0 then
+            return { chips = state.chips }
+        end
+    end,
+})
+
+--- The pair, so the debuff hook below can name it once.
+local NIMI_DOKI = "nimi_doki"
+
+-- Nimi + Dokibird: a card with enough stored Chips is simply beyond the Blind.
+--
+-- Fleshy's shape rather than Nimi's: answered BEFORE the ref, so the card is
+-- never debuffed at all rather than debuffed and freed. That is what "cannot
+-- be debuffed" says, and it is also why there is no meter here - nothing is
+-- being spent.
+--
+-- "Stored Chips" is get_chip_bonus, the reading Dokibird's own line is written
+-- in: the card's rank, its enhancement's bonus and any permanent bonus on top.
+special("j_celesta_nimi", "j_celesta_dokibird", {
+    key = NIMI_DOKI,
+    config = { chips = 50 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.chips } }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+local celesta_nimi_doki_debuff_ref = Blind and Blind.debuff_card
+if celesta_nimi_doki_debuff_ref then
+    function Blind:debuff_card(card, from_blind)
+        local holder, def = Bind.find_special(NIMI_DOKI)
+        if holder and not holder.debuff and card and card.get_chip_bonus then
+            local stored = card:get_chip_bonus() or 0
+            if stored > Bind.special_state(holder, def).chips then
+                -- The same line vanilla ends on for a card its Blind does not
+                -- want (blind.lua:721), which also lifts one already applied.
+                card:set_debuff(false)
+                return
+            end
+        end
+        return celesta_nimi_doki_debuff_ref(self, card, from_blind)
+    end
+end
+
+-- Dooby + Nimi: a Stamp can be taken out of the pack and kept.
+--
+-- No calculate at all. A Stamp is normally used out of the pack onto a Joker
+-- there and then; what this changes is whether the pack offers to put one in
+-- the consumable tray instead, which is Steamodded's `select_card` on the
+-- consumable TYPE. That lives in stamps/stamps.lua, which owns the type and is
+-- loaded after this file - it asks for this pair by name.
+special("j_celesta_dooby", "j_celesta_nimi", {
+    key = "dooby_nimi",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+--- The quad, so the debuff hook below can name it once.
+CelestasMod.GAY_WOMEN_KEY = "quad_gay_women"
+
+-- G.A.Y. Women: the four of them, and no debuff sticks to anything.
+--
+-- Nimi's rule with the meter taken off and a payout put on. The hook is the
+-- same one - Blind:debuff_card, where every rule a Boss has ends - and so is
+-- the per-card-per-round mark, for the same reason: every set_ability and
+-- set_base re-judges the card it touches, so a count kept per judgement would
+-- run away on a single hand.
+--
+-- Jokers as well as playing cards, which is what the group says and what the
+-- funnel hands over anyway: a Blind that debuffs the row goes through here
+-- card by card.
+quad({
+    key = CelestasMod.GAY_WOMEN_KEY,
+    members = { "j_celesta_mintfantome", "j_celesta_nimi",
+                "j_celesta_dooby", "j_celesta_dokibird" },
+    config = { chips = 0, chip_gain = 100 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.chip_gain, state.chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.joker_main and state.chips > 0 then
+            return { chips = state.chips }
+        end
+    end,
+})
+
+local celesta_gay_women_debuff_ref = Blind and Blind.debuff_card
+if celesta_gay_women_debuff_ref then
+    function Blind:debuff_card(card, from_blind)
+        local ret = celesta_gay_women_debuff_ref(self, card, from_blind)
+        if not (card and card.debuff and card.debuffed_by_blind) then return ret end
+
+        local holder, def = Bind.find_special(CelestasMod.GAY_WOMEN_KEY)
+        if not (holder and not holder.debuff) then return ret end
+
+        card:set_debuff(false)
+
+        local round = (G.GAME and G.GAME.round) or 0
+        if card.celesta_gay_freed == round then return ret end
+        card.celesta_gay_freed = round
+
+        local state = Bind.special_state(holder, def)
+        state.chips = state.chips + state.chip_gain
+        card_eval_status_text(holder, "extra", nil, nil, nil,
+            { message = localize { type = "variable", key = "a_chips",
+                                   vars = { state.chips } },
+              colour = G.C.CHIPS })
+        return ret
+    end
+end
+
+--------------------------------------------------------------------------------
+-- AmaLee, Ironmouse, Dokibird and Rin Penrose
+--------------------------------------------------------------------------------
+
+--- AmaLee's opening move, for the pair that keeps it: a Snowstorm at the
+--- moment the Blind is chosen, so it is up for the whole round. The Arena
+--- clears itself on the way back to Blind select. Aquwa's open_with_downpour
+--- is the same thing in the other weather.
+local function open_with_snowstorm(card, context)
+    if not (context.setting_blind and not context.blueprint) then return nil end
+    local Arena = CelestasMod.Arena
+    if snowing() or not (Arena and Arena.start) then return nil end
+    Arena.start("snowstorm")
+    return { message = localize("celesta_snowstorm"), colour = G.C.BLUE,
+             card = card }
+end
+
+-- AmaLee + Ironmouse: AmaLee's weather, and Ironmouse's exponent while it is
+-- up. This one DOES bring its own storm, and the card says so.
+special("j_celesta_amalee", "j_celesta_ironmouse", {
+    key = "amalee_ironmouse",
+    config = { e_mult = 1.4 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.e_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        local snow = open_with_snowstorm(card, context)
+        if snow then return snow end
+
+        if not (context.joker_main and snowing()) then return end
+        if not power_supported("amalee_ironmouse_no_talisman",
+                               "AmaLee + Ironmouse") then
+            return
+        end
+        return { e_mult = state.e_mult }
+    end,
+})
+
+-- AmaLee + Dokibird: Dokibird deals in what a card has stored, so the storm
+-- leaves Chips behind on everything that scores in it.
+--
+-- perma_bonus is where a Chip bonus that outlives the hand lives, and where
+-- Dokibird itself writes. The gain lands as the card scores, so it is paid
+-- from that card's NEXT scoring - BerryCrepe's permanent Mult behaves the
+-- same way.
+special("j_celesta_amalee", "j_celesta_dokibird", {
+    key = "amalee_doki",
+    config = { chips = 20 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play
+                and context.other_card and not context.blueprint) then return end
+        if not snowing() then return end
+        local other = context.other_card
+        other.ability.perma_bonus = (other.ability.perma_bonus or 0) + state.chips
+        return {
+            message = localize { type = "variable", key = "a_chips",
+                                 vars = { state.chips } },
+            colour = G.C.CHIPS, card = other,
+        }
+    end,
+})
+
+-- AmaLee + Rin Penrose: Rin's bank, paid double in AmaLee's weather.
+--
+-- Rin's shape: the hand's total read in the `after` pass, banked, and paid a
+-- step at a time with the remainder kept, so two hands of 30 are worth a step
+-- between them. Divided rather than looped, because one hand under Talisman
+-- can be worth more steps than a loop would ever finish.
+special("j_celesta_amalee", "j_celesta_rinpenrose", {
+    key = "amalee_rin",
+    config = { mult = 0, mult_gain = 10, snow_gain = 20,
+               chips_per_step = 50, bank = 0 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.mult_gain, state.snow_gain,
+                          state.chips_per_step,
+                          state.chips_per_step - (state.bank or 0),
+                          state.mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.after and not context.blueprint then
+            local scored = scored_chips()
+            if scored <= 0 then return end
+            state.bank = (state.bank or 0) + scored
+            local steps = math.floor(state.bank / state.chips_per_step)
+            if steps <= 0 then return end
+            state.bank = state.bank - steps * state.chips_per_step
+            -- The weather is read when the step is PAID, which is the hand
+            -- that earned it: a storm that ends between hands does not take
+            -- back what it was worth.
+            local per = snowing() and state.snow_gain or state.mult_gain
+            state.mult = state.mult + steps * per
+            return {
+                message = localize { type = "variable", key = "a_mult",
+                                     vars = { state.mult } },
+                colour = G.C.MULT, card = card,
+            }
+        end
+
+        if context.joker_main and state.mult > 0 then
+            return { mult = state.mult }
+        end
+    end,
+})
+
+-- Ironmouse + Dokibird: Dokibird's Chips, banked a hand at a time.
+special("j_celesta_ironmouse", "j_celesta_dokibird", {
+    key = "ironmouse_doki",
+    config = { chips = 0, chip_gain = 100 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.chip_gain, state.chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.after and not context.blueprint then
+            state.chips = state.chips + state.chip_gain
+            return {
+                message = localize { type = "variable", key = "a_chips",
+                                     vars = { state.chips } },
+                colour = G.C.CHIPS, card = card,
+            }
+        end
+
+        if context.joker_main and state.chips > 0 then
+            return { chips = state.chips }
+        end
+    end,
+})
+
+-- Ironmouse + Rin Penrose: Rin's bank, in Ironmouse's exponent.
+--
+-- The exponent ACCUMULATES rather than compounding: a step adds 0.05 to it,
+-- the way Ironmouse + Michi's does. ^1.05 twice over is ^1.10 here, not
+-- ^1.1025 - which is the reading every other growing exponent in this file
+-- uses, and the only one a player can do in their head.
+special("j_celesta_ironmouse", "j_celesta_rinpenrose", {
+    key = "ironmouse_rin",
+    config = { e_mult = 1, e_mult_gain = 0.05, chips_per_step = 100, bank = 0 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { 1 + state.e_mult_gain, state.chips_per_step,
+                          state.chips_per_step - (state.bank or 0),
+                          state.e_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.after and not context.blueprint then
+            local scored = scored_chips()
+            if scored <= 0 then return end
+            state.bank = (state.bank or 0) + scored
+            local steps = math.floor(state.bank / state.chips_per_step)
+            if steps <= 0 then return end
+            state.bank = state.bank - steps * state.chips_per_step
+            state.e_mult = state.e_mult + steps * state.e_mult_gain
+            return {
+                message = localize { type = "variable", key = "celesta_powmult",
+                                     vars = { state.e_mult } },
+                colour = G.C.MULT, card = card,
+            }
+        end
+
+        if context.joker_main and state.e_mult > 1 then
+            if not power_supported("ironmouse_rin_no_talisman",
+                                   "Ironmouse + Rin Penrose") then
+                return
+            end
+            return { e_mult = state.e_mult }
+        end
+    end,
+})
+
+-- Dokibird + Rin Penrose: Rin's bank read off the MULT the hand scored rather
+-- than the Chips, and paid back in Chips.
+--
+-- `mult` is the global Balatro keeps the running multiplier in, and the
+-- ordinary scoring path never clears it - only the "hand not allowed" branch
+-- does (state_events.lua:786), which never reaches `after`. So it still holds
+-- this hand's total here, exactly as hand_chips does.
+special("j_celesta_dokibird", "j_celesta_rinpenrose", {
+    key = "doki_rin",
+    config = { chips = 0, chip_gain = 100, mult_per_step = 10, bank = 0 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.chip_gain, state.mult_per_step,
+                          state.mult_per_step - (state.bank or 0),
+                          state.chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.after and not context.blueprint then
+            local scored = scored_mult()
+            if scored <= 0 then return end
+            state.bank = (state.bank or 0) + scored
+            local steps = math.floor(state.bank / state.mult_per_step)
+            if steps <= 0 then return end
+            state.bank = state.bank - steps * state.mult_per_step
+            state.chips = state.chips + steps * state.chip_gain
+            return {
+                message = localize { type = "variable", key = "a_chips",
+                                     vars = { state.chips } },
+                colour = G.C.CHIPS, card = card,
+            }
+        end
+
+        if context.joker_main and state.chips > 0 then
+            return { chips = state.chips }
+        end
+    end,
+})
+
+--------------------------------------------------------------------------------
+-- Snuffy
+--------------------------------------------------------------------------------
+--
+-- Snuffy widens the hand, so all four of these are paid by how wide it got.
+-- context.joker_main carries full_hand - the whole played hand, scoring and
+-- unscoring alike (state_events.lua:667) - which is what "each card in played
+-- hand" means and what Snuffy's own extra picks put there.
+
+--- How many cards were played this hand.
+local function played_count(context)
+    local hand = context.full_hand or (G.play and G.play.cards)
+    return #(hand or {})
+end
+
+-- Snuffy + Nyanners: Nyanners pays Chips for each of something, and the hand
+-- is the something.
+special("j_celesta_snuffy", "j_celesta_nyanners", {
+    key = "snuffy_nyanners",
+    config = { chips = 30 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local total = state.chips * played_count(context)
+        if total > 0 then return { chips = total } end
+    end,
+})
+
+-- Snuffy + Ironmouse: Ironmouse's exponent, one card's worth at a time.
+--
+-- The EXCESS over ^1 is what each card adds, so five cards are ^1.5 rather
+-- than ^5.5. That is the reading every growing exponent in this file uses, and
+-- the only one that leaves the number on the card meaning anything.
+special("j_celesta_snuffy", "j_celesta_ironmouse", {
+    key = "snuffy_ironmouse",
+    config = { e_mult = 1.1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.e_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local e_mult = 1 + (state.e_mult - 1) * played_count(context)
+        if e_mult <= 1 then return end
+        if not power_supported("snuffy_ironmouse_no_talisman",
+                               "Snuffy + Ironmouse") then
+            return
+        end
+        return { e_mult = e_mult }
+    end,
+})
+
+-- Snuffy + Silvervale: Silvervale's X Mult, counted off the hand instead of
+-- off the Rares sold.
+special("j_celesta_snuffy", "j_celesta_silvervale", {
+    key = "snuffy_silvervale",
+    config = { x_mult = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local x_mult = state.x_mult * played_count(context)
+        -- X1 is no multiplier at all, and returning it would put a flourish
+        -- over the Joker every hand for doing nothing.
+        if x_mult > 1 then return { x_mult = x_mult } end
+    end,
+})
+
+-- Snuffy + Projekt Melody: Projekt Melody pays at the cash-out, for every card
+-- the round has played.
+--
+-- Counted per ROUND, and kept against the round number rather than reset by a
+-- hook: the cash-out reads calc_dollar_bonus AFTER the end_of_round pass
+-- (state_events.lua:101 then :1176), so a reset there would zero the tally
+-- before it was paid. Comparing the round instead cannot get that order wrong.
+special("j_celesta_snuffy", "j_celesta_projektmelody", {
+    key = "snuffy_melody",
+    config = { dollars = 3, cards = 0, round = -1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars, state.dollars * state.cards } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.before and not context.blueprint) then return end
+        local round = (G.GAME and G.GAME.round) or 0
+        if state.round ~= round then
+            state.round = round
+            state.cards = 0
+        end
+        state.cards = state.cards + #(context.full_hand or {})
+    end,
+
+    calc_dollar_bonus = function(def, card, state)
+        local round = (G.GAME and G.GAME.round) or 0
+        if state.round ~= round or state.cards <= 0 then return end
+        return state.dollars * state.cards
+    end,
+})
+
+
+--------------------------------------------------------------------------------
+-- Lucia
+--------------------------------------------------------------------------------
+--
+-- Lucia pays most for a hand of one card and less for every card after it. Two
+-- of these keep that taper - through CelestasMod.lucia_taper, so the Joker and
+-- the pair cannot come to disagree about what "one less for each extra card"
+-- means - and the rest trade it for something that does not care how wide the
+-- hand was.
+
+-- Lucia + Angel Steps: Angel Steps' swap, and a flat multiplier in place of
+-- Lucia's taper.
+--
+-- The swap is Angel Steps' own, at context.modify_hand: `mult` and hand_chips
+-- are the globals evaluate_play keeps the base score in, and that context is
+-- raised from inside Blind:modify_hand with both already written - the one
+-- moment the base score is still the base score. The message is load-bearing:
+-- Steamodded re-draws the score readout from whether anything was calculated,
+-- and without it the hand would score swapped while the readout still showed
+-- the old numbers.
+special("j_celesta_lucia", "j_celesta_angelsteps", {
+    key = "lucia_angel",
+    config = { x_mult = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.modify_hand then
+            mult, hand_chips = hand_chips, mult
+            return { message = localize("celesta_swapped"), colour = G.C.CHIPS }
+        end
+
+        if context.joker_main then return { x_mult = state.x_mult } end
+    end,
+})
+
+-- Lucia + Mari Yume: Mari Yume copies, so the taper is spent on retriggers
+-- rather than on Mult - five for a hand of one card, one fewer for each card
+-- after that, down to the one trigger every card gets anyway.
+special("j_celesta_lucia", "j_celesta_mariyume", {
+    key = "lucia_mari",
+    config = { repetitions = 5 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.repetitions } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.repetition and context.cardarea == G.play
+                and context.other_card) then return end
+        if not CelestasMod.lucia_taper then return end
+        local times = CelestasMod.lucia_taper(state.repetitions,
+                                              played_count(context), 0)
+        if times <= 0 then return end
+        return {
+            message = localize("k_again_ex"),
+            repetitions = times,
+            card = card,
+        }
+    end,
+})
+
+-- Lucia + El XoX: El XoX counts the hands a round has, so what is left of them
+-- is the multiplier.
+special("j_celesta_lucia", "j_celesta_el_xox", {
+    key = "lucia_elxox",
+
+    loc_vars = function(def, card, state)
+        local round = G.GAME and G.GAME.current_round
+        return { vars = { (round and round.hands_left) or 0 } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local round = G.GAME and G.GAME.current_round
+        local x_mult = (round and round.hands_left) or 0
+        -- X1 and X0 are both nothing worth announcing, and X0 would take the
+        -- whole score with it if it were.
+        if x_mult > 1 then return { x_mult = x_mult } end
+    end,
+})
+
+--- Both straights. A Straight Flush is a straight, and Yoka + Boop answers for
+--- a Full House and a Flush House together for the same reason.
+local LUCIA_STRAIGHTS = { ["Straight"] = true, ["Straight Flush"] = true }
+
+-- Lucia + Meicha: Meicha is the straight Joker, so a straight is what pays.
+special("j_celesta_lucia", "j_celesta_meicha", {
+    key = "lucia_meicha",
+    config = { x_mult = 3 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        if not LUCIA_STRAIGHTS[context.scoring_name] then return end
+        return { x_mult = state.x_mult }
+    end,
+})
+
+--- Lucia's multiplier, paid to each scored card carrying `enhancement`.
+---
+--- Three pairs, one body: the only thing that differs between them is which
+--- card the other half is about.
+local function lucia_enhanced(context, state, enhancement)
+    if not (context.individual and context.cardarea == G.play
+            and context.other_card and enhancement) then return nil end
+    if not SMODS.has_enhancement(context.other_card, enhancement) then return nil end
+    return { x_mult = state.x_mult, card = context.other_card }
+end
+
+-- Lucia + Zentreya: Zentreya's Steel Cards.
+special("j_celesta_lucia", "j_celesta_zentreya", {
+    key = "lucia_zentreya",
+    config = { x_mult = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        return lucia_enhanced(context, state, "m_steel")
+    end,
+})
+
+-- Lucia + Sinder: Sinder's Driftwood.
+special("j_celesta_lucia", "j_celesta_sinder", {
+    key = "lucia_sinder",
+    config = { x_mult = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        local keys = CelestasMod.ENHANCEMENT_KEYS
+        return lucia_enhanced(context, state, keys and keys.Driftwood)
+    end,
+})
+
+-- Lucia + Jowol: Jowol's Stone cards, paid when they are played rather than
+-- when they are held.
+special("j_celesta_lucia", "j_celesta_jowol", {
+    key = "lucia_jowol",
+    config = { x_mult = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        return lucia_enhanced(context, state, "m_stone")
+    end,
+})
+
+
+-- Kuro + Michi: Michi's second card off a discarded Purple Seal, and it is no
+-- longer only a Tarot.
+--
+-- The seal makes the first card itself; Michi adds a second. This pair is that
+-- second one, rolled across every consumable set the game has - so the pair is
+-- Michi's own body with the set no longer written in.
+--
+-- The buffer is vanilla's own reservation: a slot claimed now and filled by an
+-- event later still counts as taken, which is what stops two discarded seals in
+-- the same discard racing for one slot. Decremented rather than zeroed, so a
+-- second claim in flight is not thrown away with this one.
+special("j_celesta_kuro", "j_celesta_michi", {
+    key = "kuro_michi",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.discard and context.other_card
+                and not context.blueprint) then return end
+        if context.other_card.seal ~= "Purple" then return end
+        if not bind_consumable_room() then return end
+
+        local set = any_consumable_set("celesta_bind_kuro_michi")
+
+        G.GAME.consumeable_buffer = (G.GAME.consumeable_buffer or 0) + 1
+        G.E_MANAGER:add_event(Event {
+            trigger = "before",
+            delay = 0.0,
+            func = function()
+                local made = SMODS.add_card {
+                    set = set, key_append = "celesta_bind_kuro_michi" }
+                if made then made:juice_up(0.3, 0.5) end
+                G.GAME.consumeable_buffer =
+                    math.max(0, (G.GAME.consumeable_buffer or 1) - 1)
+                return true
+            end
+        })
+
+        return { message = localize("celesta_plus_consumable"),
+                 colour = G.C.PURPLE, card = card }
+    end,
+})
+
+
+--------------------------------------------------------------------------------
+-- Froot
+--------------------------------------------------------------------------------
+--
+-- Froot reads the whole deck for Wild Cards. Most of these are that reading
+-- paid in something else, two of them point it at a different card, and two
+-- are not a count of the deck at all.
+--
+-- Every counted one is LIVE off the deck rather than banked, which is what
+-- Froot's own line means and what every other "for each card in your full
+-- deck" here does: a card that stops being Wild takes its share with it.
+
+-- Froot + Zentreya: Froot's rate, counting Zentreya's Steel Cards instead.
+special("j_celesta_froot", "j_celesta_zentreya", {
+    key = "froot_zentreya",
+    config = { x_mult_gain = 0.4 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain,
+                          1 + state.x_mult_gain * enhanced_in_deck("m_steel") } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local x_mult = 1 + state.x_mult_gain * enhanced_in_deck("m_steel")
+        if x_mult > 1 then return { x_mult = x_mult } end
+    end,
+})
+
+-- Froot + Projekt Melody: Projekt Melody pays at the cash-out, so the deck is
+-- what it pays for.
+--
+-- Through calc_dollar_bonus, the hook Projekt Melody's own money comes through,
+-- so it gets its own line on the cash-out screen rather than arriving as a
+-- floating message.
+special("j_celesta_froot", "j_celesta_projektmelody", {
+    key = "froot_melody",
+    config = { dollars = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars, state.dollars * wilds_in_deck() } }
+    end,
+
+    calc_dollar_bonus = function(def, card, state)
+        local owed = state.dollars * wilds_in_deck()
+        if owed <= 0 then return end
+        return owed
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+-- Froot + Ironmouse: Froot's count, in Ironmouse's exponent.
+--
+-- The exponent ACCUMULATES rather than compounding, the way every growing
+-- exponent in this file does: ten Wild Cards are ^1.5, not ^1.05 to the tenth.
+special("j_celesta_froot", "j_celesta_ironmouse", {
+    key = "froot_ironmouse",
+    config = { e_mult_gain = 0.05 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { 1 + state.e_mult_gain,
+                          1 + state.e_mult_gain * wilds_in_deck() } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local e_mult = 1 + state.e_mult_gain * wilds_in_deck()
+        if e_mult <= 1 then return end
+        if not power_supported("froot_ironmouse_no_talisman",
+                               "Froot + Ironmouse") then
+            return
+        end
+        return { e_mult = e_mult }
+    end,
+})
+
+-- Froot + Nyanners: Nyanners pays Chips for each of something, and the Wild
+-- Cards are the something.
+special("j_celesta_froot", "j_celesta_nyanners", {
+    key = "froot_nyanners",
+    config = { chips = 75 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.chips, state.chips * wilds_in_deck() } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local total = state.chips * wilds_in_deck()
+        if total > 0 then return { chips = total } end
+    end,
+})
+
+-- Froot + Silvervale: Silvervale's X Mult, counted off the deck rather than
+-- off the Rares sold.
+--
+-- X1 PLUS the gain per card, which is Silvervale's own arithmetic: a deck with
+-- no Wild Card in it is X1 and scores nothing, rather than X0 taking the whole
+-- hand with it.
+special("j_celesta_froot", "j_celesta_silvervale", {
+    key = "froot_silvervale",
+    config = { x_mult_gain = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain,
+                          1 + state.x_mult_gain * wilds_in_deck() } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local x_mult = 1 + state.x_mult_gain * wilds_in_deck()
+        if x_mult > 1 then return { x_mult = x_mult } end
+    end,
+})
+
+-- Froot + Momo: Momo makes every hand a Flush, so a Flush is what this grows
+-- on.
+--
+-- BANKED rather than counted, which is the one of these that is not about the
+-- deck: what it is worth is how many flushes the run has played.
+--
+-- Momo's own widening is gone with the rest of it - a replacing pair speaks for
+-- both halves, so CelestasMod.joker_in_play stops finding a Momo and hands stop
+-- being flushes for free. What is left is the flushes you actually make.
+--
+-- Any hand with a flush in it: Flush, Straight Flush, Flush House, Flush Five,
+-- and whatever a mod adds that is named for one. `scoring_name` is the internal
+-- name rather than the localized one, so a plain find is safe here.
+local function contains_flush(name)
+    return type(name) == "string" and name:find("Flush", 1, true) ~= nil
+end
+
+special("j_celesta_froot", "j_celesta_momo", {
+    key = "froot_momo",
+    config = { x_mult = 1, x_mult_gain = 0.4 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- context.before sees the hand whole and lands ahead of scoring, so
+        -- the flush that earned the gain is the first hand to be paid by it.
+        if context.before and not context.blueprint
+            and contains_flush(context.scoring_name) then
+            state.x_mult = state.x_mult + state.x_mult_gain
+            return {
+                message = localize { type = "variable", key = "a_xmult",
+                                     vars = { state.x_mult } },
+                colour = G.C.MULT, card = card,
+            }
+        end
+
+        if context.joker_main and state.x_mult > 1 then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+--- The pair, so the selection hook below can name it once.
+local FROOT_SNUFFY = "froot_snuffy"
+
+-- Froot + Snuffy: Snuffy widens what can be selected, and a Wild Card is
+-- outside the count - up to two of them.
+--
+-- Laimu + Snuffy's shape with a ceiling: the selection may run to the limit
+-- plus two, and only a Wild Card may take one of those two places. The limit is
+-- lifted by one for the length of the call so vanilla's own branch does the
+-- work (cardarea.lua:172) - it plays the sound and re-parses the selection, and
+-- reimplementing it here would mean keeping that in step forever.
+special("j_celesta_froot", "j_celesta_snuffy", {
+    key = FROOT_SNUFFY,
+    config = { extra = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.extra } }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+local celesta_froot_snuffy_highlight_ref = CardArea.add_to_highlighted
+function CardArea:add_to_highlighted(card, silent)
+    local free = self == G.hand and card
+        and SMODS.has_enhancement(card, "m_wild")
+        and Bind.find_special(FROOT_SNUFFY) or nil
+    if free and not free.debuff then
+        local def = Bind.special_of(free)
+        local extra = def and Bind.special_state(free, def).extra or 0
+        local saved = self.config.highlighted_limit
+        if #self.highlighted < saved + extra then
+            self.config.highlighted_limit = #self.highlighted + 1
+            local ok, err = pcall(celesta_froot_snuffy_highlight_ref,
+                                  self, card, silent)
+            self.config.highlighted_limit = saved
+            if not ok then error(err, 0) end
+            return
+        end
+    end
+    return celesta_froot_snuffy_highlight_ref(self, card, silent)
+end
+
+-- Froot + FeFe: FeFe deals in Hearts, so the Hearts are what is counted.
+special("j_celesta_froot", "j_celesta_fefe", {
+    key = "froot_fefe",
+    config = { x_mult_gain = 0.04 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain,
+                          1 + state.x_mult_gain
+                              * CelestasMod.count_suit_in_deck("Hearts") } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local x_mult = 1 + state.x_mult_gain
+            * CelestasMod.count_suit_in_deck("Hearts")
+        if x_mult > 1 then return { x_mult = x_mult } end
+    end,
+})
+
+-- Froot + Hime: Hime deals in Eutrophic cards, so those are what is counted.
+special("j_celesta_froot", "j_celesta_hime", {
+    key = "froot_hime",
+    config = { x_mult_gain = 0.4 },
+
+    loc_vars = function(def, card, state)
+        local keys = CelestasMod.ENHANCEMENT_KEYS
+        return { vars = { state.x_mult_gain,
+                          1 + state.x_mult_gain
+                              * enhanced_in_deck(keys and keys.Eutrophic) } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local keys = CelestasMod.ENHANCEMENT_KEYS
+        local x_mult = 1 + state.x_mult_gain
+            * enhanced_in_deck(keys and keys.Eutrophic)
+        if x_mult > 1 then return { x_mult = x_mult } end
+    end,
+})
+
+
+--------------------------------------------------------------------------------
+-- Ellie Minibot, and MinikoMew's debt
+--------------------------------------------------------------------------------
+--
+-- Ellie Minibot answers context.fix_probability: it hands back a numerator
+-- equal to the denominator, which is a chance that always comes up. On its own
+-- it only covers this mod's own Jokers. Two of the pairs below point that at
+-- rolls it does not normally reach, and one of them turns it round - a
+-- numerator of NOTHING is a roll that never comes up.
+
+-- Ellie Minibot + Cerber: Cerber sends the biggest card round again, which is
+-- another chance for a fragile one to break. Together they stop breaking.
+--
+-- Both rolls: vanilla's Glass shatter, which rolls under the identifier
+-- `glass`, and this mod's Gash break under CelestasMod.GASH_BREAK_ID. Answered
+-- at the roll rather than at the destruction, so the card is never picked to
+-- break in the first place and nothing downstream has to be told about it.
+special("j_celesta_ellie_minibot", "j_celesta_cerbervt", {
+    key = "ellie_cerber",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.fix_probability then return end
+        local id = context.identifier
+        if not (id == "glass" or id == CelestasMod.GASH_BREAK_ID) then return end
+        -- Zero, not nil: nil would leave the roll at whatever it was, and 0 is
+        -- a truthy value in Lua so it survives the `or` chain SMODS reads the
+        -- fixed numerator through (utils.lua:2733).
+        return { numerator = 0 }
+    end,
+})
+
+-- Ellie Minibot + Neuro: the Lucky card's two rolls, always won.
+--
+-- Vanilla rolls them as `lucky_mult` (1 in 5, for the Mult) and `lucky_money`
+-- (1 in 15, for the money) - card.lua:1186 and :1311. Neither belongs to a
+-- Joker, which is why Ellie alone does not cover them: it asks whether the
+-- thing rolling is one of this mod's Jokers, and a playing card is not.
+special("j_celesta_ellie_minibot", "j_celesta_neuro", {
+    key = "ellie_neuro",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.fix_probability then return end
+        local id = context.identifier
+        if not (id == "lucky_mult" or id == "lucky_money") then return end
+        local d = context.denominator
+        -- Only a number, or a Talisman big number - Ellie's own guard, for the
+        -- same reason: Cryptid's RNJoker passes a sentence.
+        if type(d) ~= "number" and not (type(d) == "table" and getmetatable(d)) then
+            return
+        end
+        return { numerator = d }
+    end,
+})
+
+-- Ellie Minibot + Vedal: Vedal's exponent climbs twice as fast.
+--
+-- Not a calculate at all. jokers/implemented.lua asks CelestasMod.vedal_step
+-- at every scale and multiplies the rules it finds together, so this file does
+-- not have to know how the scaling works and that one does not have to know
+-- that merges exist - the same seam Kuro's boss hold uses.
+special("j_celesta_ellie_minibot", "j_celesta_vedal", {
+    key = "ellie_vedal",
+    config = { scale = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.scale } }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+-- `or {}` for the reason Kuro's rule gives: globals.lua declares the list, and
+-- this file is loaded before the one that reads it.
+CelestasMod.VEDAL_SCALE_RULES = CelestasMod.VEDAL_SCALE_RULES or {}
+CelestasMod.VEDAL_SCALE_RULES[#CelestasMod.VEDAL_SCALE_RULES + 1] = function()
+    local holder, def = Bind.find_special("ellie_vedal")
+    if not (holder and not holder.debuff) then return 1 end
+    return Bind.special_state(holder, def).scale
+end
+
+-- MinikoMew + Cerber: MinikoMew is paid for being in debt, and Cerber picks
+-- the biggest card - so the debt buys retriggers of it.
+--
+-- The card is Cerber's own pick, through CelestasMod.highest_ranked, so the
+-- two cannot disagree about which one is biggest. The debt is MinikoMew's own
+-- reading, which is a Talisman number once it is large enough - hence the
+-- floor going through a plain number rather than the debt itself.
+special("j_celesta_minikomew", "j_celesta_cerbervt", {
+    key = "minikomew_cerber",
+    config = { per = 5 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.per } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.repetition and context.cardarea == G.play
+                and context.other_card) then return end
+        if not CelestasMod.highest_ranked then return end
+        if context.other_card ~= CelestasMod.highest_ranked(context.scoring_hand) then
+            return
+        end
+
+        local debt = CelestasMod.minikomew_debt and CelestasMod.minikomew_debt() or 0
+        -- Through to_number for the same reason the banking pairs do: past a
+        -- double the debt is one of Talisman's, and a repetition count has to
+        -- be a plain number the scoring pass can loop on.
+        if type(debt) ~= "number" and type(to_number) == "function" then
+            local ok, converted = pcall(to_number, debt)
+            debt = ok and converted or 0
+        end
+        if type(debt) ~= "number" or debt ~= debt or debt == math.huge then
+            return
+        end
+
+        local times = math.floor(debt / state.per)
+        if times <= 0 then return end
+        return {
+            message = localize("k_again_ex"),
+            repetitions = times,
+            card = card,
+        }
+    end,
+})
+
+
+--------------------------------------------------------------------------------
+-- Eros
+--------------------------------------------------------------------------------
+--
+-- Eros eats the Bonus enhancement off scoring cards and keeps the Chips. One
+-- of these feeds it Bonus cards to eat, one eats them for a great deal more,
+-- and one eats something else entirely.
+
+-- Eros + KokoNuts: KokoNuts' seven, wearing the enhancement Eros lives on.
+--
+-- KokoNuts' own timing, which Suko + KokoNuts also keeps: setting_blind, so
+-- the card is in the deck before a hand is drawn. The getting_sliced test is
+-- KokoNuts' too - a Joker being destroyed as the Blind is set must not spend
+-- its last act adding a card.
+special("j_celesta_eros", "j_celesta_kokonuts", {
+    key = "eros_koko",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.setting_blind and not context.blueprint
+            and not (context.blueprint_card or card).getting_sliced then
+            koko_sevens(card, 1, "celesta_bind_eros_koko", nil, nil,
+                        G.P_CENTERS.m_bonus)
+        end
+    end,
+})
+
+-- Eros + LaynaLazar: LaynaLazar goes looking through the played hand, and what
+-- it finds here is face cards - eaten, for three times what they were holding.
+--
+-- context.destroy_card is raised once for every card in the played hand,
+-- scoring and unscoring alike (SMODS utils.lua:2061), so this eats every face
+-- card played rather than only the ones that scored. Saying `remove` is what
+-- destroys it, and it buys the animation, the removal from the deck and the
+-- remove_playing_cards pass other Jokers watch.
+--
+-- "Stored Chips" is get_chip_bonus - the card's rank, its enhancement's bonus
+-- and any permanent bonus on top - which is the reading Dokibird's line uses
+-- for the same phrase.
+special("j_celesta_eros", "j_celesta_laynalazar", {
+    key = "eros_layna",
+    config = { chips = 0, rate = 3 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.rate, state.chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.destroy_card and not context.blueprint
+            and not context.retrigger_joker then
+            local doomed = context.destroy_card
+            if not (doomed.is_face and doomed:is_face()) then return end
+
+            local stored = doomed.get_chip_bonus and doomed:get_chip_bonus() or 0
+            state.chips = state.chips + stored * state.rate
+            return {
+                remove = true,
+                message = localize { type = "variable", key = "a_chips",
+                                     vars = { state.chips } },
+                colour = G.C.CHIPS,
+                card = card,
+            }
+        end
+
+        if context.joker_main and state.chips > 0 then
+            return { chips = state.chips }
+        end
+    end,
+})
+
+-- Eros + Grimmi: Eros's own meal, at more than twice the price.
+--
+-- The strip itself is Eros's, through CelestasMod.eros_strip, so the pair
+-- cannot come to disagree with the Joker about which cards were eaten - and
+-- the timing comes with it: context.before, so the enhancement is gone before
+-- the hand scores and those cards do not pay their Chips this hand. That is
+-- the trade, and it is vanilla Vampire's shape.
+--
+-- Banked plainly rather than through SMODS.scale_card, which is how every
+-- other pair in this file grows. Eros alone goes through scale_card and so is
+-- reachable by Vedal; no merge in this file is, and making this the one
+-- exception would be a change to Vedal rather than to Eros.
+special("j_celesta_eros", "j_celesta_grimmi", {
+    key = "eros_grimmi",
+    config = { chips = 0, chip_gain = 36 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.chip_gain, state.chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.before and not context.blueprint then
+            local removed = CelestasMod.eros_strip
+                and CelestasMod.eros_strip(context.scoring_hand) or 0
+            if removed <= 0 then return end
+            state.chips = state.chips + state.chip_gain * removed
+            return {
+                message = localize { type = "variable", key = "a_chips",
+                                     vars = { state.chips } },
+                colour = G.C.CHIPS, card = card,
+            }
+        end
+
+        if context.joker_main and state.chips > 0 then
+            return { chips = state.chips }
+        end
+    end,
+})
+
+
+--------------------------------------------------------------------------------
+-- Tobs
+--------------------------------------------------------------------------------
+--
+-- All three are about Eutrophic cards, and all three replace Tobs - so the
+-- widening it exists for would go with it. The rule below is what keeps it:
+-- enhancements/enhancements.lua asks whether anything widens a Eutrophic, and
+-- any of these three answers yes.
+
+--- The three, so the rules below can name them once.
+local TOBS_PAIRS = { "tobs_nihmune", "tobs_suko", "tobs_toma" }
+
+CelestasMod.EUTROPHIC_WIDE_RULES = CelestasMod.EUTROPHIC_WIDE_RULES or {}
+CelestasMod.EUTROPHIC_WIDE_RULES[#CelestasMod.EUTROPHIC_WIDE_RULES + 1] = function()
+    for _, key in ipairs(TOBS_PAIRS) do
+        if specials_held(key)[1] then return true end
+    end
+    return false
+end
+
+-- Tobs + Nihmune: Nihmune turns the scoring hand into Clubs; this turns the
+-- Clubs into Eutrophic cards, which is then something Tobs's own widening has
+-- a use for.
+--
+-- context.before, ahead of scoring, so the cards are Eutrophic by the time
+-- they score - the same moment Arar and Eros work at. Under unjudged for
+-- Arar's reason: set_ability re-judges the card, and The Pillar debuffs
+-- anything played this Ante, which is every card in the hand being played.
+special("j_celesta_tobs", "j_celesta_nihmune", {
+    key = "tobs_nihmune",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.before and not context.blueprint) then return end
+        local key = CelestasMod.ENHANCEMENT_KEYS
+            and CelestasMod.ENHANCEMENT_KEYS.Eutrophic
+        local center = key and G.P_CENTERS[key]
+        if not center then return end
+
+        local made = 0
+        for _, played in ipairs(context.scoring_hand or {}) do
+            if played.is_suit and played:is_suit("Clubs")
+                and not SMODS.has_enhancement(played, key) then
+                made = made + 1
+                local target = played
+                CelestasMod.unjudged(target, function()
+                    target:set_ability(center, nil, true)
+                end)
+                G.E_MANAGER:add_event(Event {
+                    func = function() target:juice_up() return true end
+                })
+            end
+        end
+
+        if made > 0 then
+            return { message = localize("k_upgrade_ex"),
+                     colour = G.C.SECONDARY_SET.Enhanced, card = card }
+        end
+    end,
+})
+
+-- Tobs + Suko: every played Eutrophic card comes out Foil.
+--
+-- Only a card with no edition: this gives one, it does not trade one away -
+-- and that test is also what stops the same card being re-done every hand.
+special("j_celesta_tobs", "j_celesta_suko", {
+    key = "tobs_suko",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.before and not context.blueprint) then return end
+        local key = CelestasMod.ENHANCEMENT_KEYS
+            and CelestasMod.ENHANCEMENT_KEYS.Eutrophic
+        if not key then return end
+
+        local made = 0
+        for _, played in ipairs(context.full_hand or {}) do
+            if SMODS.has_enhancement(played, key) and not played.edition then
+                made = made + 1
+                played:set_edition({ foil = true }, true)
+            end
+        end
+
+        if made > 0 then
+            return { message = localize("k_upgrade_ex"),
+                     colour = G.C.DARK_EDITION, card = card }
+        end
+    end,
+})
+
+-- Tobs + Toma: Toma is the True Stars Joker, so a Eutrophic True Star copies
+-- twice as much.
+--
+-- Answered through CelestasMod.EUTROPHIC_SCALE_RULES rather than by a
+-- calculate: what changes is a number the enhancement works out for itself,
+-- long before any Joker is asked anything.
+special("j_celesta_tobs", "j_celesta_toma", {
+    key = "tobs_toma",
+    config = { scale = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.scale } }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+CelestasMod.EUTROPHIC_SCALE_RULES = CelestasMod.EUTROPHIC_SCALE_RULES or {}
+CelestasMod.EUTROPHIC_SCALE_RULES[#CelestasMod.EUTROPHIC_SCALE_RULES + 1] =
+    function(copying)
+        if not (CelestasMod.is_true_star and CelestasMod.is_true_star(copying)) then
+            return 1
+        end
+        local entry = specials_held("tobs_toma")[1]
+        if not entry then return 1 end
+        return Bind.special_state(entry.card, entry.def).scale
+    end
+
 
 --------------------------------------------------------------------------------
 -- Art: the two faces split corner to corner
