@@ -11809,7 +11809,15 @@ function CelestasMod.calamitas_times(card)
     if not row then return 0 end
     for i, held in ipairs(row) do
         if held == card then
-            return math.min(i - 1, #row - i, cap)
+            local side = math.min(i - 1, #row - i)
+            -- Clamped, rather than handed to math.min as a third argument.
+            -- Talisman replaces that function with a two-argument one
+            -- (talisman.lua:482) and forwards only those two, so a third is
+            -- dropped without a word - and Talisman is a dependency here, so
+            -- the three-argument form never clamped anything in a real game.
+            -- It shipped that way: "up to 4 times (Currently 9 times)".
+            if side > cap then side = cap end
+            return side
         end
     end
     return 0
