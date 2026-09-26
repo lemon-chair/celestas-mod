@@ -4976,6 +4976,22 @@ return {
             celesta_cfg_downpour = "Force Downpour (debug)",
             celesta_cfg_unlock_all = "Unlock All Jokers",
             celesta_cfg_discover_all = "Discover All Jokers",
+            celesta_cfg_notice = "Show the speed notice at startup",
+            -- The startup speed notice (main.lua). One key per line because a
+            -- text node holds a line and nothing in the UI wraps, so the
+            -- breaks are chosen rather than found.
+            celesta_notice_title = "Important:",
+            celesta_notice_1 = "It is HIGHLY encouraged that you play the game at the fastest",
+            celesta_notice_2 = "speed, as some scoring animations may take a while to score if",
+            celesta_notice_3 = "the game speed is set to slow. You can do this by going into the",
+            celesta_notice_4 = "game's settings menu and dragging the game speed slider all the",
+            celesta_notice_5 = "way to the right.",
+            celesta_notice_6 = "Additionally, if the scoring starts to take extremely long, then",
+            celesta_notice_7 = "you may want to toggle the \"Disable Scoring Animations\" checkbox",
+            celesta_notice_8 = "in the Talisman's Mod Config (found by clicking \"Mods\" in either",
+            celesta_notice_9 = "the main menu or pause menu during a run)",
+            celesta_notice_hide = "Do not show this again",
+            celesta_notice_ok = "Ok",
             -- The Credits tab. Art this mod did not draw itself; the names
             -- are as the artists give them.
             celesta_credits_tab = "Credits",

@@ -12,4 +12,8 @@ return {
     -- Forces a Downpour on without needing Aquwa in play. Still only visible
     -- during a round, so start a blind to see it.
     debug_downpour = false,
+    -- Show the notice about game speed the first time the main menu is
+    -- reached in a launch. Turned off by the notice's own checkbox, and back
+    -- on from the Config tab.
+    show_disclaimer = true,
 }

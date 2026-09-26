@@ -318,6 +318,146 @@ MOD.extra_tabs = function()
     }
 end
 
+--------------------------------------------------------------------------------
+-- The startup speed notice
+--------------------------------------------------------------------------------
+--
+-- Several of this mod's Jokers score through long animations, and on a slow
+-- game speed a large hand can look like the game has hung. So the player is
+-- shown where the speed slider is before that happens rather than left to
+-- work it out, once, the first time the main menu is reached in a launch.
+--
+-- MOD.config.show_disclaimer is the single flag behind it. The checkbox in
+-- the notice and the toggle in the Config tab are two views of that one
+-- value, worded opposite ways round - which is why the checkbox cannot simply
+-- point at the config table the way every other toggle here does.
+
+--- The body, one key per line. A text node holds a line and nothing in
+--- Balatro's UI wraps, so where each break falls is decided here rather than
+--- by the width of the box. `false` is the blank line between the paragraphs.
+local NOTICE_LINES = {
+    "celesta_notice_1", "celesta_notice_2", "celesta_notice_3",
+    "celesta_notice_4", "celesta_notice_5",
+    false,
+    "celesta_notice_6", "celesta_notice_7", "celesta_notice_8",
+    "celesta_notice_9",
+}
+
+--- One line of the notice.
+local function notice_row(text, colour, scale)
+    return {
+        n = G.UIT.R,
+        config = { align = "cl", padding = 0.03 },
+        nodes = {
+            { n = G.UIT.T, config = { text = text, scale = scale or 0.4,
+                                      colour = colour or G.C.UI.TEXT_LIGHT } },
+        },
+    }
+end
+
+--- The checkbox's own state. It reads "do not show this again" where the
+--- setting reads "show this", so it holds the negation and writes back.
+local notice_box = { hide = false }
+
+--- The notice, built fresh each time so the checkbox opens showing the
+--- setting as it currently stands.
+function CelestasMod.notice_definition()
+    notice_box.hide = not MOD.config.show_disclaimer
+
+    local rows = { notice_row(localize("celesta_notice_title"), G.C.RED, 0.6),
+                   notice_row(" ") }
+    for _, key in ipairs(NOTICE_LINES) do
+        rows[#rows + 1] = notice_row(key and localize(key) or " ")
+    end
+    rows[#rows + 1] = notice_row(" ")
+
+    -- Both of these are columns, so they sit side by side on one row: a
+    -- sibling C is placed beside the last one, where a sibling R goes below
+    -- it - which is also why every line above is an R.
+    rows[#rows + 1] = {
+        n = G.UIT.R,
+        config = { align = "cm", padding = 0.1 },
+        nodes = {
+            create_toggle {
+                col = true,
+                -- The default 3 is a label column wide enough for the Settings
+                -- menu's right-aligned labels; here it would open a gap in the
+                -- middle of the row.
+                w = 0,
+                label = localize("celesta_notice_hide"),
+                ref_table = notice_box,
+                ref_value = "hide",
+                -- Written through as it is ticked rather than on the way out,
+                -- so Escape keeps the choice exactly as the button does.
+                callback = function(hidden)
+                    MOD.config.show_disclaimer = not hidden
+                    SMODS.save_mod_config(MOD)
+                end,
+            },
+            { n = G.UIT.C, config = { minw = 0.8 } },
+            UIBox_button {
+                col = true,
+                label = { localize("celesta_notice_ok") },
+                button = "exit_overlay_menu",
+                minw = 2.5,
+                colour = G.C.ORANGE,
+            },
+        },
+    }
+
+    -- no_back, because the Ok button IS the way out and a second one under it
+    -- would say so twice. Escape still closes this: it calls
+    -- exit_overlay_menu itself rather than pressing the back button
+    -- (engine/controller.lua:800), and only a menu marked no_esc is exempt.
+    return create_UIBox_generic_options { no_back = true, minw = 9.5,
+                                          contents = rows }
+end
+
+--- Whether this launch has shown it yet. A local rather than G.GAME or the
+--- profile: "the first time the game was opened" is a fact about this process,
+--- and G.GAME is rebuilt every time the main menu is prepared.
+local notice_shown = false
+
+-- Game:main_menu is the one way in. It is reached from the splash animation
+-- with 'splash', and called directly when the splash is skipped or when a run
+-- is left (game.lua:1547), so hooking it covers all three - and it is always
+-- AFTER the opening animation, which is the half that matters.
+--
+-- Read defensively before being wrapped, the way seals.lua wraps its two: a
+-- nil reference here would take the whole mod down on the first call through.
+local celesta_notice_menu_ref = Game and Game.main_menu
+if type(celesta_notice_menu_ref) == "function" then
+    function Game:main_menu(change_context, ...)
+        local out = celesta_notice_menu_ref(self, change_context, ...)
+        if notice_shown or not MOD.config.show_disclaimer then return out end
+        notice_shown = true
+
+        G.E_MANAGER:add_event(Event {
+            trigger = "after",
+            -- Long enough for the menu to settle, and on the REAL timer so the
+            -- wait is the same wait however the game speed is set - which for
+            -- this notice of all of them would be a poor joke otherwise.
+            timer = "REAL",
+            delay = 1.2,
+            blocking = false,
+            blockable = false,
+            func = function()
+                -- Into a run already: a greeting that arrives over the deck
+                -- select is worse than one that never arrives.
+                if G.STAGE ~= G.STAGES.MAIN_MENU then return true end
+                -- Looking at something else - the settings, the mod list.
+                -- Returning false holds the event over to the next frame
+                -- rather than burying what they opened.
+                if G.OVERLAY_MENU then return false end
+                G.FUNCS.overlay_menu {
+                    definition = CelestasMod.notice_definition() }
+                return true
+            end,
+        })
+        return out
+    end
+end
+
 MOD.config_tab = function()
     return {
         n = G.UIT.ROOT,
@@ -327,6 +467,11 @@ MOD.config_tab = function()
                 label = localize('celesta_cfg_animation'),
                 ref_table = MOD.config,
                 ref_value = 'arena_animation',
+            },
+            create_toggle {
+                label = localize('celesta_cfg_notice'),
+                ref_table = MOD.config,
+                ref_value = 'show_disclaimer',
             },
             create_toggle {
                 label = localize('celesta_cfg_verbose'),
