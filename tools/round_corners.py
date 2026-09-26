@@ -102,14 +102,25 @@ BLOCK_ROUNDED = {"vgn"}
 def block_profile(height):
     """PROFILE's corner over a block of `height` rows rather than a whole card.
 
-    The same cap - a cleared row, then 4, 2, 2 - with the run of single pixels
-    between them as long as the block needs. A block too short to hold both
-    caps is given the plain one-pixel inset instead of being bitten into.
+    The card's own 4, 2, 2 curve at each end and NOTHING in between: only the
+    corners are cut, where PROFILE also insets the card's sides by a pixel.
+
+    Both of those departures from PROFILE are what make this idempotent, which
+    is not a matter of taste - block_mask measures the block from the art's own
+    opaque bounding box, so anything that shrinks that box means the next build
+    measures a smaller one and cuts again. PROFILE's leading CARD_W would clear
+    the top row outright; its run of 1s would clear the whole of the outside
+    column. Either way the box loses an edge every time the tool runs, and the
+    tool runs on every build. Cutting only the corners leaves opaque pixels in
+    the middle of all four edges, so the box does not move and a second pass
+    has nothing left to take.
+
+    A block too short to hold both caps is left alone rather than bitten into.
     """
-    cap = [CARD_W, 4, 2, 2]
+    cap = [4, 2, 2]
     if height <= 2 * len(cap):
-        return [1] * height
-    return cap + [1] * (height - 2 * len(cap)) + list(reversed(cap))
+        return [0] * height
+    return cap + [0] * (height - 2 * len(cap)) + list(reversed(cap))
 
 
 def block_mask(alpha, scale):

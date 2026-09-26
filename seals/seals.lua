@@ -105,6 +105,14 @@ SMODS.Seal {
                 made[#made + 1] = copy
             end
 
+            -- El XoX + CottontailVA counts these. Said after the loop rather
+            -- than at the trigger: what it is paid for is a card actually
+            -- being copied, and `made` is how many really were - which is two
+            -- when Ray + CottontailVA is the one answering `wanted`.
+            if CelestasMod.star_seal_copied then
+                CelestasMod.star_seal_copied(card, left, #made)
+            end
+
             return {
                 message = localize("k_copied_ex"),
                 colour = G.C.CHIPS,

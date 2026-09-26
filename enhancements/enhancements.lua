@@ -273,6 +273,24 @@ function CelestasMod.eutrophic_scale(card)
     return 1
 end
 
+--- Hangs `more` off `effect` as a second effect rather than merging it in.
+---
+--- `extra` is Steamodded's own nesting key: whatever is under it is run
+--- through a whole second SMODS.calculate_effect (src/utils.lua:1342). Two
+--- effects that both carry Chips therefore both land, where merging them into
+--- one table by assignment means the later one silently wins.
+---
+--- Walks to the end of the chain rather than assuming `extra` is free, so a
+--- copied centre that returns one of its own does not displace the edition's.
+local function eutrophic_also(effect, more)
+    if not more then return effect end
+    effect = effect or {}
+    local tail = effect
+    while tail.extra do tail = tail.extra end
+    tail.extra = more
+    return effect
+end
+
 function CelestasMod.eutrophic_source(card)
     if CelestasMod.eutrophic_target then return CelestasMod.eutrophic_target end
     local area = card and card.area
@@ -353,12 +371,9 @@ SMODS.Enhancement {
             card.edition = left.edition
             local ok, copied = pcall(card.calculate_edition, card, context)
             card.edition = saved
-            if ok and copied then
-                effect = effect or {}
-                for k, v in pairs(copied) do
-                    if k ~= "card" then effect[k] = v end
-                end
-            end
+            -- calculate_edition points the effect at the card it ran against,
+            -- which is this one - so it is left alone and the popup lands here.
+            if ok and copied then effect = eutrophic_also(effect, copied) end
         end
 
         -- Then the copied centre's own behaviour, run against THIS card so its
@@ -404,9 +419,26 @@ SMODS.Enhancement {
                     ("Eutrophic could not copy %s: %s")
                         :format(tostring(center.key), tostring(copied)))
             elseif copied then
-                if not effect then return copied end
-                for k, v in pairs(copied) do effect[k] = v end
+                if not effect then
+                    effect = copied
+                else
+                    -- Its own `extra`, if it brought one, is chained rather
+                    -- than written over whatever is already nested there.
+                    local nested = copied.extra
+                    copied.extra = nil
+                    for k, v in pairs(copied) do effect[k] = v end
+                    if nested then effect = eutrophic_also(effect, nested) end
+                end
             end
+        end
+
+        -- El XoX + Tobs counts these. An effect IS "successfully mimics": a
+        -- Eutrophic that is itself the leftmost card copies nothing and has
+        -- already returned above, and a pass that produced no value did not
+        -- mimic anything either. The re-entrancy guard returns above this too,
+        -- so a copied centre that starts a second pass is not a second mimic.
+        if effect and CelestasMod.eutrophic_mimicked then
+            CelestasMod.eutrophic_mimicked(card, left)
         end
 
         return effect

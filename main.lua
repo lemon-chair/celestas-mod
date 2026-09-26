@@ -268,6 +268,56 @@ G.FUNCS.celesta_discover_all_jokers = function(e)
     end
 end
 
+--- The art this mod did not draw itself, credited by line.
+---
+--- Localized like every other string in the mod, which for a list of names
+--- mostly means it is one place to edit rather than one place to translate.
+--- Written as one key per line because that is what the UI needs: a text node
+--- holds a line, and the page has to decide where the wrap falls rather than
+--- leave it to the width of the box.
+local CREDIT_LINES = {
+    "celesta_credit_calamitas",
+    "celesta_credit_thanatos",
+    "celesta_credit_eidolonwyrm",
+    "celesta_credit_astrum",
+    "celesta_credit_urschleim",
+}
+
+--- A line of credits text.
+local function credit_row(str, colour)
+    return {
+        n = G.UIT.R,
+        config = { align = "cl", padding = 0.04 },
+        nodes = {
+            { n = G.UIT.T, config = { text = str, scale = 0.4,
+                                      colour = colour or G.C.UI.TEXT_LIGHT } },
+        },
+    }
+end
+
+MOD.extra_tabs = function()
+    local rows = {}
+    for _, key in ipairs(CREDIT_LINES) do
+        rows[#rows + 1] = credit_row(localize(key))
+    end
+
+    -- A blank line, then the note that the rest is out there somewhere.
+    rows[#rows + 1] = credit_row(" ")
+    rows[#rows + 1] = credit_row(localize("celesta_credit_rest_1"), G.C.UI.TEXT_INACTIVE)
+    rows[#rows + 1] = credit_row(localize("celesta_credit_rest_2"), G.C.UI.TEXT_INACTIVE)
+
+    return {
+        label = localize("celesta_credits_tab"),
+        tab_definition_function = function()
+            return {
+                n = G.UIT.ROOT,
+                config = { align = "cm", padding = 0.1, colour = G.C.CLEAR },
+                nodes = rows,
+            }
+        end,
+    }
+end
+
 MOD.config_tab = function()
     return {
         n = G.UIT.ROOT,

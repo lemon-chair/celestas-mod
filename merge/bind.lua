@@ -6481,6 +6481,36 @@ special("j_celesta_kairyucrocodile", "j_celesta_torioriane", {
     end,
 })
 
+--- A Mult card, which is the card Rosedoodle is about. Through
+--- SMODS.has_enhancement for the reason every enhancement question here goes
+--- through it: an enhancement another card is standing in for still counts.
+local function bind_is_mult(other)
+    return other ~= nil and SMODS.has_enhancement(other, "m_mult")
+end
+
+-- Kairyu + Rosedoodle: Kairyu grows the hand on what the round throws away,
+-- Rosedoodle is the Mult card Joker. Together the hand grows on the Mult cards
+-- discarded - one card for every three, which is Kairyu + PiaPiUFO's rate for
+-- a suit that is not hard to come by, rather than Tori Oriane's one-for-one.
+special("j_celesta_kairyucrocodile", "j_celesta_rosedoodle", {
+    key = "kairyu_rosedoodle",
+    config = { h_size = 1, per = 3, discarded = 0, applied = 0 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.h_size, state.per, state.applied } }
+    end,
+
+    calculate = kairyu_discard_calculate(bind_is_mult),
+    add_to_deck = kairyu_add_to_deck,
+    remove_from_deck = kairyu_remove_from_deck,
+    on_merge = function(def, card, state)
+        kairyu_add_to_deck(def, card, state, false)
+    end,
+    on_unmerge = function(def, card, state)
+        kairyu_remove_from_deck(def, card, state, false)
+    end,
+})
+
 -- PiaPiUFO + BeriBug: BeriBug's 8s, paid at PiaPiUFO's rate. The retrigger is
 -- gone and the multiplier has moved onto the rank BeriBug was watching.
 special("j_celesta_piapiufo", "j_celesta_beribug", {
@@ -9974,6 +10004,611 @@ CelestasMod.EUTROPHIC_SCALE_RULES[#CelestasMod.EUTROPHIC_SCALE_RULES + 1] =
         if not entry then return 1 end
         return Bind.special_state(entry.card, entry.def).scale
     end
+
+
+--------------------------------------------------------------------------------
+-- El XoX
+--------------------------------------------------------------------------------
+--
+-- El XoX reads a round as a ledger and pays for the hands that were spent, so
+-- nearly all of its merges pay money too. What changes between them is only
+-- what the other half hands it to count.
+--
+-- The whole section is inside a `do` block, and that is not house style. Lua
+-- allows 200 active locals in a chunk and this file was already at 179; the
+-- helpers below would have taken most of what is left. A block's locals are
+-- freed at its end, so the next batch starts from the same count this one did.
+
+do
+
+--- The hands left in the round, which three of these pairs are counted in.
+local function hands_left()
+    local round = G.GAME and G.GAME.current_round
+    return (round and round.hands_left) or 0
+end
+
+--- The hands spent so far this round - El XoX's own measure.
+local function hands_spent()
+    local round = G.GAME and G.GAME.current_round
+    return (round and round.hands_played) or 0
+end
+
+--- Tells every held, working merge that asked about `hook` that it happened.
+---
+--- CelestasMod.ectoplast_triggered, further up, is this written out longhand
+--- for one hook. Three more in one section is enough to be worth one body.
+---
+--- Guarded per pair, for that one's reason: a merge that faults must not stop
+--- whatever raised this finishing its own work, or stop the next merge
+--- hearing about it.
+local function notify_specials(hook, ...)
+    for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
+        if not held.debuff then
+            local def = Bind.special_of(held)
+            if def and type(def[hook]) == "function" then
+                local ok, err = pcall(def[hook], def, held,
+                    Bind.special_state(held, def), ...)
+                if not ok then
+                    CelestasMod.warn_once(
+                        "bind_" .. hook .. "_" .. tostring(def.key),
+                        ("Bind pair %s failed on %s: %s")
+                            :format(tostring(def.key), hook, tostring(err)))
+                end
+            end
+        end
+    end
+end
+
+--- Told by the Star Seal each time one copies a card into the deck
+--- (seals/seals.lua), with the sealed card, the card it copied, and how many
+--- copies it made.
+function CelestasMod.star_seal_copied(sealed, source, copies)
+    notify_specials("on_star_copy", sealed, source, copies or 1)
+end
+
+--- Told by the Eutrophic enhancement each time one actually produces
+--- something from the card it is copying (enhancements/enhancements.lua).
+function CelestasMod.eutrophic_mimicked(copier, source)
+    notify_specials("on_eutrophic_mimic", copier, source)
+end
+
+--- Told each time a Blue Seal makes its Planet (jokers/implemented.lua, where
+--- the create_card that does it is already watched for August Anomoly).
+function CelestasMod.blue_seal_triggered(planet)
+    notify_specials("on_blue_seal", planet)
+end
+
+--- A payout that arrives outside a scoring pass, where there is no effect
+--- table to return one in. The four notification pairs below all pay this way.
+local function pay_now(card, owed)
+    if not owed or owed <= 0 then return end
+    SMODS.calculate_effect({ dollars = owed }, card)
+end
+
+--- The pairs that are "scored cards of this description give money" differ
+--- only in the description, so they share a body.
+---
+--- G.play only: these say "scored", and a card held in hand is not that.
+local function scored_pays(matches)
+    return function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play
+                and context.other_card) then return end
+        if not matches(context.other_card) then return end
+        return { dollars = state.dollars, card = context.other_card }
+    end
+end
+
+--- Reads a suit off a card the way every other suit question in this mod
+--- does, so a Wild card counts as one.
+local function suited(suit)
+    return function(other)
+        return other.is_suit ~= nil and other:is_suit(suit)
+    end
+end
+
+--- The name and colour of `suit`, singular, for a line reading "#2# cards".
+local function suit_line(dollars, suit, hex)
+    local name, colour = CelestasMod.suit_name_and_colour(suit, hex, true)
+    return { vars = { dollars, name, colours = { colour } } }
+end
+
+-- El XoX + Toma: Toma is the Joker that rolls for money, so this rolls for it
+-- once a hand instead of once a card.
+special("j_celesta_el_xox", "j_celesta_toma", {
+    key = "elxox_toma",
+    config = { odds = 2, dollars = 5 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_elxox_toma")
+        return { vars = { n, d, state.dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.before and not context.blueprint) then return end
+        if not SMODS.pseudorandom_probability(card, "celesta_bind_elxox_toma",
+                1, state.odds, "celesta_bind_elxox_toma") then return end
+        return { dollars = state.dollars, card = card }
+    end,
+})
+
+-- El XoX + Mari Yume: Mari Yume is about the rightmost Joker and El XoX counts
+-- the hands of the round, so the rightmost Joker goes again once per hand left.
+special("j_celesta_el_xox", "j_celesta_mariyume", {
+    key = "elxox_mariyume",
+
+    loc_vars = function(def, card, state)
+        return { vars = { hands_left() } }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- retrigger_joker_check is asked of every Joker about every other one,
+        -- so the answer has to name who it is being asked about, and it must
+        -- refuse itself - which also covers the case of this card BEING the
+        -- rightmost one.
+        --
+        -- `not context.retrigger_joker` is Calamitas's guard, and this wants
+        -- it for the same reason: four repetitions of a retrigger that is
+        -- itself a retrigger compound far faster than one does.
+        if not (context.retrigger_joker_check and not context.retrigger_joker
+                and context.other_card and context.other_card ~= card) then
+            return
+        end
+        local row = G.jokers and G.jokers.cards
+        if not (row and context.other_card == row[#row]) then return end
+
+        local times = hands_left()
+        if times <= 0 then return end
+        return {
+            message = localize("k_again_ex"),
+            repetitions = times,
+            card = card,
+        }
+    end,
+})
+
+-- El XoX + Projekt Melody: Projekt Melody's payout grows round by round, and
+-- what grows it here is what El XoX counts - except it is the hands NOT spent,
+-- so the round that banks the most is the round that needed the fewest.
+--
+-- The gain is taken in the end_of_round pass and paid out in the cash-out that
+-- follows it, so a round's hands are banked before they are paid for, which is
+-- the order the two sentences on the card read in.
+special("j_celesta_el_xox", "j_celesta_projektmelody", {
+    key = "elxox_melody",
+    config = { dollars = 1, stored = 0 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars, state.stored } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.end_of_round and context.main_eval
+                and not context.blueprint) then return end
+        local gained = hands_left() * state.dollars
+        if gained <= 0 then return end
+        state.stored = state.stored + gained
+        return { message = localize("k_upgrade_ex"),
+                 colour = G.C.MONEY, card = card }
+    end,
+
+    calc_dollar_bonus = function(def, card, state)
+        if (state.stored or 0) <= 0 then return end
+        return state.stored
+    end,
+})
+
+-- El XoX + Aquwa: Aquwa's weather, paid for by the hand.
+--
+-- The pair does not start a Downpour - it replaces the half that would have -
+-- so this is worth something only while something else brings the weather:
+-- the Rain Deck, or another Joker. Aquwa + Megalodon is the same shape, and
+-- says the same "if" on its card.
+special("j_celesta_el_xox", "j_celesta_aquwa", {
+    key = "elxox_aquwa",
+    config = { dollars = 3 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars } }
+    end,
+
+    -- The weather is round-scoped and the shop is what clears it, so it is
+    -- still up at the cash-out - "had just happened that round" is exactly
+    -- what asking here answers.
+    calc_dollar_bonus = function(def, card, state)
+        if not raining() then return end
+        local spent = hands_spent()
+        if spent <= 0 then return end
+        return spent * state.dollars
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+-- El XoX + Kumi: Kumi is the Gold card Joker, and this pays for the Gold cards
+-- that were NOT played - at half of one each, scaled by the hands spent.
+special("j_celesta_el_xox", "j_celesta_kumi", {
+    key = "elxox_kumi",
+    config = { share = 0.5 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.share } }
+    end,
+
+    -- The end_of_round pass rather than the cash-out, because this reads the
+    -- HAND: the cards are sent to the discard pile between the two
+    -- (state_events.lua:174), so by the cash-out there is nothing to count.
+    --
+    -- Floored, the way Mint Fantome + Matara Kan floors its half: a payout is
+    -- money, and money in this game is whole.
+    calculate = function(def, card, context, state)
+        if not (context.end_of_round and context.main_eval
+                and not context.blueprint) then return end
+        local gold = 0
+        for _, held in ipairs((G.hand and G.hand.cards) or {}) do
+            if SMODS.has_enhancement(held, "m_gold") then gold = gold + 1 end
+        end
+        local owed = math.floor(hands_spent() * gold * state.share)
+        if owed <= 0 then return end
+        return { dollars = owed, card = card }
+    end,
+})
+
+-- El XoX + Crelly: Crelly eats a consumable at the end of the shop to grow.
+-- Here it eats money instead, which is the thing El XoX makes.
+special("j_celesta_el_xox", "j_celesta_crelly", {
+    key = "elxox_crelly",
+    config = { cost = 2, x_mult = 1, x_mult_gain = 0.2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.cost, state.x_mult_gain, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.ending_shop and not context.blueprint then
+            -- "Cannot go into debt" is about the money there IS, not about the
+            -- floor a Credit Card lowers: this only ever eats what is already
+            -- in hand, so it buys nothing on a round it cannot afford.
+            local held = (G.GAME and G.GAME.dollars) or 0
+            if CelestasMod.more_than(state.cost, held) then return end
+            ease_dollars(-state.cost)
+            state.x_mult = state.x_mult + state.x_mult_gain
+            return {
+                message = localize { type = "variable", key = "a_xmult",
+                                     vars = { state.x_mult } },
+                colour = G.C.MULT, card = card,
+            }
+        end
+
+        if context.joker_main and state.x_mult > 1 then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+-- El XoX + CottontailVA: CottontailVA hands out the Star Seals, and this is
+-- paid when one of them does its work.
+special("j_celesta_el_xox", "j_celesta_cottontail", {
+    key = "elxox_cottontail",
+    config = { dollars = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars } }
+    end,
+
+    -- Per copy rather than per trigger: Ray + CottontailVA makes two copies
+    -- from one Seal, and that is a card copied twice.
+    on_star_copy = function(def, card, state, sealed, source, copies)
+        pay_now(card, (copies or 1) * state.dollars)
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+-- El XoX + Jowol: Jowol's Stone cards, paid rather than scored. Both areas,
+-- because "when triggered" is what Jowol's own line is about - it pays for
+-- Stone cards held in hand.
+special("j_celesta_el_xox", "j_celesta_jowol", {
+    key = "elxox_jowol",
+    config = { dollars = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- Not the end-of-round held pass: that one is the cash-out, and
+        -- Jowol's own line is about the pass after cards in hand score.
+        -- Without this it would pay a second time for every Stone card the
+        -- round ended holding.
+        if not (context.individual and context.other_card
+                and not context.end_of_round
+                and (context.cardarea == G.play or context.cardarea == G.hand))
+            then return end
+        if not SMODS.has_enhancement(context.other_card, "m_stone") then return end
+        return { dollars = state.dollars, card = context.other_card }
+    end,
+})
+
+-- El XoX + KokoNuts: KokoNuts deals in 7s, so 7s are what pay.
+special("j_celesta_el_xox", "j_celesta_kokonuts", {
+    key = "elxox_koko",
+    config = { dollars = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars } }
+    end,
+
+    -- get_id is the rank's numeric value; 7 is literally 7.
+    calculate = scored_pays(function(other)
+        return other.get_id ~= nil and other:get_id() == 7
+    end),
+})
+
+-- El XoX + Spongey: Spongey counts every Joker that triggers and turns it into
+-- Chips. This counts the same thing and turns it into money.
+special("j_celesta_el_xox", "j_celesta_spongeybuns", {
+    key = "elxox_spongey",
+    config = { dollars = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars } }
+    end,
+
+    -- Spongey's own reading of post_trigger, filter and all: a probability
+    -- lookup runs a full evaluation pass that arrives here looking exactly
+    -- like a trigger, other_card is not always a Joker, and a Joker must not
+    -- pay itself for its own scoring.
+    calculate = function(def, card, context, state)
+        if not (context.post_trigger and not context.blueprint) then return end
+        local trigger = context.other_card
+        local inner = context.other_context
+        if inner and (inner.mod_probability or inner.fix_probability
+            or inner.fixed_probability or inner.retrigger_joker_check) then
+            return
+        end
+        if not (trigger and trigger.ability and trigger.ability.set == "Joker") then
+            return
+        end
+        if trigger == card then return end
+        return { dollars = state.dollars, card = card }
+    end,
+})
+
+-- El XoX + Tobs: Tobs is the Joker about Eutrophic cards copying, and this is
+-- paid each time one does.
+--
+-- The pair replaces Tobs, so what a Eutrophic mimics goes back to the two
+-- numbers it mimics by default - and mimicking two numbers is still mimicking,
+-- which is what this is paid for.
+special("j_celesta_el_xox", "j_celesta_tobs", {
+    key = "elxox_tobs",
+    config = { dollars = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars } }
+    end,
+
+    on_eutrophic_mimic = function(def, card, state, copier, source)
+        pay_now(card, state.dollars)
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+-- El XoX + Vexoria: Vexoria turns the hand to Spades, so Spades are what pay.
+special("j_celesta_el_xox", "j_celesta_vexoria", {
+    key = "elxox_vexoria",
+    config = { dollars = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars } }
+    end,
+
+    calculate = scored_pays(suited("Spades")),
+})
+
+-- El XoX + Saiiren: Saiiren pays the last scored card of a suit; here every
+-- suit qualifies and what it is worth is what El XoX counts.
+special("j_celesta_el_xox", "j_celesta_saiiren", {
+    key = "elxox_saiiren",
+
+    loc_vars = function(def, card, state)
+        return { vars = { hands_left() } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play
+                and context.other_card) then return end
+        local scoring = context.scoring_hand or {}
+        if context.other_card ~= scoring[#scoring] then return end
+        local owed = hands_left()
+        if owed <= 0 then return end
+        return { dollars = owed, card = context.other_card }
+    end,
+})
+
+-- El XoX + ObKatieKat: ObKatieKat's exponent, climbing on the thing El XoX
+-- counts. Banked rather than read off the round, because it is the hands of
+-- the whole RUN that have been played, not this round's.
+--
+-- The gain is taken in context.before, so the hand being played is already
+-- counted by the time it scores - "every time a hand is played" includes this
+-- one.
+special("j_celesta_el_xox", "j_celesta_obkatiekat", {
+    key = "elxox_katie",
+    config = { e_chips = 1, e_chips_gain = 0.04 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.e_chips_gain, state.e_chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.before and not context.blueprint then
+            state.e_chips = state.e_chips + state.e_chips_gain
+        end
+
+        if context.joker_main then
+            if state.e_chips <= 1 then return end
+            if not power_supported("elxox_katie_no_talisman",
+                                   "El XoX + ObKatieKat", "Chips") then
+                return
+            end
+            return { e_chips = state.e_chips }
+        end
+    end,
+})
+
+--- Any hand with a pair in it: Pair, Two Pair, Full House, and whatever a mod
+--- adds that is named for one. The reading contains_flush gives, for the other
+--- half of the same family - scoring_name is the internal name rather than the
+--- localized one, so a plain find is safe.
+---
+--- Once per hand however many pairs are in it. "A pair is played" is about the
+--- hand, the way "a Flush is played" is.
+local function contains_pair(name)
+    return type(name) == "string" and name:find("Pair", 1, true) ~= nil
+end
+
+-- El XoX + Pipi: Pipi is the two-card Joker, and two of a kind is what pays.
+special("j_celesta_el_xox", "j_celesta_pipi", {
+    key = "elxox_pipi",
+    config = { dollars = 4 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        if not contains_pair(context.scoring_name) then return end
+        return { dollars = state.dollars, card = card }
+    end,
+})
+
+-- El XoX + Pomatomaster: Pomatomaster makes the Eutrophic cards, and this pays
+-- for the ones still in hand when the round ends.
+special("j_celesta_el_xox", "j_celesta_pomatomaster", {
+    key = "elxox_pomato",
+    config = { dollars = 4 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars } }
+    end,
+
+    -- The end_of_round pass rather than the cash-out, for El XoX + Kumi's
+    -- reason: the hand is emptied between the two.
+    calculate = function(def, card, context, state)
+        if not (context.end_of_round and context.main_eval
+                and not context.blueprint) then return end
+        local key = CelestasMod.ENHANCEMENT_KEYS
+            and CelestasMod.ENHANCEMENT_KEYS.Eutrophic
+        if not key then return end
+
+        local held = 0
+        for _, card_in_hand in ipairs((G.hand and G.hand.cards) or {}) do
+            if SMODS.has_enhancement(card_in_hand, key) then held = held + 1 end
+        end
+        if held <= 0 then return end
+        return { dollars = held * state.dollars, card = card }
+    end,
+})
+
+-- El XoX + Fufu: Fufu reads the deck for the suits it holds; this pays for
+-- them instead of multiplying by them.
+special("j_celesta_el_xox", "j_celesta_fufu", {
+    key = "elxox_fufu",
+    config = { dollars = 3 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars } }
+    end,
+
+    calc_dollar_bonus = function(def, card, state)
+        local suits = CelestasMod.unique_suits_in_deck()
+        if suits <= 0 then return end
+        return suits * state.dollars
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+-- El XoX + August Anomoly: August Anomoly is the Blue Seal Joker, and this is
+-- paid each time one fires.
+special("j_celesta_el_xox", "j_celesta_augustanomoly", {
+    key = "elxox_august",
+    config = { dollars = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars } }
+    end,
+
+    on_blue_seal = function(def, card, state, planet)
+        pay_now(card, state.dollars)
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+-- El XoX + PiaPiUFO: PiaPiUFO's suit, paid rather than multiplied.
+special("j_celesta_el_xox", "j_celesta_piapiufo", {
+    key = "elxox_piapiufo",
+    config = { dollars = 2 },
+
+    loc_vars = function(def, card, state)
+        return suit_line(state.dollars,
+            CelestasMod.STARS_SUIT, CelestasMod.STARS_COLOUR)
+    end,
+
+    calculate = scored_pays(suited(CelestasMod.STARS_SUIT)),
+})
+
+-- El XoX + Buffpup: Buffpup's suit, paid rather than counted off the deck.
+special("j_celesta_el_xox", "j_celesta_buffpup", {
+    key = "elxox_buffpup",
+    config = { dollars = 1 },
+
+    loc_vars = function(def, card, state)
+        return suit_line(state.dollars,
+            CelestasMod.LEAF_SUIT, CelestasMod.LEAF_COLOUR)
+    end,
+
+    calculate = scored_pays(suited(CelestasMod.LEAF_SUIT)),
+})
+
+-- El XoX + Ebiko: Ebiko turns the hand to Diamonds, so Diamonds are what pay.
+special("j_celesta_el_xox", "j_celesta_ebiko", {
+    key = "elxox_ebiko",
+    config = { dollars = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars } }
+    end,
+
+    calculate = scored_pays(suited("Diamonds")),
+})
+
+-- El XoX + Tori Oriane: Tori Oriane is the True Star Joker, and this pays for
+-- every one the deck holds rather than for the ones that scored - which is
+-- worth arranging, because True Stars are hard to come by.
+special("j_celesta_el_xox", "j_celesta_torioriane", {
+    key = "elxox_torioriane",
+    config = { dollars = 6 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars } }
+    end,
+
+    calc_dollar_bonus = function(def, card, state)
+        local stars = CelestasMod.true_stars_in_deck()
+        if stars <= 0 then return end
+        return stars * state.dollars
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+end
 
 
 --------------------------------------------------------------------------------

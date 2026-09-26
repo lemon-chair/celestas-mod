@@ -6139,6 +6139,14 @@ function create_card(_type, area, legendary, _rarity, skip_materialize,
 
     if key_append ~= BLUE_SEAL_APPEND or not card then return card end
 
+    -- El XoX + August Anomoly counts these. The Planet is the whole of what a
+    -- Blue Seal does and vanilla makes exactly one per trigger, so this is the
+    -- Seal firing - and a Radiaactive retrigger arrives here a second time,
+    -- which is a second firing.
+    if CelestasMod.blue_seal_triggered then
+        CelestasMod.blue_seal_triggered(card)
+    end
+
     -- Negative first: the copy below is made from this card, so it inherits
     -- the edition and both Planets match.
     if joker_active("j_celesta_glowypumpkin") and card.set_edition then

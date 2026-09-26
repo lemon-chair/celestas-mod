@@ -2781,6 +2781,172 @@ return {
                     "{C:inactive}(Currently {C:money}$#2#{C:inactive})",
                 },
             },
+            celesta_bind_elxox_toma = {
+                name = "El XoX + Toma",
+                text = {
+                    "{C:green}#1# in #2#{} chance to earn",
+                    "{C:money}$#3#{} when a hand is played",
+                },
+            },
+            celesta_bind_elxox_mariyume = {
+                name = "El XoX + Mari Yume",
+                text = {
+                    "Retriggers the {C:attention}rightmost{} Joker",
+                    "once for each {C:attention}hand{} remaining",
+                    "{C:inactive}(Currently {C:attention}#1#{C:inactive} retriggers)",
+                },
+            },
+            celesta_bind_elxox_melody = {
+                name = "El XoX + Projekt Melody",
+                text = {
+                    "At the end of the round, permanently stores",
+                    "{C:money}$#1#{} for each {C:attention}hand{} remaining,",
+                    "then earns everything stored",
+                    "{C:inactive}(Currently {C:money}$#2#{C:inactive})",
+                },
+            },
+            celesta_bind_elxox_aquwa = {
+                name = "El XoX + Aquwa",
+                text = {
+                    "At the end of the round, if a {C:blue}Downpour{}",
+                    "happened that round, earn {C:money}$#1#{} for",
+                    "each {C:attention}hand{} used that round",
+                },
+            },
+            celesta_bind_elxox_kumi = {
+                name = "El XoX + Kumi",
+                text = {
+                    "At the end of the round, earn money equal",
+                    "to the {C:attention}hands{} used times {X:money,C:white}X#1#{} the",
+                    "number of {C:attention}Gold{} cards held in hand",
+                },
+            },
+            celesta_bind_elxox_crelly = {
+                name = "El XoX + Crelly",
+                text = {
+                    "At the end of the shop, {C:attention}consumes{} {C:money}$#1#{}",
+                    "to gain {X:mult,C:white}X#2#{} Mult",
+                    "{C:inactive}(cannot go into debt)",
+                    "{C:inactive}(Currently {X:mult,C:white}X#3#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_elxox_cottontail = {
+                name = "El XoX + CottontailVA",
+                text = {
+                    "Earn {C:money}$#1#{} every time a",
+                    "{C:attention}Star Seal{} card copies a card",
+                },
+            },
+            celesta_bind_elxox_jowol = {
+                name = "El XoX + Jowol",
+                text = {
+                    "{C:attention}Stone{} cards give",
+                    "{C:money}$#1#{} when triggered",
+                },
+            },
+            celesta_bind_elxox_koko = {
+                name = "El XoX + KokoNuts",
+                text = {
+                    "Scored {C:attention}7{}s give {C:money}$#1#{}",
+                },
+            },
+            celesta_bind_elxox_spongey = {
+                name = "El XoX + Spongey",
+                text = {
+                    "Earn {C:money}$#1#{} every time",
+                    "another {C:attention}Joker{} triggers",
+                },
+            },
+            celesta_bind_elxox_tobs = {
+                name = "El XoX + Tobs",
+                text = {
+                    "Earn {C:money}$#1#{} every time a",
+                    "{C:attention}Eutrophic{} card mimics a card",
+                },
+            },
+            celesta_bind_elxox_vexoria = {
+                name = "El XoX + Vexoria",
+                text = {
+                    "Scored {C:spades}Spade{} cards give {C:money}$#1#{}",
+                },
+            },
+            celesta_bind_elxox_saiiren = {
+                name = "El XoX + Saiiren",
+                text = {
+                    "The {C:attention}last{} scoring card gives money",
+                    "equal to the {C:attention}hands{} remaining",
+                    "{C:inactive}(Currently {C:money}$#1#{C:inactive})",
+                },
+            },
+            celesta_bind_elxox_katie = {
+                name = "El XoX + ObKatieKat",
+                text = {
+                    "This Joker gains {X:chips,C:white}^#1#{} Chips",
+                    "every time a hand is played",
+                    "{C:inactive}(Currently {X:chips,C:white}^#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_elxox_pipi = {
+                name = "El XoX + Pipi",
+                text = {
+                    "Earn {C:money}$#1#{} every time",
+                    "a {C:attention}Pair{} is played",
+                },
+            },
+            celesta_bind_elxox_pomato = {
+                name = "El XoX + Pomatomaster",
+                text = {
+                    "Earn {C:money}$#1#{} for each {C:attention}Eutrophic{}",
+                    "card held in hand at end of round",
+                },
+            },
+            celesta_bind_elxox_fufu = {
+                name = "El XoX + Fufu",
+                text = {
+                    "Earn {C:money}$#1#{} at end of round for each",
+                    "unique {C:attention}suit{} in your {C:attention}full deck{}",
+                },
+            },
+            celesta_bind_elxox_august = {
+                name = "El XoX + August Anomoly",
+                text = {
+                    "Earn {C:money}$#1#{} every time",
+                    "a {C:blue}Blue Seal{} triggers",
+                },
+            },
+            celesta_bind_elxox_piapiufo = {
+                name = "El XoX + PiapiUFO",
+                text = {
+                    "Scored {V:1}#2#{} cards give {C:money}$#1#{}",
+                },
+            },
+            celesta_bind_elxox_buffpup = {
+                name = "El XoX + Buffpup",
+                text = {
+                    "Scored {V:1}#2#{} cards give {C:money}$#1#{}",
+                },
+            },
+            celesta_bind_elxox_ebiko = {
+                name = "El XoX + Ebiko",
+                text = {
+                    "Scored {C:diamonds}Diamond{} cards give {C:money}$#1#{}",
+                },
+            },
+            celesta_bind_elxox_torioriane = {
+                name = "El XoX + Tori Oriane",
+                text = {
+                    "Earn {C:money}$#1#{} at end of round for each",
+                    "{C:celesta_true_star}True Star{} card in your {C:attention}full deck{}",
+                },
+            },
+            celesta_bind_kairyu_rosedoodle = {
+                name = "Kairyu + Rosedoodle",
+                text = {
+                    "Gain {C:attention}+#1#{} hand size for every",
+                    "{C:attention}#2#{} {C:attention}Mult{} cards discarded this round",
+                    "{C:inactive}(Currently {C:attention}+#3#{C:inactive} hand size)",
+                },
+            },
             celesta_bind_tobs_nihmune = {
                 name = "Tobs + Nihmune",
                 text = {
@@ -4810,6 +4976,16 @@ return {
             celesta_cfg_downpour = "Force Downpour (debug)",
             celesta_cfg_unlock_all = "Unlock All Jokers",
             celesta_cfg_discover_all = "Discover All Jokers",
+            -- The Credits tab. Art this mod did not draw itself; the names
+            -- are as the artists give them.
+            celesta_credits_tab = "Credits",
+            celesta_credit_calamitas = "Calamitas art - u/The_Overseer_Pal",
+            celesta_credit_thanatos = "XM-05 Thanatos art - Dezixus on Pinterest",
+            celesta_credit_eidolonwyrm = "Eidolon Wyrm art - Nyrallia on DeviantArt",
+            celesta_credit_astrum = "Astrum Aureus art - Total Calamity Wiki",
+            celesta_credit_urschleim = "Urschleim - Core Keeper wiki",
+            celesta_credit_rest_1 = "Other art credits can (probably) be found",
+            celesta_credit_rest_2 = "through each person's Twitter/BlueSky pages.",
             -- Floating message text. Vanilla has no generic "+card" key
             -- (k_plus_stone is Marble Joker's own), so this mod supplies one.
             -- The button on the Blessed Phoenix Egg, which is pulled into the
