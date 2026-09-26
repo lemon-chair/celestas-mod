@@ -11067,9 +11067,22 @@ CelestasMod.MOGU_ODDS = 4
 
 local celesta_mogu_reroll_ref = calculate_reroll_cost
 
+--- Every Mogu that can act on a reroll, as { card = ... } entries.
+---
+--- The ones in the row, and - if none - a CDawg holding a sold one. Nothing
+--- in this Joker is a calculate, so CDawg's own lend never reaches it; see
+--- jokers/cdawg.lua. The CDawg card is what rolls, being the card doing it.
+local function mogu_holders()
+    local held = CelestasMod.find_joker(MOGU_KEY)
+    if next(held) then return held end
+    local cdawg = CelestasMod.cdawg_running
+        and CelestasMod.cdawg_running(MOGU_KEY)
+    return cdawg and { { card = cdawg } } or held
+end
+
 function calculate_reroll_cost(skip_increment, ...)
     local round = G.GAME and G.GAME.current_round
-    local held = round and CelestasMod.find_joker(MOGU_KEY)
+    local held = round and mogu_holders()
     if skip_increment or not held or not next(held) then
         return celesta_mogu_reroll_ref(skip_increment, ...)
     end
