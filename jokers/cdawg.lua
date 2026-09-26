@@ -145,21 +145,27 @@ local ORBIT_SIZE = 0.38
 --- (engine/sprite.lua:208).
 local ORBIT_SCALE = ORBIT_SIZE - 1
 
---- ...and how far out its centre sits, as a fraction of the card.
+--- ...and how far out its centre sits, as a fraction of the card's width and
+--- height. Wider than tall, because the card is taller than it is wide and one
+--- number for both would stand the ring on its end.
 ---
---- DERIVED, not chosen. At exactly (1 - size)/2 the sprite's outer edge runs
---- along the card's own edge, so the orbit is contained however the size is
---- changed. It was two picked numbers before - 0.72 of the width and 0.56 of
---- the height - which put every face wholly OUTSIDE the card: with a dozen
---- Commons retained the ring covered the Jokers either side, and the last one
---- drawn (the most recently sold) sat on top of the lot.
+--- CHOSEN, not derived, and far enough out that each face sits wholly outside
+--- the card. That is the shape of the thing: a ring turning AROUND CDawg,
+--- rather than a pattern printed on it.
+---
+--- These were briefly replaced with a single inset derived from the face size,
+--- (1 - size)/2, which keeps every face within the card's own bounds. It also
+--- pulls the ring in to under half the distance and bunches the faces over the
+--- card, which is not what this is. If the ring reaching across a neighbouring
+--- Joker ever has to be solved, it is a drawing-order problem rather than a
+--- reason to shrink the orbit.
 ---
 --- Card units, not pixels, so this holds at any resolution and at whatever
 --- size the card is being drawn.
-local ORBIT_INSET = (1 - ORBIT_SIZE) / 2
+local ORBIT_X, ORBIT_Y = 0.72, 0.56
 
---- Read by the tests, which check the two cannot drift back apart.
-CelestasMod.CDAWG_ORBIT = { size = ORBIT_SIZE, inset = ORBIT_INSET }
+--- Read by the tests, which hold these to the distance the orbit is drawn at.
+CelestasMod.CDAWG_ORBIT = { size = ORBIT_SIZE, x = ORBIT_X, y = ORBIT_Y }
 
 --- One sprite per atlas, built on first use: the atlases do not exist while
 --- this file is loading.
@@ -242,8 +248,8 @@ function Card:draw(layer)
             sprite.role.draw_major = self
             sprite:draw_shader("dissolve", nil, nil, nil, major,
                                ORBIT_SCALE, nil,
-                               math.sin(angle) * major.VT.w * ORBIT_INSET,
-                               -math.cos(angle) * major.VT.h * ORBIT_INSET)
+                               math.sin(angle) * major.VT.w * ORBIT_X,
+                               -math.cos(angle) * major.VT.h * ORBIT_Y)
         end
     end
 end
