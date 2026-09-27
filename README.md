@@ -4,7 +4,7 @@ A large VTuber-themed content mod for [Balatro](https://www.playbalatro.com/),
 built on [Steamodded](https://github.com/Steamodded/smods).
 
 216 Jokers, and two Spectral cards that do things to them: **Bind** fuses two
-Jokers into one, and **Lost Soul** turns a Joker into a harder, worse-tempered
+Jokers into one, and the other turns a Joker into a harder, worse-tempered
 version of itself.
 
 ## What's in it
