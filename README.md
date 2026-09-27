@@ -1,105 +1,189 @@
 # Celesta's Mod
 
-A Balatro mod built on [Steamodded](https://github.com/Steamodded/smods),
-structured after the Legends mod. 119 VTuber Jokers driven by a generated roster,
-plus three worked example Jokers, a Tarot, and a Deck to copy patterns from.
+A large VTuber-themed content mod for [Balatro](https://www.playbalatro.com/),
+built on [Steamodded](https://github.com/Steamodded/smods).
 
-## Layout
+216 Jokers, and two Spectral cards that do things to them: **Bind** fuses two
+Jokers into one, and **Lost Soul** turns a Joker into a harder, worse-tempered
+version of itself.
+
+## What's in it
+
+- **216 Jokers** — 60 Common, 78 Uncommon, 43 Rare, 13 Legendary, and 22 Lost
+- **Bind**, a Spectral that merges **2 selected Jokers into one** with the
+  abilities of both
+  - **299 hand-written combinations** — 286 named pairs and 13 four-Joker
+    groups, each with its own effect, art and description
+  - Anything without a written combination still merges, and simply does both
+    halves' jobs from one slot
+- **Lost Soul**, a Spectral that converts a Joker into its **Lost** form — a
+  black-badged rarity of its own, stronger and more expensive to hold
+- **3 new suits** — Leaf, Stars, and True Stars
+- **8 new enhancements** — Exo, Gash, Eutrophic, Limestone, Driftwood,
+  Sandstone, Scoria and Foliage
+- **5 new seals** — Star, Foppy, Gene, Rose and Ectoplast
+- **9 new decks** — including three weather decks and the Deck of Sins
+- **12 new Boss Blinds**
+- **16 new consumables**, plus **Stamps**: a consumable type of its own with 13
+  cards and its own booster pack
+- **2 challenges**
+
+## Requirements
+
+| | | |
+|---|---|---|
+| [Lovely Injector](https://github.com/ethangreen-dev/lovely-injector) | required | what lets any of this load at all |
+| [Steamodded](https://github.com/Steamodded/smods) | required | 1.0.0 or newer |
+| [Talisman](https://github.com/MathIsFun0/Talisman) | required | 2.7 or newer — several Jokers score `^Mult`, which is Talisman's |
+
+Talisman is the only other **mod** you need. Lovely is an injector rather than a
+mod, and Steamodded needs it whatever else you install.
+
+Optional, and used if present: [Cryptid](https://github.com/SpectralPack/Cryptid)
+and [CardSleeves](https://github.com/larswijn/CardSleeves). Neither is required
+and nothing breaks without them.
+
+## Installing
+
+**1. Install Lovely Injector.**
+Download the latest release for your platform from
+[lovely-injector/releases](https://github.com/ethangreen-dev/lovely-injector/releases).
+On Windows, drop `version.dll` next to `Balatro.exe` — find that folder with
+Steam → right-click Balatro → **Manage** → **Browse local files**. On macOS,
+follow the instructions in that repo's README; it uses a `.dylib` and a launch
+script rather than a drop-in file.
+
+**2. Find your Mods folder.** Create it if it isn't there.
+
+| Windows | `%APPDATA%\Balatro\Mods` |
+|---|---|
+| macOS | `~/Library/Application Support/Balatro/Mods` |
+| Linux (Proton) | `~/.steam/steam/steamapps/compatdata/2379780/pfx/drive_c/users/steamuser/AppData/Roaming/Balatro/Mods` |
+
+**3. Install Steamodded.** Download the release ZIP from
+[smods/releases](https://github.com/Steamodded/smods/releases) and unzip it into
+the Mods folder, so you have `Mods/smods/` (or `Mods/smods-main/` — the folder
+name doesn't matter, only that the folder contains the mod's files).
+
+**4. Install Talisman.** Same again, from
+[Talisman/releases](https://github.com/MathIsFun0/Talisman/releases), into
+`Mods/Talisman/`.
+
+**5. Install this mod.** Download the ZIP from the
+[Releases](../../releases) page and unzip it into `Mods/CelestasMod/`.
+
+**6. Launch Balatro.** There should be a **MODS** button on the main menu, with
+Celesta's Mod listed. If a mod failed to load it says so there, with the error
+attached — open that entry rather than guessing.
+
+Your Mods folder should end up looking roughly like this:
 
 ```
-CelestasMod/
-+- CelestasMod.json      Mod manifest - id, prefix, version, dependencies
-+- main.lua              Entry point: globals, shared atlases, auto-loads jokers/
-+- globals.lua           Custom colours + loc_colour hook (mirrors Legends)
-+- config.lua            Default mod config (editable in the Mods menu)
-+- jokers/               Every .lua here is auto-loaded, sorted by filename
-|  +- atlases.lua        GENERATED - one SMODS.Atlas per image in assets/1x
-|  +- examples.lua       Hand-written: flat, scaling, and per-card patterns
-|  +- vtubers.lua        GENERATED - the 119-joker roster
-+- items/
-|  +- consumables.lua    Tarot with can_use / use
-|  +- decks.lua          Back with starting params + apply()
-+- localization/
-|  +- en-us.lua          GENERATED - all player-facing text
-+- assets/
-|  +- 1x/                One 71x95 image per joker + shared sheets
-|  +- 2x/                Same names at 142x190
-+- tools/
-|  +- gen_roster.py      Rebuilds the three GENERATED files from assets/1x
-+- lovely/               Raw source patches (only if Steamodded cannot reach it)
-+- .vscode/              Lua LSP settings, extension recs, launch/log tasks
+Balatro/
++- Mods/
+   +- smods/
+   +- Talisman/
+   +- CelestasMod/
 ```
 
-## The roster
+## Performance
 
-119 Jokers, one per image, following the Legends mod's convention: each image is
-its own single-sprite atlas, referenced by the filename stem.
+Some of this mod's scoring is long. Two things make a large difference and both
+are worth doing before you start:
 
-```
-assets/1x/shylily.png  ->  SMODS.Atlas { key = "shylily" }  ->  j_celesta_shylily
-```
+- Set **game speed** to the maximum in Balatro's own settings.
+- If a hand still takes a very long time, turn on **Disable Scoring Animations**
+  in Talisman's mod config (**Mods** → **Talisman** → **Config**).
 
-Right now every one of them is a Common Joker with the same placeholder
-`+4 Mult`, so the full roster loads and is testable in-game. To give one a real
-effect, add a `calculate` to its row in `jokers/vtubers.lua`:
+The mod says the same thing in a notice on first launch, which can be turned
+back on or off under **Mods** → **Celesta** → **Config**.
 
-```lua
-{ key = "neuro", rarity = 3, cost = 8, mult = 0,
-  calculate = function(self, card, context)
-      if context.joker_main then return { x_mult = 3 } end
-  end },
-```
+## Art and likenesses
 
-...then rewrite its text in `localization/en-us.lua`. `jokers/examples.lua` has
-worked examples of the three most common trigger shapes.
+**The code in this repository is MIT licensed. The artwork is not.**
 
-**Regenerating:** `python tools/gen_roster.py` rebuilds `jokers/atlases.lua`,
-`jokers/vtubers.lua`, and `localization/en-us.lua` from whatever is in
-`assets/1x/`. It overwrites hand-written descriptions, so once you start writing
-real text, stop running it. Display names come from filenames; corrections go in
-the `DISPLAY_NAMES` map at the top of the script.
+Every Joker face was drawn by somebody else. Those images are here under the
+informal terms fan works usually run on, they are not mine to relicense, and the
+MIT grant in `LICENSE` does not extend to them. If you want to reuse something
+from this repository, reuse the code; if you want the art, ask whoever drew it.
 
-## Setup
+Credits live in the mod itself, under **Credits** in its config menu. Named
+there:
 
-1. **Install Steamodded.** Lovely is already in place on this machine
-   (`version.dll` in the Balatro folder). Download the Steamodded release and
-   unzip it so you have `%APPDATA%\Balatro\Mods\Steamodded\`.
-2. **Launch Balatro.** This mod is already in the Mods folder, so it loads on
-   startup. Check the `MODS` button on the main menu.
-3. **Iterate.** Lua is re-read on launch — edit, relaunch, retest. There is no
-   hot reload.
+- Calamitas — u/The_Overseer_Pal
+- XM-05 Thanatos — Dezixus, on Pinterest
+- Eidolon Wyrm — Nyrallia, on DeviantArt
+- Astrum Aureus — Total Calamity Wiki
+- Urschleim — Core Keeper wiki
 
-## Key naming
+The rest is VTuber art whose credits can usually be found through each person's
+Twitter/BlueSky.
 
-The `prefix` in the manifest (`celesta`) is prepended to everything:
+**If you drew something here and would like it credited differently or taken
+out, open an issue and it will be removed.**
 
-| You write | Game sees |
-| --- | --- |
-| `SMODS.Joker { key = 'shylily' }` | `j_celesta_shylily` |
-| `SMODS.Consumable { key = 'reforge' }` | `c_celesta_reforge` |
-| `SMODS.Back { key = 'founders' }` | `b_celesta_founders` |
-| `SMODS.Atlas { key = 'shylily' }` | `celesta_shylily` |
+## Reporting a bug
 
-Localization keys must use the **full prefixed** form. Cross-references between
-your own objects do too — see `decks.lua` spawning `j_celesta_spark`.
+Open an issue. The useful things to include:
 
-## Debugging
+- What you were doing — a hand played, a Joker bought, a merge made
+- Which Jokers were in the row, especially any merged ones
+- The log. Balatro writes it to `Mods/lovely/log/`; the newest file is the run
+  that just crashed, and the last 50 lines are usually enough.
 
-- Logs: `%APPDATA%\Balatro\Mods\lovely\log\` — the VS Code task
-  **Tail Steamodded log** follows the newest one.
-- `sendDebugMessage('text', 'CelestasMod')` from any Lua file writes there.
-- A Lua error during load shows as the mod failing in the `MODS` menu with the
-  stack trace attached; open that entry rather than guessing.
+Merges are where the interesting bugs are. If a merged Joker is involved, saying
+which two Jokers went into it is the single most useful detail.
 
-## Editor autocomplete (optional)
+## Building on it
 
-Extract Balatro's Lua source into `.balatro-src/` (gitignored) and the Lua LSP
-will resolve `G.GAME`, `Card:set_ability`, and friends. Use a `.love` extractor
-such as [love-extract](https://github.com/MikuAuahDark/love-extract) or 7-Zip on
-`Balatro.exe`. Everything works without this — you just lose completions.
+Some files are **generated** and should not be hand-edited:
 
-## Reference
+- `jokers/atlases.lua` — one atlas per image in `assets/1x/`
+- `jokers/zz_vtubers.lua` — the placeholder roster, now empty
+- `localization/en-us.lua` — every `j_celesta_*` Joker block is preserved
+  verbatim from the existing file; everything else comes from the script
 
-- Steamodded API wiki: https://github.com/Steamodded/smods/wiki
-- `calculate` contexts: https://github.com/Steamodded/smods/wiki/calculate-functions
-- Lovely: https://github.com/ethangreen-dev/lovely-injector
+`python tools/gen_roster.py` rebuilds all three from `assets/`. It also masks
+every card image to Balatro's corner silhouette on the way past, so art cannot
+reach the game unshaped.
+
+Other tools in `tools/`:
+
+| | |
+|---|---|
+| `import_art.py <name> <1x> <2x>` | copies art in, refusing every way that has gone wrong before |
+| `round_corners.py` | the corner mask on its own (`--check` to report only) |
+| `check_atlases.py` | every atlas matches its image and every cell exists |
+| `check_loc_keys.py` | every `localize` key resolves |
+| `check_loc_vars.py` | every `#n#` in a description is supplied by `loc_vars` |
+| `check_dependencies.py` | every foreign global is declared or guarded |
+| `check_duplicate_art.py` | no image ships under two names |
+| `check_runtime_globals.py` | no runtime use of `SMODS.current_mod` |
+
+Both `merge/bind.lua` and `jokers/implemented.lua` sit at Lua's limit of **200
+local variables per chunk**. Past it the whole file stops loading rather than
+failing at a line, so new top-level helpers in either file go inside a
+`do ... end` block.
+
+The `prefix` in the manifest is `celesta`, and it is prepended to everything:
+
+| You write | The game sees |
+|---|---|
+| `SMODS.Joker { key = "shylily" }` | `j_celesta_shylily` |
+| `SMODS.Consumable { key = "bind" }` | `c_celesta_bind` |
+| `SMODS.Back { key = "founders" }` | `b_celesta_founders` |
+| `SMODS.Atlas { key = "shylily" }` | `celesta_shylily` |
+
+Localization keys use the full prefixed form, and so do cross-references
+between the mod's own objects.
+
+## License
+
+MIT for the code — see [`LICENSE`](LICENSE). Not the art; see
+[Art and likenesses](#art-and-likenesses) above.
+
+## Links
+
+- [Steamodded API wiki](https://github.com/Steamodded/smods/wiki)
+- [`calculate` contexts](https://github.com/Steamodded/smods/wiki/calculate-functions)
+- [Lovely Injector](https://github.com/ethangreen-dev/lovely-injector)

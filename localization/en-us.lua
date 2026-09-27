@@ -5221,10 +5221,24 @@ return {
         },
 
         Mod = {
+            -- What the Mods menu shows. Steamodded reads this in preference to
+            -- the manifest's `description` string and only falls back to it
+            -- when this entry is missing (smods src/ui.lua:252), so this is
+            -- the one players actually see - one row per line, colour tags and
+            -- all, where the manifest string is a single wrapped paragraph.
             CelestasMod = {
                 name = "Celesta's Mod",
                 text = {
-                    "VTuber Jokers.",
+                    "{C:attention}216{} VTuber Jokers, and two",
+                    "{C:spectral}Spectrals{} to do things with them:",
+                    " ",
+                    "- {C:spectral}Bind{} merges {C:attention}2{} Jokers into one,",
+                    "  with {C:attention}299{} written combinations",
+                    "- {C:spectral}Lost Soul{} turns a Joker into its",
+                    "  harder, worse-tempered {C:attention}Lost{} version",
+                    "- {C:attention}3{} suits, {C:attention}8{} enhancements, {C:attention}5{} seals",
+                    "- {C:attention}9{} decks, {C:attention}12{} Boss Blinds, {C:attention}2{} challenges",
+                    "- {C:attention}16{} consumables, plus {C:attention}13{} {C:attention}Stamps{}",
                 },
             },
         },
