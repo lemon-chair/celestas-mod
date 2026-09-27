@@ -2809,6 +2809,30 @@ return {
                     "{C:inactive}(Currently {C:money}$#2#{C:inactive})",
                 },
             },
+            celesta_bind_aquwa_deme = {
+                name = "Aquwa + Deme",
+                text = {
+                    "At the start of the round,",
+                    "starts a {C:blue}Downpour{}",
+                    "If the played hand has {C:attention}#1#{} card,",
+                    "retrigger it {C:attention}#2#{} times",
+                },
+            },
+            celesta_bind_arielle_jaws = {
+                name = "Arielle + Jaws",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult for each",
+                    "unique {C:attention}suit{} in your {C:attention}full deck{}",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_deme_saruei = {
+                name = "Deme + Saruei",
+                text = {
+                    "A {C:attention}Glass{} or {C:attention}Gash{} card played",
+                    "on its own can never break",
+                },
+            },
             celesta_bind_elxox_toma = {
                 name = "El XoX + Toma",
                 text = {

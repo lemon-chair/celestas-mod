@@ -10765,6 +10765,91 @@ end
 
 
 --------------------------------------------------------------------------------
+-- Aquwa, Arar, Arielle and Deme again
+--------------------------------------------------------------------------------
+
+-- Aquwa + Deme: Aquwa's weather, and Deme's one-card hand made worth playing
+-- for its own sake rather than for the multiplier it builds.
+--
+-- open_with_downpour answers the setting_blind pass and nothing else, so the
+-- two halves never contend for the same context.
+special("j_celesta_aquwa", "j_celesta_demenishki", {
+    key = "aquwa_deme",
+    config = { cards = 1, repetitions = 4 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.cards, state.repetitions } }
+    end,
+
+    calculate = function(def, card, context, state)
+        local opened = open_with_downpour(card, context)
+        if opened then return opened end
+
+        if not (context.repetition and context.cardarea == G.play
+                and context.other_card) then return end
+        if played_count(context) ~= state.cards then return end
+        return {
+            message = localize("k_again_ex"),
+            repetitions = state.repetitions,
+            card = card,
+        }
+    end,
+})
+
+-- Arielle + Jaws: Arielle is the suit Joker and Jaws is the one that grows, so
+-- this grows on suits - three times as fast as Fufu does it.
+--
+-- Live off the deck rather than banked, which is what "in full deck" means
+-- everywhere else here: a deck that loses its last Heart loses the multiplier
+-- with it. Note what the pair gives up to do it - Arielle alone makes every
+-- card every suit, and a replaced Arielle does not, which is the only reason
+-- there is more than one suit left to count.
+special("j_celesta_arielle", "j_celesta_jaws", {
+    key = "arielle_jaws",
+    config = { x_mult_gain = 1.5 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain,
+                          1 + state.x_mult_gain
+                              * CelestasMod.unique_suits_in_deck() } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local x_mult = 1 + state.x_mult_gain * CelestasMod.unique_suits_in_deck()
+        if x_mult > 1 then return { x_mult = x_mult } end
+    end,
+})
+
+-- Deme + Saruei: Saruei pays for a Glass or Gash card that survives scoring,
+-- and Deme is the one-card hand. Play one on its own and it cannot break, so
+-- the payout is certain.
+--
+-- Through fix_probability, the way Ellie Minibot + Cerber stops the same two
+-- rolls: a numerator of ZERO rather than nil, because nil would leave the roll
+-- at whatever it was, and 0 is truthy in Lua so it survives the `or` chain
+-- SMODS reads the fixed numerator through (utils.lua:2733).
+special("j_celesta_demenishki", "j_celesta_saruei", {
+    key = "deme_saruei",
+    config = { cards = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.cards } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.fix_probability then return end
+        local id = context.identifier
+        if not (id == "glass" or id == CelestasMod.GASH_BREAK_ID) then return end
+        -- The hand, not the card: a one-card hand has exactly one roll in it,
+        -- and it belongs to the card that was played.
+        if played_count(context) ~= state.cards then return end
+        return { numerator = 0 }
+    end,
+})
+
+
+--------------------------------------------------------------------------------
 -- Art: the two faces split corner to corner
 --------------------------------------------------------------------------------
 
