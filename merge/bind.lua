@@ -7906,23 +7906,34 @@ special("j_celesta_grimmi", "j_celesta_jowol", {
 --- The pair, so the sell-value hooks below can name it once.
 local GRIMMI_EGGS = "grimmi_eggs"
 
---- What this pair adds to a card's sell value, in whole dollars.
+--- What a pair adds to its card's sell value, in whole dollars.
 ---
---- Half a dollar a Heart, floored: the game deals in whole dollars and
---- vanilla's own sell price is floored for that reason (card.lua:512). Two
---- Hearts buy one dollar.
+--- Asked of the pair rather than written out here: a def declares `sell_extra`
+--- and this finds it, so the two hooks below serve every pair that raises a
+--- price instead of one. Grimmi + OverEzEggs derives its amount from the deck
+--- and Yuy + Nekrolina banks its own; neither needs its own wrap.
 ---
 --- A debuffed pair does nothing, and that includes this - the rule every
 --- other passive in this file is held to.
-local function grimmi_eggs_extra(card)
+---
+--- Guarded: a pair that faults over a price must not stop the card being
+--- priced at all.
+local function bind_sell_extra(card)
     if not (card.ability and card.ability.set == "Joker" and not card.debuff) then
         return 0
     end
     local def = Bind.special_of(card)
-    if not (def and def.key == GRIMMI_EGGS) then return 0 end
-    local state = Bind.special_state(card, def)
-    return math.floor((state.per_heart or 0)
-        * CelestasMod.count_suit_in_deck("Hearts"))
+    if not (def and type(def.sell_extra) == "function") then return 0 end
+
+    local ok, amount = pcall(def.sell_extra, def, card,
+                             Bind.special_state(card, def))
+    if not ok then
+        CelestasMod.warn_once("bind_sell_" .. tostring(def.key),
+            ("Bind pair %s failed to price itself: %s")
+                :format(tostring(def.key), tostring(amount)))
+        return 0
+    end
+    return type(amount) == "number" and amount or 0
 end
 
 -- Grimmi + OverEzEggs: OverEzEggs fills the deck with Hearts, and this is paid
@@ -7943,15 +7954,25 @@ special("j_celesta_grimmi", "j_celesta_overezeggs", {
         return { vars = { state.per_heart } }
     end,
 
+    -- Half a dollar a Heart, floored: the game deals in whole dollars and
+    -- vanilla's own sell price is floored for that reason (card.lua:512). Two
+    -- Hearts buy one dollar.
+    sell_extra = function(def, card, state)
+        return math.floor((state.per_heart or 0)
+            * CelestasMod.count_suit_in_deck("Hearts"))
+    end,
+
     calculate = function(def, card, context, state)
         return grimmi_returns(card, context, "j_celesta_overezeggs")
     end,
 })
 
+-- Both wraps below serve every pair that declares `sell_extra`, not only the
+-- one above: what they add is whatever bind_sell_extra answers.
 local celesta_grimmi_eggs_cost_ref = Card.set_cost
 function Card:set_cost(...)
     local ret = celesta_grimmi_eggs_cost_ref(self, ...)
-    local extra = grimmi_eggs_extra(self)
+    local extra = bind_sell_extra(self)
     if extra > 0 and type(self.sell_cost) == "number" then
         self.sell_cost = self.sell_cost + extra
         self.sell_cost_label = self.facing == "back" and "?" or self.sell_cost
@@ -7975,7 +7996,7 @@ function Card:update(dt)
     celesta_grimmi_eggs_update_ref(self, dt)
 
     if self.ability and self.ability.set == "Joker" then
-        local want = grimmi_eggs_extra(self)
+        local want = bind_sell_extra(self)
         if grimmi_eggs_priced[self] ~= want then
             grimmi_eggs_priced[self] = want
             if type(self.set_cost) == "function" then self:set_cost() end
@@ -10847,6 +10868,109 @@ special("j_celesta_demenishki", "j_celesta_saruei", {
         return { numerator = 0 }
     end,
 })
+
+
+--------------------------------------------------------------------------------
+-- Yuy and HeavenlyFather again
+--------------------------------------------------------------------------------
+
+-- Yuy + Nekrolina: what the merge is WORTH grows, rather than what it scores.
+--
+-- Banked in the pair's own state and handed to the sell-value hooks above
+-- through sell_extra, so it is saved with the card and taken away with it -
+-- and not written into ability.extra_value, which is the mistake Ruben
+-- Sargasm was carrying and Grimmi + OverEzEggs writes up: that field sits one
+-- level down card.ability, exactly where Cryptid's misprintize walks.
+--
+-- set_cost is called as it banks, because nothing else will: the price would
+-- otherwise sit stale until something happened to the card.
+special("j_celesta_yuy_ix", "j_celesta_nekrolina", {
+    key = "yuy_nekrolina",
+    config = { per_hand = 1, banked = 0 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.per_hand, state.banked } }
+    end,
+
+    sell_extra = function(def, card, state)
+        return state.banked or 0
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.before and not context.blueprint) then return end
+        state.banked = (state.banked or 0) + state.per_hand
+        if type(card.set_cost) == "function" then card:set_cost() end
+        return {
+            message = localize("k_val_up"),
+            colour = G.C.MONEY,
+            card = card,
+        }
+    end,
+})
+
+--- How many slots each copier gets in the shop pool while the pair is held.
+--- One is what it already has, so this is the multiplier on its chances.
+CelestasMod.HEAVENLY_BLUTO_WEIGHT = 4
+
+-- HeavenlyFather + Bluto: Bluto is about Blueprint and Brainstorm, and this is
+-- the shop agreeing to hand them over.
+--
+-- The same route items/decks.lua takes for the weather decks, and writes up at
+-- length: get_current_pool builds a flat array where every candidate
+-- contributes one slot - its key, or the string 'UNAVAILABLE' - and create_card
+-- picks from it uniformly, resampling until it lands on something available
+-- (common_events.lua:2449). So a key listed more than once is simply drawn more
+-- often, and no other Joker's chances change in kind. Appending is also the
+-- only edit that cannot break the array: the positions vanilla built keep
+-- their meaning.
+--
+-- A copy is only appended for a Joker the pool ALREADY offers. The base pool
+-- writes 'UNAVAILABLE' over one that is owned, banned or gated, and appending
+-- its key regardless would put an owned Blueprint back in the shop - which is
+-- exactly the check the base pool exists to make.
+special("j_celesta_heavenlyfather", "j_celesta_bluto", {
+    key = "heavenly_bluto",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+local celesta_bind_pool_ref = get_current_pool
+if celesta_bind_pool_ref then
+    function get_current_pool(_type, _rarity, _legendary, _append, ...)
+        local pool, key = celesta_bind_pool_ref(_type, _rarity, _legendary,
+                                                _append, ...)
+        if _type ~= "Joker" or type(pool) ~= "table" then return pool, key end
+
+        local holder = Bind.find_special("heavenly_bluto")
+        if not (holder and not holder.debuff) then return pool, key end
+
+        -- Guarded: a shop that cannot be built is a run that cannot continue,
+        -- and a shop that is merely not weighted is a disappointment.
+        local ok, err = pcall(function()
+            local offered = {}
+            for _, entry in ipairs(pool) do offered[entry] = true end
+
+            for copier in pairs(CelestasMod.BLUTO_TARGETS or {}) do
+                if offered[copier] then
+                    for _ = 2, CelestasMod.HEAVENLY_BLUTO_WEIGHT do
+                        pool[#pool + 1] = copier
+                    end
+                end
+            end
+        end)
+        if not ok then
+            CelestasMod.warn_once("heavenly_bluto_pool",
+                ("HeavenlyFather + Bluto could not weight the shop: %s")
+                    :format(tostring(err)))
+        end
+
+        return pool, key
+    end
+end
 
 
 --------------------------------------------------------------------------------

@@ -1281,6 +1281,21 @@ LOC_TAIL = '''        },
                     "on its own can never break",
                 },
             },
+            celesta_bind_yuy_nekrolina = {
+                name = "Yuy + Nekrolina",
+                text = {
+                    "This Joker gains {C:money}$#1#{} of",
+                    "{C:attention}sell value{} every time a hand is played",
+                    "{C:inactive}(Currently {C:money}+$#2#{C:inactive})",
+                },
+            },
+            celesta_bind_heavenly_bluto = {
+                name = "HeavenlyFather + Bluto",
+                text = {
+                    "{C:attention}Blueprint{} and {C:attention}Brainstorm{}",
+                    "appear more often in the {C:attention}shop{}",
+                },
+            },
             celesta_bind_elxox_toma = {
                 name = "El XoX + Toma",
                 text = {
