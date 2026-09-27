@@ -5233,7 +5233,7 @@ return {
                     "{C:spectral}Spectrals{} to do things with them:",
                     " ",
                     "- {C:spectral}Bind{} merges {C:attention}2{} Jokers into one,",
-                    "  with {C:attention}299{} written combinations",
+                    "  with {C:attention}300{} unique combinations",
                     "- {C:spectral}Lost Soul{} turns a Joker into its",
                     "  harder, worse-tempered {C:attention}Lost{} version",
                     "- {C:attention}3{} suits, {C:attention}8{} enhancements, {C:attention}5{} seals",

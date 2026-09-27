@@ -12,21 +12,14 @@ version of itself.
 - **216 Jokers**: 60 Common, 78 Uncommon, 43 Rare, 13 Legendary, and 22 of a
   new rarity
 - **Bind**, a Spectral that merges **2 selected Jokers into one** with the
-  abilities of both
-  - **299 hand-written combinations**: 286 named pairs and 13 four-Joker
-    groups, each with its own effect, art and description
-  - Anything without a written combination still merges, and simply does both
-    halves' jobs from one slot
-- **Lost Soul**, a Spectral that converts a Joker into its **Lost** form: a
-  black-badged rarity of its own, stronger and more expensive to hold
-- **3 new suits**: Leaf, Stars, and True Stars
-- **8 new enhancements**: Exo, Gash, Eutrophic, Limestone, Driftwood,
-  Sandstone, Scoria and Foliage
-- **5 new seals**: Star, Foppy, Gene, Rose and Ectoplast
-- **9 new decks**: including three weather decks and the Deck of Sins
+  abilities of both, with **300 unique combinations**
+- **3 new suits**
+- **8 new enhancements**
+- **5 new seals**
+- **9 new decks**
 - **12 new Boss Blinds**
-- **16 new consumables**, plus **Stamps**: a consumable type of its own with 13
-  cards and its own booster pack
+- **16 new consumables**, plus a new type of consumable with 13 cards and its
+  own booster pack
 - **2 challenges**
 
 ## Requirements
@@ -39,10 +32,6 @@ version of itself.
 
 Talisman is the only other **mod** you need. Lovely is an injector rather than a
 mod, and Steamodded needs it whatever else you install.
-
-Optional, and used if present: [Cryptid](https://github.com/SpectralPack/Cryptid)
-and [CardSleeves](https://github.com/larswijn/CardSleeves). Neither is required
-and nothing breaks without them.
 
 ## Installing
 
