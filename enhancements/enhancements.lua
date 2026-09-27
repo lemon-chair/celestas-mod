@@ -114,7 +114,7 @@ CelestasMod.GASH_BREAK_ID = "celesta_gash_break"
 CelestasMod.GASH_ODDS = 4
 
 --------------------------------------------------------------------------------
--- Exo — retriggered once per consumable held.
+-- Exo: retriggered once per consumable held.
 --------------------------------------------------------------------------------
 
 -- How far Exo's frame extends past the card. Sprite:draw_from scales by
@@ -219,7 +219,7 @@ SMODS.Enhancement {
 }
 
 --------------------------------------------------------------------------------
--- Gash — X2 Chips, but 1 in 4 to break when scored.
+-- Gash: X2 Chips, but 1 in 4 to break when scored.
 --------------------------------------------------------------------------------
 
 SMODS.Enhancement {
@@ -277,7 +277,7 @@ SMODS.Enhancement {
 }
 
 --------------------------------------------------------------------------------
--- Eutrophic — copies the abilities of the leftmost card.
+-- Eutrophic: copies the abilities of the leftmost card.
 --------------------------------------------------------------------------------
 
 --- The card a Eutrophic copies: the leftmost of whatever area it is sitting
@@ -495,7 +495,7 @@ SMODS.Enhancement {
 }
 
 --------------------------------------------------------------------------------
--- Limestone — +10 Mult, rankless and suitless like a Stone Card.
+-- Limestone: +10 Mult, rankless and suitless like a Stone Card.
 --------------------------------------------------------------------------------
 
 SMODS.Enhancement {
@@ -529,7 +529,7 @@ SMODS.Enhancement {
 }
 
 --------------------------------------------------------------------------------
--- Sandstone — Stone, weathered into something less predictable.
+-- Sandstone: Stone, weathered into something less predictable.
 --------------------------------------------------------------------------------
 --
 -- What Polish turns a Stone Card into, so it is shaped like one: it IS the
@@ -599,7 +599,7 @@ SMODS.Enhancement {
 }
 
 --------------------------------------------------------------------------------
--- Scoria — Limestone, weathered into something less predictable.
+-- Scoria: Limestone, weathered into something less predictable.
 --------------------------------------------------------------------------------
 --
 -- Sandstone's twin, and deliberately so: Polish makes Sandstone out of a Stone
@@ -658,7 +658,7 @@ SMODS.Enhancement {
 }
 
 --------------------------------------------------------------------------------
--- Foliage — three ways to pay, and it spreads.
+-- Foliage: three ways to pay, and it spreads.
 --------------------------------------------------------------------------------
 --
 -- STANDARD PACKS ONLY. get_current_pool hands in_pool the key_append it was
@@ -874,7 +874,7 @@ SMODS.Enhancement {
 }
 
 --------------------------------------------------------------------------------
--- Driftwood — may break if still held at the end of the round.
+-- Driftwood: may break if still held at the end of the round.
 --------------------------------------------------------------------------------
 
 --- True when a Sinder is in play and able to act.

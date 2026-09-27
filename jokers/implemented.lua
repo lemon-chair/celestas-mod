@@ -3931,7 +3931,7 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Milk Bottle — permanent Chips on the cards you pick
+-- Milk Bottle: permanent Chips on the cards you pick
 --------------------------------------------------------------------------------
 
 CelestasMod.MILK_BOTTLE_KEY = "c_" .. SMODS.current_mod.prefix .. "_milk_bottle"
@@ -4005,7 +4005,7 @@ SMODS.Consumable {
 }
 
 --------------------------------------------------------------------------------
--- Burgundy Brew — permanent Mult on the cards you pick
+-- Burgundy Brew: permanent Mult on the cards you pick
 --------------------------------------------------------------------------------
 --
 -- Milk Bottle's twin, and written as its twin on purpose: same set, same cost,

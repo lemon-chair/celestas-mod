@@ -1,4 +1,4 @@
---- Celesta's Mod — entry point.
+--- Celesta's Mod: entry point.
 --- Structure follows the Legends mod: globals first, then every .lua file in
 --- jokers/ is auto-loaded, then the hand-maintained items/ files.
 
@@ -115,7 +115,7 @@ assert(SMODS.load_file('suits/leaf.lua'))()
 assert(SMODS.load_file('suits/true_stars.lua'))()
 
 --------------------------------------------------------------------------------
--- Arena effects — screen-wide, round-scoped weather. Loaded before jokers
+-- Arena effects: screen-wide, round-scoped weather. Loaded before jokers
 -- because Aquwa and friends call into CelestasMod.Arena.
 --------------------------------------------------------------------------------
 
@@ -163,7 +163,7 @@ assert(SMODS.load_file('consumables/lost_soul.lua'))()
 assert(SMODS.load_file('consumables/targets.lua'))()
 
 --------------------------------------------------------------------------------
--- Stamps — a consumable type of their own, the pack they come out of, and the
+-- Stamps: a consumable type of their own, the pack they come out of, and the
 -- marks they leave on a Joker. downsides.lua first: it holds the costs a stamp
 -- is chosen against, and stamps.lua reads the list at load.
 --------------------------------------------------------------------------------
@@ -172,7 +172,7 @@ assert(SMODS.load_file('stamps/downsides.lua'))()
 assert(SMODS.load_file('stamps/stamps.lua'))()
 
 --------------------------------------------------------------------------------
--- Jokers — auto-loaded from jokers/.
+-- Jokers: auto-loaded from jokers/.
 -- Sorted, which does two things. atlases.lua registers before anything
 -- references it, and zz_vtubers.lua - the placeholder roster - loads LAST, so
 -- every finished Joker is contiguous in the Collection and the unfinished ones
@@ -190,11 +190,11 @@ for _, file in ipairs(joker_src) do
 end
 
 --------------------------------------------------------------------------------
--- Everything else — explicit list, order matters here.
+-- Everything else: explicit list, order matters here.
 --------------------------------------------------------------------------------
 
 -- 'items/consumables.lua' (the Reforge Tarot) is disabled while it still has
--- placeholder art — add it back to this list to re-enable. Its code, atlas and
+-- placeholder art: add it back to this list to re-enable. Its code, atlas and
 -- localization are all still in place.
 for _, file in ipairs({ 'seals/seals.lua', 'items/decks.lua',
                         -- After decks.lua: each sleeve is built from its

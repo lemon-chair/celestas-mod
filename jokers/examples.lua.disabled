@@ -3,7 +3,7 @@
 --- Full context reference: https://github.com/Steamodded/smods/wiki/calculate-functions
 
 --------------------------------------------------------------------------------
--- 1. Flat bonus — the simplest possible Joker.
+-- 1. Flat bonus: the simplest possible Joker.
 --------------------------------------------------------------------------------
 
 SMODS.Joker {
@@ -34,7 +34,7 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- 2. Scaling — grows permanently while you play.
+-- 2. Scaling: grows permanently while you play.
 --------------------------------------------------------------------------------
 
 SMODS.Joker {

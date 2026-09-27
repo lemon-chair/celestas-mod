@@ -23,7 +23,7 @@ CelestasMod.SEAL_KEYS = {
 }
 
 --------------------------------------------------------------------------------
--- Gene — this card is dealt before every other card.
+-- Gene: this card is dealt before every other card.
 --------------------------------------------------------------------------------
 --
 -- There is no `calculate` here and there is not meant to be. A seal's
@@ -32,8 +32,8 @@ CelestasMod.SEAL_KEYS = {
 -- G.FUNCS.draw_from_deck_to_hand, before any card is a scoring card.
 --
 -- So the behaviour lives with the other thing in this mod that reorders the
--- deck for a deal — GlassesJournal, in jokers/implemented.lua — because the
--- two have to agree on one order. Two independent sorts of the same table
+-- deck for a deal: GlassesJournal, in jokers/implemented.lua. The two
+-- have to agree on one order. Two independent sorts of the same table
 -- would mean whichever ran last silently won, and "always drawn first" cannot
 -- be true of a rule another rule is allowed to overwrite. That sort reads
 -- CelestasMod.SEAL_KEYS.Gene, which is why the key above is the only thing
@@ -49,7 +49,7 @@ SMODS.Seal {
 }
 
 --------------------------------------------------------------------------------
--- Star — when NON-scoring, copies the card to its left into the deck.
+-- Star: when NON-scoring, copies the card to its left into the deck.
 -- How MANY copies is Ray + CottontailVA's business; see merge/bind.lua.
 --------------------------------------------------------------------------------
 
@@ -124,7 +124,7 @@ SMODS.Seal {
 }
 
 --------------------------------------------------------------------------------
--- Ectoplast — when scored, 1 in 4 to upgrade a random Joker's edition,
+-- Ectoplast: when scored, 1 in 4 to upgrade a random Joker's edition,
 -- stepping none -> Foil -> Holographic -> Polychrome -> Negative.
 --------------------------------------------------------------------------------
 
@@ -195,7 +195,7 @@ SMODS.Seal {
 }
 
 --------------------------------------------------------------------------------
--- Rose — when scored, permanently gains X0.1 Mult for this card.
+-- Rose: when scored, permanently gains X0.1 Mult for this card.
 --------------------------------------------------------------------------------
 
 SMODS.Seal {
@@ -226,7 +226,7 @@ SMODS.Seal {
 }
 
 --------------------------------------------------------------------------------
--- Foppy — retriggers this card 2 extra times.
+-- Foppy: retriggers this card 2 extra times.
 --------------------------------------------------------------------------------
 
 SMODS.Seal {

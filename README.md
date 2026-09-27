@@ -9,20 +9,21 @@ version of itself.
 
 ## What's in it
 
-- **216 Jokers** — 60 Common, 78 Uncommon, 43 Rare, 13 Legendary, and 22 Lost
+- **216 Jokers**: 60 Common, 78 Uncommon, 43 Rare, 13 Legendary, and 22 of a
+  new rarity
 - **Bind**, a Spectral that merges **2 selected Jokers into one** with the
   abilities of both
-  - **299 hand-written combinations** — 286 named pairs and 13 four-Joker
+  - **299 hand-written combinations**: 286 named pairs and 13 four-Joker
     groups, each with its own effect, art and description
   - Anything without a written combination still merges, and simply does both
     halves' jobs from one slot
-- **Lost Soul**, a Spectral that converts a Joker into its **Lost** form — a
+- **Lost Soul**, a Spectral that converts a Joker into its **Lost** form: a
   black-badged rarity of its own, stronger and more expensive to hold
-- **3 new suits** — Leaf, Stars, and True Stars
-- **8 new enhancements** — Exo, Gash, Eutrophic, Limestone, Driftwood,
+- **3 new suits**: Leaf, Stars, and True Stars
+- **8 new enhancements**: Exo, Gash, Eutrophic, Limestone, Driftwood,
   Sandstone, Scoria and Foliage
-- **5 new seals** — Star, Foppy, Gene, Rose and Ectoplast
-- **9 new decks** — including three weather decks and the Deck of Sins
+- **5 new seals**: Star, Foppy, Gene, Rose and Ectoplast
+- **9 new decks**: including three weather decks and the Deck of Sins
 - **12 new Boss Blinds**
 - **16 new consumables**, plus **Stamps**: a consumable type of its own with 13
   cards and its own booster pack
@@ -34,7 +35,7 @@ version of itself.
 |---|---|---|
 | [Lovely Injector](https://github.com/ethangreen-dev/lovely-injector) | required | what lets any of this load at all |
 | [Steamodded](https://github.com/Steamodded/smods) | required | 1.0.0 or newer |
-| [Talisman](https://github.com/MathIsFun0/Talisman) | required | 2.7 or newer — several Jokers score `^Mult`, which is Talisman's |
+| [Talisman](https://github.com/MathIsFun0/Talisman) | required | 2.7 or newer: several Jokers score `^Mult`, which is Talisman's |
 
 Talisman is the only other **mod** you need. Lovely is an injector rather than a
 mod, and Steamodded needs it whatever else you install.
@@ -48,7 +49,7 @@ and nothing breaks without them.
 **1. Install Lovely Injector.**
 Download the latest release for your platform from
 [lovely-injector/releases](https://github.com/ethangreen-dev/lovely-injector/releases).
-On Windows, drop `version.dll` next to `Balatro.exe` — find that folder with
+On Windows, drop `version.dll` next to `Balatro.exe`: find that folder with
 Steam → right-click Balatro → **Manage** → **Browse local files**. On macOS,
 follow the instructions in that repo's README; it uses a `.dylib` and a launch
 script rather than a drop-in file.
@@ -62,7 +63,7 @@ script rather than a drop-in file.
 
 **3. Install Steamodded.** Download the release ZIP from
 [smods/releases](https://github.com/Steamodded/smods/releases) and unzip it into
-the Mods folder, so you have `Mods/smods/` (or `Mods/smods-main/` — the folder
+the Mods folder, so you have `Mods/smods/` (or `Mods/smods-main/`: the folder
 name doesn't matter, only that the folder contains the mod's files).
 
 **4. Install Talisman.** Same again, from
@@ -70,17 +71,17 @@ name doesn't matter, only that the folder contains the mod's files).
 `Mods/Talisman/`.
 
 **5. Install this mod.** On the [Releases](../../releases) page, download
-`CelestasMod-1.0.0.zip` — the one under **Assets**, not "Source code (zip)" —
-and unzip it into the Mods folder. It contains a single `CelestasMod/` folder,
-so you end up with `Mods/CelestasMod/`.
+`CelestasMod-1.0.0.zip` from under **Assets**, not "Source code (zip)", and
+unzip it into the Mods folder. It contains a single `CelestasMod/` folder, so
+you end up with `Mods/CelestasMod/`.
 
 The source ZIP works too; it just unpacks to `celestas-mod-1.0.0/` instead.
 Steamodded looks for the manifest rather than the folder name, so either is
-fine — a folder is a mod if it contains `CelestasMod.json`.
+fine: a folder is a mod if it contains `CelestasMod.json`.
 
 **6. Launch Balatro.** There should be a **MODS** button on the main menu, with
 Celesta's Mod listed. If a mod failed to load it says so there, with the error
-attached — open that entry rather than guessing.
+attached: open that entry rather than guessing.
 
 Your Mods folder should end up looking roughly like this:
 
@@ -116,11 +117,11 @@ from this repository, reuse the code; if you want the art, ask whoever drew it.
 Credits live in the mod itself, under **Credits** in its config menu. Named
 there:
 
-- Calamitas — u/The_Overseer_Pal
-- XM-05 Thanatos — Dezixus, on Pinterest
-- Eidolon Wyrm — Nyrallia, on DeviantArt
-- Astrum Aureus — Total Calamity Wiki
-- Urschleim — Core Keeper wiki
+- Calamitas: u/The_Overseer_Pal
+- XM-05 Thanatos: Dezixus, on Pinterest
+- Eidolon Wyrm: Nyrallia, on DeviantArt
+- Astrum Aureus: Total Calamity Wiki
+- Urschleim: Core Keeper wiki
 
 The rest is VTuber art whose credits can usually be found through each person's
 Twitter/BlueSky.
@@ -132,7 +133,7 @@ out, open an issue and it will be removed.**
 
 Open an issue. The useful things to include:
 
-- What you were doing — a hand played, a Joker bought, a merge made
+- What you were doing: a hand played, a Joker bought, a merge made
 - Which Jokers were in the row, especially any merged ones
 - The log. Balatro writes it to `Mods/lovely/log/`; the newest file is the run
   that just crashed, and the last 50 lines are usually enough.
@@ -144,9 +145,9 @@ which two Jokers went into it is the single most useful detail.
 
 Some files are **generated** and should not be hand-edited:
 
-- `jokers/atlases.lua` — one atlas per image in `assets/1x/`
-- `jokers/zz_vtubers.lua` — the placeholder roster, now empty
-- `localization/en-us.lua` — every `j_celesta_*` Joker block is preserved
+- `jokers/atlases.lua`: one atlas per image in `assets/1x/`
+- `jokers/zz_vtubers.lua`: the placeholder roster, now empty
+- `localization/en-us.lua`: every `j_celesta_*` Joker block is preserved
   verbatim from the existing file; everything else comes from the script
 
 `python tools/gen_roster.py` rebuilds all three from `assets/`. It also masks
@@ -185,7 +186,7 @@ between the mod's own objects.
 
 ## License
 
-MIT for the code — see [`LICENSE`](LICENSE). Not the art; see
+MIT for the code: see [`LICENSE`](LICENSE). Not the art; see
 [Art and likenesses](#art-and-likenesses) above.
 
 ## Links

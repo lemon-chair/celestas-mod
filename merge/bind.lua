@@ -1,4 +1,4 @@
---- BIND — merging two Jokers into one
+--- BIND: merging two Jokers into one
 ---
 --- Bind is a Spectral card. Highlight two Jokers, use it, and they become a
 --- single Joker occupying one slot that does everything both of them did.
