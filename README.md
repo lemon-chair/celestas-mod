@@ -161,14 +161,7 @@ local variables per chunk**. Past it the whole file stops loading rather than
 failing at a line, so new top-level helpers in either file go inside a
 `do ... end` block.
 
-The `prefix` in the manifest is `celesta`, and it is prepended to everything:
-
-| You write | The game sees |
-|---|---|
-| `SMODS.Joker { key = "shylily" }` | `j_celesta_shylily` |
-| `SMODS.Consumable { key = "bind" }` | `c_celesta_bind` |
-| `SMODS.Back { key = "founders" }` | `b_celesta_founders` |
-| `SMODS.Atlas { key = "shylily" }` | `celesta_shylily` |
+The `prefix` in the manifest is `celesta`, and it is prepended to everything.
 
 Localization keys use the full prefixed form, and so do cross-references
 between the mod's own objects.
