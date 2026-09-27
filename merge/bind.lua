@@ -5837,6 +5837,15 @@ local SELECTION_PAIRS = {
         local round = G.GAME and G.GAME.current_round
         return (round and round.discards_left) or 0
     end,
+    -- Kairyu + Shiabun: the same, the other way up. Kairyu is the Joker that
+    -- wants the discards SPENT, so the picks arrive as they are used rather
+    -- than being lent against the ones still in hand. discards_used is the
+    -- run's own count and it is cleared with the round, which is the whole of
+    -- what "for the round" means.
+    kairyu_shiabun = function(state)
+        local round = G.GAME and G.GAME.current_round
+        return (round and round.discards_used) or 0
+    end,
     -- Mint Fantome + Snuffy: Snuffy's own count and one more. It moves within
     -- a round as Hands are spent, which is what this pass is here for.
     mint_snuffy = function(state)
@@ -11738,6 +11747,246 @@ special("j_celesta_mogu", "j_celesta_sunnysplosion", {
         return CelestasMod.sunny_shift(card, context, state.amount)
     end,
 })
+
+
+--------------------------------------------------------------------------------
+-- Steel, Star Seals, the ice, and the stone family
+--------------------------------------------------------------------------------
+
+-- Henya + Zentreya: Henya is paid per trigger and Zentreya is the Steel Joker,
+-- so a Steel card is what pays.
+--
+-- Every trigger, not only the retriggers Henya alone wants: a retrigger raises
+-- the individual pass again, so Henya's own reading is still what happens - a
+-- Steel card retriggered three times pays three times - and the first trigger
+-- pays too, which is what "every time" says.
+--
+-- Both areas, because a Steel card does its work held in hand and Zentreya
+-- scores it when played. `not context.end_of_round` is the guard every
+-- held-in-hand reader in this file carries: Steamodded raises individual over
+-- G.hand again at the cash-out, for the Gold cards paying out.
+special("j_celesta_henya", "j_celesta_zentreya", {
+    key = "henya_zentreya",
+    config = { dollars = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.other_card
+            and not context.end_of_round
+            and (context.cardarea == G.play or context.cardarea == G.hand)) then
+            return
+        end
+        local other = context.other_card
+        -- A debuffed card does nothing, and paying for it would pay for a card
+        -- that is not paying.
+        if other.debuff then return end
+        if not SMODS.has_enhancement(other, "m_steel") then return end
+        return { dollars = state.dollars, card = card }
+    end,
+})
+
+-- Zentreya + CottontailVA: CottontailVA makes the Star Seals and Zentreya is
+-- the multiplier, so the seal is what carries it.
+--
+-- card.seal holds the PREFIXED key, which is CelestasMod.SEAL_KEYS.Star: every
+-- other seal test in this file reads it that way.
+--
+-- The multiplier lands on the sealed CARD rather than on the Joker, which is
+-- where a per-card effect belongs and what makes the popup appear over the
+-- card that earned it.
+special("j_celesta_zentreya", "j_celesta_cottontail", {
+    key = "zentreya_cottontail",
+    config = { odds = 2, x_mult = 1.75 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_zentreya_cottontail")
+        return { vars = { n, d, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play
+            and context.other_card) then return end
+        local star = (CelestasMod.SEAL_KEYS or {}).Star
+        if not (star and context.other_card.seal == star) then return end
+        if not SMODS.pseudorandom_probability(card,
+                "celesta_bind_zentreya_cottontail", 1, state.odds,
+                "celesta_bind_zentreya_cottontail") then return end
+        return { x_mult = state.x_mult, card = context.other_card }
+    end,
+})
+
+-- Kairyu + Shiabun: one more card to pick for every discard spent.
+--
+-- The limit itself is granted through SELECTION_PAIRS above rather than from
+-- here, which is where AiCandii + Shiabun's and VchiBan's are granted from and
+-- for their reason: that pass owns the running total this mod has handed out,
+-- and it is what gives the limit back when the merge stops being in the row.
+special("j_celesta_kairyucrocodile", "j_celesta_shiabun", {
+    key = "kairyu_shiabun",
+
+    loc_vars = function(def, card, state)
+        local round = G.GAME and G.GAME.current_round
+        return { vars = { (round and round.discards_used) or 0 } }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+-- Kairyu + Ironmouse: a step in the exponent for every discard spent.
+--
+-- pre_discard rather than discard, which is Kairyu's own distinction:
+-- context.discard arrives once per discarded CARD, and this counts the discard
+-- ACTION. `hook` marks the discards a Joker forces, and vanilla does not count
+-- those against the round - so neither does Kairyu, and neither does this.
+--
+-- pow_after and ironmouse_pays are how every Ironmouse pair here scales and
+-- scores: the first rounds the running total while it is still a plain number,
+-- and the second is the one place that says ^Mult needs Talisman rather than
+-- silently doing nothing.
+special("j_celesta_kairyucrocodile", "j_celesta_ironmouse", {
+    key = "kairyu_ironmouse",
+    config = { e_mult = 1, e_mult_gain = 0.04 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.e_mult_gain, state.e_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.pre_discard and not context.blueprint and not context.hook then
+            state.e_mult = pow_after(state.e_mult, state.e_mult_gain)
+            return {
+                message = localize { type = "variable", key = "celesta_powmult",
+                                     vars = { state.e_mult } },
+                colour = G.C.MULT, card = card,
+            }
+        end
+
+        if context.joker_main then
+            return ironmouse_pays("kairyu_ironmouse", "Kairyu + Ironmouse",
+                                  state.e_mult)
+        end
+    end,
+})
+
+do
+    --- Thaws one frozen Joker at random, and says whether it found one.
+    ---
+    --- Through CelestasMod.thaw rather than by clearing the field: melting has
+    --- one definition (editions/frozen.lua), and Smug Alana strips a sticker as
+    --- the ice comes off - a pair that cleared the field itself would quietly
+    --- stop paying that.
+    ---
+    --- The whole row, this card included: a frozen merge is a frozen Joker, and
+    --- there is no reason for it to be the one thing the melt cannot reach.
+    local function thaw_one(seed)
+        if type(CelestasMod.thaw) ~= "function" then return false end
+        local frozen = {}
+        for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
+            if CelestasMod.is_frozen and CelestasMod.is_frozen(held) then
+                frozen[#frozen + 1] = held
+            end
+        end
+        if #frozen == 0 then return false end
+        CelestasMod.thaw(pseudorandom_element(frozen, pseudoseed(seed)))
+        return true
+    end
+
+    --- The melt, said the way the freeze itself says it.
+    local function melted(card)
+        return { message = localize("celesta_melted"), colour = G.C.BLUE,
+                 card = card }
+    end
+
+    -- Kairyu + Vulpixie: Vulpixie is the Joker that lives with the ice, and
+    -- Kairyu is the one that spends discards - so a discard is what melts it.
+    --
+    -- pre_discard and the `hook` test, for Kairyu's reason above: this counts
+    -- the discard ACTION, and a discard a Joker forced is not one the round
+    -- spent.
+    special("j_celesta_kairyucrocodile", "j_celesta_vulpixie", {
+        key = "kairyu_vulpixie",
+
+        loc_vars = function(def, card, state)
+            return { vars = {} }
+        end,
+
+        calculate = function(def, card, context, state)
+            if not (context.pre_discard and not context.blueprint
+                and not context.hook) then return end
+            if not thaw_one("celesta_bind_kairyu_vulpixie") then return end
+            return melted(card)
+        end,
+    })
+
+    -- Giwi + Vulpixie: the same melt, on the rank Giwi is about.
+    --
+    -- Asked through get_id, which is what every rank question in this mod
+    -- reads - so what Kael says a card counts as is what counts here too.
+    special("j_celesta_giwi", "j_celesta_vulpixie", {
+        key = "giwi_vulpixie",
+
+        loc_vars = function(def, card, state)
+            return { vars = {} }
+        end,
+
+        calculate = function(def, card, context, state)
+            if not (context.individual and context.cardarea == G.play
+                and context.other_card and not context.blueprint) then return end
+            local other = context.other_card
+            if other.debuff then return end
+            if not (other.get_id and other:get_id() == 12) then return end
+            if not thaw_one("celesta_bind_giwi_vulpixie") then return end
+            return melted(card)
+        end,
+    })
+
+    --- The stone family: vanilla's Stone and the three this mod weathered out
+    --- of it.
+    ---
+    --- Asked through has_enhancement rather than off the centre, which is what
+    --- every enhancement question in this file does: an enhancement a card is
+    --- standing in for still counts. The mod's three are read off
+    --- ENHANCEMENT_KEYS at call time, since enhancements/ is loaded after this
+    --- file.
+    local STONE_FAMILY = { "Limestone", "Sandstone", "Scoria" }
+
+    local function stone_like(other)
+        if SMODS.has_enhancement(other, "m_stone") then return true end
+        local keys = CelestasMod.ENHANCEMENT_KEYS or {}
+        for _, name in ipairs(STONE_FAMILY) do
+            local key = keys[name]
+            if key and SMODS.has_enhancement(other, key) then return true end
+        end
+        return false
+    end
+
+    -- Jax + Jowol: Jax retriggers Stone and Limestone, Jowol is the Stone card
+    -- Joker, and together the retrigger covers every stone this mod has -
+    -- Sandstone and Scoria included.
+    special("j_celesta_jaxvtuber", "j_celesta_jowol", {
+        key = "jax_jowol",
+        config = { repetitions = 1 },
+
+        loc_vars = function(def, card, state)
+            return { vars = { state.repetitions } }
+        end,
+
+        calculate = function(def, card, context, state)
+            if not (context.repetition and context.cardarea == G.play
+                and context.other_card) then return end
+            if not stone_like(context.other_card) then return end
+            return {
+                message = localize("k_again_ex"),
+                repetitions = state.repetitions,
+                card = card,
+            }
+        end,
+    })
+end
 
 
 --------------------------------------------------------------------------------

@@ -2477,6 +2477,57 @@ LOC_TAIL = '''        },
                     "played card by {C:attention}#1#{}, if possible",
                 },
             },
+            celesta_bind_henya_zentreya = {
+                name = "Henya + Zentreya",
+                text = {
+                    "Earn {C:money}$#1#{} every time a {C:attention}Steel Card{}",
+                    "is scored or triggered held in hand",
+                },
+            },
+            celesta_bind_zentreya_cottontail = {
+                name = "Zentreya + CottontailVA",
+                text = {
+                    "Scored cards with a {C:attention}Star Seal{} have",
+                    "a {C:green}#1# in #2#{} chance to give {X:mult,C:white}X#3#{} Mult",
+                },
+            },
+            celesta_bind_kairyu_shiabun = {
+                name = "Kairyu + Shiabun",
+                text = {
+                    "{C:attention}+#1#{} card selection limit, equal to",
+                    "the {C:red}discards{} used this round",
+                },
+            },
+            celesta_bind_kairyu_ironmouse = {
+                name = "Kairyu + Ironmouse",
+                text = {
+                    "This Joker gains {E:1,C:mult}^#1#{} Mult",
+                    "every time a {C:red}discard{} is used",
+                    "{C:inactive}(Currently {E:1,C:mult}^#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_kairyu_vulpixie = {
+                name = "Kairyu + Vulpixie",
+                text = {
+                    "Unfreezes a random {C:attention}Joker{}",
+                    "every time a {C:red}discard{} is used",
+                },
+            },
+            celesta_bind_giwi_vulpixie = {
+                name = "Giwi + Vulpixie",
+                text = {
+                    "Unfreezes a random {C:attention}Joker{}",
+                    "when a {C:attention}Queen{} is scored",
+                },
+            },
+            celesta_bind_jax_jowol = {
+                name = "Jax + Jowol",
+                text = {
+                    "Retriggers {C:attention}Stone{}, {C:attention}Limestone{},",
+                    "{C:attention}Sandstone{} and {C:attention}Scoria{} cards",
+                    "{C:attention}#1#{} extra time",
+                },
+            },
             celesta_bind_quad_baulder_gang = {
                 name = "The Baulder Gang",
                 text = {
