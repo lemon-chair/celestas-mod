@@ -1216,6 +1216,13 @@ SMODS.Joker {
 local smeared_check_ref = SMODS.smeared_check
 function SMODS.smeared_check(card, suit)
     if CelestasMod.joker_in_play("j_celesta_arielle") then return true end
+    -- ...or anything else that says every card is one suit. The Baulder Gang
+    -- is a quad, and a quad replaces all four of its members, so the Arielle
+    -- inside one is not in play as itself. See globals.lua.
+    for _, rule in ipairs(CelestasMod.SAME_SUIT_RULES or {}) do
+        local ok, same = pcall(rule)
+        if ok and same then return true end
+    end
     return smeared_check_ref(card, suit)
 end
 

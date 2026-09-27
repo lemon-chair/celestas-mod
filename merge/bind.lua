@@ -6909,6 +6909,105 @@ quad({
     end,
 })
 
+-- The Baulder Gang: Arielle, FroggyLoch, Arar and Jaws.
+--
+-- Arielle's one suit; FroggyLoch's retrigger, no longer rolled for; Arar's
+-- enhancements as the thing worth going round twice for; and Jaws's counter,
+-- fed by both halves of a scoring pass rather than by the cards it eats.
+--
+-- The suit half is answered through CelestasMod.SAME_SUIT_RULES rather than by
+-- anything here: it is a question SMODS.smeared_check asks, long before any
+-- Joker is consulted, and a quad replaces all four members - so the Arielle
+-- inside this one is not in play as itself and the wrap would never find it.
+CelestasMod.SAME_SUIT_RULES = CelestasMod.SAME_SUIT_RULES or {}
+CelestasMod.SAME_SUIT_RULES[#CelestasMod.SAME_SUIT_RULES + 1] = function()
+    return specials_held("quad_baulder_gang")[1] ~= nil
+end
+
+--- True for a card carrying any enhancement at all.
+---
+--- Against c_base, which is the unenhanced playing-card centre and the test
+--- this mod already makes elsewhere. Not SMODS.has_enhancement, which wants a
+--- named one; the question here is "any".
+local function enhanced_at_all(card)
+    local center = card and card.config and card.config.center
+    return center ~= nil and G.P_CENTERS ~= nil
+        and center ~= G.P_CENTERS.c_base
+end
+
+quad({
+    key = "quad_baulder_gang",
+    members = { "j_celesta_arielle", "j_celesta_froggyloch",
+                "j_celesta_arar", "j_celesta_jaws" },
+    config = { repetitions = 1, enhanced_repetitions = 2,
+               chips = 0, chip_gain = 5 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.repetitions, state.enhanced_repetitions,
+                          state.chip_gain, state.chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- FroggyLoch's retrigger, certain rather than rolled, and twice over
+        -- for the cards Arar has been enhancing. Twice INSTEAD of once, not on
+        -- top of it: an enhanced card goes round twice.
+        if context.repetition and context.cardarea == G.play
+            and context.other_card then
+            local times = enhanced_at_all(context.other_card)
+                and state.enhanced_repetitions or state.repetitions
+            if times <= 0 then return end
+            return {
+                message = localize("k_again_ex"),
+                repetitions = times,
+                card = card,
+            }
+        end
+
+        -- Jaws's counter, fed by every card that scores...
+        if context.individual and context.cardarea == G.play
+            and context.other_card and not context.blueprint then
+            state.chips = state.chips + state.chip_gain
+            return {
+                message = localize { type = "variable", key = "a_chips",
+                                     vars = { state.chips } },
+                colour = G.C.CHIPS,
+                card = card,
+            }
+        end
+
+        -- ...and by every other Joker that triggers.
+        --
+        -- Spongey's reading of post_trigger, filter and all: a probability
+        -- lookup runs a full evaluation pass that arrives here looking exactly
+        -- like a trigger, other_card is not always a Joker, and this must not
+        -- pay itself for its own scoring.
+        if context.post_trigger and not context.blueprint then
+            local trigger = context.other_card
+            local inner = context.other_context
+            if inner and (inner.mod_probability or inner.fix_probability
+                or inner.fixed_probability or inner.retrigger_joker_check) then
+                return
+            end
+            if not (trigger and trigger.ability
+                and trigger.ability.set == "Joker") then return end
+            if trigger == card then return end
+
+            state.chips = state.chips + state.chip_gain
+            return {
+                message = localize { type = "variable", key = "a_chips",
+                                     vars = { state.chips } },
+                colour = G.C.CHIPS,
+                card = card,
+            }
+        end
+
+        -- ...and what it has all come to, once a hand.
+        if context.joker_main and state.chips > 0 then
+            return { chips = state.chips }
+        end
+    end,
+})
+
 -- Sloppy Sisters: Dokibird, Snuffy, Laimu and Mint Fantome. Laimu is the one
 -- that puts Limestone cards in the deck, and this is what they are worth once
 -- they are in your hand rather than in the played hand.

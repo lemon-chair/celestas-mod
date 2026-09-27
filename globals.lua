@@ -345,6 +345,12 @@ CelestasMod.EUTROPHIC_SCALE_RULES = {}
 --- pairs would otherwise switch off the very thing they are about.
 CelestasMod.EUTROPHIC_WIDE_RULES = {}
 
+--- Anything other than a loose Arielle that makes every card one suit, each a
+--- function answering true. The Baulder Gang is here: a quad replaces all four
+--- of its members, so joker_in_play stops finding the Arielle inside it and
+--- the merge would switch off the first line on its own card.
+CelestasMod.SAME_SUIT_RULES = {}
+
 --------------------------------------------------------------------------------
 -- Config backfill
 --------------------------------------------------------------------------------

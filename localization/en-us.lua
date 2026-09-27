@@ -3848,6 +3848,17 @@ return {
                     "for {X:mult,C:white}X#6#{} Mult",
                 },
             },
+            celesta_bind_quad_baulder_gang = {
+                name = "The Baulder Gang",
+                text = {
+                    "All cards are considered the {C:attention}same suit{}",
+                    "Retrigger each scored card {C:attention}#1#{} time,",
+                    "or {C:attention}#2#{} times if {C:attention}enhanced{}",
+                    "This Joker gains {C:chips}+#3#{} Chips when a card",
+                    "scores and when a {C:attention}Joker{} triggers",
+                    "{C:inactive}(Currently {C:chips}+#4#{C:inactive} Chips)",
+                },
+            },
             celesta_bind_quad_lab_brats = {
                 name = "Lab Brats",
                 text = {
