@@ -2335,6 +2335,45 @@ LOC_TAIL = '''        },
                     "for {X:mult,C:white}X#6#{} Mult",
                 },
             },
+            celesta_bind_kairyu_kael = {
+                name = "Kairyu + Kael",
+                text = {
+                    "All cards are",
+                    "considered {C:attention}10s{}",
+                },
+            },
+            celesta_bind_giwi_kael = {
+                name = "Giwi + Kael",
+                text = {
+                    "All cards are",
+                    "considered {C:attention}Queens{}",
+                },
+            },
+            celesta_bind_kairyu_giwi = {
+                name = "Kairyu + Giwi",
+                text = {
+                    "Gain {C:attention}+#1#{} hand size for every",
+                    "{C:attention}Queen{} discarded this round",
+                    "{C:inactive}(Currently {C:attention}+#2#{C:inactive} hand size)",
+                },
+            },
+            celesta_bind_kumi_crelly = {
+                name = "Kumi + Crelly",
+                text = {
+                    "Destroys all scoring {C:attention}Gold{} cards in",
+                    "played hand, gaining {X:mult,C:white}X#1#{} Mult each",
+                    "{C:green}#2# in #3#{} chance to earn {C:money}$#4#{}",
+                    "per card destroyed",
+                    "{C:inactive}(Currently {X:mult,C:white}X#5#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_quad_benception = {
+                name = "Benception",
+                text = {
+                    "Draw your {C:attention}entire deck{} to hand",
+                    "when {C:attention}Blind{} is selected",
+                },
+            },
             celesta_bind_quad_baulder_gang = {
                 name = "The Baulder Gang",
                 text = {

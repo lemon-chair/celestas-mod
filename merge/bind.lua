@@ -6552,6 +6552,35 @@ special("j_celesta_kairyucrocodile", "j_celesta_rosedoodle", {
     end,
 })
 
+-- Kairyu + Giwi: Giwi is the Queens Joker, so the hand grows on the Queens
+-- thrown away - one card for each of them, which is Tori Oriane's rate rather
+-- than PiaPiUFO's one-in-three, because a deck holds four Queens and not a
+-- quarter of itself.
+--
+-- The Queen test is Giwi's own, down to being asked through get_id: what Kael
+-- says a card counts as is what every other rank question in this mod reads,
+-- and this is no different.
+special("j_celesta_kairyucrocodile", "j_celesta_giwi", {
+    key = "kairyu_giwi",
+    config = { h_size = 1, per = 1, discarded = 0, applied = 0 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.h_size, state.applied } }
+    end,
+
+    calculate = kairyu_discard_calculate(function(other)
+        return other ~= nil and other.get_id ~= nil and other:get_id() == 12
+    end),
+    add_to_deck = kairyu_add_to_deck,
+    remove_from_deck = kairyu_remove_from_deck,
+    on_merge = function(def, card, state)
+        kairyu_add_to_deck(def, card, state, false)
+    end,
+    on_unmerge = function(def, card, state)
+        kairyu_remove_from_deck(def, card, state, false)
+    end,
+})
+
 -- PiaPiUFO + BeriBug: BeriBug's 8s, paid at PiaPiUFO's rate. The retrigger is
 -- gone and the multiplier has moved onto the rank BeriBug was watching.
 special("j_celesta_piapiufo", "j_celesta_beribug", {
@@ -10970,6 +10999,149 @@ if celesta_bind_pool_ref then
 
         return pool, key
     end
+end
+
+
+--------------------------------------------------------------------------------
+-- Kael's rank, widened; Kumi's gold, kept; and four Bens
+--------------------------------------------------------------------------------
+
+do
+    --- Declares a pair that makes every card count as `rank`.
+    ---
+    --- The rank is registered with CelestasMod.CARD_RANK_RULES rather than
+    --- returned from calculate, because it is not a scoring effect at all:
+    --- Card:get_id is asked by straights, pairs, held-in-hand Jokers and the
+    --- deck viewer alike, long before any Joker is consulted. Kael answers it
+    --- for faces (jokers/implemented.lua) and this answers it for everyone.
+    ---
+    --- The pair has no calculate of its own for the same reason. It is a
+    --- passive the rank lookup reads, and there is nothing to copy.
+    local function rank_pair(a, b, key, rank)
+        special(a, b, {
+            key = key,
+            loc_vars = function(def, card, state) return { vars = {} } end,
+            calculate = function(def, card, context, state) end,
+        })
+        -- `or {}` the way the Baulder Gang's suit rule is written: globals.lua
+        -- declares the list, and a writer that reaches it first is a writer
+        -- that still has to work.
+        CelestasMod.CARD_RANK_RULES = CelestasMod.CARD_RANK_RULES or {}
+        CelestasMod.CARD_RANK_RULES[#CelestasMod.CARD_RANK_RULES + 1] = function()
+            if specials_held(key)[1] == nil then return nil end
+            return rank
+        end
+    end
+
+    -- Kairyu + Kael: Kael's 10 stops belonging to the face cards and becomes
+    -- everybody's.
+    rank_pair("j_celesta_kairyucrocodile", "j_celesta_kael", "kairyu_kael", 10)
+
+    -- Giwi + Kael: the same, on the rank Giwi is about.
+    rank_pair("j_celesta_giwi", "j_celesta_kael", "giwi_kael", 12)
+end
+
+-- Kumi + Crelly: Kumi eats the Gold cards, Crelly keeps what it is fed.
+--
+-- The destruction is Kumi's own, done here: a replacing pair speaks for both
+-- halves, so the Kumi inside this one is not in play as itself and nothing
+-- else would take the Gold cards - the pair would be about something that
+-- never happens. Kumi + Maya is the same shape on Steel, and says so.
+special("j_celesta_kumi", "j_celesta_crelly", {
+    key = "kumi_crelly",
+    config = { x_mult = 1, x_mult_gain = 0.2, dollars = 20, odds = 4 },
+
+    loc_vars = function(def, card, state)
+        local numerator, denominator = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_kumi_crelly")
+        return { vars = { state.x_mult_gain, numerator, denominator,
+                          state.dollars, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.destroying_card and context.cardarea == G.play
+            and not context.blueprint then
+            local target = context.destroying_card
+            if not SMODS.has_enhancement(target, "m_gold") then return end
+            -- calculate_destroying_cards acts on `remove` without checking
+            -- whether the card can actually go, so eternals are refused here
+            -- or the deck keeps a card that was told to leave.
+            if SMODS.is_eternal and SMODS.is_eternal(target) then return end
+
+            state.x_mult = state.x_mult + state.x_mult_gain
+            -- `remove` and `dollars` are both other_calculation_keys, so one
+            -- table can destroy the card and pay out at once. The roll is per
+            -- card destroyed, which is Kumi's own.
+            local effect = {
+                remove = true,
+                card = card,
+                message = localize { type = "variable", key = "a_xmult",
+                                     vars = { state.x_mult } },
+                colour = G.C.MULT,
+            }
+            if SMODS.pseudorandom_probability(card, "celesta_bind_kumi_crelly",
+                    1, state.odds, "celesta_bind_kumi_crelly") then
+                effect.dollars = state.dollars
+            end
+            return effect
+        end
+
+        if context.joker_main and state.x_mult > 1 then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+do
+    --- The run flag that says a draw is already on its way.
+    local BENCEPTION_BUSY = "celesta_benception_drawing"
+
+    -- Benception: Ben, four times over.
+    --
+    -- Cryptid's Effarcire, which the same effect is asked of: first_hand_drawn
+    -- is the moment the opening hand is on the table, and the rest of the deck
+    -- follows it from inside a queued event, because the draw that raised the
+    -- context has not finished yet.
+    --
+    -- The flag is Effarcire's `effarcire_buffer` and is here for its reason:
+    -- SMODS.draw_cards raises first_hand_drawn itself every time it has drawn
+    -- something (smods src/utils.lua:2660). It cannot loop today - the field
+    -- that context is built from, current_round.any_hand_drawn, is set in the
+    -- same function immediately after - but a draw of the whole deck is not
+    -- something to leave resting on that ordering.
+    --
+    -- Nothing is done about the hand's card limit. The cards go past it, which
+    -- is what drawing the deck means, and card_limit is a DERIVED number under
+    -- SMODS - writing to it is exactly the bug Lab Brats was carrying.
+    quad({
+        key = "quad_benception",
+        members = { "j_celesta_ben", "j_celesta_ben",
+                    "j_celesta_ben", "j_celesta_ben" },
+
+        loc_vars = function(def, card, state)
+            return { vars = {} }
+        end,
+
+        calculate = function(def, card, context, state)
+            if not (context.first_hand_drawn and not context.blueprint) then return end
+            if not (G.GAME and not G.GAME[BENCEPTION_BUSY]) then return end
+            if not (G.deck and G.deck.cards and #G.deck.cards > 0) then return end
+
+            G.GAME[BENCEPTION_BUSY] = true
+            G.E_MANAGER:add_event(Event {
+                func = function()
+                    SMODS.draw_cards(#G.deck.cards)
+                    G.E_MANAGER:add_event(Event {
+                        func = function()
+                            G.GAME[BENCEPTION_BUSY] = nil
+                            return true
+                        end,
+                    })
+                    return true
+                end,
+            })
+        end,
+    })
 end
 
 

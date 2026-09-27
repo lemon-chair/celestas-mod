@@ -77,6 +77,8 @@ Lost.CONVERSIONS = {
     [joker("fufu")] = joker("black_hole_sun_fufu"),
     ["j_loyalty_card"] = joker("royalty_card"),
     ["j_to_do_list"] = joker("to_dont_list"),
+    ["j_flash_card"] = joker("identity"),
+    ["j_obelisk"] = joker("monolith"),
 }
 
 --- The same table read the other way: which Joker a Corrupt one used to be.
@@ -2160,6 +2162,205 @@ SMODS.Joker {
                 return { message = localize(now, "poker_hands"),
                          colour = G.C.SECONDARY_SET.Planet, card = card }
             end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Identity
+--------------------------------------------------------------------------------
+--
+-- Flash Card is PAID for rerolling - $2 of sell value every time. This one
+-- changes what a reroll costs instead: $6, and $6 again however many have
+-- already been bought this round.
+--
+-- Vanilla's price is a base plus a tally. calculate_reroll_cost adds one to
+-- the counter for every reroll bought and writes base + counter into
+-- G.GAME.current_round.reroll_cost (common_events.lua:2630), which is what the
+-- shop's button reads and spends. So the number is overwritten there, after
+-- vanilla has finished working it out: that one function is where every route
+-- to the price already meets - the button, the round reset, a voucher, and
+-- this card arriving or leaving.
+--
+-- A FREE reroll stays free. calculate_reroll_cost zeroes the price and returns
+-- early while free_rerolls is up, and that is a different mechanic from the
+-- price: Chaos the Clown and Director's Cut hand out rerolls rather than
+-- discounts, so charging for them would be switching those off rather than
+-- fixing a price.
+
+local IDENTITY_KEY = joker("identity")
+
+--- What a reroll should cost while an Identity is held, or nil when none is.
+---
+--- Read off the card rather than from a constant here, so a misprinted or
+--- otherwise altered copy charges what it says it charges.
+local function identity_cost()
+    for _, found in ipairs(CelestasMod.find_joker(IDENTITY_KEY)) do
+        local extra = found.ability and found.ability.extra
+        if extra and type(extra.cost) == "number" then return extra.cost end
+    end
+    return nil
+end
+
+local celesta_identity_reroll_ref = calculate_reroll_cost
+
+if type(celesta_identity_reroll_ref) == "function" then
+    function calculate_reroll_cost(...)
+        celesta_identity_reroll_ref(...)
+        if not (G.GAME and G.GAME.current_round) then return end
+        -- Vanilla has already zeroed the price for a free reroll and returned.
+        -- Leaving that alone is the whole of the free-reroll exemption.
+        if (G.GAME.current_round.free_rerolls or 0) > 0 then return end
+        local cost = identity_cost()
+        if cost then G.GAME.current_round.reroll_cost = cost end
+    end
+end
+
+--- Brings the shown price in line, without counting as a reroll.
+---
+--- `skip_increment`, which is what vanilla passes from a voucher being bought
+--- (card.lua:776): buying or selling this card is not a reroll and must not
+--- put the tally up. The button reads current_round.reroll_cost through a live
+--- reference, so writing the number is all the redraw there is.
+local function identity_reprice()
+    if type(calculate_reroll_cost) == "function" and G.GAME
+        and G.GAME.current_round then
+        calculate_reroll_cost(true)
+    end
+end
+
+SMODS.Joker {
+    key = "identity",
+    atlas = "identity",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    unlocked = false,
+    discovered = false,
+    -- The price is read off whichever Identity is held; a second one, copy or
+    -- not, charges the same $6 and there is no scoring effect to repeat.
+    blueprint_compat = false,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+
+    config = { extra = { cost = 6, joker_slots = Lost.SLOT_COST } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.cost,
+                          card.ability.extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        Lost.sync_slots(nil, card)
+        identity_reprice()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        Lost.sync_slots(card)
+        identity_reprice()
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Monolith
+--------------------------------------------------------------------------------
+--
+-- Obelisk pays for AVOIDING the hand you play most, and wipes itself out the
+-- moment you play it. This is that the other way round: the most played hand
+-- is the one that pays, and anything else is what wipes it out.
+--
+-- "Most played" is Obelisk's own test rather than a new one (card.lua:3885):
+-- the hand just played is the most played when no OTHER visible hand has been
+-- played at least as often. A tie is not a win, which is why the comparison is
+-- `>=` - Obelisk wants one hand clearly ahead, and so does this.
+--
+-- G.GAME.hands[name].played is incremented before any Joker is asked, so the
+-- hand being scored counts itself; and is_poker_hand_visible keeps a secret
+-- hand that has never been found out of the comparison, the way vanilla does.
+
+--- Kept to three places: 0.66 added in floating point prints as
+--- 2.3200000000000003.
+local function monolith_tidy(value)
+    return math.floor(value * 1000 + 0.5) / 1000
+end
+
+--- True when `name` is this run's single most played hand.
+local function monolith_is_most_played(name)
+    local hands = G.GAME and G.GAME.hands
+    if not (name and hands and hands[name]) then return false end
+    local mine = hands[name].played or 0
+    for key, hand in pairs(hands) do
+        if key ~= name and (hand.played or 0) >= mine
+            and SMODS.is_poker_hand_visible(key) then
+            return false
+        end
+    end
+    return true
+end
+
+SMODS.Joker {
+    key = "monolith",
+    atlas = "monolith",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    unlocked = false,
+    discovered = false,
+    -- Obelisk's own, and for its reason: the scaling is guarded against a copy
+    -- below, so a Blueprint repeats the multiplier without moving it.
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+
+    config = { extra = { x_mult = 1, x_mult_gain = 0.66,
+                         joker_slots = Lost.SLOT_COST } },
+
+    loc_vars = function(self, info_queue, card)
+        local extra = card.ability.extra
+        return { vars = { extra.x_mult_gain, extra.x_mult,
+                          extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        Lost.sync_slots(nil, card)
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        Lost.sync_slots(card)
+    end,
+
+    calculate = function(self, card, context)
+        -- context.before is the pass vanilla scales Obelisk in, and it is
+        -- before the multiplier is asked for - so the hand that earns the gain
+        -- also scores with it.
+        if context.before and not context.blueprint then
+            local extra = card.ability.extra
+            if monolith_is_most_played(context.scoring_name) then
+                extra.x_mult = monolith_tidy(extra.x_mult + extra.x_mult_gain)
+                return {
+                    message = localize { type = "variable", key = "a_xmult",
+                                         vars = { extra.x_mult } },
+                    colour = G.C.MULT,
+                    card = card,
+                }
+            elseif extra.x_mult > 1 then
+                extra.x_mult = 1
+                return { message = localize("k_reset"), card = card }
+            end
+        end
+
+        if context.joker_main and card.ability.extra.x_mult > 1 then
+            return { x_mult = card.ability.extra.x_mult }
         end
     end,
 }

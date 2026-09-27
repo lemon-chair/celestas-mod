@@ -5083,7 +5083,27 @@ local kael_suppressed = false
 local celesta_kael_get_id_ref = Card.get_id
 function Card:get_id()
     local id = celesta_kael_get_id_ref(self)
-    if kael_suppressed or not kael_active() then return id end
+    if kael_suppressed then return id end
+
+    -- Anything that makes EVERY card one rank answers first. That is the wider
+    -- rule - Kael's own is faces only - and it is asked here rather than of
+    -- the Jokers because a replacing pair speaks for both halves: the Kael
+    -- inside Kairyu + Kael is not in play as itself, so kael_active() below
+    -- would never find it. See globals.lua.
+    --
+    -- A card with no rank is left out. A Stone Card matches nothing on
+    -- purpose, and get_id hands back a large negative number to say so; the
+    -- suit side of this does the same, since the Baulder Gang gives a Stone
+    -- Card no suit either. has_no_rank reads enhancements only and never asks
+    -- get_id, so there is no loop here.
+    if not SMODS.has_no_rank(self) then
+        for _, rule in ipairs(CelestasMod.CARD_RANK_RULES or {}) do
+            local ok, rank = pcall(rule)
+            if ok and type(rank) == "number" then return rank end
+        end
+    end
+
+    if not kael_active() then return id end
 
     -- The face test, inlined rather than called - see above. It is Pareidolia's
     -- own test, and this follows it exactly rather than second-guessing it:
