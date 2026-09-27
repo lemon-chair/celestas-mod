@@ -32,7 +32,7 @@ SMODS.Atlas { key = 'decks',       path = 'decks.png',       px = 71, py = 95 }
 -- Card Sleeves' frame is two pixels wider than a card. Registered whether or
 -- not Card Sleeves is installed: an unused atlas costs nothing.
 SMODS.Atlas { key = 'sleeves',     path = 'sleeves.png',     px = 73, py = 95 }
-SMODS.Atlas { key = 'modicon',     path = 'icon.png',        px = 32, py = 32 }
+SMODS.Atlas { key = 'modicon',     path = 'icon.png',        px = 34, py = 34 }
 
 -- Seal emblems, card-shaped cells (built by tools/gen_seals.py).
 SMODS.Atlas { key = 'seals',       path = 'seals.png',       px = 71, py = 95 }
