@@ -1,5 +1,8 @@
 # Celesta's Mod
 
+**No AI art or AI-generated assets are used in this mod.** Every piece of art
+here was drawn by a person, and I do not support Gen-AI or AI art.
+
 A large VTuber-themed content mod for [Balatro](https://www.playbalatro.com/),
 built on [Steamodded](https://github.com/Steamodded/smods).
 
