@@ -7,6 +7,28 @@ built on [Steamodded](https://github.com/Steamodded/smods).
 Jokers into one, and the other turns a Joker into a harder, worse-tempered
 version of itself.
 
+## Screenshots
+
+The Collection. Every Joker is its own image.
+
+![The Joker collection](screenshots/collection.webp)
+
+Bind's web: pick a Joker and it shows everything it has a written combination
+with, and what each one does.
+
+![The merge web](screenshots/merge-web.webp)
+
+![A single Joker's merges](screenshots/merge-web-detail.webp)
+
+The Special Merges tab keeps count. A combination stays hidden until you have
+made it.
+
+![The Special Merges collection tab](screenshots/special-merges.png)
+
+...and what the mod adds, in the Mods menu.
+
+![The mod's entry in the Mods menu](screenshots/mods-menu.webp)
+
 ## What's in it
 
 - **216 Jokers**: 60 Common, 78 Uncommon, 43 Rare, 13 Legendary, and 22 of a
