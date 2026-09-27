@@ -127,6 +127,57 @@ CelestasMod.EXO_OVERHANG = 84 / 71 - 1
 
 local exo_frame_sprite
 
+--- Draws Exo's border around `card`.
+---
+--- One sprite shared by every Exo card, built on first use: the atlases do not
+--- exist yet while this file is loading.
+local function draw_exo_frame(card)
+    local atlas = G.ASSET_ATLAS[EXO_FRAME_ATLAS]
+    if not atlas then return end
+    if not exo_frame_sprite then
+        exo_frame_sprite = Sprite(0, 0, G.CARD_W, G.CARD_H, atlas, { x = 0, y = 0 })
+    end
+    exo_frame_sprite.role.draw_major = card
+    exo_frame_sprite:draw_shader("dissolve", nil, nil, nil,
+        card.children.center, CelestasMod.EXO_OVERHANG, 0)
+end
+
+--- True for a card actually wearing the Exo centre.
+---
+--- The centre itself, not SMODS.has_enhancement: a Eutrophic card copying an
+--- Exo one is not an Exo card and must not be given the border. This is the
+--- same question the enhancement's own `draw` used to answer by being called
+--- at all.
+local function is_exo(card)
+    local center = card and card.config and card.config.center
+    return center ~= nil
+        and center.key == CelestasMod.ENHANCEMENT_KEYS.Exo
+end
+
+-- WHEN the border is drawn, which is the whole point of it being here.
+--
+-- An enhancement's `draw` is dispatched from the `center` step at order -10,
+-- and the edition shaders are their own step at order 20 (smods
+-- src/card_draw.lua) - so the border went down first and a Foil, Holo or
+-- Polychrome card painted its shader over the top of it. The border is the
+-- card's outer edge; it belongs above the edition, and below the seal at 30
+-- and the stickers at 40, which have to stay readable on top of a card.
+--
+-- Guarded: DrawStep belongs to Steamodded and is a name that can move. Without
+-- it the enhancement's own `draw` below still puts the border down, in front
+-- of the edition - which is where it has always been, rather than nowhere.
+local EXO_DRAW_STEP = SMODS.DrawStep ~= nil
+if EXO_DRAW_STEP then
+    SMODS.DrawStep {
+        key = "celesta_exo_frame",
+        order = 25,
+        func = function(card, layer)
+            if is_exo(card) then draw_exo_frame(card) end
+        end,
+        conditions = { vortex = false, facing = "front" },
+    }
+end
+
 SMODS.Enhancement {
     key = "exo",
     atlas = "enh_exo",
@@ -137,19 +188,17 @@ SMODS.Enhancement {
         return {}
     end,
 
-    -- Called from the card's draw pass. The centre sprite is only the card
-    -- body; the frame is drawn here instead so it can be larger than the card,
-    -- the same way a Legendary Joker's soul overlay is drawn.
+    -- The centre sprite is only the card body; the frame is drawn separately
+    -- so it can be larger than the card, the same way a Legendary Joker's soul
+    -- overlay is drawn.
+    --
+    -- Only when the draw step above could not be registered. That step draws
+    -- the same border at a point where the edition is already down; this hook
+    -- runs at order -10, before it, which is the layering the step exists to
+    -- fix. Doing both would draw the border twice.
     draw = function(self, card, layer)
-        local atlas = G.ASSET_ATLAS[EXO_FRAME_ATLAS]
-        if not atlas then return end
-        if not exo_frame_sprite then
-            exo_frame_sprite = Sprite(0, 0, G.CARD_W, G.CARD_H, atlas, { x = 0, y = 0 })
-            exo_frame_sprite.role.draw_major = card
-        end
-        exo_frame_sprite.role.draw_major = card
-        exo_frame_sprite:draw_shader("dissolve", nil, nil, nil,
-            card.children.center, CelestasMod.EXO_OVERHANG, 0)
+        if EXO_DRAW_STEP then return end
+        draw_exo_frame(card)
     end,
 
     calculate = function(self, card, context)
