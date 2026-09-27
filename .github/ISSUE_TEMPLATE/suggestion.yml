@@ -1,0 +1,65 @@
+name: Suggest a Joker or a merge
+description: An idea for a new Joker, or for a combination two Jokers should have
+labels: ["suggestion"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas are welcome. The more like a finished card description it reads,
+        the easier it is to build.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is it
+      options:
+        - A merge between two Jokers
+        - A four-Joker group
+        - A new Joker
+        - A Lost form of an existing Joker
+        - Something else
+    validations:
+      required: true
+
+  - type: input
+    id: name
+    attributes:
+      label: Which Jokers
+      description: >
+        For a merge, both names. For a group, all four. For a new Joker, who it
+        is.
+      placeholder: "Kairyu + Vulpixie"
+    validations:
+      required: true
+
+  - type: textarea
+    id: effect
+    attributes:
+      label: What should it do
+      description: >
+        Written the way the card would say it, if you can. Numbers included —
+        "gains X0.25 Mult per unused discard at the end of the round" is much
+        easier to build than "scales with discards".
+      placeholder: Unfreezes a random Joker every time a discard is used
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why these two
+      description: >
+        Optional. The best merges come from the two Jokers already being about
+        something related, and saying what that is often sharpens the effect.
+    validations:
+      required: false
+
+  - type: textarea
+    id: art
+    attributes:
+      label: Art
+      description: >
+        Only if you have it and have the right to share it. Merges don't need
+        any — they're drawn from their halves.
+    validations:
+      required: false

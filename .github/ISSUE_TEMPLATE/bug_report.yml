@@ -1,0 +1,87 @@
+name: Bug report
+description: Something crashed, scored wrong, or did nothing
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Two fields below do most of the work: **the log**, and **which Jokers
+        were in the row**. Merges are where the interesting bugs live, so if a
+        merged Joker was involved, saying which Jokers went into it is the
+        single most useful thing you can tell me.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you were doing, and what you expected instead.
+      placeholder: |
+        Played a hand with a merged Joker in the row and the game froze on the
+        scoring animation. Expected it to score and carry on.
+    validations:
+      required: true
+
+  - type: textarea
+    id: jokers
+    attributes:
+      label: What was in your Joker row
+      description: >
+        List them left to right. For any merged Joker, name both halves (or all
+        four). If a Joker was Lost, debuffed, frozen, eternal or had an edition,
+        say so.
+      placeholder: |
+        1. Kairyu + Ironmouse (merged)
+        2. Vulpixie
+        3. Jaws, Negative
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: The log
+      description: >
+        Balatro writes one per launch to `Mods/lovely/log/`. The newest file is
+        the run that just went wrong, and the last 50 lines are usually enough.
+        Paste it, or drag the file in.
+      render: shell
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Celesta's Mod version
+      description: Shown in the Mods menu, or in `CelestasMod.json`.
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: input
+    id: deps
+    attributes:
+      label: Steamodded and Talisman versions
+      placeholder: "Steamodded 1.0.0, Talisman 2.7"
+    validations:
+      required: true
+
+  - type: textarea
+    id: other_mods
+    attributes:
+      label: Other mods installed
+      description: >
+        Anything else in your `Mods` folder. Cryptid and CardSleeves in
+        particular are ones this mod interacts with.
+      placeholder: Cryptid, CardSleeves
+    validations:
+      required: false
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Does it happen again
+      description: >
+        If you can make it happen on demand, how? A seed helps enormously if
+        you have one.
+    validations:
+      required: false
