@@ -4634,6 +4634,105 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
+-- SunnySplosion [Common] - every card played comes down a rank.
+--------------------------------------------------------------------------------
+--
+-- SMODS.modify_rank is the one funnel a rank change goes through - it is where
+-- Steamodded routes the Strength Tarot (game_object.lua:2217), and this mod
+-- already wraps it once for the Ace of Stars (suits/true_stars.lua). It also
+-- already answers "if possible": a rank with nothing below it, or one whose
+-- prev_behavior says to ignore, is left exactly where it is
+-- (smods src/utils.lua:299). So that is not a judgement made here.
+--
+-- The WHOLE played hand, not the scoring part of it: "played cards" is every
+-- card that went out, and the ones a Pair leaves unscored went out too.
+--
+-- context.before, which is where Nihmune and the other converters above
+-- rewrite a played card. The poker hand has already been named by then, so a
+-- downgrade cannot turn the hand into something else underneath the player -
+-- but what each card is worth in Chips is read afterwards, so the new rank is
+-- what scores.
+
+-- Wrapped in a block because this file sits at Lua's limit of 200 local
+-- variables per chunk: a helper declared at the top level here is the one that
+-- stops the whole file compiling. Scoped, it is released at the end and never
+-- counted against it.
+do
+
+--- Moves one played card's rank by `amount`, and says whether it moved.
+---
+--- Under unjudged, for the reason convert_played_base gives above: the change
+--- ends in the Blind re-judging the card, and The Pillar debuffs anything
+--- carrying played_this_ante - a flag every card in the hand was given moments
+--- before evaluate_play ran. Vanilla never re-judges a card during the hand it
+--- is played in, so nothing in the base game trips over it and everything that
+--- rewrites one does.
+---
+--- A card with no rank is left alone: a Stone Card matches nothing on purpose,
+--- and moving its base would hand it a rank it is not supposed to have. That
+--- is the rank half of what convert_scoring_to does with has_no_suit.
+---
+--- Whether it moved is read off base.value rather than assumed, because
+--- modify_rank writes the base back either way - a 2 asked to go lower is a
+--- rewrite to the rank it already had.
+local function shift_played_rank(played, amount)
+    if SMODS.has_no_rank(played) then return false end
+    local was = played.base and played.base.value
+    CelestasMod.unjudged(played, function()
+        SMODS.modify_rank(played, amount)
+    end)
+    if not played.base or played.base.value == was then return false end
+    played:juice_up(0.3, 0.5)
+    return true
+end
+
+--- Every played card moved by `amount`, with a popup only if something moved.
+---
+--- Shared with Mogu + SunnySplosion in merge/bind.lua, which is this one step
+--- in the other direction: one body, so the two cannot come to disagree about
+--- which cards are moved or about what "if possible" means.
+function CelestasMod.sunny_shift(card, context, amount)
+    if not (context.before and not context.blueprint) then return nil end
+
+    local moved = 0
+    for _, played in ipairs(context.full_hand or {}) do
+        if shift_played_rank(played, amount) then moved = moved + 1 end
+    end
+    if moved == 0 then return nil end
+
+    return {
+        message = localize(amount > 0 and "k_upgrade_ex" or "celesta_downgrade"),
+        colour = G.C.SECONDARY_SET.Planet,
+        card = card,
+    }
+end
+
+SMODS.Joker {
+    key = "sunnysplosion",
+    atlas = "sunnysplosion",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = false,
+    -- Nihmune's, and for its reason: the rewrite is permanent and a copy
+    -- would apply it a second time, so the calculate refuses a copier - which
+    -- is what every permanent played-card rewrite in this file does.
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { amount = 1 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.amount } }
+    end,
+
+    calculate = function(self, card, context)
+        return CelestasMod.sunny_shift(card, context,
+                                       -card.ability.extra.amount)
+    end,
+}
+
+end
+
+--------------------------------------------------------------------------------
 -- Eros [Uncommon] - eats Bonus enhancements, keeps the Chips.
 --------------------------------------------------------------------------------
 

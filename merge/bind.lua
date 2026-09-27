@@ -5830,6 +5830,13 @@ local SELECTION_PAIRS = {
         local round = G.GAME and G.GAME.current_round
         return (round and round.discards_left) or 0
     end,
+    -- AiCandii + Shiabun: VchiBan's selection half on its own. Shiabun hands
+    -- out the picks, AiCandii counts the Discards left, and the two together
+    -- are one pick per discard not yet spent.
+    aicandii_shiabun = function(state)
+        local round = G.GAME and G.GAME.current_round
+        return (round and round.discards_left) or 0
+    end,
     -- Mint Fantome + Snuffy: Snuffy's own count and one more. It moves within
     -- a round as Hands are spent, which is what this pass is here for.
     mint_snuffy = function(state)
@@ -6570,6 +6577,35 @@ special("j_celesta_kairyucrocodile", "j_celesta_giwi", {
 
     calculate = kairyu_discard_calculate(function(other)
         return other ~= nil and other.get_id ~= nil and other:get_id() == 12
+    end),
+    add_to_deck = kairyu_add_to_deck,
+    remove_from_deck = kairyu_remove_from_deck,
+    on_merge = function(def, card, state)
+        kairyu_add_to_deck(def, card, state, false)
+    end,
+    on_unmerge = function(def, card, state)
+        kairyu_remove_from_deck(def, card, state, false)
+    end,
+})
+
+-- Kairyu + Nihmune: Nihmune is the Clubs Joker, so the hand grows on the Clubs
+-- thrown away - one card for every three, which is PiaPiUFO's rate rather than
+-- Tori Oriane's one-for-one, because a deck holds a quarter of itself in Clubs
+-- and a handful of True Stars.
+--
+-- Asked through is_suit rather than off base.suit, which is what every suit
+-- question in this file does: a Wild Card is every suit, and a card Nihmune
+-- itself converted is a Club by the only reading that matters.
+special("j_celesta_kairyucrocodile", "j_celesta_nihmune", {
+    key = "kairyu_nihmune",
+    config = { h_size = 1, per = 3, discarded = 0, applied = 0 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.h_size, state.per, state.applied } }
+    end,
+
+    calculate = kairyu_discard_calculate(function(other)
+        return other ~= nil and other.is_suit ~= nil and other:is_suit("Clubs")
     end),
     add_to_deck = kairyu_add_to_deck,
     remove_from_deck = kairyu_remove_from_deck,
@@ -11143,6 +11179,565 @@ do
         end,
     })
 end
+
+
+--------------------------------------------------------------------------------
+-- The discards spent and unspent
+--------------------------------------------------------------------------------
+
+-- Kairyu + AiCandii: AiCandii is paid for the discards it did NOT need, and
+-- Kairyu is the Joker that wants them spent - so bound, the payment moves onto
+-- the ones that were.
+--
+-- discards_used rather than the complement of discards_left. The two are not
+-- complements while anything is handing discards out mid-round, and the one
+-- this counts is the one the card names.
+special("j_celesta_kairyucrocodile", "j_celesta_aicandii", {
+    key = "kairyu_aicandii",
+    config = { mult = 0, mult_gain = 4 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.mult_gain, state.mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- main_eval is the once-per-round Joker pass; without it this would
+        -- fire again for every card the end-of-round pass looks at.
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            local round = G.GAME and G.GAME.current_round
+            local used = (round and round.discards_used) or 0
+            if used <= 0 then return end
+            state.mult = state.mult + state.mult_gain * used
+            return {
+                message = localize { type = "variable", key = "a_mult",
+                                     vars = { state.mult } },
+                colour = G.C.MULT, card = card,
+            }
+        end
+
+        if context.joker_main and state.mult > 0 then
+            return { mult = state.mult }
+        end
+    end,
+})
+
+-- AiCandii + Shiabun: one more card to pick for every discard still unspent.
+--
+-- The limit itself is granted through SELECTION_PAIRS above rather than from
+-- here, which is where VchiBan's identical half is granted from and for its
+-- reason: that pass owns the running total this mod has handed out, and it is
+-- what gives the limit back when the merge stops being in the row. There is
+-- nothing left for calculate to do.
+special("j_celesta_aicandii", "j_celesta_shiabun", {
+    key = "aicandii_shiabun",
+
+    loc_vars = function(def, card, state)
+        local round = G.GAME and G.GAME.current_round
+        return { vars = { (round and round.discards_left) or 0 } }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+-- AiCandii + Rosedoodle: AiCandii's unused discards, paid in a multiplier
+-- rather than flat Mult.
+special("j_celesta_aicandii", "j_celesta_rosedoodle", {
+    key = "aicandii_rosedoodle",
+    config = { x_mult = 1, x_mult_gain = 0.25 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            local round = G.GAME and G.GAME.current_round
+            local unused = (round and round.discards_left) or 0
+            if unused <= 0 then return end
+            state.x_mult = state.x_mult + state.x_mult_gain * unused
+            return {
+                message = localize { type = "variable", key = "a_xmult",
+                                     vars = { state.x_mult } },
+                colour = G.C.MULT, card = card,
+            }
+        end
+
+        if context.joker_main and state.x_mult > 1 then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+-- AiCandii + Ironmouse: the same count again, in Ironmouse's exponent.
+--
+-- pow_after and ironmouse_pays are how every Ironmouse pair in this file
+-- scales and scores: the first rounds the running total while it is still a
+-- plain number, and the second is the one place that says ^Mult needs Talisman
+-- rather than silently doing nothing.
+special("j_celesta_aicandii", "j_celesta_ironmouse", {
+    key = "aicandii_ironmouse",
+    config = { e_mult = 1, e_mult_gain = 0.05 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.e_mult_gain, state.e_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            local round = G.GAME and G.GAME.current_round
+            local unused = (round and round.discards_left) or 0
+            if unused <= 0 then return end
+            state.e_mult = pow_after(state.e_mult, state.e_mult_gain * unused)
+            return {
+                message = localize { type = "variable", key = "celesta_powmult",
+                                     vars = { state.e_mult } },
+                colour = G.C.MULT, card = card,
+            }
+        end
+
+        if context.joker_main then
+            return ironmouse_pays("aicandii_ironmouse", "AiCandii + Ironmouse",
+                                  state.e_mult)
+        end
+    end,
+})
+
+--------------------------------------------------------------------------------
+-- Taehoongie's hand, and Arar's
+--------------------------------------------------------------------------------
+
+do
+    --- The hand Taehoongie levels up, and the one all four of these watch for.
+    local FIVE_OF_A_KIND = "Five of a Kind"
+
+    --- Liffeh's own 1 in 4.
+    ---
+    --- Spelled out rather than read from CelestasMod.LIFFEH_ODDS, which
+    --- jokers/implemented.lua sets after this file has finished loading - a
+    --- config built from it here would be built from nil.
+    local LIFFEH_ODDS = 4
+
+    --- True when the played hand CONTAINS a Five of a Kind.
+    ---
+    --- context.poker_hands lists every hand the played cards make rather than
+    --- only the one the game named, which is the question vanilla's own
+    --- "contains" Jokers ask. Every entry in that table exists whether or not
+    --- the hand was made - it is built with all its keys and left empty - so
+    --- what is asked is whether the entry has anything in it.
+    local function contains_five(context)
+        local hands = context.poker_hands
+        local made = hands and hands[FIVE_OF_A_KIND]
+        return (made ~= nil and next(made) ~= nil) and true or false
+    end
+
+    --- The Tarot that makes `enhancement`, if the run has one.
+    ---
+    --- Found by asking every Tarot what it converts to, rather than from a
+    --- table of pairs: mod_conv is what an enhancement Tarot IS - vanilla's
+    --- Card:use_consumeable applies whatever centre that field names
+    --- (card.lua:1401), and Arar reads the same field the other way round. So
+    --- vanilla's eight, this mod's four and any other mod's are all understood
+    --- without naming one, and an enhancement no Tarot makes simply answers
+    --- nil, which is what "if one exists" says.
+    ---
+    --- Sorted, because pairs() walks a table in whatever order it likes and
+    --- two Tarots making the same enhancement must not depend on that order.
+    local function tarot_for_enhancement(enhancement)
+        if not (enhancement and G.P_CENTERS) then return nil end
+        local found = {}
+        for key, center in pairs(G.P_CENTERS) do
+            if center.set == "Tarot" and center.config
+                and center.config.mod_conv == enhancement then
+                found[#found + 1] = key
+            end
+        end
+        table.sort(found)
+        return found[1]
+    end
+
+    --- Every unenhanced card held in hand that nothing has claimed this pass.
+    ---
+    --- c_base is the unenhanced playing-card centre, and celesta_arar_claimed
+    --- is Arar's own flag: set_ability is deferred into an event, so a copier
+    --- evaluating in the same pass would still see a claimed card as
+    --- unenhanced and take it again.
+    local function unenhanced_held()
+        local out = {}
+        for _, held in ipairs((G.hand and G.hand.cards) or {}) do
+            if held.config.center == G.P_CENTERS.c_base
+                and not held.celesta_arar_claimed then
+                out[#out + 1] = held
+            end
+        end
+        return out
+    end
+
+    --- Gives `target` an enhancement and says which one, or nil.
+    ---
+    --- Arar's own choice: the enhancement of a Tarot sitting in the first
+    --- consumable slot while the run still offers it, and a roll otherwise.
+    --- poll_enhancement respects the run's current pool, so this never hands
+    --- out one a Challenge or a Deck has banned.
+    local function enhance(target, seed)
+        local enhancement = (CelestasMod.arar_forced and CelestasMod.arar_forced())
+            or SMODS.poll_enhancement { key = seed, guaranteed = true }
+        if not (enhancement and G.P_CENTERS[enhancement]) then return nil end
+
+        target.celesta_arar_claimed = true
+        G.E_MANAGER:add_event(Event {
+            func = function()
+                target:set_ability(G.P_CENTERS[enhancement], nil, true)
+                target:juice_up(0.3, 0.5)
+                target.celesta_arar_claimed = nil
+                return true
+            end
+        })
+        return enhancement
+    end
+
+    --- Enhances every unenhanced card held in hand; returns how many.
+    local function enhance_all_held(seed)
+        local touched = 0
+        for _, held in ipairs(unenhanced_held()) do
+            if enhance(held, seed) then touched = touched + 1 end
+        end
+        return touched
+    end
+
+    --- Each played card keeps `amount` Chips; returns how many were paid.
+    ---
+    --- perma_bonus is vanilla's own permanent Chip store - what Hiker writes to
+    --- and what get_chip_bonus reads back - so the Chips are part of what the
+    --- card is worth from here on rather than for this hand.
+    ---
+    --- The FULL hand rather than the scoring one: "each played card" is every
+    --- card that went out, and a Five of a Kind played alongside something else
+    --- sent that card out too.
+    local function pay_played(context, amount)
+        local touched = 0
+        for _, played in ipairs(context.full_hand or {}) do
+            played.ability.perma_bonus = (played.ability.perma_bonus or 0) + amount
+            played:juice_up(0.3, 0.5)
+            touched = touched + 1
+        end
+        return touched
+    end
+
+    --- Liffeh's roll, paying out a random consumable. True when one was made.
+    ---
+    --- Room is asked for first and reserved through consumeable_buffer, which
+    --- is vanilla's way of holding a slot across the event that fills it - the
+    --- card here is rolled for once per scoring card, so two of them in one
+    --- hand would otherwise race for one slot.
+    ---
+    --- The set is picked from the run's own registered consumable types rather
+    --- than a fixed three, which is the difference between "any consumable" and
+    --- "one of the three vanilla ones".
+    local function maybe_consumable(card, odds, seed)
+        if not bind_consumable_room() then return false end
+        if not SMODS.pseudorandom_probability(card, seed, 1, odds, seed) then
+            return false
+        end
+
+        local set = any_consumable_set(seed)
+        G.GAME.consumeable_buffer = (G.GAME.consumeable_buffer or 0) + 1
+        G.E_MANAGER:add_event(Event {
+            trigger = "before", delay = 0.0,
+            func = function()
+                local made = SMODS.add_card { set = set, key_append = seed }
+                if made then made:juice_up(0.3, 0.5) end
+                G.GAME.consumeable_buffer =
+                    math.max(0, (G.GAME.consumeable_buffer or 1) - 1)
+                return true
+            end,
+        })
+        return true
+    end
+
+    -- Arar + Liffeh: Arar's enhancement moved off the start of the round and
+    -- onto every hand played, and Liffeh's Negative copy of the Tarot that
+    -- would have made it.
+    --
+    -- context.before, because "held in hand" means the cards that were NOT
+    -- played and they are only still in G.hand until the hand scores - the
+    -- same moment every held-in-hand pair in this file reads.
+    --
+    -- Negative, so the copy brings its own slot and there is no room to run out
+    -- of. Liffeh's own copy needs no consumeable_buffer for that reason and
+    -- neither does this.
+    special("j_celesta_arar", "j_celesta_liffeh", {
+        key = "arar_liffeh",
+        config = { odds = LIFFEH_ODDS },
+
+        loc_vars = function(def, card, state)
+            local n, d = SMODS.get_probability_vars(
+                card, 1, state.odds, "celesta_bind_arar_liffeh")
+            return { vars = { n, d } }
+        end,
+
+        calculate = function(def, card, context, state)
+            if not (context.before and not context.blueprint) then return end
+
+            local candidates = unenhanced_held()
+            if #candidates == 0 then return end
+            local target = pseudorandom_element(candidates,
+                pseudoseed("celesta_bind_arar_liffeh_pick"))
+            local enhancement = enhance(target, "celesta_bind_arar_liffeh_enh")
+            if not enhancement then return end
+
+            local tarot = nil
+            if SMODS.pseudorandom_probability(card, "celesta_bind_arar_liffeh",
+                    1, state.odds, "celesta_bind_arar_liffeh") then
+                tarot = tarot_for_enhancement(enhancement)
+            end
+
+            if tarot then
+                G.E_MANAGER:add_event(Event {
+                    trigger = "before", delay = 0.0,
+                    func = function()
+                        local made = SMODS.add_card { key = tarot,
+                            area = G.consumeables, edition = "e_negative" }
+                        if made then made:juice_up(0.3, 0.5) end
+                        return true
+                    end,
+                })
+            end
+
+            return {
+                message = tarot and localize("k_plus_tarot")
+                    or localize("k_upgrade_ex"),
+                colour = tarot and G.C.PURPLE or G.C.SECONDARY_SET.Enhanced,
+                card = card,
+            }
+        end,
+    })
+
+    -- Arar + Taehoongie: Taehoongie's hand says when, Arar says what happens.
+    --
+    -- Arar's cards, which are the ones HELD IN HAND: that is what Arar is about
+    -- on its own and in every other pair of its, and the trigger moving to the
+    -- played hand does not move what it acts on.
+    special("j_celesta_arar", "j_celesta_taehoongie", {
+        key = "arar_taehoongie",
+
+        loc_vars = function(def, card, state)
+            return { vars = { localize(FIVE_OF_A_KIND, "poker_hands") } }
+        end,
+
+        calculate = function(def, card, context, state)
+            if not (context.before and not context.blueprint) then return end
+            if not contains_five(context) then return end
+            if enhance_all_held("celesta_bind_arar_tae_enh") == 0 then return end
+            return {
+                message = localize("k_upgrade_ex"),
+                colour = G.C.SECONDARY_SET.Enhanced, card = card,
+            }
+        end,
+    })
+
+    -- Jaws + Taehoongie: Jaws keeps Chips off the cards it eats; here the cards
+    -- keep them instead, and nothing is eaten.
+    special("j_celesta_jaws", "j_celesta_taehoongie", {
+        key = "jaws_taehoongie",
+        config = { chips = 25 },
+
+        loc_vars = function(def, card, state)
+            return { vars = { localize(FIVE_OF_A_KIND, "poker_hands"),
+                              state.chips } }
+        end,
+
+        calculate = function(def, card, context, state)
+            if not (context.before and not context.blueprint) then return end
+            if not contains_five(context) then return end
+            if pay_played(context, state.chips) == 0 then return end
+            return {
+                message = localize { type = "variable", key = "a_chips",
+                                     vars = { state.chips } },
+                colour = G.C.CHIPS, card = card,
+            }
+        end,
+    })
+
+    -- Liffeh + Taehoongie: Liffeh's roll, off the Tarots it copies and onto the
+    -- cards that score.
+    special("j_celesta_liffeh", "j_celesta_taehoongie", {
+        key = "liffeh_taehoongie",
+        config = { odds = LIFFEH_ODDS },
+
+        loc_vars = function(def, card, state)
+            local n, d = SMODS.get_probability_vars(
+                card, 1, state.odds, "celesta_bind_liffeh_tae")
+            return { vars = { n, d } }
+        end,
+
+        calculate = function(def, card, context, state)
+            if not (context.individual and context.cardarea == G.play
+                and context.other_card and not context.blueprint) then return end
+            if not maybe_consumable(card, state.odds,
+                    "celesta_bind_liffeh_tae") then return end
+            return {
+                message = localize("celesta_plus_consumable"),
+                colour = G.C.PURPLE, card = card,
+            }
+        end,
+    })
+
+    -- The Big Bazoinga Boys: Arar, Jaws, Liffeh and Taehoongie.
+    --
+    -- The three Taehoongie pairs at once, which is what the group is: its hand
+    -- is the trigger, and the other three each bring what they do to it.
+    quad({
+        key = "quad_bazoinga",
+        members = { "j_celesta_arar", "j_celesta_jaws",
+                    "j_celesta_liffeh", "j_celesta_taehoongie" },
+        config = { chips = 25, odds = LIFFEH_ODDS },
+
+        loc_vars = function(def, card, state)
+            local n, d = SMODS.get_probability_vars(
+                card, 1, state.odds, "celesta_bind_quad_bazoinga")
+            return { vars = { localize(FIVE_OF_A_KIND, "poker_hands"),
+                              state.chips, n, d } }
+        end,
+
+        calculate = function(def, card, context, state)
+            if context.before and not context.blueprint
+                and contains_five(context) then
+                -- Both halves, from one pass: they are two things the same
+                -- hand causes, not two passes.
+                local enhanced = enhance_all_held("celesta_bind_quad_bazoinga_enh")
+                local paid = pay_played(context, state.chips)
+                if enhanced + paid == 0 then return end
+                return {
+                    message = localize { type = "variable", key = "a_chips",
+                                         vars = { state.chips } },
+                    colour = G.C.CHIPS, card = card,
+                }
+            end
+
+            -- ...and the roll, which is not about the Five of a Kind at all.
+            if context.individual and context.cardarea == G.play
+                and context.other_card and not context.blueprint then
+                if not maybe_consumable(card, state.odds,
+                        "celesta_bind_quad_bazoinga") then return end
+                return {
+                    message = localize("celesta_plus_consumable"),
+                    colour = G.C.PURPLE, card = card,
+                }
+            end
+        end,
+    })
+end
+
+--------------------------------------------------------------------------------
+-- Hime's Eutrophic cards
+--------------------------------------------------------------------------------
+
+do
+    --- The Eutrophic cards held in hand, which is what Hime is about.
+    ---
+    --- Debuffed ones are left out, the way Zentreya's Steel count leaves them
+    --- out: a debuffed card does nothing, and paying for it would be paying for
+    --- a card that is not paying.
+    ---
+    --- The key is read at call time rather than at load: enhancements/ is
+    --- loaded after this file, so CelestasMod.ENHANCEMENT_KEYS does not exist
+    --- yet while this is being read.
+    local function eutrophic_in_hand()
+        local key = (CelestasMod.ENHANCEMENT_KEYS or {}).Eutrophic
+        if not key then return 0 end
+        local n = 0
+        for _, held in ipairs((G.hand and G.hand.cards) or {}) do
+            if not held.debuff and SMODS.has_enhancement(held, key) then
+                n = n + 1
+            end
+        end
+        return n
+    end
+
+    --- ...and the ones in the run's whole deck.
+    local function eutrophic_in_deck()
+        return enhanced_in_deck((CelestasMod.ENHANCEMENT_KEYS or {}).Eutrophic)
+    end
+
+    -- Hime + Projekt Melody: Hime's held Eutrophic cards, paid for rather than
+    -- scored.
+    --
+    -- context.before, for the reason Hime's own timing is what it is: "held in
+    -- hand" means the cards that were not played, and they are only still in
+    -- G.hand until the hand scores.
+    special("j_celesta_hime", "j_celesta_projektmelody", {
+        key = "hime_melody",
+        config = { dollars = 3 },
+
+        loc_vars = function(def, card, state)
+            return { vars = { state.dollars } }
+        end,
+
+        calculate = function(def, card, context, state)
+            if not (context.before and not context.blueprint) then return end
+            local held = eutrophic_in_hand()
+            if held <= 0 then return end
+            return { dollars = state.dollars * held, card = card }
+        end,
+    })
+
+    -- Hime + Nyanners: Nyanners counts the row, and this counts the deck for
+    -- the card Hime is about.
+    --
+    -- Counted live rather than banked, which is what Nyanners does and what "in
+    -- your full deck" means everywhere in this file: converting the last
+    -- Eutrophic card away takes the Chips back rather than leaving them earned.
+    special("j_celesta_hime", "j_celesta_nyanners", {
+        key = "hime_nyanners",
+        config = { chips = 30 },
+
+        loc_vars = function(def, card, state)
+            return { vars = { state.chips,
+                              state.chips * eutrophic_in_deck() } }
+        end,
+
+        calculate = function(def, card, context, state)
+            if not context.joker_main then return end
+            local total = state.chips * eutrophic_in_deck()
+            if total <= 0 then return end
+            return { chips = total }
+        end,
+    })
+end
+
+
+--------------------------------------------------------------------------------
+-- Mogu and SunnySplosion
+--------------------------------------------------------------------------------
+
+-- Mogu + SunnySplosion: the same move, the other way up.
+--
+-- SunnySplosion's own downgrade stops of its own accord and needs no seam: it
+-- lives in that Joker's calculate, and a replacing pair is never asked it.
+--
+-- The body is SunnySplosion's own with the direction as its argument, so the
+-- two cannot come to disagree about which cards are moved or about what "if
+-- possible" means. It is reached through CelestasMod because
+-- jokers/implemented.lua is loaded after this file - the function is there by
+-- the time anything calls it, and not while this is being read.
+--
+-- Not guarded against its absence. Bind already pcalls every special's
+-- calculate and logs which pair failed, and a guard here would return silently
+-- instead - so a body that really had gone missing would look like a pair that
+-- simply does nothing.
+special("j_celesta_mogu", "j_celesta_sunnysplosion", {
+    key = "mogu_sunnysplosion",
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.amount } }
+    end,
+
+    config = { amount = 1 },
+
+    calculate = function(def, card, context, state)
+        return CelestasMod.sunny_shift(card, context, state.amount)
+    end,
+})
 
 
 --------------------------------------------------------------------------------

@@ -2374,6 +2374,109 @@ LOC_TAIL = '''        },
                     "when {C:attention}Blind{} is selected",
                 },
             },
+            celesta_bind_kairyu_nihmune = {
+                name = "Kairyu + Nihmune",
+                text = {
+                    "Gain {C:attention}+#1#{} hand size for every",
+                    "{C:attention}#2#{} {C:clubs}Club{} cards discarded this round",
+                    "{C:inactive}(Currently {C:attention}+#3#{C:inactive} hand size)",
+                },
+            },
+            celesta_bind_kairyu_aicandii = {
+                name = "Kairyu + AiCandii",
+                text = {
+                    "At the end of the round, gains",
+                    "{C:mult}+#1#{} Mult per {C:attention}discard{} used",
+                    "{C:inactive}(Currently {C:mult}+#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_aicandii_shiabun = {
+                name = "AiCandii + Shiabun",
+                text = {
+                    "{C:attention}+#1#{} card selection limit, equal to",
+                    "your {C:red}Discards{} remaining",
+                },
+            },
+            celesta_bind_aicandii_rosedoodle = {
+                name = "AiCandii + Rosedoodle",
+                text = {
+                    "At the end of the round, this Joker gains",
+                    "{X:mult,C:white}X#1#{} Mult per unused {C:attention}discard{}",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_aicandii_ironmouse = {
+                name = "AiCandii + Ironmouse",
+                text = {
+                    "At the end of the round, this Joker gains",
+                    "{E:1,C:mult}^#1#{} Mult per unused {C:attention}discard{}",
+                    "{C:inactive}(Currently {E:1,C:mult}^#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_arar_liffeh = {
+                name = "Arar + Liffeh",
+                text = {
+                    "When a hand is played, add an {C:attention}enhancement{}",
+                    "to a random unenhanced card held in hand",
+                    "{C:green}#1# in #2#{} chance to create a {C:dark_edition}Negative{}",
+                    "{C:tarot}Tarot{} that makes that enhancement",
+                },
+            },
+            celesta_bind_arar_taehoongie = {
+                name = "Arar + Taehoongie",
+                text = {
+                    "When a hand containing a {C:attention}#1#{} is played,",
+                    "add a random {C:attention}enhancement{} to every",
+                    "unenhanced card held in hand",
+                },
+            },
+            celesta_bind_jaws_taehoongie = {
+                name = "Jaws + Taehoongie",
+                text = {
+                    "When a hand containing a {C:attention}#1#{} is played,",
+                    "each played card permanently gains {C:chips}+#2#{} Chips",
+                },
+            },
+            celesta_bind_liffeh_taehoongie = {
+                name = "Liffeh + Taehoongie",
+                text = {
+                    "{C:green}#1# in #2#{} chance to create a random",
+                    "{C:attention}Consumable{} card when a card is scored",
+                    "{C:inactive}(Must have room)",
+                },
+            },
+            celesta_bind_hime_melody = {
+                name = "Hime + Projekt Melody",
+                text = {
+                    "Earn {C:money}$#1#{} for each {C:attention}Eutrophic{} card",
+                    "held in hand when a hand is played",
+                },
+            },
+            celesta_bind_hime_nyanners = {
+                name = "Hime + Nyanners",
+                text = {
+                    "{C:chips}+#1#{} Chips for each {C:attention}Eutrophic{}",
+                    "card in your full deck",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_quad_bazoinga = {
+                name = "Big Bazoinga Boys",
+                text = {
+                    "When a hand containing a {C:attention}#1#{} is played, add a",
+                    "random {C:attention}enhancement{} to every unenhanced card held",
+                    "in hand, and each played card permanently gains {C:chips}+#2#{} Chips",
+                    "{C:green}#3# in #4#{} chance to create a random {C:attention}Consumable{}",
+                    "card when a card is scored {C:inactive}(Must have room)",
+                },
+            },
+            celesta_bind_mogu_sunnysplosion = {
+                name = "Mogu + SunnySplosion",
+                text = {
+                    "Increases the {C:attention}rank{} of each",
+                    "played card by {C:attention}#1#{}, if possible",
+                },
+            },
             celesta_bind_quad_baulder_gang = {
                 name = "The Baulder Gang",
                 text = {
@@ -3609,6 +3712,7 @@ LOC_TAIL = '''        },
             celesta_plus_seven = "+7 of Spades",
             celesta_downpour = "Downpour!",
             celesta_swapped = "Swapped!",
+            celesta_downgrade = "Downgrade!",
             -- The Special Merges collection tab.
             celesta_special_merges = "Special Merges",
             -- The Deck of Sins' stat sidebar.
