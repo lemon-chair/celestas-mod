@@ -75,6 +75,8 @@ Lost.CONVERSIONS = {
     ["j_credit_card"] = joker("fraudulent_card"),
     [joker("obkatiekat")] = joker("obkhaoskat"),
     [joker("fufu")] = joker("black_hole_sun_fufu"),
+    ["j_loyalty_card"] = joker("royalty_card"),
+    ["j_to_do_list"] = joker("to_dont_list"),
 }
 
 --- The same table read the other way: which Joker a Corrupt one used to be.
@@ -220,6 +222,69 @@ local function bump_limit(area, delta)
         -- No Steamodded metatable: card_limit is an ordinary field.
         area.config.card_limit = area.config.card_limit + delta
     end
+end
+
+--------------------------------------------------------------------------------
+-- What the Lost cost the Joker row
+--------------------------------------------------------------------------------
+--
+-- Four slots for holding any of them, not four for each.
+--
+-- Four each is what made a second Lost Soul the end of a run. The row starts
+-- at five: one Lost Joker leaves one slot, a second leaves it three short of
+-- nothing, a third takes it further under. Nothing in the game destroys a
+-- Joker for being over its limit - vanilla's emplace only ever raises a
+-- limit, never evicts (cardarea.lua:64) - but a row that cannot hold anything
+-- comes to the same thing from where the player is sitting.
+--
+-- Here rather than up with the rest of the registry because bump_limit is a
+-- file local declared just above, and a function written before it cannot see
+-- it.
+
+--- What holding any Lost Joker costs the Joker row.
+---
+--- One number, read by the ledger below and by every Lost Joker's own
+--- description, so the two cannot come to disagree about it.
+Lost.SLOT_COST = 4
+
+--- True while any Lost Joker is held, counting `also` and discounting `except`.
+---
+--- Both arguments exist because the row is not the whole truth at the two
+--- moments this is asked:
+---
+---   * remove_from_deck is called while the card is STILL in the row, so the
+---     last one leaving would otherwise look like one being held and the
+---     slots would never come back. That card is `except`.
+---   * add_to_deck is called BEFORE the card is emplaced when one is bought,
+---     and these Jokers fill the shop with themselves - so the first one
+---     bought would look at a row that does not contain it yet and take
+---     nothing. That card is `also`. Conversion is the other way round, the
+---     card being in the row already, and passing it either way is harmless.
+function Lost.any_held(except, also)
+    if also and also ~= except and Lost.is_lost(also) then return true end
+    for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
+        if held ~= except and Lost.is_lost(held) then return true end
+    end
+    return false
+end
+
+--- Brings the Joker row in line with whether any Lost Joker is held.
+---
+--- A ledger against what has already been taken rather than a bump per card,
+--- which is what makes "four between them" hold however they arrive and leave.
+---
+--- The tally lives on G.GAME so it is saved with the run, beside the limit it
+--- is paired with: a run loaded holding Lost Jokers owes back exactly what it
+--- took, and one loaded holding none owes nothing.
+function Lost.sync_slots(except, also)
+    if not (G.GAME and G.jokers and G.jokers.config) then return end
+    local want = Lost.any_held(except, also) and Lost.SLOT_COST or 0
+    local applied = G.GAME.celesta_lost_slots or 0
+    if want == applied then return end
+    -- Taking slots is a negative bump, so one expression serves both ways:
+    -- none to four is -4, four to none is +4.
+    bump_limit(G.jokers, applied - want)
+    G.GAME.celesta_lost_slots = want
 end
 
 --------------------------------------------------------------------------------
@@ -443,7 +508,7 @@ SMODS.Joker {
     -- it says so here too.
     celesta_lost_shop = true,
 
-    config = { extra = { x_mult = 3, repetitions = 6, joker_slots = 4 } },
+    config = { extra = { x_mult = 3, repetitions = 6, joker_slots = Lost.SLOT_COST } },
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_steel
@@ -452,7 +517,7 @@ SMODS.Joker {
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        Lost.sync_slots(nil, card)
         -- A Lost Soul can be spent while standing in the shop, so the shop
         -- that is already on screen is rebuilt rather than left until the
         -- next one.
@@ -460,7 +525,7 @@ SMODS.Joker {
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, card.ability.extra.joker_slots)
+        Lost.sync_slots(card)
     end,
 
     calculate = function(self, card, context)
@@ -521,7 +586,7 @@ SMODS.Joker {
     celesta_lost = true,
     celesta_lost_shop = true,
 
-    config = { extra = { mult_gain = 66.6, joker_slots = 4 } },
+    config = { extra = { mult_gain = 66.6, joker_slots = Lost.SLOT_COST } },
 
     loc_vars = function(self, info_queue, card)
         local extra = card.ability.extra
@@ -529,12 +594,12 @@ SMODS.Joker {
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        Lost.sync_slots(nil, card)
         retake_shop()
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, card.ability.extra.joker_slots)
+        Lost.sync_slots(card)
     end,
 
     calculate = function(self, card, context)
@@ -589,7 +654,7 @@ SMODS.Joker {
     celesta_lost = true,
     celesta_lost_shop = true,
 
-    config = { extra = { e_mult = 1.66, joker_slots = 4 } },
+    config = { extra = { e_mult = 1.66, joker_slots = Lost.SLOT_COST } },
 
     loc_vars = function(self, info_queue, card)
         local extra = card.ability.extra
@@ -597,12 +662,12 @@ SMODS.Joker {
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        Lost.sync_slots(nil, card)
         retake_shop()
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, card.ability.extra.joker_slots)
+        Lost.sync_slots(card)
     end,
 
     calculate = function(self, card, context)
@@ -664,7 +729,7 @@ SMODS.Joker {
     celesta_lost = true,
     celesta_lost_shop = true,
 
-    config = { extra = { e_chips = 1.66, joker_slots = 4 } },
+    config = { extra = { e_chips = 1.66, joker_slots = Lost.SLOT_COST } },
 
     loc_vars = function(self, info_queue, card)
         local extra = card.ability.extra
@@ -672,12 +737,12 @@ SMODS.Joker {
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        Lost.sync_slots(nil, card)
         retake_shop()
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, card.ability.extra.joker_slots)
+        Lost.sync_slots(card)
     end,
 
     calculate = function(self, card, context)
@@ -747,7 +812,7 @@ SMODS.Joker {
     celesta_lost = true,
     celesta_lost_shop = true,
 
-    config = { extra = { x_mult_gain = 6.66, joker_slots = 4 } },
+    config = { extra = { x_mult_gain = 6.66, joker_slots = Lost.SLOT_COST } },
 
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.x_mult_gain,
@@ -756,12 +821,12 @@ SMODS.Joker {
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        Lost.sync_slots(nil, card)
         retake_shop()
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, card.ability.extra.joker_slots)
+        Lost.sync_slots(card)
     end,
 
     calculate = function(self, card, context)
@@ -852,7 +917,7 @@ SMODS.Joker {
     celesta_lost_shop = true,
 
     config = { extra = { repetitions = 2, e_mult = 1, e_mult_gain = 0.06,
-                         joker_slots = 4 } },
+                         joker_slots = Lost.SLOT_COST } },
 
     loc_vars = function(self, info_queue, card)
         local extra = card.ability.extra
@@ -864,12 +929,12 @@ SMODS.Joker {
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        Lost.sync_slots(nil, card)
         retake_shop()
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, card.ability.extra.joker_slots)
+        Lost.sync_slots(card)
     end,
 
     calculate = function(self, card, context)
@@ -972,7 +1037,7 @@ SMODS.Joker {
     celesta_lost = true,
     celesta_lost_shop = "j_" .. PREFIX .. "_unwanted_rebate",
 
-    config = { extra = { dollars = 6.66, rank = 6, joker_slots = 4 } },
+    config = { extra = { dollars = 6.66, rank = 6, joker_slots = Lost.SLOT_COST } },
 
     loc_vars = function(self, info_queue, card)
         local extra = card.ability.extra
@@ -980,12 +1045,12 @@ SMODS.Joker {
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        Lost.sync_slots(nil, card)
         retake_shop()
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, card.ability.extra.joker_slots)
+        Lost.sync_slots(card)
     end,
 
     calculate = function(self, card, context)
@@ -1005,12 +1070,11 @@ SMODS.Joker {
 -- Blueprint copies the Joker to its right. This one makes every Joker to its
 -- right go again, twice.
 --
--- One of the three Corrupt Jokers that leave the run's shape alone -
--- Cutout and Fraudulent Card below are the others: no Joker slots taken,
--- no shop held shut. It carries celesta_lost, which is what makes it
--- unsellable and draws its description inverted, and nothing else - so it has
--- no celesta_lost_shop and no joker_slots at all rather than a zero, because
--- a zero would still be a number somebody could scale.
+-- One of the three that leave the SHOP alone - Cutout and Fraudulent Card
+-- below are the others: no shop held shut, so no celesta_lost_shop. They used
+-- to leave the Joker row alone as well; every Lost Joker takes the four slots
+-- now, and the four are shared, so holding all three costs four rather than
+-- twelve. See "What the Lost cost the Joker row" above.
 --
 -- retrigger_joker_check is asked of every Joker about every OTHER Joker, and
 -- about itself, so the answer has to name who it is being asked about. Ray
@@ -1055,10 +1119,19 @@ SMODS.Joker {
     celesta_no_bind = true,
     celesta_lost = true,
 
-    config = { extra = { repetitions = 2 } },
+    config = { extra = { repetitions = 2, joker_slots = Lost.SLOT_COST } },
 
     loc_vars = function(self, info_queue, card)
-        return { vars = { card.ability.extra.repetitions } }
+        return { vars = { card.ability.extra.repetitions,
+                          card.ability.extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        Lost.sync_slots(nil, card)
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        Lost.sync_slots(card)
     end,
 
     calculate = function(self, card, context)
@@ -1123,7 +1196,7 @@ SMODS.Joker {
     -- sold and take four slots each.
     celesta_lost_shop = "j_" .. PREFIX .. "_navy_bean",
 
-    config = { extra = { h_size = 6, joker_slots = 4 } },
+    config = { extra = { h_size = 6, joker_slots = Lost.SLOT_COST } },
 
     loc_vars = function(self, info_queue, card)
         local extra = card.ability.extra
@@ -1131,13 +1204,13 @@ SMODS.Joker {
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        Lost.sync_slots(nil, card)
         retake_shop()
         if G.hand then G.hand:change_size(card.ability.extra.h_size) end
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, card.ability.extra.joker_slots)
+        Lost.sync_slots(card)
         if G.hand then G.hand:change_size(-card.ability.extra.h_size) end
     end,
 }
@@ -1178,7 +1251,7 @@ SMODS.Joker {
     celesta_lost = true,
     celesta_lost_shop = "j_" .. PREFIX .. "_face",
 
-    config = { extra = { chips = 66.6, joker_slots = 4 } },
+    config = { extra = { chips = 66.6, joker_slots = Lost.SLOT_COST } },
 
     loc_vars = function(self, info_queue, card)
         local extra = card.ability.extra
@@ -1186,12 +1259,12 @@ SMODS.Joker {
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        Lost.sync_slots(nil, card)
         retake_shop()
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, card.ability.extra.joker_slots)
+        Lost.sync_slots(card)
     end,
 
     calculate = function(self, card, context)
@@ -1243,7 +1316,7 @@ SMODS.Joker {
     celesta_lost = true,
     celesta_lost_shop = "j_" .. PREFIX .. "_error_missing_chad",
 
-    config = { extra = { repetitions = 6, joker_slots = 4 } },
+    config = { extra = { repetitions = 6, joker_slots = Lost.SLOT_COST } },
 
     loc_vars = function(self, info_queue, card)
         local extra = card.ability.extra
@@ -1251,12 +1324,12 @@ SMODS.Joker {
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        Lost.sync_slots(nil, card)
         retake_shop()
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, card.ability.extra.joker_slots)
+        Lost.sync_slots(card)
     end,
 
     calculate = function(self, card, context)
@@ -1429,7 +1502,7 @@ SMODS.Joker {
     -- Not a Joker: a shop of Stone Cards. See refill_playing above.
     celesta_lost_shop_enhancement = "m_stone",
 
-    config = { extra = { joker_slots = 4 } },
+    config = { extra = { joker_slots = Lost.SLOT_COST } },
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_stone
@@ -1437,12 +1510,12 @@ SMODS.Joker {
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        Lost.sync_slots(nil, card)
         retake_shop()
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, card.ability.extra.joker_slots)
+        Lost.sync_slots(card)
     end,
 }
 
@@ -1477,7 +1550,7 @@ SMODS.Joker {
     -- Whatever it used to be: a shop of Kumis.
     celesta_lost_shop = true,
 
-    config = { extra = { odds = 4, dollars = 20, joker_slots = 4 } },
+    config = { extra = { odds = 4, dollars = 20, joker_slots = Lost.SLOT_COST } },
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_gold
@@ -1501,12 +1574,12 @@ SMODS.Joker {
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        Lost.sync_slots(nil, card)
         retake_shop()
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, card.ability.extra.joker_slots)
+        Lost.sync_slots(card)
     end,
 }
 
@@ -1553,19 +1626,19 @@ SMODS.Joker {
     celesta_lost = true,
     celesta_lost_shop = "j_" .. PREFIX .. "_momo_cat",
 
-    config = { extra = { joker_slots = 4 } },
+    config = { extra = { joker_slots = Lost.SLOT_COST } },
 
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.joker_slots } }
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        Lost.sync_slots(nil, card)
         retake_shop()
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, card.ability.extra.joker_slots)
+        Lost.sync_slots(card)
     end,
 
     calculate = function(self, card, context)
@@ -1621,7 +1694,7 @@ SMODS.Joker {
     celesta_lost = true,
     celesta_lost_shop = "j_" .. PREFIX .. "_vgn",
 
-    config = { extra = { sevens = 17, joker_slots = 4 } },
+    config = { extra = { sevens = 17, joker_slots = Lost.SLOT_COST } },
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_lucky
@@ -1630,12 +1703,12 @@ SMODS.Joker {
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        Lost.sync_slots(nil, card)
         retake_shop()
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, card.ability.extra.joker_slots)
+        Lost.sync_slots(card)
     end,
 
     calculate = function(self, card, context)
@@ -1682,7 +1755,7 @@ SMODS.Joker {
     celesta_lost = true,
     celesta_lost_shop = true,
 
-    config = { extra = { x_mult = 4, joker_slots = 4 } },
+    config = { extra = { x_mult = 4, joker_slots = Lost.SLOT_COST } },
 
     loc_vars = function(self, info_queue, card)
         local extra = card.ability.extra
@@ -1690,12 +1763,12 @@ SMODS.Joker {
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, -card.ability.extra.joker_slots)
+        Lost.sync_slots(nil, card)
         retake_shop()
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        bump_limit(G.jokers, card.ability.extra.joker_slots)
+        Lost.sync_slots(card)
     end,
 
     calculate = function(self, card, context)
@@ -1753,14 +1826,26 @@ SMODS.Joker {
     celesta_no_bind = true,
     celesta_lost = true,
 
-    config = { extra = { x_mult = 1 } },
+    config = { extra = { x_mult = 1, joker_slots = Lost.SLOT_COST } },
 
     loc_vars = function(self, info_queue, card)
         -- The second is the TOTAL, not the count: it is the number the
         -- card is about to score, which is what (Currently X…) means
         -- everywhere else.
         local extra = card.ability.extra
-        return { vars = { extra.x_mult, extra.x_mult * cutout_filled() } }
+        return { vars = { extra.x_mult, extra.x_mult * cutout_filled(),
+                          extra.joker_slots } }
+    end,
+
+    -- The slots it takes are slots it then scores off: it multiplies by
+    -- FILLED Joker slots, so the four come off the top of what it can ever
+    -- reach. That is the Joker being what it is.
+    add_to_deck = function(self, card, from_debuff)
+        Lost.sync_slots(nil, card)
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        Lost.sync_slots(card)
     end,
 
     calculate = function(self, card, context)
@@ -1882,20 +1967,200 @@ SMODS.Joker {
     celesta_no_bind = true,
     celesta_lost = true,
 
-    config = { extra = { debt = 66 } },
+    config = { extra = { debt = 66, joker_slots = Lost.SLOT_COST } },
 
     loc_vars = function(self, info_queue, card)
-        return { vars = { card.ability.extra.debt } }
+        return { vars = { card.ability.extra.debt,
+                          card.ability.extra.joker_slots } }
     end,
 
     add_to_deck = function(self, card, from_debuff)
         G.GAME.bankrupt_at = (G.GAME.bankrupt_at or 0)
             - card.ability.extra.debt
+        Lost.sync_slots(nil, card)
     end,
 
     remove_from_deck = function(self, card, from_debuff)
         G.GAME.bankrupt_at = (G.GAME.bankrupt_at or 0)
             + card.ability.extra.debt
+        Lost.sync_slots(card)
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- To-Don't List's hand
+--------------------------------------------------------------------------------
+--
+-- Vanilla To Do List keeps its hand on the card and rerolls it at the end of
+-- the round, never landing on the one it just had (card.lua:3307). This does
+-- the same, on its own seed, and only ever offers hands the run can actually
+-- see - SMODS.is_poker_hand_visible is what hides the secret ones until they
+-- have been found.
+
+--- Every poker hand this run could be asked for, except `except`.
+local function todont_choices(except)
+    local out = {}
+    for key in pairs((G.GAME and G.GAME.hands) or {}) do
+        if SMODS.is_poker_hand_visible(key) and key ~= except then
+            out[#out + 1] = key
+        end
+    end
+    -- Sorted, so the choice depends on the seed and not on the order pairs
+    -- happened to walk a table in.
+    table.sort(out)
+    return out
+end
+
+--- Picks a new hand for `card`, never the one it is already on.
+local function todont_reroll(card)
+    local choices = todont_choices(card.ability.extra.hand)
+    if #choices == 0 then return end
+    card.ability.extra.hand =
+        pseudorandom_element(choices, pseudoseed("celesta_to_dont"))
+end
+
+--- The hand this card is currently paying for, rolling one on first use.
+---
+--- Lazily rather than in add_to_deck: the Collection builds a card of every
+--- Joker outside a run, where G.GAME.hands is not the run's and a hand rolled
+--- then would be the one the player is shown forever.
+local function todont_hand(card)
+    if not card.ability.extra.hand then todont_reroll(card) end
+    return card.ability.extra.hand or "High Card"
+end
+
+--------------------------------------------------------------------------------
+-- Royalty Card
+--------------------------------------------------------------------------------
+--
+-- Loyalty Card pays X4 Mult every six HANDS. This one counts cards instead, at
+-- X6 - so a five card hand walks most of the way there on its own and the
+-- sixth card of the next one pays.
+--
+-- The count carries across hands and rounds, the way Birdyovo's does: the
+-- sixth card is the sixth this card has ever seen, not the sixth of this hand.
+-- The remaining figure on the card is derived from it rather than stored, so
+-- the two cannot come apart.
+--
+-- A copy must not advance the count - the cards were scored once - but it
+-- still pays when a card lands on the sixth, so a Blueprint doubles the payoff
+-- rather than shifting the rhythm. Birdyovo's reasoning, and its shape.
+SMODS.Joker {
+    key = "royalty_card",
+    atlas = "royalty_card",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    unlocked = false,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+    celesta_lost_shop = "j_" .. PREFIX .. "_royalty_card",
+
+    config = { extra = { x_mult = 6, requirement = 6, count = 0,
+                         joker_slots = Lost.SLOT_COST } },
+
+    loc_vars = function(self, info_queue, card)
+        local extra = card.ability.extra
+        local to_go = extra.requirement - (extra.count % extra.requirement)
+        return { vars = { extra.x_mult, extra.requirement, to_go,
+                          extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        Lost.sync_slots(nil, card)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        Lost.sync_slots(card)
+    end,
+
+    calculate = function(self, card, context)
+        -- context.individual with cardarea == G.play is the scoring-card pass;
+        -- unscored cards arrive with cardarea set to 'unscored' instead.
+        if context.individual and context.cardarea == G.play then
+            local extra = card.ability.extra
+            if not context.blueprint then
+                extra.count = extra.count + 1
+            end
+            if extra.count % extra.requirement == 0 then
+                return { x_mult = extra.x_mult, card = card }
+            end
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- To-Don't List
+--------------------------------------------------------------------------------
+--
+-- To Do List pays $4 the once, if the round's hand happens to be the one it
+-- named. This one pays $16.6 EVERY time that hand is played - so a round spent
+-- playing nothing else is worth four of them.
+--
+-- The hand is stored on the card rather than in the run, because two of these
+-- should be able to name two different hands; vanilla keeps its own on the
+-- card for the same reason (card.lua:430).
+SMODS.Joker {
+    key = "to_dont_list",
+    atlas = "to_dont_list",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    unlocked = false,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+    celesta_lost_shop = "j_" .. PREFIX .. "_to_dont_list",
+
+    config = { extra = { dollars = 16.6, joker_slots = Lost.SLOT_COST } },
+
+    loc_vars = function(self, info_queue, card)
+        local extra = card.ability.extra
+        return { vars = { extra.dollars,
+                          localize(todont_hand(card), "poker_hands"),
+                          extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        Lost.sync_slots(nil, card)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        Lost.sync_slots(card)
+    end,
+
+    calculate = function(self, card, context)
+        if context.joker_main
+            and context.scoring_name == todont_hand(card) then
+            return { dollars = card.ability.extra.dollars, card = card }
+        end
+
+        -- main_eval is the once-per-round Joker pass; without it the reroll
+        -- would happen once for every card the end-of-round pass looks at.
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            local was = todont_hand(card)
+            todont_reroll(card)
+            local now = todont_hand(card)
+            if now ~= was then
+                return { message = localize(now, "poker_hands"),
+                         colour = G.C.SECONDARY_SET.Planet, card = card }
+            end
+        end
     end,
 }
 

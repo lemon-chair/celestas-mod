@@ -448,7 +448,7 @@ return {
                     "{X:red,C:white} X#1# {} Mult for each",
                     "filled {C:attention}Joker{} slot",
                     "{s:0.8}Cutout included",
-                    "Cannot be sold",
+                    "{C:red}-#3#{} Joker slots, cannot be sold",
                     "{C:inactive}(Currently {X:red,C:white} X#2# {C:inactive})",
                 },
                 unlock = {
@@ -687,7 +687,7 @@ return {
                 text = {
                     "Go up to {C:red}-$#1#{} in debt",
                     "Money cannot go above {C:money}$0{}",
-                    "Cannot be sold",
+                    "{C:red}-#2#{} Joker slots, cannot be sold",
                 },
                 unlock = {
                     "Use a {C:spectral}Lost Soul{} on",
@@ -1485,6 +1485,20 @@ return {
                     "when scored",
                 },
             },
+            j_celesta_royalty_card = {
+                name = "Royalty Card",
+                text = {
+                    "{X:mult,C:white}X#1#{} Mult every {C:attention}#2#{}",
+                    "scored cards",
+                    "{C:red}-#4#{} Joker slots, cannot be sold",
+                    "All {C:attention}shop{} items become this {C:attention}Joker{}",
+                    "{C:inactive}(#3# cards remaining)",
+                },
+                unlock = {
+                    "Use a {C:spectral}Lost Soul{} on",
+                    "{C:attention}Loyalty Card{}",
+                },
+            },
             j_celesta_rtgame = {
                 name = "RTGame",
                 text = {
@@ -1538,7 +1552,7 @@ return {
                 text = {
                     "Retriggers each {C:attention}Joker{} to",
                     "the right of this one {C:attention}#1#{} times",
-                    "Cannot be sold",
+                    "{C:red}-#2#{} Joker slots, cannot be sold",
                 },
                 unlock = {
                     "Use a {C:spectral}Lost Soul{} on",
@@ -1736,6 +1750,20 @@ return {
                     "If the scoring hand contains a card",
                     "of every {C:attention}suit{}, level up",
                     "{C:attention}#2#{} #1# time",
+                },
+            },
+            j_celesta_to_dont_list = {
+                name = "To-Don't List",
+                text = {
+                    "Earn {C:money}$#1#{} every time",
+                    "{C:attention}#2#{} is played",
+                    "{C:red}-#3#{} Joker slots, cannot be sold",
+                    "All {C:attention}shop{} items become this {C:attention}Joker{}",
+                    "{C:inactive}(hand changes at end of round)",
+                },
+                unlock = {
+                    "Use a {C:spectral}Lost Soul{} on",
+                    "{C:attention}To Do List{}",
                 },
             },
             j_celesta_tobs = {

@@ -1122,6 +1122,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "royalty_card",
+    path = "royalty_card.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "rtgame",
     path = "rtgame.png",
     px = 71,
@@ -1313,6 +1320,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "taehoongie",
     path = "taehoongie.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "to_dont_list",
+    path = "to_dont_list.png",
     px = 71,
     py = 95,
 }
