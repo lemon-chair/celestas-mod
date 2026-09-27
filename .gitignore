@@ -9,3 +9,7 @@ lovely/log/
 .DS_Store
 Thumbs.db
 *.swp
+
+# Python bytecode from tools/
+__pycache__/
+*.pyc
