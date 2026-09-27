@@ -6308,11 +6308,32 @@ end
 -- only the text. Without this an absorbed one was frozen at whatever it
 -- granted the moment it was merged.
 --
--- Runs on every card every frame, so the cheap test comes first: with_partner
--- returns immediately for a card that is not merged.
+-- Runs on every card every frame, so the cheap test comes first: an unmerged
+-- card takes the same path it always did, and neither of the two calls below
+-- it does any work for one.
+--
+-- The host's OWN update is muffled under a replacing pair, the way its
+-- calculate, its add_to_deck, its remove_from_deck and its calc_dollar_bonus
+-- already are. For most Jokers that changes nothing, because update only
+-- animates - but the four that GRANT from it leak without it, and leak in the
+-- direction there is no way back from:
+--
+--   Snuffy raises the card selection limit and follows the number from here.
+--   Merged with Dokibird the pair replaces both halves, so forming it takes
+--   Snuffy's grant off through its remove_from_deck - and update handed it
+--   straight back on the next frame. Selling the merge then muffles
+--   remove_from_deck, so nothing ever gave it back, and the limit stayed up
+--   for the rest of the run.
 local celesta_bind_update_ref = Card.update
 function Card:update(dt)
-    celesta_bind_update_ref(self, dt)
+    if not Bind.is_merged(self) then
+        celesta_bind_update_ref(self, dt)
+        return
+    end
+
+    without_center_hook(self, "update", function()
+        celesta_bind_update_ref(self, dt)
+    end)
     with_partner(self, "update", function(center, card)
         center:update(card, dt)
     end)
