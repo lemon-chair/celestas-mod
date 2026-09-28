@@ -10769,6 +10769,10 @@ end
 -- otherwise have nothing to append to.
 
 --- Works the answer out from the world, as Adfree's does.
+---
+--- Answers whether THIS call shut the Boss, so the Joker can say so the way
+--- Chicot does. hold_boss reports any change including letting go, and letting
+--- go is not something to announce.
 function CelestasMod.kuro_sync()
     local want = CelestasMod.joker_in_play(KURO_KEY)
         and CelestasMod.ante_parity_is(CelestasMod.KURO_PARITY) and true or false
@@ -10778,7 +10782,8 @@ function CelestasMod.kuro_sync()
             if ok and met then want = true break end
         end
     end
-    CelestasMod.hold_boss("kuro", want)
+    local changed = CelestasMod.hold_boss("kuro", want)
+    return want and changed or false
 end
 
 SMODS.Joker {
@@ -10807,7 +10812,17 @@ SMODS.Joker {
 
     calculate = function(self, card, context)
         if context.setting_blind and not context.blueprint then
-            CelestasMod.kuro_sync()
+            -- Chicot's own two lines when it shuts a Boss (card.lua:2805): a
+            -- timpani and "Boss Disabled!". Without them nothing on screen
+            -- says this Joker did anything - which is how a Boss that was held
+            -- but not undone read as a Joker that had never fired.
+            if CelestasMod.kuro_sync() then
+                play_sound("timpani")
+                return {
+                    message = localize("ph_boss_disabled"),
+                    card = card,
+                }
+            end
         end
         -- Let go at the end of the round rather than at the next Ante: the
         -- reason is asked again the moment the next Blind is set, and leaving
