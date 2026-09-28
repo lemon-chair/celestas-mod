@@ -396,6 +396,12 @@ SMODS.Joker {
                     return true
                 end
             })
+            -- The card is made inside that event, so there is no effect table
+            -- to hand back - but eval_card will not consider retriggering a
+            -- Joker that has not said it triggered, which is what a retrigger
+            -- Stamp on this one needs. `nil, true` is vanilla's way of saying
+            -- it (card.lua, Obelisk and Ride the Bus both end this way).
+            return nil, true
         end
     end,
 }

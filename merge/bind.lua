@@ -2085,6 +2085,7 @@ special("j_celesta_kokonuts", "j_celesta_maya", {
                 count = count + state.extra_cards
             end
             koko_sevens(card, count, "celesta_bind_koko_maya", false)
+            return nil, true
         end
     end,
 })
@@ -3345,6 +3346,7 @@ special("j_celesta_suko", "j_celesta_kokonuts", {
         if context.setting_blind and not context.blueprint
             and not (context.blueprint_card or card).getting_sliced then
             koko_sevens(card, 1, "celesta_bind_suko_koko", { foil = true })
+            return nil, true
         end
     end,
 })
@@ -4722,6 +4724,7 @@ special("j_celesta_kokonuts", "j_celesta_cottontail", {
             and not (context.blueprint_card or card).getting_sliced then
             koko_sevens(card, 1, "celesta_bind_koko_cottontail", false,
                 (CelestasMod.SEAL_KEYS or {}).Star)
+            return nil, true
         end
     end,
 })
@@ -5508,7 +5511,12 @@ function Card:calculate_joker(context, ...)
         end
         running[self] = true
         local state = Bind.special_state(self, def)
-        local ok, ret = pcall(def.calculate, def, self, context, state)
+        -- Three values, not two. A pair that did its work in a queued
+        -- event has no effect table to show and says so the way vanilla does,
+        -- with `nil, true` - and that second value is what tells eval_card the
+        -- Joker triggered, which is what it asks before it will consider
+        -- retriggering it at all. Captured here or it is lost on the way out.
+        local ok, ret, ret_triggered = pcall(def.calculate, def, self, context, state)
         running[self] = nil
         if not ok then
             CelestasMod.warn_once("bind_special_" .. tostring(def.key),
@@ -5517,7 +5525,8 @@ function Card:calculate_joker(context, ...)
         end
         -- A replacing pair is the whole answer. An additive one is one more
         -- voice, so it falls through and is combined with both halves below.
-        if not def.additive then return ret, post end
+        if not def.additive then return ret, ret_triggered or post end
+        post = post or ret_triggered
         special_effect = ret
         effect = combine(effect, special_effect)
     end
@@ -10076,6 +10085,7 @@ special("j_celesta_eros", "j_celesta_kokonuts", {
             and not (context.blueprint_card or card).getting_sliced then
             koko_sevens(card, 1, "celesta_bind_eros_koko", nil, nil,
                         G.P_CENTERS.m_bonus)
+            return nil, true
         end
     end,
 })

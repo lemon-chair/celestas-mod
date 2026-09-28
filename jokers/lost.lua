@@ -1719,6 +1719,9 @@ SMODS.Joker {
             and CelestasMod.koko_sevens then
             CelestasMod.koko_sevens(context.blueprint_card or card,
                 card.ability.extra.sevens, "celesta_vgn", false)
+            -- Said out loud, because eval_card will not consider retriggering
+            -- a Joker that has not reported one.
+            return nil, true
         end
     end,
 }
