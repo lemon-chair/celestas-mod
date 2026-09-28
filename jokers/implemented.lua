@@ -10580,7 +10580,42 @@ local function boss_apply()
 
     if wanted and not blind.disabled then
         if not blind.boss then return false end
-        blind.disabled = true
+
+        -- Through vanilla's Blind:disable(), rather than by setting the flag.
+        --
+        -- Five Boss Blinds apply a one-off change the moment they are SET and
+        -- give it back only in there: The Needle takes the round's hands
+        -- (blind.lua:196, refunded at :401), The Water its discards, The
+        -- Manacle a hand size, and Crimson Heart and The Fish flip cards.
+        -- Setting `disabled` leaves every one of those standing - so a held
+        -- Needle still left the round with one hand, and the Joker looked
+        -- like it had not fired at all. It also runs a MODDED Blind's own
+        -- disable, which the flag never did, so this mod's twelve let go too.
+        --
+        -- ONCE per Blind, because disable() is not idempotent for those five:
+        -- run twice against a Needle it hands the hands back twice. G.GAME.blind
+        -- is one object reused for the whole run (game.lua:2481) - set_blind
+        -- resets its fields rather than replacing it - so "already undone" is
+        -- remembered against the round rather than on the object. One Blind
+        -- per round, and the token changes with the name too, so a Blind
+        -- re-rolled inside a round is still undone on its own account.
+        --
+        -- Guarded: a Blind that faults on the way out must not take the run
+        -- down, and a Boss flagged shut is still better than one left open.
+        local undone = "celesta_boss_undone"
+        local token = tostring(G.GAME.round or 0) .. "|" .. tostring(blind.name)
+        local let_go = false
+        if type(blind.disable) == "function" and G.GAME[undone] ~= token then
+            G.GAME[undone] = token
+            local ok, err = pcall(blind.disable, blind)
+            let_go = ok
+            if not ok then
+                CelestasMod.warn_once("boss_disable",
+                    ("A held Boss Blind could not be let go through its own "
+                     .. "disable(), so it is only flagged: %s"):format(tostring(err)))
+            end
+        end
+        if not let_go then blind.disabled = true end
         G.GAME[BOSS_OURS] = true
     elseif not wanted and G.GAME[BOSS_OURS] then
         blind.disabled = false
