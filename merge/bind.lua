@@ -5858,8 +5858,29 @@ local SELECTION_PAIRS = {
 --- be kept alive by being remembered here.
 local selection_granted = setmetatable({}, { __mode = "k" })
 
+--- The run those grants belong to, by seed.
+local selection_run = nil
+
 local function selection_limit_sync()
     if not (SMODS.change_play_limit and SMODS.change_discard_limit) then return end
+
+    -- What the two SMODS calls actually read: starting_params and
+    -- G.hand.config (smods src/utils.lua:2617). Game:update runs this every
+    -- frame forever, and a finished run is torn down with G.STAGE still set to
+    -- RUN - so the stage is no guard, and G.hand going first is what crashed
+    -- this pass trying to hand a limit back.
+    if not (G.GAME and G.GAME.starting_params and G.hand and G.hand.config) then
+        return
+    end
+
+    -- A new run owns none of the last one's grants. starting_params is rebuilt
+    -- at the start of a run, so handing one back here would take a limit this
+    -- run was never given. Dropped rather than released, for that reason.
+    local run = G.GAME.pseudorandom and G.GAME.pseudorandom.seed
+    if run ~= selection_run then
+        for card in pairs(selection_granted) do selection_granted[card] = nil end
+        selection_run = run
+    end
 
     local live = nil
     for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
@@ -5917,8 +5938,21 @@ local BOOSTER_PAIRS = {
 --- should not be kept alive by being remembered here.
 local booster_granted = setmetatable({}, { __mode = "k" })
 
+--- ...and the run those belong to, for the reason above.
+local booster_run = nil
+
 local function booster_limit_sync()
     if not SMODS.change_booster_limit then return end
+
+    -- change_booster_limit reads G.GAME.modifiers (smods src/utils.lua:2406),
+    -- and this pass runs every frame including with no run at all.
+    if not (G.GAME and G.GAME.modifiers) then return end
+
+    local run = G.GAME.pseudorandom and G.GAME.pseudorandom.seed
+    if run ~= booster_run then
+        for card in pairs(booster_granted) do booster_granted[card] = nil end
+        booster_run = run
+    end
 
     local live = nil
     for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
