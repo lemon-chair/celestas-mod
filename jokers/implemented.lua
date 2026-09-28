@@ -5989,13 +5989,27 @@ SMODS.Joker {
 -- flat table is vanilla's own and is full of things that are not values -
 -- `order` is the sort position, `h_size` and `d_size` are applied once as the
 -- Joker enters the deck - so that one is an allowlist.
+-- Retrigger counts are NOT here. They are scaled like any other value, then
+-- made whole and capped below - Hanging Chad's have been scaled all along,
+-- because vanilla keeps them in a bare `extra`, and a modded Joker keeping the
+-- same thing under `repetitions` should not be treated differently.
+--
+-- `odds` stays: scaling a chance UP makes it worse, since the number is the
+-- denominator. 1 in 4 would become 1 in 6.
 local YOKA_LEAVE_ALONE = {
-    odds = true, repetitions = true, perma_repetitions = true,
+    odds = true,
     perish_tally = true, cry_prob = true,
     -- this mod's own bookkeeping
     applied = true, bank = true, suit_index = true, last_round = true,
     needed = true, levels = true,
 }
+
+--- The most retriggers any one count can be scaled to.
+---
+--- Yoka fires after every Boss defeated and multiplies what is already there,
+--- so an uncapped count compounds - X1.5 a Boss walks 2 into the hundreds over
+--- a long run, and every one of those is a whole extra scoring pass.
+CelestasMod.YOKA_RETRIGGER_CAP = 40
 
 local YOKA_FLAT_VALUES = {
     mult = true, t_mult = true, h_mult = true, perma_mult = true,
@@ -6051,6 +6065,27 @@ local function yoka_scale_ability(ability, scale, deny)
     if type(ability) ~= "table" then return false end
     local changed = 0
 
+    --- What a number becomes. A retrigger count is scaled like anything else
+    --- and then made whole and capped.
+    ---
+    --- Whole, because a fraction of a retrigger is not something the game can
+    --- do: the loop is `for h = 1, effect.repetitions`
+    --- (smods src/utils.lua:1498), so 1.5 runs once while the card goes on
+    --- claiming 1.5.
+    ---
+    --- Matched on the NAME rather than against a list of keys, so this mod's
+    --- enhanced_repetitions and rain_repetitions are covered without naming
+    --- them, and so is whatever the next one is called.
+    local function scaled(key, value)
+        local out = value * scale
+        if tostring(key):find("repetitions") then
+            out = math.floor(out + 0.5)
+            local cap = CelestasMod.YOKA_RETRIGGER_CAP
+            if cap and out > cap then out = cap end
+        end
+        return out
+    end
+
     local extra = ability.extra
     -- A modded Joker keeps a TABLE in `extra`; several vanilla ones keep a
     -- bare number that is the value itself. The Idol's X2 lives there -
@@ -6065,8 +6100,11 @@ local function yoka_scale_ability(ability, scale, deny)
         for key, value in pairs(extra) do
             if type(value) == "number" and not YOKA_LEAVE_ALONE[key]
                 and not (deny and deny[key]) and not yoka_neutral(key, value) then
-                extra[key] = value * scale
-                changed = changed + 1
+                local was = value
+                extra[key] = scaled(key, value)
+                -- A count already at the cap has not moved, and saying it has
+                -- would put an "Upgrade!" over a Joker that is unchanged.
+                if extra[key] ~= was then changed = changed + 1 end
             end
         end
     end
@@ -6196,6 +6234,21 @@ SMODS.Joker {
                     card = card,
                 }
             end
+
+            -- Nothing on that Joker is a number this can multiply. Two thirds
+            -- of the ones it cannot touch carry no values at all - a copier
+            -- has none of its own, and neither does a Joker that only changes
+            -- a rule - and the rest are at the retrigger cap.
+            --
+            -- Said out loud rather than passed over in silence, which is what
+            -- this did before: a pass that does nothing and says nothing is
+            -- indistinguishable from one that never ran, and it was reported
+            -- twice as a Joker that had stopped working.
+            return {
+                message = localize("celesta_no_upgrade"),
+                colour = G.C.UI.TEXT_INACTIVE,
+                card = card,
+            }
         end
     end,
 }

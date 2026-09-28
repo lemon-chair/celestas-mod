@@ -5361,6 +5361,7 @@ return {
             celesta_plus_seven = "+7 of Spades",
             celesta_downpour = "Downpour!",
             celesta_swapped = "Swapped!",
+            celesta_no_upgrade = "Nothing to upgrade!",
             celesta_downgrade = "Downgrade!",
             -- The Special Merges collection tab.
             celesta_special_merges = "Special Merges",
