@@ -2293,6 +2293,11 @@ local function monolith_tidy(value)
 end
 
 --- True when `name` is this run's single most played hand.
+---
+--- Shared with CweamCat + Obelisk and CweamCat + Aquwa in merge/bind.lua, which
+--- ask the same question about the same hands. One copy, because two answers to
+--- "is this the most played hand" would eventually disagree about a tie - and a
+--- tie is the whole of what is delicate here.
 local function monolith_is_most_played(name)
     local hands = G.GAME and G.GAME.hands
     if not (name and hands and hands[name]) then return false end
@@ -2305,6 +2310,8 @@ local function monolith_is_most_played(name)
     end
     return true
 end
+
+CelestasMod.is_most_played = monolith_is_most_played
 
 SMODS.Joker {
     key = "monolith",

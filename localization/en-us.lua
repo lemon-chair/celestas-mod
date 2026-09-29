@@ -4884,6 +4884,32 @@ return {
                     "start of the round, and the end of it",
                 },
             },
+            celesta_bind_deme_fream = {
+                name = "Deme + Fream",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult per",
+                    "consecutive hand played containing",
+                    "at least {C:attention}1 Wild Card{}",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_cweamcat_obelisk = {
+                name = "CweamCat + Obelisk",
+                text = {
+                    "This Joker gains {C:chips}+#1#{} Chips if your",
+                    "{C:attention}most played{} hand is not played",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_cweamcat_aquwa = {
+                name = "CweamCat + Aquwa",
+                text = {
+                    "This Joker gains {C:chips}+#1#{} Chips when your",
+                    "{C:attention}most played{} hand is played,",
+                    "or {C:chips}+#2#{} during a {C:blue}Downpour{}",
+                    "{C:inactive}(Currently {C:chips}+#3#{C:inactive} Chips)",
+                },
+            },
             celesta_bind_deme_auteru = {
                 name = "Deme + Auteru",
                 text = {

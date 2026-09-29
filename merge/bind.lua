@@ -12886,6 +12886,135 @@ special("j_celesta_demenishki", "j_celesta_auteru", {
 })
 
 --------------------------------------------------------------------------------
+-- CweamCat again: the hand you play most
+--------------------------------------------------------------------------------
+--
+-- CweamCat pays +24 Chips for a random target hand that moves after every hand.
+-- These two keep the number and swap the target for the one hand nobody has to
+-- be told: the hand this run plays most.
+--
+-- "Most played" is Monolith's test, out of jokers/lost.lua rather than written
+-- again here. Monolith is Obelisk the other way round, so it already had to
+-- settle the delicate part - a TIE is not most played, because Obelisk wants
+-- one hand clearly ahead (card.lua:3885). Sharing it is what keeps these two
+-- exact complements of each other: at a tie, Obelisk's pays and Aquwa's does
+-- not, and there is no third answer either of them could give.
+
+-- CweamCat + Obelisk: Obelisk pays for avoiding the hand you play most, so this
+-- is CweamCat's Chips earned the same way.
+--
+-- No reset, unlike Obelisk and unlike Monolith. CweamCat does not reset either
+-- - the Chips it has banked are banked - and this is CweamCat's number.
+special("j_celesta_cweamcat", "j_obelisk", {
+    key = "cweamcat_obelisk",
+    config = { chips = 0, chip_gain = 24 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.chip_gain, state.chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- context.before is where CweamCat checks and where vanilla scales
+        -- Obelisk, and it lands ahead of scoring - so the hand that earns the
+        -- Chips is the first hand paid them.
+        if context.before and not context.blueprint then
+            if not CelestasMod.is_most_played(context.scoring_name) then
+                state.chips = state.chips + state.chip_gain
+                return {
+                    message = localize { type = "variable", key = "a_chips",
+                                         vars = { state.chips } },
+                    colour = G.C.CHIPS, card = card,
+                }
+            end
+        end
+
+        if context.joker_main and state.chips > 0 then
+            return { chips = state.chips }
+        end
+    end,
+})
+
+-- CweamCat + Aquwa: the other side of it, at four times the rate while it rains.
+--
+-- The pair does not start a Downpour - it replaces the half that would have -
+-- so the bigger number is worth something only while something else brings the
+-- weather: the Rain Deck, RainyRentyn, or another Aquwa. El XoX + Aquwa and
+-- Aquwa + Megalodon are the same shape and say the same "if" on their cards.
+special("j_celesta_cweamcat", "j_celesta_aquwa", {
+    key = "cweamcat_aquwa",
+    config = { chips = 0, chip_gain = 24, rain_scale = 4 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.chip_gain,
+                          state.chip_gain * state.rain_scale, state.chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.before and not context.blueprint then
+            if CelestasMod.is_most_played(context.scoring_name) then
+                local gain = state.chip_gain
+                    * (raining() and state.rain_scale or 1)
+                state.chips = state.chips + gain
+                return {
+                    message = localize { type = "variable", key = "a_chips",
+                                         vars = { state.chips } },
+                    colour = G.C.CHIPS, card = card,
+                }
+            end
+        end
+
+        if context.joker_main and state.chips > 0 then
+            return { chips = state.chips }
+        end
+    end,
+})
+
+-- Deme + Fream: Deme's streak, fed by Fream's Wild Cards instead of by a hand
+-- of one card.
+--
+-- Deme's shape down to the reset, because "consecutive" is what asks for one:
+-- context.before sees the hand whole and lands ahead of scoring, so the hand
+-- that extends the streak is paid for itself, and a hand with no Wild Card in
+-- it takes the lot.
+--
+-- full_hand and not the scoring hand - every card played, the way Deme reads
+-- it. A Wild Card that was played and did not score still played.
+special("j_celesta_demenishki", "j_celesta_fream", {
+    key = "deme_fream",
+    config = { x_mult = 1, x_mult_gain = 0.25 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.before and not context.blueprint then
+            for _, played in ipairs(context.full_hand or {}) do
+                if SMODS.has_enhancement(played, "m_wild") then
+                    state.x_mult = state.x_mult + state.x_mult_gain
+                    return {
+                        message = localize { type = "variable", key = "a_xmult",
+                                             vars = { state.x_mult } },
+                        colour = G.C.MULT, card = card,
+                    }
+                end
+            end
+
+            -- Only when there is something to lose, the way Deme announces it.
+            if state.x_mult > 1 then
+                state.x_mult = 1
+                return { message = localize("k_reset"), colour = G.C.RED,
+                         card = card }
+            end
+        end
+
+        if context.joker_main and state.x_mult > 1 then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+--------------------------------------------------------------------------------
 -- Art: the two faces split corner to corner
 --------------------------------------------------------------------------------
 
