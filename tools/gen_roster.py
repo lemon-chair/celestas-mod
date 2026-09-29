@@ -3300,6 +3300,13 @@ LOC_TAIL = '''        },
                     "start of the round, and the end of it",
                 },
             },
+            celesta_bind_froggy_mari = {
+                name = "FroggyLoch + Radical Mari",
+                text = {
+                    "{C:spectral}Spectral{} cards that destroy {C:attention}Jokers{}",
+                    "have a {C:green}#1# in #2#{} chance to destroy none",
+                },
+            },
             celesta_bind_deme_fream = {
                 name = "Deme + Fream",
                 text = {

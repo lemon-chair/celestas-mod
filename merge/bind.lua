@@ -13015,6 +13015,104 @@ special("j_celesta_demenishki", "j_celesta_fream", {
 })
 
 --------------------------------------------------------------------------------
+-- FroggyLoch + Radical Mari
+--------------------------------------------------------------------------------
+--
+-- FroggyLoch is the 1 in 2, Radical Mari is the one that already knows which
+-- Spectrals reach into the Joker row. Between them: the Spectrals that destroy
+-- Jokers, half the time not.
+--
+-- Two of them do. Mari steers three seeds - ankh_choice, hex and ectoplasm -
+-- and Ectoplasm only makes a Joker Negative, so the list here is the other two.
+-- Both keep one Joker and dissolve every other non-eternal one.
+--
+-- The roll belongs to the CARD and not to each Joker: one roll per use, so an
+-- Ankh either eats the row or leaves it whole. What it does besides destroying
+-- is untouched - a spared Ankh still copies, a spared Hex still hands out its
+-- Polychrome.
+
+do
+
+local FROGGY_MARI = "froggy_mari"
+-- Vanilla's two. Named by centre key rather than by ability.name, which is what
+-- the game branches on: the key is what a centre IS and cannot be localized
+-- out from under this.
+local EATS_JOKERS = { c_ankh = true, c_hex = true }
+
+special("j_celesta_froggyloch", "j_celesta_radicalmari", {
+    key = FROGGY_MARI,
+    config = { odds = 2 },
+
+    loc_vars = function(def, card, state)
+        local numerator, denominator = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_froggy_mari")
+        return { vars = { numerator, denominator } }
+    end,
+
+    -- Nothing to calculate: the pair is two wraps below, because what it
+    -- changes is not a scoring pass but what a consumable does.
+    calculate = function(def, card, context, state) end,
+})
+
+-- True while an Ankh or Hex that rolled its reprieve is still resolving.
+local sparing = false
+
+--- Rolled once, when the card is used.
+---
+--- Both Spectrals dissolve inside an event QUEUED by use_consumeable rather
+--- than in the call itself - Ankh's at `before` 0.75, Hex's at `after` 0.4 -
+--- so the decision cannot simply live for the length of this function. It is
+--- held open across them and closed by an event queued behind both.
+---
+--- Erring long is the safe direction. Closing early only means the reprieve
+--- does not land; closing late could in principle spare a Joker that Madness or
+--- Ceremonial Dagger was slicing instead, and those two only ever fire when a
+--- blind is selected - which is not somewhere a player arrives during the
+--- second and a half a Spectral takes to finish resolving.
+local celesta_froggy_mari_use_ref = Card.use_consumeable
+function Card:use_consumeable(area, copier)
+    local center = self.config and self.config.center
+    local held = EATS_JOKERS[center and center.key] and specials_held(FROGGY_MARI)[1]
+    if held then
+        local state = Bind.special_state(held.card, held.def)
+        sparing = SMODS.pseudorandom_probability(
+            held.card, "celesta_bind_froggy_mari", 1, state.odds) and true or false
+    end
+
+    local ret = celesta_froggy_mari_use_ref(self, area, copier)
+
+    if sparing then
+        G.E_MANAGER:add_event(Event({
+            trigger = "after", delay = 3,
+            func = function() sparing = false return true end,
+        }))
+    end
+    return ret
+end
+
+--- The refusal itself.
+---
+--- `getting_sliced` is the mark both Spectrals set on a Joker immediately
+--- before dissolving it (card.lua:1678 and :1731), so it is what separates a
+--- Joker being destroyed from one being removed for any of the other reasons a
+--- card leaves the row - sold, unmerged, moved.
+---
+--- cancel_destruction rather than an early return: the mark is already on the
+--- card, and a card left marked has the next destruction ask whether it may
+--- proceed as though this one were still in progress.
+local celesta_froggy_mari_dissolve_ref = Card.start_dissolve
+function Card:start_dissolve(colours, silent, dissolve_time)
+    if sparing and self.getting_sliced
+        and self.ability and self.ability.set == "Joker" then
+        cancel_destruction(self)
+        return
+    end
+    return celesta_froggy_mari_dissolve_ref(self, colours, silent, dissolve_time)
+end
+
+end
+
+--------------------------------------------------------------------------------
 -- Art: the two faces split corner to corner
 --------------------------------------------------------------------------------
 
