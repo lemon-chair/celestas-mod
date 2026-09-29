@@ -393,6 +393,23 @@ CelestasMod.SAME_SUIT_RULES = {}
 --- card.
 CelestasMod.CARD_RANK_RULES = {}
 
+--- Anything that makes every card count as ONE suit, each a function returning
+--- that suit's key or nil. suits/shared.lua takes the first that answers, and
+--- the card then IS that suit and is not its own - which is what CARD_RANK_RULES
+--- does for ranks, one level over.
+CelestasMod.CARD_SUIT_RULES = {}
+
+--- Anything that makes a card answer to a suit as well as its own, each a
+--- function (card, suit, flush_calc) returning true when it does. Widening
+--- only: a rule that says no leaves the question to the next one and then to
+--- the game, so both suits keep everything they already were.
+---
+--- `flush_calc` is Balatro's own flag for "asked while working out a Flush",
+--- which is how a rule can hold there and nowhere else. It is the reason these
+--- are read in Card:is_suit rather than in SMODS.smeared_check, which is never
+--- told.
+CelestasMod.SUIT_MATCH_RULES = {}
+
 --------------------------------------------------------------------------------
 -- Config backfill
 --------------------------------------------------------------------------------

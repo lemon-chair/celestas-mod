@@ -12268,6 +12268,298 @@ end
 
 
 --------------------------------------------------------------------------------
+-- FeFe's Hearts, Vexoria's Spades
+--------------------------------------------------------------------------------
+--
+-- FeFe turns the scoring cards into Hearts and Vexoria turns them into Spades,
+-- so a merge of either with something else is that suit asked a second
+-- question: what it is worth destroyed, discarded, scored, or counted as.
+--
+-- The two that rewrite what a suit IS go through the seams in globals.lua
+-- rather than hooking anything themselves, for the reason those exist: a
+-- replacing pair speaks for both halves, so the FeFe inside one is not in play
+-- as itself and a rule written in terms of finding a FeFe would switch off the
+-- line on the pair's own card.
+
+do
+
+local HEARTS, SPADES = "Hearts", "Spades"
+
+-- Declared before they are written to, the way every seam in this file is:
+-- globals.lua owns them, and this file is loaded on its own by the suites.
+CelestasMod.CARD_SUIT_RULES = CelestasMod.CARD_SUIT_RULES or {}
+CelestasMod.SUIT_MATCH_RULES = CelestasMod.SUIT_MATCH_RULES or {}
+
+--- How many of `cards` are of `suit`.
+---
+--- Through is_suit rather than off base.suit, so a Wild card counts and so
+--- does anything else this mod has widened - including these merges' own
+--- rules, which is deliberate: a pair that says every card is a Spade and a
+--- pair that pays for Spades destroyed should agree about what a Spade is.
+local function count_suit(cards, suit)
+    local n = 0
+    for _, card in ipairs(cards or {}) do
+        if card and card.is_suit and card:is_suit(suit) then n = n + 1 end
+    end
+    return n
+end
+
+--- The cards a destruction pass took, or nothing.
+---
+--- remove_playing_cards is raised once after the pass with every card that
+--- died, whatever killed it, which is where vanilla Caino counts its face
+--- cards. Counting there rather than hooking any one destroyer means these
+--- merges are paid by a Boss Blind, a Joker or a consumable alike.
+local function destroyed_cards(context)
+    if not (context.remove_playing_cards and not context.blueprint) then return nil end
+    return context.removed or {}
+end
+
+-- FeFe + Projekt Melody: Projekt Melody's payout, earned by the Hearts thrown
+-- away rather than by surviving a round.
+--
+-- The leftover is kept rather than cleared at the end of the round: it is
+-- "every 2 Hearts", not "every 2 Hearts in a round", and a player who discards
+-- three and then one has discarded four.
+local function discard_pair(a, b, key, suit)
+    special(a, b, {
+        key = key,
+        config = { dollars = 3, per = 2, discarded = 0 },
+
+        loc_vars = function(def, card, state)
+            return { vars = { state.dollars, state.per } }
+        end,
+
+        calculate = function(def, card, context, state)
+            -- context.discard arrives once per discarded card, which is what
+            -- makes counting them one at a time correct.
+            if not (context.discard and not context.blueprint) then return end
+            local other = context.other_card
+            if not (other and other.is_suit and other:is_suit(suit)) then return end
+
+            state.discarded = state.discarded + 1
+            if state.discarded < state.per then return end
+            state.discarded = state.discarded - state.per
+            return { dollars = state.dollars, card = card }
+        end,
+    })
+end
+
+discard_pair("j_celesta_fefe", "j_celesta_projektmelody", "fefe_melody", HEARTS)
+-- Vexoria + Projekt Melody: the same, for the other suit.
+discard_pair("j_celesta_vexoria", "j_celesta_projektmelody", "vexoria_melody", SPADES)
+
+-- FeFe + Ironmouse: Ironmouse's ^Mult, fed by the Hearts that are destroyed.
+special("j_celesta_fefe", "j_celesta_ironmouse", {
+    key = "fefe_ironmouse",
+    config = { e_mult = 1, e_mult_gain = 0.04 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.e_mult_gain, state.e_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        local removed = destroyed_cards(context)
+        if removed then
+            local hearts = count_suit(removed, HEARTS)
+            if hearts > 0 then
+                -- One raise for the lot rather than one per card: the exponent
+                -- adds either way, and a single message reads as the hand it
+                -- was earned by.
+                state.e_mult = pow_after(state.e_mult, state.e_mult_gain * hearts)
+                return {
+                    message = localize { type = "variable", key = "celesta_powmult",
+                                         vars = { state.e_mult } },
+                    colour = G.C.MULT, card = card,
+                }
+            end
+            return
+        end
+
+        if context.joker_main then
+            return ironmouse_pays("fefe_ironmouse", "FeFe + Ironmouse", state.e_mult)
+        end
+    end,
+})
+
+-- FeFe + Silvervale: Silvervale's growing XMult, counted in Hearts destroyed
+-- rather than in Rare Jokers sold.
+special("j_celesta_fefe", "j_celesta_silvervale", {
+    key = "fefe_silvervale",
+    config = { x_mult = 1, x_mult_gain = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        local removed = destroyed_cards(context)
+        if removed then
+            local hearts = count_suit(removed, HEARTS)
+            if hearts > 0 then
+                state.x_mult = state.x_mult + state.x_mult_gain * hearts
+                return {
+                    message = localize { type = "variable", key = "a_xmult",
+                                         vars = { state.x_mult } },
+                    colour = G.C.MULT, card = card,
+                }
+            end
+            return
+        end
+
+        if context.joker_main and state.x_mult > 1 then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+-- FeFe + Zentreya: Zentreya's XMult, on the suit FeFe makes rather than on
+-- Steel Cards, and on a roll rather than every time.
+special("j_celesta_fefe", "j_celesta_zentreya", {
+    key = "fefe_zentreya",
+    config = { odds = 4, numerator = 3, x_mult = 1.75 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(
+            card, state.numerator, state.odds, "celesta_bind_fefe_zentreya")
+        return { vars = { n, d, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play) then return end
+        local other = context.other_card
+        if not (other and other.is_suit and other:is_suit(HEARTS)) then return end
+        if not SMODS.pseudorandom_probability(card, "celesta_bind_fefe_zentreya",
+                state.numerator, state.odds, "celesta_bind_fefe_zentreya") then
+            return
+        end
+        return { x_mult = state.x_mult, card = card }
+    end,
+})
+
+-- Vexoria + Vexoria: two of the same, so the suit stops being something the
+-- scoring cards are turned into and becomes what every card is.
+--
+-- The payout counts Spades through is_suit, which the rule below has just made
+-- every card - so every card destroyed pays. That is the first line of the
+-- pair being true rather than a second rule about it.
+special("j_celesta_vexoria", "j_celesta_vexoria", {
+    key = "vexoria_vexoria",
+    config = { dollars = 1, dollars_gain = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars, state.dollars_gain } }
+    end,
+
+    calculate = function(def, card, context, state)
+        local removed = destroyed_cards(context)
+        if not removed then return end
+
+        local paid = 0
+        for _, card_removed in ipairs(removed) do
+            if card_removed and card_removed.is_suit and card_removed:is_suit(SPADES) then
+                -- Counted one at a time, because each one raises what the next
+                -- is worth.
+                paid = paid + state.dollars
+                state.dollars = state.dollars + state.dollars_gain
+            end
+        end
+        if paid <= 0 then return end
+        return { dollars = paid, card = card }
+    end,
+})
+
+CelestasMod.CARD_SUIT_RULES[#CelestasMod.CARD_SUIT_RULES + 1] = function()
+    if specials_held("vexoria_vexoria")[1] == nil then return nil end
+    return SPADES
+end
+
+-- FeFe + Vexoria: one turns the scoring cards into Hearts and the other into
+-- Spades, so together the two suits stop being different.
+--
+-- A widening, not a forcing: a Heart is still a Heart and a Spade still a
+-- Spade, and each is now also the other. Read off base.suit rather than
+-- through is_suit, which is what this rule is being asked inside.
+special("j_celesta_fefe", "j_celesta_vexoria", {
+    key = "fefe_vexoria",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+local HEART_OR_SPADE = { [HEARTS] = true, [SPADES] = true }
+CelestasMod.SUIT_MATCH_RULES[#CelestasMod.SUIT_MATCH_RULES + 1] = function(card, suit)
+    if specials_held("fefe_vexoria")[1] == nil then return false end
+    local own = card and card.base and card.base.suit
+    return (HEART_OR_SPADE[own] and HEART_OR_SPADE[suit]) and true or false
+end
+
+-- FeFe + Momo: Momo calls every hand a Flush and FeFe makes the suit, so the
+-- Hearts are what every Flush is made of.
+--
+-- Only while a Flush is being worked out. Everywhere else a Heart is a Heart,
+-- which is what keeps this from being Arielle.
+special("j_celesta_fefe", "j_celesta_momo", {
+    key = "fefe_momo",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+CelestasMod.SUIT_MATCH_RULES[#CelestasMod.SUIT_MATCH_RULES + 1] = function(card, suit, flush_calc)
+    if not flush_calc then return false end
+    if specials_held("fefe_momo")[1] == nil then return false end
+    return (card and card.base and card.base.suit) == HEARTS
+end
+
+-- Shenpai + Vulpixie: Shenpai hands out Gold Seals and Vulpixie is the one
+-- that keeps working through a freeze, so the pair is what those seals are
+-- worth in the weather Vulpixie was written for.
+special("j_celesta_shenpai", "j_celesta_vulpixie", {
+    key = "shenpai_vulpixie",
+    config = { repetitions = 3 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.repetitions } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.repetition and context.cardarea == G.play) then return end
+        if not (CelestasMod.Arena and CelestasMod.Arena.is_active("snowstorm")) then
+            return
+        end
+        local other = context.other_card
+        if not (other and other.seal == "Gold") then return end
+        return {
+            message = localize("k_again_ex"),
+            repetitions = state.repetitions,
+            card = card,
+        }
+    end,
+})
+
+-- ...and nothing freezes it. CelestasMod.freeze is the one place a Joker is
+-- frozen from, so wrapping it catches every route - the Snowstorm this pair is
+-- about most of all. The Wildcard Club's immunity is the same shape and the
+-- two sit on top of each other without either noticing.
+local celesta_shenpai_vulpixie_freeze_ref = CelestasMod.freeze
+if celesta_shenpai_vulpixie_freeze_ref then
+    function CelestasMod.freeze(card, rounds)
+        local def = card and Bind.replacing_special and Bind.replacing_special(card)
+        if def and def.key == "shenpai_vulpixie" then return false end
+        return celesta_shenpai_vulpixie_freeze_ref(card, rounds)
+    end
+end
+
+end
+
+--------------------------------------------------------------------------------
 -- Art: the two faces split corner to corner
 --------------------------------------------------------------------------------
 

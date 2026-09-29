@@ -3219,6 +3219,74 @@ LOC_TAIL = '''        },
                     "{C:inactive}(Currently {X:mult,C:white}^#2#{C:inactive} Mult)",
                 },
             },
+            celesta_bind_fefe_melody = {
+                name = "FeFe + Projekt Melody",
+                text = {
+                    "Earn {C:money}$#1#{} for every {C:attention}#2#{}",
+                    "{C:hearts}Heart{} cards discarded",
+                },
+            },
+            celesta_bind_vexoria_melody = {
+                name = "Vexoria + Projekt Melody",
+                text = {
+                    "Earn {C:money}$#1#{} for every {C:attention}#2#{}",
+                    "{C:spades}Spade{} cards discarded",
+                },
+            },
+            celesta_bind_fefe_ironmouse = {
+                name = "FeFe + Ironmouse",
+                text = {
+                    "This Joker gains {E:1,C:mult}^#1#{} Mult for",
+                    "each {C:hearts}Heart{} card destroyed",
+                    "{C:inactive}(Currently {E:1,C:mult}^#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_fefe_silvervale = {
+                name = "FeFe + Silvervale",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult for",
+                    "each {C:hearts}Heart{} card destroyed",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_fefe_zentreya = {
+                name = "FeFe + Zentreya",
+                text = {
+                    "Scored {C:hearts}Heart{} cards have a",
+                    "{C:green}#1# in #2#{} chance to give",
+                    "{X:mult,C:white}X#3#{} Mult",
+                },
+            },
+            celesta_bind_fefe_vexoria = {
+                name = "FeFe + Vexoria",
+                text = {
+                    "{C:hearts}Hearts{} and {C:spades}Spades{} are",
+                    "considered the same suit",
+                },
+            },
+            celesta_bind_fefe_momo = {
+                name = "FeFe + Momo",
+                text = {
+                    "{C:hearts}Heart{} cards count as any suit",
+                    "in any type of {C:attention}Flush{}",
+                },
+            },
+            celesta_bind_vexoria_vexoria = {
+                name = "Vexoria + Vexoria",
+                text = {
+                    "All cards are considered {C:spades}Spades{}",
+                    "Earn {C:money}$#1#{} when a {C:spades}Spade{} card is",
+                    "destroyed, increasing by {C:money}$#2#{}",
+                },
+            },
+            celesta_bind_shenpai_vulpixie = {
+                name = "Shenpai + Vulpixie",
+                text = {
+                    "{C:attention}Gold Seal{} cards retrigger {C:attention}#1#{}",
+                    "times during a {C:blue}Snowstorm{}",
+                    "This Joker cannot be {C:blue}Frozen{}",
+                },
+            },
             celesta_ectoplast_seal = {
                 name = "Ectoplast Seal",
                 text = {

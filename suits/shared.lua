@@ -220,3 +220,40 @@ function Game:start_run(args)
     if not ok then error(err, 0) end
     return
 end
+
+
+--------------------------------------------------------------------------------
+-- Suits a card answers to that are not its own
+--------------------------------------------------------------------------------
+--
+-- Both seams are declared in globals.lua and filled by merges: CARD_SUIT_RULES
+-- forces one suit onto every card, SUIT_MATCH_RULES widens a card to answer to
+-- another as well as its own.
+--
+-- Here rather than at SMODS.smeared_check, where Arielle's every-card-is-every-
+-- suit rule sits, because smeared_check is not told whether the question is
+-- about a Flush and one of the rules holds only there.
+
+local celesta_suit_rules_ref = Card.is_suit
+function Card:is_suit(suit, bypass_debuff, flush_calc)
+    -- A card with no suit at all is not given one. First because it is the
+    -- cheap test, and because it is the one answer these must not override: a
+    -- Stone card is scenery, not a Spade.
+    if SMODS.has_no_suit and SMODS.has_no_suit(self) then
+        return celesta_suit_rules_ref(self, suit, bypass_debuff, flush_calc)
+    end
+
+    for _, rule in ipairs(CelestasMod.CARD_SUIT_RULES or {}) do
+        local ok, forced = pcall(rule)
+        -- The first that answers wins, and it is the WHOLE answer: a card that
+        -- is every card's suit is not its own any more.
+        if ok and forced then return suit == forced end
+    end
+
+    for _, rule in ipairs(CelestasMod.SUIT_MATCH_RULES or {}) do
+        local ok, matched = pcall(rule, self, suit, flush_calc)
+        if ok and matched then return true end
+    end
+
+    return celesta_suit_rules_ref(self, suit, bypass_debuff, flush_calc)
+end
