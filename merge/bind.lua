@@ -5503,15 +5503,36 @@ local MULTIPLICATIVE = {
     e_mult = true, emult = true, e_chips = true, echips = true,
 }
 
+--- True for a value the arithmetic below can be done on.
+---
+--- Not `type(v) == "number"`, and that distinction is the whole of a reported
+--- bug. Talisman is a dependency of this mod, and what it does once a number
+--- grows large is replace it with an object of its own; those add and multiply
+--- exactly as numbers do, which is what they are for, but `type` says "table".
+--- Tested on `type` alone, a half whose Mult had got big made the OTHER half's
+--- Mult fall through to the `existing == nil` branch, which declines to
+--- overwrite - so the second Joker went on scaling and silently stopped paying.
+---
+--- The same test vedal_rewrite makes before it raises a rate to a power.
+local function numeric(value)
+    if type(value) == "number" then return true end
+    if type(value) ~= "table" then return false end
+    local meta = getmetatable(value)
+    return (meta and (meta.__add or meta.__mul)) and true or false
+end
+
 --- Folds the absorbed half's effect into the host's.
 --- Additive values add and multiplicative ones multiply, which is what makes a
 --- +4 Mult bound to a X3 Mult behave like owning both Jokers.
+---
+--- Mixing one of Talisman's numbers with a plain one is arithmetic either way
+--- round: Lua reaches for the metamethod whichever side carries it.
 local function combine(primary, secondary)
     if not primary then return secondary end
     if not secondary then return primary end
     for key, value in pairs(secondary) do
         local existing = primary[key]
-        if type(value) == "number" and type(existing) == "number" then
+        if numeric(value) and numeric(existing) then
             if MULTIPLICATIVE[key] then
                 primary[key] = existing * value
             elseif ADDITIVE[key] then
