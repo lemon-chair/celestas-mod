@@ -735,12 +735,20 @@ end
 --- constructor has already put it in G.I.CARD - so leaving it there would be a
 --- card the game updates every frame for the rest of the run.
 ---
---- Building and removing one touches G.GAME.used_jokers twice: Card:set_ability
---- marks the centre used and Card:remove unmarks it if no copy is in play. Both
---- are wrong here. A Joker the run had already used must not be forgotten
---- because a shop card borrowed it for a moment, and a fused partner must not
---- be struck out of the pools either, or a deck that fuses every Joker offered
---- would empty them. So that one entry is put back exactly as it was found.
+--- Building and removing one walks G.GAME.used_jokers twice on its own:
+--- Card:set_ability marks the centre used when the stand-in is built, and
+--- Card:remove unmarks it on the way out because no copy of it is in play. The
+--- pair of them leaves the run believing it never made that Joker at all - so
+--- it offers it again, and the player ends up holding two of it. That is what
+--- was reported, and the save showed it exactly: every host in the row marked
+--- used, and every partner not.
+---
+--- So the entry is set by what actually happened rather than left to those two.
+--- A partner that took is a Joker the run has HANDED OUT: its whole ability
+--- rides into the card being offered, which is the same thing owning it means
+--- for the absorbed half of any other merge. A partner that was refused handed
+--- out nothing, and its entry goes back exactly as it was found - which is what
+--- the snapshot is for, and why it has to be taken before the stand-in exists.
 local function fusion_fuse(card)
     local Bind = CelestasMod.Bind
     if not (Bind and Bind.merge and Bind.can_bind(card)) then return false end
@@ -762,7 +770,7 @@ local function fusion_fuse(card)
 
         local merged = Bind.merge(card, partner, true)
         partner:remove()
-        if used and key then used[key] = before[key] end
+        if used and key then used[key] = merged or before[key] end
 
         if merged then return true end
     end
