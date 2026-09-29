@@ -216,7 +216,7 @@ SMODS.Joker {
             }
         end
 
-        if context.joker_main and card.ability.extra.e_mult > 1 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.e_mult, 1) then
             -- ^Mult is Talisman's, and Talisman is a declared dependency of
             -- this mod - but a run without it should say so rather than
             -- silently score nothing.

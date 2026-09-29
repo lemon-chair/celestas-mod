@@ -205,7 +205,7 @@ SMODS.Joker {
             end
         end
 
-        if context.joker_main and card.ability.extra.x_mult > 1 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.x_mult, 1) then
             return { x_mult = card.ability.extra.x_mult }
         end
     end,
@@ -480,7 +480,7 @@ SMODS.Joker {
             end
         end
 
-        if context.joker_main and card.ability.extra.mult > 0 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.mult, 0) then
             return { mult = card.ability.extra.mult }
         end
     end,
@@ -647,14 +647,14 @@ SMODS.Joker {
             })
         end
 
-        if context.joker_main and card.ability.extra.mult > 0 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.mult, 0) then
             return { mult = card.ability.extra.mult }
         end
 
         -- context.main_eval is the once-per-round joker pass; without it this
         -- also fires during the per-card and repetition passes.
         if context.end_of_round and context.main_eval and not context.blueprint then
-            if card.ability.extra.mult > 0 then
+            if CelestasMod.more_than(card.ability.extra.mult, 0) then
                 card.ability.extra.mult = 0
                 return {
                     message = localize("k_reset"),
@@ -1283,13 +1283,13 @@ SMODS.Joker {
                                          vars = { card.ability.extra.x_mult } },
                     colour = G.C.MULT, card = card,
                 }
-            elseif card.ability.extra.x_mult > 1 then
+            elseif CelestasMod.more_than(card.ability.extra.x_mult, 1) then
                 card.ability.extra.x_mult = 1
                 return { message = localize("k_reset"), colour = G.C.RED, card = card }
             end
         end
 
-        if context.joker_main and card.ability.extra.x_mult > 1 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.x_mult, 1) then
             return { x_mult = card.ability.extra.x_mult }
         end
     end,
@@ -1659,7 +1659,7 @@ SMODS.Joker {
             return
         end
 
-        if context.joker_main and card.ability.extra.chips > 0 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.chips, 0) then
             return { chips = card.ability.extra.chips }
         end
     end,
@@ -1874,7 +1874,7 @@ SMODS.Joker {
             end
         end
 
-        if context.joker_main and card.ability.extra.x_chips > 1 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.x_chips, 1) then
             return { x_chips = card.ability.extra.x_chips }
         end
     end,
@@ -2361,7 +2361,7 @@ SMODS.Joker {
             }
         end
 
-        if context.joker_main and card.ability.extra.chips > 0 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.chips, 0) then
             return { chips = card.ability.extra.chips }
         end
     end,
@@ -2430,7 +2430,7 @@ SMODS.Joker {
             })
         end
 
-        if context.joker_main and card.ability.extra.mult > 0 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.mult, 0) then
             return { mult = card.ability.extra.mult }
         end
     end,
@@ -3415,7 +3415,7 @@ SMODS.Joker {
             }
         end
 
-        if context.joker_main and card.ability.extra.chips > 0 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.chips, 0) then
             return { chips = card.ability.extra.chips }
         end
     end,
@@ -3465,7 +3465,7 @@ SMODS.Joker {
             end
         end
 
-        if context.joker_main and card.ability.extra.x_mult > 1 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.x_mult, 1) then
             return { x_mult = card.ability.extra.x_mult }
         end
     end,
@@ -3567,7 +3567,7 @@ SMODS.Joker {
             end
         end
 
-        if context.joker_main and card.ability.extra.mult > 0 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.mult, 0) then
             return { mult = card.ability.extra.mult }
         end
     end,
@@ -4409,7 +4409,7 @@ SMODS.Joker {
             }
         end
 
-        if context.joker_main and card.ability.extra.chips > 0 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.chips, 0) then
             return { chips = card.ability.extra.chips }
         end
     end,
@@ -5825,7 +5825,7 @@ SMODS.Joker {
             })
         end
 
-        if context.joker_main and card.ability.extra.chips > 0 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.chips, 0) then
             return { chips = card.ability.extra.chips }
         end
     end,
@@ -5882,7 +5882,7 @@ SMODS.Joker {
 
             -- Reset only when there is something to lose, so a run of
             -- Diamond-less hands does not announce a reset every time.
-            if card.ability.extra.x_mult > 1 then
+            if CelestasMod.more_than(card.ability.extra.x_mult, 1) then
                 card.ability.extra.x_mult = 1
                 return {
                     message = localize("k_reset"),
@@ -5892,7 +5892,7 @@ SMODS.Joker {
             end
         end
 
-        if context.joker_main and card.ability.extra.x_mult > 1 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.x_mult, 1) then
             return { x_mult = card.ability.extra.x_mult }
         end
     end,
@@ -6493,7 +6493,7 @@ SMODS.Joker {
             }
         end
 
-        if context.joker_main and card.ability.extra.x_mult > 1 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.x_mult, 1) then
             return { x_mult = card.ability.extra.x_mult }
         end
     end,
@@ -7802,7 +7802,7 @@ SMODS.Joker {
 
         -- X1 is no multiplier at all, and returning it would put a "X1 Mult"
         -- flourish over the Joker every hand for doing nothing.
-        if context.joker_main and card.ability.extra.x_mult > 1 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.x_mult, 1) then
             return { x_mult = card.ability.extra.x_mult }
         end
     end,
@@ -8200,7 +8200,7 @@ SMODS.Joker {
 
         -- joker_main runs after every played card has scored, so a retrigger
         -- seen this hand is already in the number.
-        if context.joker_main and card.ability.extra.x_mult > 1 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.x_mult, 1) then
             return { x_mult = card.ability.extra.x_mult }
         end
     end,
@@ -8356,7 +8356,7 @@ SMODS.Joker {
             }
         end
 
-        if context.joker_main and card.ability.extra.x_chips > 1 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.x_chips, 1) then
             return { x_chips = card.ability.extra.x_chips }
         end
     end,
@@ -9028,7 +9028,7 @@ SMODS.Joker {
             end
         end
 
-        if context.joker_main and card.ability.extra.mult > 0 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.mult, 0) then
             return { mult = card.ability.extra.mult }
         end
     end,
@@ -9234,7 +9234,7 @@ SMODS.Joker {
 
         -- X1 is no multiplier at all; returning it would put a flourish over
         -- the Joker every hand for doing nothing.
-        if context.joker_main and card.ability.extra.x_chips > 1 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.x_chips, 1) then
             return { x_chips = card.ability.extra.x_chips }
         end
     end,
@@ -9333,7 +9333,7 @@ SMODS.Joker {
             }
         end
 
-        if context.joker_main and card.ability.extra.chips > 0 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.chips, 0) then
             return { chips = card.ability.extra.chips }
         end
     end,
@@ -9450,7 +9450,7 @@ SMODS.Joker {
             }
         end
 
-        if context.joker_main and card.ability.extra.x_mult > 1 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.x_mult, 1) then
             return { x_mult = card.ability.extra.x_mult }
         end
     end,
@@ -9825,7 +9825,7 @@ SMODS.Joker {
             }
         end
 
-        if context.joker_main and card.ability.extra.x_mult > 1 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.x_mult, 1) then
             return { x_mult = card.ability.extra.x_mult }
         end
     end,
@@ -10737,7 +10737,7 @@ SMODS.Joker {
 
         -- X1 is no multiplier at all; returning it would put a flourish over
         -- the Joker every hand for doing nothing.
-        if context.joker_main and card.ability.extra.x_mult > 1 then
+        if context.joker_main and CelestasMod.more_than(card.ability.extra.x_mult, 1) then
             return { x_mult = card.ability.extra.x_mult }
         end
     end,
@@ -11573,7 +11573,16 @@ SMODS.Joker {
         local stored = doomed.get_chip_bonus and doomed:get_chip_bonus() or 0
         -- Nothing to take is not a card to destroy, and the cap is what the
         -- card advertises: a big card is left where it is.
-        if stored <= 0 or stored >= card.ability.extra.cap then return end
+        --
+        -- Through more_than both times. `stored` is a playing card's chip
+        -- bonus and this Joker is what makes those large - it writes the
+        -- perma_bonus that get_chip_bonus reads back - so it feeds the number
+        -- that would break its own guard, and needs no Vedal in the row to get
+        -- there. `a <= 0` is `not (a > 0)`; `a >= b` is `not (b > a)`.
+        if not CelestasMod.more_than(stored, 0)
+            or not CelestasMod.more_than(card.ability.extra.cap, stored) then
+            return
+        end
 
         local gain = stored * card.ability.extra.rate
         target.ability.perma_bonus = (target.ability.perma_bonus or 0) + gain
