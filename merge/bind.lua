@@ -87,6 +87,23 @@ function Bind.is_quad(card)
         and type(card.ability.celesta_bind.members) == "table"
 end
 
+--- The host a card is standing in front of while one half is lent its centre.
+---
+--- Three places lend a merged card to its absorbed half - that half's
+--- calculate, that half's centre hooks, and that half's description - and
+--- through all three the card looks like that half ALONE: its centre is the
+--- half's, and the ability it is carrying has no celesta_bind on it. So every
+--- question about what is in the ROW, asked from inside one of them, could not
+--- see the host.
+---
+--- That window is where such questions get asked. A chance is fixed by a pass
+--- raised from inside the calculate of the Joker rolling it, which is how Ellie
+--- Minibot merged with Shoto stopped guaranteeing Shoto's chance.
+---
+--- Weak keys: a card that is gone should not be kept alive by being remembered
+--- here, and a lend that somehow never ended should not pin one either.
+Bind.lent = setmetatable({}, { __mode = "k" })
+
 --- Every centre key a card carries: one loose, two merged, four quad-merged.
 ---
 --- The one question the quad rules are written in terms of. "Can these be
@@ -5678,8 +5695,11 @@ function Card:calculate_joker(context, ...)
     self.config.center = center
     self.config.center_key = center.key or saved_key
     self.ability = self.ability.celesta_bind.ability
+    local saved_lent = Bind.lent[self]
+    Bind.lent[self] = { center = saved_center, ability = saved_ability }
     local ok, partner = pcall(with_acting_half, self, "absorbed",
                               celesta_bind_calculate_joker_ref, self, context)
+    Bind.lent[self] = saved_lent
     self.config.center, self.ability = saved_center, saved_ability
     self.config.center_key = saved_key
     partner_special[self] = saved_special
@@ -6244,12 +6264,15 @@ local function with_partner(card, hook, fn)
 
     local saved_center, saved_ability = card.config.center, card.ability
     local saved_special = partner_special[card]
+    local saved_lent = Bind.lent[card]
     partner_special[card] = Bind.special_of(card)
+    Bind.lent[card] = { center = saved_center, ability = saved_ability }
     card.config.center = center
     card.ability = card.ability.celesta_bind.ability
     local ok, ret = pcall(fn, center, card)
     card.config.center, card.ability = saved_center, saved_ability
     partner_special[card] = saved_special
+    Bind.lent[card] = saved_lent
 
     if not ok then
         CelestasMod.warn_once("bind_" .. hook .. "_" .. tostring(center.key),
@@ -13106,10 +13129,13 @@ local function partner_ui(card)
 
     describing = true
     local saved_center, saved_ability = card.config.center, card.ability
+    local saved_lent = Bind.lent[card]
+    Bind.lent[card] = { center = saved_center, ability = saved_ability }
     card.config.center = center
     card.ability = card.ability.celesta_bind.ability
     local ok, aut = pcall(card.generate_UIBox_ability_table, card)
     card.config.center, card.ability = saved_center, saved_ability
+    Bind.lent[card] = saved_lent
     describing = false
 
     if not (ok and type(aut) == "table" and aut.main) then

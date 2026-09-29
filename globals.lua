@@ -221,6 +221,18 @@ local function lookup_eligible(card, count_debuffed)
     return (count_debuffed or not card.debuff) and true or false
 end
 
+--- The half a card is standing in for, when one of its halves has been lent
+--- its centre and ability. Nil the rest of the time, which is almost always.
+---
+--- merge/bind.lua records the lend; this is the one place the lookups below
+--- ask about it, so that a card being run, hooked or described AS one half is
+--- still the other one as far as the row is concerned.
+local function lent_half(card)
+    local Bind = CelestasMod.Bind
+    local lent = Bind and Bind.lent and Bind.lent[card]
+    return lent
+end
+
 --- True when `card` is in play AS `key`, either half of a merge counting.
 ---
 --- The same rule find_joker counts by, written once and exported for the few
@@ -231,8 +243,13 @@ function CelestasMod.card_is_joker(card, key, count_debuffed)
     local center = card.config and card.config.center
     if center and center.key == key then return true end
     local Bind = CelestasMod.Bind
-    return (Bind and Bind.is_merged and Bind.is_merged(card)
-        and card.ability.celesta_bind.key == key) and true or false
+    if (Bind and Bind.is_merged and Bind.is_merged(card)
+        and card.ability.celesta_bind.key == key) then
+        return true
+    end
+    -- ...and the half it is standing in for, if it is standing in for one.
+    local lent = lent_half(card)
+    return (lent and lent.center and lent.center.key == key) and true or false
 end
 
 --- Every ability table `card` carries AS `key`: one per half of it that is
@@ -253,6 +270,12 @@ function CelestasMod.card_abilities(card, key, count_debuffed)
 
     local center = card.config and card.config.center
     if center and center.key == key then out[#out + 1] = card.ability end
+
+    -- The half it is standing in for, for find_joker's reason above.
+    local lent = lent_half(card)
+    if lent and lent.center and lent.center.key == key then
+        out[#out + 1] = lent.ability
+    end
 
     local Bind = CelestasMod.Bind
     local bind = Bind and Bind.is_merged and Bind.is_merged(card)
@@ -292,6 +315,16 @@ function CelestasMod.find_joker(key, count_debuffed)
                         card = card,
                         ability = card.ability.celesta_bind.ability,
                     }
+                end
+
+                -- ...and the half it is standing in for. A card being run,
+                -- hooked or described AS one of its halves is lent that
+                -- half's centre and ability, and looks like nothing else for
+                -- the duration - so without this the OTHER half is not in the
+                -- row for exactly as long as something is asking.
+                local lent = lent_half(card)
+                if lent and lent.center and lent.center.key == key then
+                    out[#out + 1] = { card = card, ability = lent.ability }
                 end
             end
         end

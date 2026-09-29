@@ -10209,31 +10209,71 @@ SMODS.Joker {
 -- Ellie Minibot [Legendary] - nothing this mod rolls for can miss.
 --------------------------------------------------------------------------------
 --
--- Answered on fix_probability, the last pass Steamodded runs before a chance is
--- rolled or printed (utils.lua:2725): the numerator is set to the denominator,
--- so "1 in 6" reads, and rolls, as "6 in 6". It runs after every additive
--- change - Nagzz, Oops! All 6s - so nothing afterwards can undo it. Vedal's
--- listed-odds boost works the same way from the other pass.
+-- Answered at SMODS.get_probability_vars, which is the one funnel both halves
+-- of a chance go through: pseudorandom_probability rolls with what it returns
+-- and every loc_vars prints it, so "1 in 6" reads, and rolls, as "6 in 6" from
+-- one place. After the reference, so it lands after every additive change -
+-- Nagzz, Oops! All 6s - and nothing afterwards can undo it.
+--
+-- NOT from Ellie's own calculate, which is where this used to be, because a
+-- calculate is something Ellie has to be ASKED for and there are two moments
+-- when it cannot be. A chance belonging to the half Ellie is MERGED with is
+-- rolled from inside that half's own calculate, and printed inside the lend
+-- that builds that half's description - and through both of those the card is
+-- the other half and is not Ellie at all. The pass walked the row, reached the
+-- card, and got the other half's answer twice; a merged Shoto went on reading
+-- and rolling 1 in 4 with Ellie sitting on the same card.
+--
+-- What the card says is a statement about the ROW, and joker_in_play is what
+-- answers that - counting either half of a merge, refusing a debuffed card,
+-- and refusing a replacing pair, which speaks for both halves and is not Ellie
+-- any more than it is the other one.
 --
 -- "This mod's Jokers" is the Joker a chance is rolled FOR, trigger_obj, which
 -- covers a merged card whichever half is this mod's. The Clover's roll names
 -- the card it is deciding about rather than the blind, so it is known by its
 -- identifier instead - and guaranteeing it means every card gets to trigger.
 
+do
+
+local ELLIE_KEY = "j_celesta_ellie_minibot"
 local ELLIE_CLOVER = "celesta_clover"
 
 --- True when a chance belongs to one of this mod's Jokers, or to The Clover.
-local function ellie_covers(context)
-    if context.identifier == ELLIE_CLOVER then return true end
-    local obj = context.trigger_obj
-    local ability = type(obj) == "table" and obj.ability
+local function ellie_covers(trigger_obj, identifier)
+    if identifier == ELLIE_CLOVER then return true end
+    local ability = type(trigger_obj) == "table" and trigger_obj.ability
     if not (type(ability) == "table" and ability.set == "Joker") then return false end
-    local center = obj.config and obj.config.center
+    local center = trigger_obj.config and trigger_obj.config.center
     if center and CelestasMod.is_ours(center) then return true end
     local bound = ability.celesta_bind
     local partner = type(bound) == "table" and type(bound.key) == "string"
         and G.P_CENTERS[bound.key]
     return partner and CelestasMod.is_ours(partner) or false
+end
+
+local celesta_ellie_probability_ref = SMODS.get_probability_vars
+function SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator,
+                                    identifier, from_roll, no_mod, ...)
+    local numerator, denominator = celesta_ellie_probability_ref(
+        trigger_obj, base_numerator, base_denominator, identifier, from_roll,
+        no_mod, ...)
+
+    -- no_mod is the caller saying nothing may touch this one, and the
+    -- reference has already returned the numbers untouched.
+    if no_mod then return numerator, denominator end
+    -- Cheapest test first: almost every chance in a run is not one of these,
+    -- and only the ones that are are worth walking the row for.
+    if not ellie_covers(trigger_obj, identifier) then return numerator, denominator end
+    if not CelestasMod.joker_in_play(ELLIE_KEY) then return numerator, denominator end
+    -- Only a number, or a Talisman big number. The denominator is whatever the
+    -- roller passed, and Cryptid's RNJoker passes a sentence.
+    if type(denominator) ~= "number"
+        and not (type(denominator) == "table" and getmetatable(denominator)) then
+        return numerator, denominator
+    end
+
+    return denominator, denominator
 end
 
 SMODS.Joker {
@@ -10248,19 +10288,9 @@ SMODS.Joker {
     loc_vars = function(self, info_queue, card)
         return {}
     end,
-
-    calculate = function(self, card, context)
-        if not context.fix_probability then return end
-        if not ellie_covers(context) then return end
-        -- Only a number, or a Talisman big number. The denominator is whatever
-        -- the roller passed, and Cryptid's RNJoker passes a sentence.
-        local d = context.denominator
-        if type(d) ~= "number" and not (type(d) == "table" and getmetatable(d)) then
-            return
-        end
-        return { numerator = d }
-    end,
 }
+
+end
 
 
 --------------------------------------------------------------------------------
