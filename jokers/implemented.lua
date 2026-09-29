@@ -6940,7 +6940,8 @@ SMODS.Joker {
 --
 -- Self-destruct is Gros Michel's: remove from the row first, then remove the
 -- card. That route is also the one merge/bind.lua watches, so a merged
--- Matarakan unmerges and leaves its partner behind rather than taking it down.
+-- Matarakan unmerges and leaves its partner behind rather than taking it down
+-- - which holds only while it asks to die ONCE. See main_eval below.
 
 SMODS.Joker {
     key = "matarakan",
@@ -6982,7 +6983,12 @@ SMODS.Joker {
             end
         end
 
-        if context.end_of_round and not context.blueprint
+        -- main_eval is the once-a-round Joker pass. Without it this branch
+        -- also runs for every card held in hand, and it both pays and asks to
+        -- die - so the money came out several times over, and the second death
+        -- arrived at a card that had already unmerged and took the surviving
+        -- half with it.
+        if context.end_of_round and context.main_eval and not context.blueprint
             and G.GAME and G.GAME.blind and G.GAME.blind.boss then
             local payout = math.floor(card.ability.extra.stored
                                       * card.ability.extra.payout_mult)
