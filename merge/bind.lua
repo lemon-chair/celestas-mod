@@ -12829,8 +12829,13 @@ end
 --
 -- SonneFlower's shape in the other currency. Auteru is the Leaf suit's Joker
 -- and Deme is the streak that resets the moment it stops being fed, so the pair
--- is "a Leaf in the scoring hand, or start again" - which is what SonneFlower
--- already is, in Mult. This is that in Chips, at Deme's own rate.
+-- works the way SonneFlower does - "a Leaf in the scoring hand, or start again"
+-- - in Chips rather than Mult, at Deme's own rate.
+--
+-- Working like SonneFlower is not being it, which is why this one ADDS. A
+-- replacing pair is one ability in place of two Jokers; this is a third thing
+-- the merge can do, so Deme goes on counting its single-card hands and Auteru
+-- goes on paying for every Leaf scored underneath it.
 --
 -- Per HAND and not per card, which is the difference between this and
 -- SonneFlower + Birdyovo next to it: Birdyovo is the one that counts, so that
@@ -12839,6 +12844,7 @@ end
 
 special("j_celesta_demenishki", "j_celesta_auteru", {
     key = "deme_auteru",
+    additive = true,
     config = { x_chips = 1, x_chip_gain = 0.25 },
 
     loc_vars = function(def, card, state)
