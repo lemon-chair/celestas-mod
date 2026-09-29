@@ -183,8 +183,12 @@ SMODS.Joker {
                 local target = pseudorandom_element(G.consumeables.cards,
                     pseudoseed("celesta_crelly"))
 
-                card.ability.extra.x_mult = card.ability.extra.x_mult
-                    + card.ability.extra.x_mult_gain
+                SMODS.scale_card(card, {
+                    ref_table = card.ability.extra,
+                    ref_value = "x_mult",
+                    scalar_value = "x_mult_gain",
+                    no_message = true,
+                })
 
                 -- Respects eternal/undestroyable stickers and animates the eat.
                 SMODS.destroy_cards(target)
@@ -1268,8 +1272,12 @@ SMODS.Joker {
         -- scoring so a continued streak counts for the hand that extended it.
         if context.before and not context.blueprint then
             if #context.full_hand == 1 then
-                card.ability.extra.x_mult =
-                    card.ability.extra.x_mult + card.ability.extra.x_mult_gain
+                SMODS.scale_card(card, {
+                    ref_table = card.ability.extra,
+                    ref_value = "x_mult",
+                    scalar_value = "x_mult_gain",
+                    no_message = true,
+                })
                 return {
                     message = localize { type = "variable", key = "a_xmult",
                                          vars = { card.ability.extra.x_mult } },
@@ -1632,8 +1640,12 @@ SMODS.Joker {
         -- is the one that counts.
         if context.before and not context.blueprint then
             if context.scoring_name == card.ability.extra.hand then
-                card.ability.extra.chips =
-                    card.ability.extra.chips + card.ability.extra.chip_gain
+                SMODS.scale_card(card, {
+                    ref_table = card.ability.extra,
+                    ref_value = "chips",
+                    scalar_value = "chip_gain",
+                    no_message = true,
+                })
                 return {
                     message = localize { type = "variable", key = "a_chips",
                                          vars = { card.ability.extra.chips } },
@@ -2334,8 +2346,12 @@ SMODS.Joker {
             -- destruction means no growth, hence the early return.
             if SMODS.is_eternal(context.destroy_card) then return end
 
-            card.ability.extra.chips =
-                card.ability.extra.chips + card.ability.extra.chip_gain
+            SMODS.scale_card(card, {
+                ref_table = card.ability.extra,
+                ref_value = "chips",
+                scalar_value = "chip_gain",
+                no_message = true,
+            })
             return {
                 remove = true,
                 message = localize { type = "variable", key = "a_chips",
@@ -3386,8 +3402,12 @@ SMODS.Joker {
             and not context.other_card.debuff
             and context.other_card:is_suit("Spades")
             and not context.blueprint then
-            card.ability.extra.chips =
-                card.ability.extra.chips + card.ability.extra.chip_mod
+            SMODS.scale_card(card, {
+                ref_table = card.ability.extra,
+                ref_value = "chips",
+                scalar_value = "chip_mod",
+                no_message = true,
+            })
             return {
                 message = localize("k_upgrade_ex"),
                 card = card,
@@ -3427,8 +3447,15 @@ SMODS.Joker {
         if context.ante_change and not context.blueprint then
             local moved = tonumber(context.ante_change) or 0
             if moved > 0 then
-                card.ability.extra.x_mult =
-                    card.ability.extra.x_mult + card.ability.extra.x_mult_gain * moved
+                SMODS.scale_card(card, {
+                    ref_table = card.ability.extra,
+                    ref_value = "x_mult",
+                    scalar_value = "x_mult_gain",
+                    no_message = true,
+                    operation = function(ref_table, ref_value, initial, scaling)
+                        ref_table[ref_value] = initial + scaling * moved
+                    end,
+                })
                 return {
                     message = localize { type = "variable", key = "a_xmult",
                                          vars = { card.ability.extra.x_mult } },
@@ -4368,8 +4395,12 @@ SMODS.Joker {
             -- Itself excluded, so it does not pay itself for scoring.
             if trigger == card then return end
 
-            card.ability.extra.chips =
-                card.ability.extra.chips + card.ability.extra.chip_mod
+            SMODS.scale_card(card, {
+                ref_table = card.ability.extra,
+                ref_value = "chips",
+                scalar_value = "chip_mod",
+                no_message = true,
+            })
             return {
                 message = localize { type = "variable", key = "a_chips",
                                      vars = { card.ability.extra.chips } },
@@ -5835,8 +5866,12 @@ SMODS.Joker {
             end
 
             if leaf then
-                card.ability.extra.x_mult =
-                    card.ability.extra.x_mult + card.ability.extra.x_mult_gain
+                SMODS.scale_card(card, {
+                    ref_table = card.ability.extra,
+                    ref_value = "x_mult",
+                    scalar_value = "x_mult_gain",
+                    no_message = true,
+                })
                 return {
                     message = localize { type = "variable", key = "a_xmult",
                                          vars = { card.ability.extra.x_mult } },
@@ -6444,8 +6479,12 @@ SMODS.Joker {
             if sticker == "perishable" then target.ability.perish_tally = nil end
             target:juice_up(0.3, 0.4)
 
-            card.ability.extra.x_mult =
-                card.ability.extra.x_mult + card.ability.extra.x_mult_gain
+            SMODS.scale_card(card, {
+                ref_table = card.ability.extra,
+                ref_value = "x_mult",
+                scalar_value = "x_mult_gain",
+                no_message = true,
+            })
             return {
                 message = localize { type = "variable", key = "a_xmult",
                                      vars = { card.ability.extra.x_mult } },
@@ -7093,8 +7132,12 @@ SMODS.Joker {
 
         -- A skipped Blind ends no round, so there is no payout to fix first.
         if context.skip_blind and not context.blueprint then
-            card.ability.extra.dollars =
-                card.ability.extra.dollars + card.ability.extra.skip_gain
+            SMODS.scale_card(card, {
+                ref_table = card.ability.extra,
+                ref_value = "dollars",
+                scalar_value = "skip_gain",
+                no_message = true,
+            })
             return {
                 message = localize("k_upgrade_ex"),
                 colour = G.C.MONEY,
@@ -7740,8 +7783,15 @@ SMODS.Joker {
             local pairs_held = slime_pairs()
             if pairs_held <= 0 then return end
 
-            card.ability.extra.x_mult = card.ability.extra.x_mult
-                + card.ability.extra.x_mult_gain * pairs_held
+            SMODS.scale_card(card, {
+                ref_table = card.ability.extra,
+                ref_value = "x_mult",
+                scalar_value = "x_mult_gain",
+                no_message = true,
+                operation = function(ref_table, ref_value, initial, scaling)
+                    ref_table[ref_value] = initial + scaling * pairs_held
+                end,
+            })
             return {
                 message = localize { type = "variable", key = "a_xmult",
                                      vars = { card.ability.extra.x_mult } },
@@ -8133,8 +8183,12 @@ SMODS.Joker {
         if context.individual and context.cardarea == G.play
             and not context.blueprint and is_star(context.other_card) then
             if boosfer_seen(context.other_card, card) then
-                card.ability.extra.x_mult =
-                    card.ability.extra.x_mult + card.ability.extra.x_mult_gain
+                SMODS.scale_card(card, {
+                    ref_table = card.ability.extra,
+                    ref_value = "x_mult",
+                    scalar_value = "x_mult_gain",
+                    no_message = true,
+                })
                 return {
                     message = localize { type = "variable", key = "a_xmult",
                                          vars = { card.ability.extra.x_mult } },
@@ -8285,8 +8339,15 @@ SMODS.Joker {
             end
             if added == 0 then return end
 
-            card.ability.extra.x_chips = card.ability.extra.x_chips
-                + card.ability.extra.x_chip_gain * added
+            SMODS.scale_card(card, {
+                ref_table = card.ability.extra,
+                ref_value = "x_chips",
+                scalar_value = "x_chip_gain",
+                no_message = true,
+                operation = function(ref_table, ref_value, initial, scaling)
+                    ref_table[ref_value] = initial + scaling * added
+                end,
+            })
             return {
                 message = localize { type = "variable", key = "a_xchips",
                                      vars = { card.ability.extra.x_chips } },
@@ -8953,8 +9014,12 @@ SMODS.Joker {
     calculate = function(self, card, context)
         if context.before and not context.blueprint then
             if #context.full_hand == card.ability.extra.size then
-                card.ability.extra.mult =
-                    card.ability.extra.mult + card.ability.extra.gain
+                SMODS.scale_card(card, {
+                    ref_table = card.ability.extra,
+                    ref_value = "mult",
+                    scalar_value = "gain",
+                    no_message = true,
+                })
                 return {
                     message = localize { type = "variable", key = "a_mult",
                                          vars = { card.ability.extra.mult } },
@@ -9154,8 +9219,12 @@ SMODS.Joker {
 
     calculate = function(self, card, context)
         if context.buying_card and not context.blueprint then
-            card.ability.extra.x_chips =
-                card.ability.extra.x_chips + card.ability.extra.gain
+            SMODS.scale_card(card, {
+                ref_table = card.ability.extra,
+                ref_value = "x_chips",
+                scalar_value = "gain",
+                no_message = true,
+            })
             return {
                 message = localize { type = "variable", key = "a_xchips",
                                      vars = { card.ability.extra.x_chips } },
@@ -9251,8 +9320,12 @@ SMODS.Joker {
 
     calculate = function(self, card, context)
         if context.skipping_booster and not context.blueprint then
-            card.ability.extra.chips =
-                card.ability.extra.chips + card.ability.extra.gain
+            SMODS.scale_card(card, {
+                ref_table = card.ability.extra,
+                ref_value = "chips",
+                scalar_value = "gain",
+                no_message = true,
+            })
             return {
                 message = localize { type = "variable", key = "a_chips",
                                      vars = { card.ability.extra.chips } },
@@ -9364,8 +9437,12 @@ SMODS.Joker {
 
     calculate = function(self, card, context)
         if context.reroll_shop and not context.blueprint then
-            card.ability.extra.x_mult =
-                card.ability.extra.x_mult + card.ability.extra.gain
+            SMODS.scale_card(card, {
+                ref_table = card.ability.extra,
+                ref_value = "x_mult",
+                scalar_value = "gain",
+                no_message = true,
+            })
             return {
                 message = localize { type = "variable", key = "a_xmult",
                                      vars = { card.ability.extra.x_mult } },
@@ -9734,8 +9811,12 @@ SMODS.Joker {
             local hand = context.full_hand or (G.play and G.play.cards) or {}
             if #hand ~= card.ability.extra.size then return end
 
-            card.ability.extra.x_mult =
-                card.ability.extra.x_mult + card.ability.extra.gain
+            SMODS.scale_card(card, {
+                ref_table = card.ability.extra,
+                ref_value = "x_mult",
+                scalar_value = "gain",
+                no_message = true,
+            })
             return {
                 message = localize { type = "variable", key = "a_xmult",
                                      vars = { card.ability.extra.x_mult } },
@@ -10641,8 +10722,12 @@ SMODS.Joker {
 
         if context.ending_shop and not context.blueprint then
             if CelestasMod.shop_had_spending() then return end
-            card.ability.extra.x_mult =
-                card.ability.extra.x_mult + card.ability.extra.x_mult_gain
+            SMODS.scale_card(card, {
+                ref_table = card.ability.extra,
+                ref_value = "x_mult",
+                scalar_value = "x_mult_gain",
+                no_message = true,
+            })
             return {
                 message = localize { type = "variable", key = "a_xmult",
                                      vars = { card.ability.extra.x_mult } },

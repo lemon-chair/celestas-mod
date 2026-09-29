@@ -200,8 +200,15 @@ SMODS.Joker {
             end
             if eaten == 0 then return end
 
-            card.ability.extra.e_mult =
-                card.ability.extra.e_mult + eaten * card.ability.extra.e_mult_gain
+            SMODS.scale_card(card, {
+                ref_table = card.ability.extra,
+                ref_value = "e_mult",
+                scalar_value = "e_mult_gain",
+                no_message = true,
+                operation = function(ref_table, ref_value, initial, scaling)
+                    ref_table[ref_value] = initial + scaling * eaten
+                end,
+            })
             return {
                 message = localize { type = "variable", key = "celesta_powmult",
                                      vars = { card.ability.extra.e_mult } },
