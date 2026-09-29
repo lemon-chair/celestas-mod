@@ -737,18 +737,22 @@ end
 ---
 --- Building and removing one walks G.GAME.used_jokers twice on its own:
 --- Card:set_ability marks the centre used when the stand-in is built, and
---- Card:remove unmarks it on the way out because no copy of it is in play. The
---- pair of them leaves the run believing it never made that Joker at all - so
---- it offers it again, and the player ends up holding two of it. That is what
---- was reported, and the save showed it exactly: every host in the row marked
---- used, and every partner not.
+--- Card:remove unmarks it on the way out because no copy of it is in play.
+--- Between them the run would end up believing something it should not, either
+--- way round, so the entry is put back exactly as it was found.
 ---
---- So the entry is set by what actually happened rather than left to those two.
---- A partner that took is a Joker the run has HANDED OUT: its whole ability
---- rides into the card being offered, which is the same thing owning it means
---- for the absorbed half of any other merge. A partner that was refused handed
---- out nothing, and its entry goes back exactly as it was found - which is what
---- the snapshot is for, and why it has to be taken before the stand-in exists.
+--- Found, and not "handed out". Merging in this mod does not take either half
+--- out of the pools - the two Jokers a merge is made of can both be offered
+--- again, and that is the intended behaviour, not an oversight to correct. A
+--- fused partner is the same thing and is left alone for the same reason.
+---
+--- It also cannot be corrected safely. Nothing ever clears a used mark for a
+--- card that no longer exists, so marking the partner took one Joker out of
+--- the run's pools for good, once per fused card. On the Ecstasy Deck, where
+--- the pool is this mod's Jokers and nothing else, that pool empties - and an
+--- empty pool is not an empty shop: vanilla falls back to `j_joker` without
+--- consulting banned_keys at all (common_events.lua:2359), so the shop fills
+--- with the one Joker that deck exists to exclude.
 local function fusion_fuse(card)
     local Bind = CelestasMod.Bind
     if not (Bind and Bind.merge and Bind.can_bind(card)) then return false end
@@ -770,7 +774,7 @@ local function fusion_fuse(card)
 
         local merged = Bind.merge(card, partner, true)
         partner:remove()
-        if used and key then used[key] = merged or before[key] end
+        if used and key then used[key] = before[key] end
 
         if merged then return true end
     end
