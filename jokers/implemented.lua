@@ -7250,12 +7250,27 @@ SMODS.Joker {
 --- of this mod, and every other centre key named in this file is a literal.
 local RUBEN_KEY = "j_celesta_rubensargasm"
 
---- Every Joker in the row counts, this one included.
+--- Every Joker in the row counts, this one included - and a card merged from
+--- two Rubens counts as two of them, which is how find_joker counts them.
+---
+--- Through card_abilities rather than off card.ability, because per_joker
+--- belongs to the half that is Ruben: an absorbed half keeps its own table
+--- under celesta_bind, and card.ability there is the HOST's, which has no
+--- per_joker at all and so priced the merge at nothing.
+---
+--- The absorbed half's description is drawn with its own centre and ability
+--- lent to the card (Bind's partner_ui), and during that lend the card does
+--- not look merged - so this answers for that half alone, which is what that
+--- panel should say. Outside the lend it answers for the whole card, which is
+--- what the price is.
 local function ruben_extra_value(card)
-    local extra = card.ability and card.ability.extra
-    local per = extra and extra.per_joker
-    if not per then return 0 end
-    return per * #(((G.jokers or {}).cards) or {})
+    local jokers = #(((G.jokers or {}).cards) or {})
+    local total = 0
+    for _, ability in ipairs(CelestasMod.card_abilities(card, RUBEN_KEY, true)) do
+        local per = ability.extra and ability.extra.per_joker
+        total = total + (per or 0) * jokers
+    end
+    return total
 end
 
 --- True for a card whose sell value this Joker is raising.
@@ -7263,22 +7278,21 @@ end
 --- Cheapest test first: almost every card in the game is not a Joker at all,
 --- and this is asked of all of them on every frame.
 ---
---- A merged card keeps the HOST's centre key, so this finds Ruben when Ruben
---- was the left-hand half and would not when it was the right - which would
---- make the sell value depend on the order the player happened to highlight
---- them in. A replacing pair speaks for both halves, so the answer is the
---- same either way: none of it.
+--- Either half of a merge counts. This used to compare card.config.center_key
+--- against Ruben's, and a merged card keeps the HOST's - so Ruben paid when it
+--- was the first Joker selected and did nothing when it was the second, which
+--- is an ability that depended on the order they were highlighted in.
+---
+--- count_debuffed, because a debuffed Ruben has always kept its sell value and
+--- taking that away is a different change from this one. card_is_joker still
+--- refuses a REPLACING pair, which speaks for both halves: none of it, either
+--- way round.
 local function ruben_applies(card)
     if not (card.ability and card.ability.set == "Joker"
-        and card.area == G.jokers
-        and card.config and card.config.center_key == RUBEN_KEY) then
+        and card.area == G.jokers) then
         return false
     end
-    local Bind = CelestasMod and CelestasMod.Bind
-    if Bind and Bind.replacing_special and Bind.replacing_special(card) then
-        return false
-    end
-    return true
+    return CelestasMod.card_is_joker(card, RUBEN_KEY, true)
 end
 
 -- Added at set_cost, never stored.

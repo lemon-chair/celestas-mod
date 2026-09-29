@@ -235,6 +235,37 @@ function CelestasMod.card_is_joker(card, key, count_debuffed)
         and card.ability.celesta_bind.key == key) and true or false
 end
 
+--- Every ability table `card` carries AS `key`: one per half of it that is
+--- that Joker, so a card merged from two of them answers with two.
+---
+--- The companion to card_is_joker, for a caller that needs a half's own
+--- NUMBERS rather than only to know it is there. An absorbed half's ability is
+--- under celesta_bind; card.ability is the host's, and a Joker reading its own
+--- config off it reads the wrong Joker's - or, as often, nothing at all,
+--- because the host has no such field.
+---
+--- Builds a table, so it is for the callers find_joker's note rules out the
+--- cheap predicate for: asked when a price is recomputed or a description
+--- drawn, not of every card in every hand.
+function CelestasMod.card_abilities(card, key, count_debuffed)
+    local out = {}
+    if not (card and lookup_eligible(card, count_debuffed)) then return out end
+
+    local center = card.config and card.config.center
+    if center and center.key == key then out[#out + 1] = card.ability end
+
+    local Bind = CelestasMod.Bind
+    local bind = Bind and Bind.is_merged and Bind.is_merged(card)
+        and card.ability.celesta_bind
+    -- A second entry rather than an elseif, for find_joker's reason: two of
+    -- the same Joker can be merged into one card, and that card is two of them.
+    if bind and bind.key == key and bind.ability then
+        out[#out + 1] = bind.ability
+    end
+
+    return out
+end
+
 function CelestasMod.find_joker(key, count_debuffed)
     local out = {}
     local Bind = CelestasMod.Bind
