@@ -8451,7 +8451,11 @@ local function nyanners_count()
     local total = 0
     for _, joker in ipairs((G.jokers and G.jokers.cards) or {}) do
         total = total + 1
-        if CelestasMod.Bind and CelestasMod.Bind.is_merged(joker) then
+        -- Through the row lookup rather than Bind.is_merged directly: this
+        -- counts the card it is ASKED ON as well as every other, and a card
+        -- asked about itself from inside its own description is lent to one
+        -- half and does not look merged to the direct test.
+        if CelestasMod.card_is_merged(joker) then
             total = total + 1
         end
     end

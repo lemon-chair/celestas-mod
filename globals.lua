@@ -252,6 +252,26 @@ function CelestasMod.card_is_joker(card, key, count_debuffed)
     return (lent and lent.center and lent.center.key == key) and true or false
 end
 
+--- True when `card` is a merge, asked from anywhere - a lend included.
+---
+--- Bind.is_merged is the direct test and reads celesta_bind off card.ability.
+--- That is the right answer everywhere except the one window this exists for:
+--- while a card is lent to one of its halves it wears that half's ability, and
+--- a half's ability has no celesta_bind on it, so the card answered that it was
+--- not a merge at all.
+---
+--- Which is the window a Joker counting the row is most likely to ask in, since
+--- the row includes itself and its own description is built inside that lend.
+--- Nyanners paid +15 for itself rather than +30 for exactly this.
+---
+--- Being lent IS being merged: nothing but a merge ever lends a card out.
+function CelestasMod.card_is_merged(card)
+    if not card then return false end
+    local Bind = CelestasMod.Bind
+    if Bind and Bind.is_merged and Bind.is_merged(card) then return true end
+    return lent_half(card) ~= nil
+end
+
 --- Every ability table `card` carries AS `key`: one per half of it that is
 --- that Joker, so a card merged from two of them answers with two.
 ---
