@@ -4884,6 +4884,15 @@ return {
                     "start of the round, and the end of it",
                 },
             },
+            celesta_bind_deme_auteru = {
+                name = "Deme + Auteru",
+                text = {
+                    "This Joker gains {X:chips,C:white}X#1#{} Chips if the",
+                    "scoring hand contains a {V:1}#3#{} card,",
+                    "resetting if it does not",
+                    "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
+                },
+            },
             celesta_ectoplast_seal = {
                 name = "Ectoplast Seal",
                 text = {

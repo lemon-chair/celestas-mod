@@ -12824,6 +12824,62 @@ special("j_celesta_neuro", "j_celesta_evil_neuro", {
 end
 
 --------------------------------------------------------------------------------
+-- Deme + Auteru
+--------------------------------------------------------------------------------
+--
+-- SonneFlower's shape in the other currency. Auteru is the Leaf suit's Joker
+-- and Deme is the streak that resets the moment it stops being fed, so the pair
+-- is "a Leaf in the scoring hand, or start again" - which is what SonneFlower
+-- already is, in Mult. This is that in Chips, at Deme's own rate.
+--
+-- Per HAND and not per card, which is the difference between this and
+-- SonneFlower + Birdyovo next to it: Birdyovo is the one that counts, so that
+-- pair takes a lot per Leaf, and this one takes Deme's 0.25 once for a hand
+-- that had any.
+
+special("j_celesta_demenishki", "j_celesta_auteru", {
+    key = "deme_auteru",
+    config = { x_chips = 1, x_chip_gain = 0.25 },
+
+    loc_vars = function(def, card, state)
+        local name, colour = CelestasMod.suit_name_and_colour(
+            CelestasMod.LEAF_SUIT, CelestasMod.LEAF_COLOUR, true)
+        return { vars = { state.x_chip_gain, state.x_chips, name,
+                          colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- context.before is the one pass that sees the scoring hand whole and
+        -- lands before any of it scores, so the hand that extends the streak is
+        -- paid for itself. Both halves decide in the same place.
+        if context.before and not context.blueprint then
+            for _, played in ipairs(context.scoring_hand or {}) do
+                if played.is_suit and played:is_suit(CelestasMod.LEAF_SUIT) then
+                    state.x_chips = state.x_chips + state.x_chip_gain
+                    return {
+                        message = localize { type = "variable", key = "a_xchips",
+                                             vars = { state.x_chips } },
+                        colour = G.C.CHIPS, card = card,
+                    }
+                end
+            end
+
+            -- Reset only when there is something to lose, so a run of
+            -- Leafless hands does not announce a reset every time.
+            if state.x_chips > 1 then
+                state.x_chips = 1
+                return { message = localize("k_reset"), colour = G.C.RED,
+                         card = card }
+            end
+        end
+
+        if context.joker_main and state.x_chips > 1 then
+            return { x_chips = state.x_chips }
+        end
+    end,
+})
+
+--------------------------------------------------------------------------------
 -- Art: the two faces split corner to corner
 --------------------------------------------------------------------------------
 
