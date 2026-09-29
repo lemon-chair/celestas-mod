@@ -3287,6 +3287,19 @@ LOC_TAIL = '''        },
                     "This Joker cannot be {C:blue}Frozen{}",
                 },
             },
+            celesta_bind_neuro_evil = {
+                name = "Neuro + Evil Neuro",
+                text = {
+                    "{C:attention}+#1#{} hand size, card selection,",
+                    "hands, discards, and every slot",
+                    "{X:mult,C:white}X#1#{} Chips and Mult, {C:money}$#1#{} at end of round",
+                    "{C:attention}X#1#{} of every {C:attention}Skip Tag{} taken",
+                    "{C:attention}-#2#%{} Blind size and shop prices",
+                    "All {C:attention}Boss Blinds{} are disabled",
+                    "{S:1.1}#1#{} rises at the end of the shop, the",
+                    "start of the round, and the end of it",
+                },
+            },
             celesta_ectoplast_seal = {
                 name = "Ectoplast Seal",
                 text = {

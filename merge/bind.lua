@@ -12560,6 +12560,247 @@ end
 end
 
 --------------------------------------------------------------------------------
+-- Neuro + Evil Neuro
+--------------------------------------------------------------------------------
+--
+-- One number. Everything the pair does is that number, so there is one place
+-- that raises it and four that read it.
+--
+-- It opens at 1 and rises by 1 three times a cycle: when the shop closes, when
+-- the round starts, and when it ends. One rather than zero because two of the
+-- sixteen are MULTIPLIERS, and X0 Chips is not a Joker that has not started
+-- yet - it is a run that scores nothing. At 1 those two do nothing and the
+-- rest are a +1, which is a pair that has just formed.
+
+do
+
+local NEURO_EVIL = "neuro_evil"
+
+--- What n is on `card`, or nil when it is not this pair.
+local function neuro_value(card)
+    if card.debuff then return nil end
+    local def = Bind.special_of(card)
+    if not (def and def.key == NEURO_EVIL) then return nil end
+    local n = Bind.special_state(card, def).n
+    return type(n) == "number" and n or nil
+end
+
+--- Every way this pair moves the run, each applied as a difference.
+---
+--- A pair of these has to be exactly symmetric - apply(+d) and apply(-d) must
+--- cancel - because that is the whole of how the pass below hands anything
+--- back. Each one is vanilla's own route for that number, for that reason.
+local GRANTS = {
+    function(d) if G.hand then G.hand:change_size(d) end end,
+
+    -- Cards selectable to play and to discard, which is what SMODS calls the
+    -- play and discard limits. Both, because "card selection limit" is one
+    -- number to a player and two to the game.
+    function(d)
+        if SMODS.change_play_limit then SMODS.change_play_limit(d) end
+        if SMODS.change_discard_limit then SMODS.change_discard_limit(d) end
+    end,
+
+    -- Hands and discards for the round. round_resets is what a new round is
+    -- built from; easing the live count as well is what makes a grant arriving
+    -- mid-round worth something now rather than next round.
+    function(d)
+        local resets = G.GAME and G.GAME.round_resets
+        if not resets then return end
+        resets.hands = (resets.hands or 0) + d
+        if ease_hands_played then ease_hands_played(d, true) end
+    end,
+    function(d)
+        local resets = G.GAME and G.GAME.round_resets
+        if not resets then return end
+        resets.discards = (resets.discards or 0) + d
+        if ease_discard then ease_discard(d, true) end
+    end,
+
+    -- The four shelves.
+    function(d)
+        if G.jokers and G.jokers.config then
+            G.jokers.config.card_limit = (G.jokers.config.card_limit or 0) + d
+        end
+    end,
+    function(d)
+        if G.consumeables and G.consumeables.config then
+            G.consumeables.config.card_limit = (G.consumeables.config.card_limit or 0) + d
+        end
+    end,
+    function(d)
+        -- The shop's Joker row. joker_max is vanilla's own field and the one
+        -- Overstock moves.
+        if G.GAME and G.GAME.shop then
+            G.GAME.shop.joker_max = (G.GAME.shop.joker_max or 0) + d
+        end
+    end,
+    function(d) if SMODS.change_voucher_limit then SMODS.change_voucher_limit(d) end end,
+    function(d) if SMODS.change_booster_limit then SMODS.change_booster_limit(d) end end,
+}
+
+--- What each card has been granted. Weak keys: a card that is gone should not
+--- be kept alive by being remembered here.
+local granted = setmetatable({}, { __mode = "k" })
+--- The run those grants belong to, by seed.
+local granted_run = nil
+
+local function neuro_sync()
+    -- What the SMODS limit calls read, and what a run being torn down loses
+    -- first. The selection pass above crashed on exactly this.
+    if not (G.GAME and G.GAME.starting_params and G.hand and G.hand.config) then
+        return
+    end
+
+    -- A new run owns none of the last one's grants: starting_params is rebuilt
+    -- at the start of one, so handing anything back here would take what this
+    -- run was never given. Dropped rather than released.
+    local run = G.GAME.pseudorandom and G.GAME.pseudorandom.seed
+    if run ~= granted_run then
+        for card in pairs(granted) do granted[card] = nil end
+        granted_run = run
+    end
+
+    local live = nil
+    for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
+        local n = neuro_value(held)
+        if n then
+            live = live or {}
+            live[held] = math.max(0, math.floor(n))
+        end
+    end
+
+    local function move(card, want)
+        local have = granted[card] or 0
+        if want == have then return end
+        for _, grant in ipairs(GRANTS) do
+            local ok, err = pcall(grant, want - have)
+            if not ok then
+                CelestasMod.warn_once("bind_neuro_evil_grant",
+                    ("Neuro + Evil Neuro could not move the run: %s"):format(tostring(err)))
+            end
+        end
+        if want == 0 then granted[card] = nil else granted[card] = want end
+    end
+
+    for card, have in pairs(granted) do
+        if not (live and live[card]) and have ~= 0 then move(card, 0) end
+    end
+    for card, want in pairs(live or {}) do move(card, want) end
+
+    -- ...and the Boss sits out while one is held. hold_boss works the answer
+    -- out from every reason standing, so saying it every frame is saying the
+    -- same thing rather than saying it again.
+    if CelestasMod.hold_boss then
+        pcall(CelestasMod.hold_boss, "bind_" .. NEURO_EVIL, live ~= nil)
+    end
+end
+
+local celesta_bind_neuro_update_ref = Game and Game.update
+if celesta_bind_neuro_update_ref then
+    function Game:update(dt)
+        celesta_bind_neuro_update_ref(self, dt)
+        neuro_sync()
+    end
+end
+
+--- The share of a price or a Blind this pair leaves behind, never below none.
+--- n rises without limit and five percent of enough of it is all of it; a
+--- negative share would be a Blind that pays you to lose.
+local function neuro_scale()
+    local holder = Bind.find_special(NEURO_EVIL)
+    local n = holder and neuro_value(holder)
+    if not n then return 1 end
+    return math.max(0, 1 - n * 0.05)
+end
+
+-- Blind sizes. get_blind_amount is the one number every Blind is built from,
+-- which is why the Printer challenge scales it there too - and it is
+-- multiplication, which Talisman's numbers do through their own metamethod.
+local celesta_bind_neuro_blind_ref = get_blind_amount
+if type(celesta_bind_neuro_blind_ref) == "function" then
+    function get_blind_amount(ante, ...)
+        local amount = celesta_bind_neuro_blind_ref(ante, ...)
+        local scale = neuro_scale()
+        if scale >= 1 then return amount end
+        return amount * scale
+    end
+end
+
+-- Shop prices. Set in Card:set_cost and nowhere else, so the price is adjusted
+-- after the fact at the one place that sets it - Kumi + HeavenlyFather's
+-- booster discount is the same shape. Rounded up and floored at 1, which is
+-- what set_cost does to every other price.
+local celesta_bind_neuro_cost_ref = Card.set_cost
+function Card:set_cost(...)
+    local ret = celesta_bind_neuro_cost_ref(self, ...)
+    local scale = neuro_scale()
+    if scale < 1 and type(self.cost) == "number" and self.cost > 0 then
+        self.cost = math.max(1, math.ceil(self.cost * scale))
+    end
+    return ret
+end
+
+special("j_celesta_neuro", "j_celesta_evil_neuro", {
+    key = NEURO_EVIL,
+    config = { n = 1, gain = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.n, state.n * 5 } }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- Three moments a cycle, and they are three separate passes: the shop
+        -- closing, the Blind being chosen, and the round ending. main_eval on
+        -- the last because end_of_round reaches a Joker once for the round and
+        -- again for every card held in hand.
+        local rises = (context.ending_shop and not context.blueprint)
+            or (context.setting_blind and not context.blueprint
+                and not (context.blueprint_card or card).getting_sliced)
+            or (context.end_of_round and context.main_eval and not context.blueprint)
+        if rises then
+            state.n = state.n + state.gain
+            return {
+                message = localize { type = "variable", key = "a_xmult",
+                                     vars = { state.n } },
+                colour = G.C.FILTER, card = card,
+            }
+        end
+
+        -- Every Skip Tag taken, n times over. The tag is already in the run's
+        -- list by the time this is raised, so the copies are of the last one
+        -- there; at n = 1 there are none, which is the do-nothing value again.
+        if context.skip_blind and not context.blueprint then
+            local tags = G.GAME and G.GAME.tags
+            local taken = tags and tags[#tags]
+            local key = taken and (taken.key or (taken.config and taken.config.key))
+            if key and add_tag and Tag then
+                for _ = 2, state.n do
+                    local ok, err = pcall(function() add_tag(Tag(key)) end)
+                    if not ok then
+                        CelestasMod.warn_once("bind_neuro_evil_tag",
+                            ("Neuro + Evil Neuro could not copy a Tag: %s"):format(tostring(err)))
+                        break
+                    end
+                end
+            end
+            return
+        end
+
+        if context.joker_main and state.n > 1 then
+            return { x_chips = state.n, x_mult = state.n }
+        end
+    end,
+
+    calc_dollar_bonus = function(def, card, state)
+        if state.n <= 0 then return end
+        return state.n
+    end,
+})
+
+end
+
+--------------------------------------------------------------------------------
 -- Art: the two faces split corner to corner
 --------------------------------------------------------------------------------
 
