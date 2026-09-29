@@ -5412,6 +5412,45 @@ function Bind.unmerge(card, losing)
     return true
 end
 
+--- Undoes a destruction that is not going to happen after all.
+---
+--- A Joker that removes itself animates first and removes second, so by the
+--- time Card:remove can object the card is already dressed for its own
+--- funeral. Two shapes, and a survivor must be let out of both:
+---
+---   * the extinction one tips the card, holds it as though it were being
+---     dragged, and pinches the centre sprite (card.lua:2342 - Gros Michel,
+---     Cavendish, and Hidden Tech which copies them). A pinched sprite eases
+---     its width to zero and stays there (engine/moveable.lua:439), so the
+---     card goes on holding its Joker slot while drawing nothing at all.
+---   * start_dissolve eases `dissolve` to 1 and calls remove at the end of it,
+---     and SMODS.destroy_cards marks the card sliced and destroyed before it
+---     starts (smods src/utils.lua:2575). Left on, `destroyed` picks the
+---     colours of a dissolve that already happened and `getting_sliced` makes
+---     the next destruction ask whether it may proceed as though this one were
+---     still in progress.
+---
+--- Not a reset of the card: only the marks those two put on it.
+local function cancel_destruction(card)
+    card.dissolve = nil
+    card.dissolve_colours = nil
+    card.getting_sliced = nil
+    card.destroyed = nil
+
+    -- The resting rotation of a Joker in the row; the animation tipped it to
+    -- -0.2 and nothing else was going to tip it back.
+    if card.T then card.T.r = 0 end
+    if card.states and card.states.drag then card.states.drag.is = false end
+
+    local sprite = card.children and card.children.center
+    if sprite and sprite.pinch then
+        -- Only x is ever set by either animation, but a sprite easing to
+        -- nothing in either direction is the same invisible card.
+        sprite.pinch.x = false
+        sprite.pinch.y = false
+    end
+end
+
 -- Card:remove is where every self-destruct ends up, whichever route it took:
 -- vanilla's own extinction code calls G.jokers:remove_card(self) and then
 -- self:remove(), and SMODS.destroy_cards arrives here through start_dissolve.
@@ -5422,6 +5461,9 @@ function Card:remove()
         and not Bind.replacing_special(self) then
         -- Removed from the row already, by the time anything can object.
         if Bind.unmerge(self, acting_half) then
+            -- Before it goes back, so that it goes back drawable and so that
+            -- align_cards is not handed a card that still says it is held.
+            cancel_destruction(self)
             restore_to_row(self)
             card_eval_status_text(self, "extra", nil, nil, nil,
                 { message = localize("celesta_unmerged"), colour = G.C.FILTER })
