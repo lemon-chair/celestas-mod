@@ -5,7 +5,7 @@
 ---
 --- The `decks` atlas is one row of card-sized cells, in this order:
 ---     0 Admin   1 Plaid   2 Ecstasy   3 Hell   4 Blizzard   5 Rain
----     6 Verdant 7 Rock    8 Sins
+---     6 Verdant 7 Rock    8 Sins     9 Fusion
 
 local DECK_PREFIX = SMODS.current_mod.prefix
 
@@ -669,4 +669,131 @@ SMODS.Back {
     calculate = function(self, back, context)
         return CelestasMod.Sins.calculate(back, context)
     end,
+}
+
+--------------------------------------------------------------------------------
+-- Fusion Deck - nothing arrives alone
+--------------------------------------------------------------------------------
+--
+-- Every Joker the run is offered is already merged with another one.
+--
+-- Hooked on create_card rather than on the shop, because that is the one funnel
+-- the three sources share: a shop slot, a Buffoon Pack and a consumable that
+-- makes a Joker - The Soul, Wraith - all arrive through it. A Joker some other
+-- Joker makes comes through it too, and is fused as well; there is no way to
+-- tell those apart from a consumable's, because both are created inside a
+-- queued event long after the thing that asked for them has returned.
+--
+-- The merge itself is Bind's, told the card is new (see Bind.merge's `fresh`),
+-- so the passives wait for Card:add_to_deck and the card keeps its edition.
+
+--- A CardArea-shaped nowhere, for building a card that belongs to no area.
+---
+--- create_card reads the area for a position, and reads it again for three
+--- questions about where the card is going: whether to discover its centre,
+--- and whether to roll Eternal, Perishable or Rental onto it. A stand-in
+--- should answer no to all three - a partner is not a shop card and must not
+--- arrive wearing a sticker the host then inherits - and passing nowhere is
+--- what says so. `nil` would not: create_card reads that as G.jokers.
+local FUSION_NOWHERE = { T = { x = 0, y = 0, w = 0, h = 0 } }
+
+--- How many times a partner is rolled before the card is left alone.
+---
+--- More than one because a Joker may refuse to be bound - the Blank Joker is
+--- the only one in a pool that does - and bounded because the alternative to
+--- finding a partner is an unfused Joker, which is a far smaller thing than a
+--- shop that never finishes being built.
+local FUSION_TRIES = 3
+
+--- True while the run is being played on the Fusion Deck, or its sleeve.
+local function on_fusion()
+    return CelestasMod.run_has_deck("fusion")
+end
+
+--- A Joker to fuse in, or nil.
+---
+--- Rolled by create_card rather than picked out of a pool by hand, so it is a
+--- random Joker in exactly the sense the game means: the rarity weights, the
+--- banned keys, Showman and the pool flags are all the ones in force. Off its
+--- own seed, so the shop's rolls land where they would have anyway.
+---
+--- No edition. Editions belong to the card that rolled one, and a stand-in has
+--- no business bringing one to a merge for the host's to be weighed against.
+local function fusion_partner()
+    local saved = SMODS.bypass_create_card_edition
+    SMODS.bypass_create_card_edition = true
+    local ok, made = pcall(create_card, "Joker", FUSION_NOWHERE, nil, nil,
+                           true, nil, nil, "celesta_fusion")
+    SMODS.bypass_create_card_edition = saved
+    return ok and made or nil
+end
+
+--- Merges a partner into `card`.
+---
+--- The partner is disposed of either way. It was built only to carry an
+--- ability table, which Bind.merge copies rather than keeps, and Card's
+--- constructor has already put it in G.I.CARD - so leaving it there would be a
+--- card the game updates every frame for the rest of the run.
+---
+--- Building and removing one touches G.GAME.used_jokers twice: Card:set_ability
+--- marks the centre used and Card:remove unmarks it if no copy is in play. Both
+--- are wrong here. A Joker the run had already used must not be forgotten
+--- because a shop card borrowed it for a moment, and a fused partner must not
+--- be struck out of the pools either, or a deck that fuses every Joker offered
+--- would empty them. So that one entry is put back exactly as it was found.
+local function fusion_fuse(card)
+    local Bind = CelestasMod.Bind
+    if not (Bind and Bind.merge and Bind.can_bind(card)) then return false end
+
+    for _ = 1, FUSION_TRIES do
+        -- Taken before the partner exists, because building it is the first of
+        -- the two writes: a value read afterwards is already the stand-in's
+        -- own, and putting THAT back would mark the partner used for good. The
+        -- whole table, because which entry matters is not known until the
+        -- partner has been rolled.
+        local used = G.GAME and G.GAME.used_jokers
+        local before = used and copy_table(used) or {}
+
+        local partner = fusion_partner()
+        if not partner then return false end
+
+        local center = partner.config.center
+        local key = partner.config.center_key or (center and center.key)
+
+        local merged = Bind.merge(card, partner, true)
+        partner:remove()
+        if used and key then used[key] = before[key] end
+
+        if merged then return true end
+    end
+    return false
+end
+
+--- Set while a fusion is in progress, so the partner's own creation - and
+--- anything else reached from inside one - cannot fuse in turn.
+local fusing = false
+
+local celesta_fusion_create_ref = create_card
+function create_card(_type, area, ...)
+    local made = celesta_fusion_create_ref(_type, area, ...)
+    if fusing or not made or not on_fusion() then return made end
+    if not (made.ability and made.ability.set == "Joker") then return made end
+
+    fusing = true
+    local ok, err = pcall(fusion_fuse, made)
+    fusing = false
+    if not ok then
+        CelestasMod.warn_once("fusion_deck",
+            ("The Fusion Deck could not fuse a Joker: %s"):format(tostring(err)))
+    end
+    return made
+end
+
+SMODS.Back {
+    key = "fusion",
+    atlas = "decks",
+    pos = { x = 9, y = 0 },
+
+    unlocked = true,
+    discovered = true,
 }

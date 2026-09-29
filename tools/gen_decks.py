@@ -41,6 +41,7 @@ DECKS = [
     ("verdant", "verdant"),
     ("rock", "rock"),
     ("sins", "sins"),
+    ("fusion", "fusion"),
 ]
 
 

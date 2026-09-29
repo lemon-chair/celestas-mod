@@ -3488,6 +3488,13 @@ LOC_TAIL = '''        },
                     "{C:attention}+1{} consumable slot",
                 },
             },
+            b_celesta_fusion = {
+                name = "Fusion Deck",
+                text = {
+                    "Every {C:attention}Joker{} offered arrives",
+                    "already {C:attention}merged{} with another random {C:attention}Joker{}",
+                },
+            },
         },
 
         -- Card Sleeves (items/sleeves.lua). Each sleeve says what its deck
@@ -3634,6 +3641,20 @@ LOC_TAIL = '''        },
                     "the {C:attention}Deck of Sins{}",
                 },
             },
+            sleeve_celesta_fusion = {
+                name = "Fusion Sleeve",
+                text = {
+                    "Every {C:attention}Joker{} offered arrives",
+                    "already {C:attention}merged{} with another random {C:attention}Joker{}",
+                },
+            },
+            sleeve_celesta_fusion_alt = {
+                name = "Fusion Sleeve",
+                text = {
+                    "No extra effect with",
+                    "the {C:attention}Fusion Deck{}",
+                },
+            },
         },
 
         Mod = {
@@ -3653,7 +3674,7 @@ LOC_TAIL = '''        },
                     "- {C:spectral}Lost Soul{} turns a Joker into its",
                     "  harder, worse-tempered {C:attention}Lost{} version",
                     "- {C:attention}3{} suits, {C:attention}8{} enhancements, {C:attention}5{} seals",
-                    "- {C:attention}9{} decks, {C:attention}12{} Boss Blinds, {C:attention}2{} challenges",
+                    "- {C:attention}10{} decks, {C:attention}12{} Boss Blinds, {C:attention}2{} challenges",
                     "- {C:attention}16{} consumables, plus {C:attention}13{} {C:attention}Stamps{}",
                 },
             },

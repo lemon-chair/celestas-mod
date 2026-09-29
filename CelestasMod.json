@@ -5,7 +5,7 @@
     "author": [
         "Celesta"
     ],
-    "description": "216 VTuber Jokers, 3 suits, 8 enhancements, 9 decks - and two Spectrals: Bind merges two Jokers into one, Lost Soul turns one into its lost version.",
+    "description": "216 VTuber Jokers, 3 suits, 8 enhancements, 10 decks - and two Spectrals: Bind merges two Jokers into one, Lost Soul turns one into its lost version.",
     "prefix": "celesta",
     "main_file": "main.lua",
     "priority": 0,

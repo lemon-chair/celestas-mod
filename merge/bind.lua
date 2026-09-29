@@ -309,10 +309,35 @@ function Bind.merge_quad(cards)
     return true
 end
 
-function Bind.merge(host, absorbed)
+--- `fresh` is a card being BORN merged rather than merged in the row: the
+--- Fusion Deck's offered Jokers. The pair itself is formed exactly the same
+--- way. What it skips is everything that only makes sense for a card already
+--- sitting in the deck, which is the CATCHING UP a row merge exists to do:
+---
+---   * the passives, on both sides. Neither half has applied one, because the
+---     card has not entered the deck - and Card:add_to_deck, hooked further
+---     down, gives a merged card both halves' passives when it arrives, which
+---     is the moment they are owed. Applying them here would grant them for a
+---     Joker still in a shop.
+---   * the edition coin-flip. resolve_edition is there to settle two real
+---     cards holding two editions down to one; a stand-in partner holds none,
+---     so there is nothing to settle and the host keeps its own. Flipping
+---     anyway would take a Polychrome off a shop Joker half the time.
+---   * the arrival sounds. Nothing has arrived, and a shop of six would play
+---     twelve.
+---   * dissolving the absorbed half. It is a stand-in built to carry an
+---     ability table, never in a CardArea and never drawn, so there is nothing
+---     to animate away; its maker disposes of it.
+function Bind.merge(host, absorbed, fresh)
     if not (Bind.can_bind(host) and Bind.can_bind(absorbed)) then return false end
 
-    local edition = Bind.resolve_edition(host.edition, absorbed.edition)
+    -- Spelled out rather than folded into an `and`/`or`: resolve_edition
+    -- answering nil is not a missing answer, it is the edition being lost, and
+    -- an expression would fall straight through that to the host's own.
+    local edition = host.edition
+    if not fresh then
+        edition = Bind.resolve_edition(host.edition, absorbed.edition)
+    end
 
     -- Copied, not referenced: the absorbed card is about to be destroyed, and
     -- a Joker that scales itself needs somewhere of its own to keep growing.
@@ -349,7 +374,7 @@ function Bind.merge(host, absorbed)
         host.ability.perish_tally = absorbed.ability.perish_tally
     end
 
-    host:set_edition(edition, true, true)
+    if not fresh then host:set_edition(edition, true, true) end
 
     -- Cryptid's face-down flag has no meaning on a card whose whole point is
     -- showing two faces, and the spec rules it out outright.
@@ -366,7 +391,7 @@ function Bind.merge(host, absorbed)
 
     -- Defined further down, with the rest of the hooks that are not part of
     -- the calculate pass; looked up here at call time.
-    Bind.apply_partner_passive(host)
+    if not fresh then Bind.apply_partner_passive(host) end
 
     -- A special REPLACES both halves, so a passive either of them applied when
     -- it entered the deck has to come off - the pair speaks for the card now.
@@ -377,8 +402,10 @@ function Bind.merge(host, absorbed)
         Bind.mark_special_seen(def.key)
 
         -- Only a replacing pair takes the host's passive off; an additive one
-        -- is keeping both halves, passives included.
-        if Bind.replacing_special(host) then
+        -- is keeping both halves, passives included. A fresh card has applied
+        -- nothing yet, so there is nothing to take: what stops the host's own
+        -- passive going on is without_center_hook, when the card is bought.
+        if not fresh and Bind.replacing_special(host) then
             local center = host.config.center
             if type(center) == "table" and type(center.remove_from_deck) == "function" then
                 pcall(center.remove_from_deck, center, host, false)
@@ -394,13 +421,18 @@ function Bind.merge(host, absorbed)
             Bind.intrinsic_passive(host.ability, -1)
         end
         if type(def.on_merge) == "function" then
-            local ok, err = pcall(def.on_merge, def, host, Bind.special_state(host, def))
+            local ok, err = pcall(def.on_merge, def, host,
+                                  Bind.special_state(host, def), fresh)
             if not ok then
                 CelestasMod.warn_once("bind_merge_" .. tostring(def.key),
                     ("Bind pair %s failed to form: %s"):format(tostring(def.key), tostring(err)))
             end
         end
     end
+
+    -- Everything from here down is about a row: an arrival to announce, and a
+    -- card to take out of it. A card born merged has neither.
+    if fresh then return true end
 
     -- Both halves announce themselves, if they have anything to announce.
     --
@@ -1739,9 +1771,13 @@ special("j_drunkard", "j_juggler", {
         return { vars = { state.h_size, state.d_size } }
     end,
 
-    on_merge = function(def, card, state)
+    on_merge = function(def, card, state, fresh)
         card.ability.h_size = state.h_size
         card.ability.d_size = state.d_size
+        -- The fields are the point, and they are written either way: vanilla's
+        -- Card:add_to_deck is what applies them, so a card born merged gets
+        -- both numbers when it is bought. Only the catch-up below is skipped.
+        if fresh then return end
         Bind.intrinsic_passive(
             { h_size = state.h_size, d_size = state.d_size }, 1)
     end,
@@ -1792,12 +1828,15 @@ special("j_celesta_maya", "j_celesta_ben", {
         return { vars = { state.h_size, state.repetitions } }
     end,
 
-    on_merge = function(def, card, state)
+    on_merge = function(def, card, state, fresh)
         -- Ben's own conditional hand size is already gone by now, by both
         -- routes: Bind.merge takes the host centre's passive off when a
         -- special forms, and an absorbed card dissolves through Card:remove,
         -- which calls remove_from_deck on its way out. So this only adds.
         card.ability.h_size = (card.ability.h_size or 0) + state.h_size
+        -- As above: the field is what applies on arrival, and only the
+        -- catch-up for a card already holding the hand is skipped.
+        if fresh then return end
         if G.hand then G.hand:change_size(state.h_size) end
     end,
 
@@ -2116,7 +2155,11 @@ special("j_celesta_heavenlyfather", "j_celesta_nostro", {
         SMODS.change_voucher_limit(-state.vouchers)
     end,
 
-    on_merge = function(def, card, state)
+    on_merge = function(def, card, state, fresh)
+        -- A card born merged has not entered the deck, so there is nothing to
+        -- catch up: Card:add_to_deck reaches this def's add_to_deck when the
+        -- card arrives. See Bind.merge's `fresh`.
+        if fresh then return end
         def.add_to_deck(def, card, state, false)
     end,
 
@@ -3406,7 +3449,11 @@ special("j_celesta_heavenlyfather", "j_celesta_lordaethelstan", {
         end
     end,
 
-    on_merge = function(def, card, state)
+    on_merge = function(def, card, state, fresh)
+        -- A card born merged has not entered the deck, so there is nothing to
+        -- catch up: Card:add_to_deck reaches this def's add_to_deck when the
+        -- card arrives. See Bind.merge's `fresh`.
+        if fresh then return end
         def.add_to_deck(def, card, state, false)
     end,
 
@@ -6552,7 +6599,11 @@ special("j_celesta_kairyucrocodile", "j_celesta_piapiufo", {
     calculate = kairyu_discard_calculate(bind_is_star),
     add_to_deck = kairyu_add_to_deck,
     remove_from_deck = kairyu_remove_from_deck,
-    on_merge = function(def, card, state)
+    on_merge = function(def, card, state, fresh)
+        -- A card born merged has not entered the deck, so there is nothing to
+        -- catch up: Card:add_to_deck reaches this def's add_to_deck when the
+        -- card arrives. See Bind.merge's `fresh`.
+        if fresh then return end
         kairyu_add_to_deck(def, card, state, false)
     end,
     on_unmerge = function(def, card, state)
@@ -6573,7 +6624,11 @@ special("j_celesta_kairyucrocodile", "j_celesta_torioriane", {
     calculate = kairyu_discard_calculate(CelestasMod.is_true_star),
     add_to_deck = kairyu_add_to_deck,
     remove_from_deck = kairyu_remove_from_deck,
-    on_merge = function(def, card, state)
+    on_merge = function(def, card, state, fresh)
+        -- A card born merged has not entered the deck, so there is nothing to
+        -- catch up: Card:add_to_deck reaches this def's add_to_deck when the
+        -- card arrives. See Bind.merge's `fresh`.
+        if fresh then return end
         kairyu_add_to_deck(def, card, state, false)
     end,
     on_unmerge = function(def, card, state)
@@ -6603,7 +6658,11 @@ special("j_celesta_kairyucrocodile", "j_celesta_rosedoodle", {
     calculate = kairyu_discard_calculate(bind_is_mult),
     add_to_deck = kairyu_add_to_deck,
     remove_from_deck = kairyu_remove_from_deck,
-    on_merge = function(def, card, state)
+    on_merge = function(def, card, state, fresh)
+        -- A card born merged has not entered the deck, so there is nothing to
+        -- catch up: Card:add_to_deck reaches this def's add_to_deck when the
+        -- card arrives. See Bind.merge's `fresh`.
+        if fresh then return end
         kairyu_add_to_deck(def, card, state, false)
     end,
     on_unmerge = function(def, card, state)
@@ -6632,7 +6691,11 @@ special("j_celesta_kairyucrocodile", "j_celesta_giwi", {
     end),
     add_to_deck = kairyu_add_to_deck,
     remove_from_deck = kairyu_remove_from_deck,
-    on_merge = function(def, card, state)
+    on_merge = function(def, card, state, fresh)
+        -- A card born merged has not entered the deck, so there is nothing to
+        -- catch up: Card:add_to_deck reaches this def's add_to_deck when the
+        -- card arrives. See Bind.merge's `fresh`.
+        if fresh then return end
         kairyu_add_to_deck(def, card, state, false)
     end,
     on_unmerge = function(def, card, state)
@@ -6661,7 +6724,11 @@ special("j_celesta_kairyucrocodile", "j_celesta_nihmune", {
     end),
     add_to_deck = kairyu_add_to_deck,
     remove_from_deck = kairyu_remove_from_deck,
-    on_merge = function(def, card, state)
+    on_merge = function(def, card, state, fresh)
+        -- A card born merged has not entered the deck, so there is nothing to
+        -- catch up: Card:add_to_deck reaches this def's add_to_deck when the
+        -- card arrives. See Bind.merge's `fresh`.
+        if fresh then return end
         kairyu_add_to_deck(def, card, state, false)
     end,
     on_unmerge = function(def, card, state)
@@ -7018,7 +7085,11 @@ quad({
         state.consumable_applied, state.joker_applied = 0, 0
     end,
 
-    on_merge = function(def, card, state)
+    on_merge = function(def, card, state, fresh)
+        -- A card born merged has not entered the deck, so there is nothing to
+        -- catch up: Card:add_to_deck reaches this def's add_to_deck when the
+        -- card arrives. See Bind.merge's `fresh`.
+        if fresh then return end
         def.add_to_deck(def, card, state, false)
     end,
     on_unmerge = function(def, card, state)
@@ -7976,7 +8047,11 @@ special("j_celesta_grimmi", "j_celesta_heavenlyfather", {
         SMODS.change_voucher_limit(-state.vouchers)
     end,
 
-    on_merge = function(def, card, state)
+    on_merge = function(def, card, state, fresh)
+        -- A card born merged has not entered the deck, so there is nothing to
+        -- catch up: Card:add_to_deck reaches this def's add_to_deck when the
+        -- card arrives. See Bind.merge's `fresh`.
+        if fresh then return end
         def.add_to_deck(def, card, state, false)
     end,
 
@@ -8611,7 +8686,11 @@ special("j_celesta_birdyovo", "j_celesta_smittenseraph", {
         CelestasMod.bump_limit(G.consumeables, -state.consumable_slots)
     end,
 
-    on_merge = function(def, card, state)
+    on_merge = function(def, card, state, fresh)
+        -- A card born merged has not entered the deck, so there is nothing to
+        -- catch up: Card:add_to_deck reaches this def's add_to_deck when the
+        -- card arrives. See Bind.merge's `fresh`.
+        if fresh then return end
         def.add_to_deck(def, card, state, false)
     end,
 

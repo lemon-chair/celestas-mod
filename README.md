@@ -41,7 +41,7 @@ made it.
 - **3 new suits**
 - **8 new enhancements**
 - **5 new seals**
-- **9 new decks**
+- **10 new decks**
 - **12 new Boss Blinds**
 - **16 new consumables**, plus a new type of consumable with 13 cards and its
   own booster pack
