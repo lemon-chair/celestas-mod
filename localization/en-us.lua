@@ -2153,6 +2153,14 @@ return {
                     "the abilities of both",
                 },
             },
+            c_celesta_swap = {
+                name = "Swap",
+                text = {
+                    "Swap the {C:attention}second{} Joker",
+                    "between {C:attention}2{} selected",
+                    "{C:attention}merged{} Jokers",
+                },
+            },
             c_celesta_milk_bottle = {
                 name = "Milk Bottle",
                 text = {
@@ -5077,6 +5085,7 @@ return {
                 text = {
                     "Every {C:attention}Joker{} offered arrives",
                     "already {C:attention}merged{} with another random {C:attention}Joker{}",
+                    "Start with a {C:spectral}Swap{}",
                 },
             },
         },
@@ -5230,6 +5239,7 @@ return {
                 text = {
                     "Every {C:attention}Joker{} offered arrives",
                     "already {C:attention}merged{} with another random {C:attention}Joker{}",
+                    "Start with a {C:spectral}Swap{}",
                 },
             },
             sleeve_celesta_fusion_alt = {
@@ -5255,11 +5265,13 @@ return {
                     " ",
                     "- {C:spectral}Bind{} merges {C:attention}2{} Jokers into one,",
                     "  with {C:attention}300{} unique combinations",
+                    "- {C:spectral}Swap{} trades the second Joker of",
+                    "  {C:attention}2{} merged ones",
                     "- {C:spectral}Lost Soul{} turns a Joker into its",
                     "  harder, worse-tempered {C:attention}Lost{} version",
                     "- {C:attention}3{} suits, {C:attention}8{} enhancements, {C:attention}5{} seals",
                     "- {C:attention}10{} decks, {C:attention}12{} Boss Blinds, {C:attention}2{} challenges",
-                    "- {C:attention}16{} consumables, plus {C:attention}13{} {C:attention}Stamps{}",
+                    "- {C:attention}17{} consumables, plus {C:attention}13{} {C:attention}Stamps{}",
                 },
             },
         },

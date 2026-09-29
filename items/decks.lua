@@ -804,4 +804,25 @@ SMODS.Back {
 
     unlocked = true,
     discovered = true,
+
+    -- One Swap to open with. Every Joker this deck offers arrives already
+    -- paired with something it did not choose, and Swap is the one card that
+    -- does anything about which half went where.
+    apply = function(self, back)
+        G.E_MANAGER:add_event(Event { func = function()
+            local key = "c_" .. DECK_PREFIX .. "_swap"
+            -- Asked for before it is asked for: create_card indexes the centre
+            -- a forced key names without looking first, so a key that does not
+            -- exist is not a missing card, it is a run that does not start.
+            if not (G.P_CENTERS and G.P_CENTERS[key]) then
+                CelestasMod.warn_once("fusion_deck_swap",
+                    ("The Fusion Deck cannot deal %s: no such centre"):format(key))
+                return true
+            end
+            -- No start_materialize, for the Admin Deck's reason: this is the
+            -- starting board rather than a reward.
+            SMODS.add_card { key = key, area = G.consumeables }
+            return true
+        end })
+    end,
 }

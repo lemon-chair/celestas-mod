@@ -85,6 +85,7 @@ SMODS.Atlas { key = 'fx_downpour', path = 'fx_downpour.png',  px = 256, py = 256
 SMODS.Atlas { key = 'fx_snowstorm', path = 'fx_snowstorm.png', px = 256, py = 256 }
 
 SMODS.Atlas { key = 'bind', path = 'bind.png', px = 71, py = 95 }
+SMODS.Atlas { key = 'swap', path = 'swap.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'milk_bottle', path = 'milk_bottle.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'burgundy_brew', path = 'burgundy_brew.png', px = 71, py = 95 }
 

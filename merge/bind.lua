@@ -171,6 +171,23 @@ function Bind.selection()
     return nil
 end
 
+--- The two highlighted merged Jokers, or nil when the selection is not
+--- exactly two of them.
+---
+--- Stricter than Bind.selection on purpose: every card has to be a pair
+--- already, because a swap trades second halves and a card without one has
+--- nothing to put on the table.
+function Bind.swap_selection()
+    if not (G.jokers and G.jokers.highlighted) then return nil end
+    local picked = {}
+    for _, joker in ipairs(G.jokers.highlighted) do
+        if not (Bind.is_merged(joker) and not Bind.is_quad(joker)) then return nil end
+        picked[#picked + 1] = joker
+    end
+    if #picked ~= 2 then return nil end
+    return picked
+end
+
 --------------------------------------------------------------------------------
 -- Editions
 --------------------------------------------------------------------------------
@@ -389,46 +406,12 @@ function Bind.merge(host, absorbed, fresh)
 
     Bind.invalidate_art(host)
 
-    -- Defined further down, with the rest of the hooks that are not part of
-    -- the calculate pass; looked up here at call time.
-    if not fresh then Bind.apply_partner_passive(host) end
-
-    -- A special REPLACES both halves, so a passive either of them applied when
-    -- it entered the deck has to come off - the pair speaks for the card now.
-    -- Only the host's: the absorbed half's was already taken back when it left
-    -- the row, and Bind.apply_partner_passive above skips specials entirely.
-    local def = Bind.special_of(host)
-    if def then
-        Bind.mark_special_seen(def.key)
-
-        -- Only a replacing pair takes the host's passive off; an additive one
-        -- is keeping both halves, passives included. A fresh card has applied
-        -- nothing yet, so there is nothing to take: what stops the host's own
-        -- passive going on is without_center_hook, when the card is bought.
-        if not fresh and Bind.replacing_special(host) then
-            local center = host.config.center
-            if type(center) == "table" and type(center.remove_from_deck) == "function" then
-                pcall(center.remove_from_deck, center, host, false)
-            end
-            -- ...and its ability-driven ones, for the same reason: the pair
-            -- speaks for the card now, so a hand size or a discard the host
-            -- brought with it is no longer being granted by anything.
-            --
-            -- Through the table, not the local: that is declared with the rest
-            -- of the passive hooks two thousand lines below this, so the bare
-            -- name here would compile as a global and be nil. Same reason
-            -- Bind.apply_partner_passive is reached that way above.
-            Bind.intrinsic_passive(host.ability, -1)
-        end
-        if type(def.on_merge) == "function" then
-            local ok, err = pcall(def.on_merge, def, host,
-                                  Bind.special_state(host, def), fresh)
-            if not ok then
-                CelestasMod.warn_once("bind_merge_" .. tostring(def.key),
-                    ("Bind pair %s failed to form: %s"):format(tostring(def.key), tostring(err)))
-            end
-        end
-    end
+    -- Everything that follows from a pair now existing on this card, which
+    -- is the half of merging that a SWAP does too. Through the table, not a
+    -- local: it is declared with the rest of the passive hooks two thousand
+    -- lines below this, so a bare name here would compile as a global and be
+    -- nil.
+    Bind.pair_formed(host, fresh)
 
     -- Everything from here down is about a row: an arrival to announce, and a
     -- card to take out of it. A card born merged has neither.
@@ -1786,27 +1769,21 @@ special("j_drunkard", "j_juggler", {
         Bind.intrinsic_passive(
             { h_size = state.h_size, d_size = state.d_size }, -1)
 
-        -- ...and the survivor goes back to being itself, with its own number
-        -- applied again. Nothing else does this: a split is not leaving the
-        -- deck, so neither vanilla hook runs, and the host's own passive was
-        -- taken off when the pair formed.
+        -- ...and the numbers the pair wrote over are written back, so that
+        -- what unmerge applies afterwards is the survivor's own. Only this
+        -- pair needs it: SET, not added to, is how on_merge put the pair's
+        -- numbers on the card, so the host's own are not underneath them.
         --
-        -- Which half survives cannot be read off the card here - the centre
-        -- swap happens after this returns - so `losing` is what says.
-        local surviving
-        if losing == "host" then
-            -- The absorbed half's saved ability becomes the card's, numbers
-            -- and all, so there is nothing to write: only to apply.
-            surviving = card.ability.celesta_bind
-                and card.ability.celesta_bind.ability
-        else
-            surviving = card.ability
+        -- Only when the HOST survives. The absorbed half's saved ability still
+        -- carries its own numbers - nothing was written over them - and which
+        -- half survives cannot be read off the card here, because the centre
+        -- swap happens after this returns.
+        if losing ~= "host" then
             local center = card.config.center
             local config = (type(center) == "table" and center.config) or {}
-            surviving.h_size = config.h_size or 0
-            surviving.d_size = config.d_size or 0
+            card.ability.h_size = config.h_size or 0
+            card.ability.d_size = config.d_size or 0
         end
-        if surviving then Bind.intrinsic_passive(surviving, 1) end
     end,
 })
 
@@ -5355,7 +5332,12 @@ function Bind.unmerge(card, losing)
     -- Whichever half is leaving takes its passive with it. Neither vanilla
     -- hook runs on its own here: the card never leaves the Joker row, it just
     -- stops being two Jokers.
-    if not Bind.replacing_special(card) then
+    --
+    -- Read before celesta_bind is cleared, and needed again at the bottom:
+    -- under a replacing pair NEITHER half's own passive is on, so the survivor
+    -- has one to get back.
+    local was_replacing = Bind.replacing_special(card) ~= nil
+    if not was_replacing then
         if losing == "host" then
             Bind.remove_own_passive(card)
         else
@@ -5404,6 +5386,25 @@ function Bind.unmerge(card, losing)
         card.ability.celesta_bind = nil
         card.sell_cost = bound.host_sell_cost
             or math.max(1, math.floor((card.sell_cost or 2) / 2))
+    end
+
+    -- The survivor is a lone Joker again, and gets its own passive back.
+    --
+    -- Only after a REPLACING pair, because only that takes both halves' off:
+    -- Bind.merge removes the host's when the pair forms and
+    -- apply_partner_passive declines to apply the absorbed half's at all, the
+    -- pair standing in for both. An additive pair kept them, and there is
+    -- nothing owed.
+    --
+    -- Here rather than beside the removals above, because this is after the
+    -- centre and ability swap: `card` is the survivor whichever half left, and
+    -- its own centre and its own numbers are what go back on.
+    if was_replacing then
+        local center = card.config.center
+        if type(center) == "table" and type(center.add_to_deck) == "function" then
+            pcall(center.add_to_deck, center, card, false)
+        end
+        Bind.intrinsic_passive(card.ability, 1)
     end
 
     Bind.invalidate_art(card)
@@ -6532,6 +6533,97 @@ function Bind.apply_partner_passive(host)
         center:add_to_deck(card, false)
     end)
     partner_intrinsic(host, 1)
+end
+
+--- Everything that follows from a pair existing on a card that is in the row.
+---
+--- Shared by merging and by swapping, because they agree on this part and
+--- differ on all the rest: a merge settles an edition, inherits stickers,
+--- announces itself and dissolves the half that lost, and a swap does none of
+--- those - nothing arrives and nothing leaves, two halves change places.
+---
+--- `fresh` is Bind.merge's: a card being born merged, which has not entered
+--- the deck and so has no passive to move yet.
+function Bind.pair_formed(host, fresh)
+    if not fresh then Bind.apply_partner_passive(host) end
+
+    -- A special REPLACES both halves, so a passive either of them applied when
+    -- it entered the deck has to come off - the pair speaks for the card now.
+    -- Only the host's: the absorbed half's was already taken back when it left
+    -- the row, and Bind.apply_partner_passive above skips specials entirely.
+    local def = Bind.special_of(host)
+    if not def then return end
+
+    Bind.mark_special_seen(def.key)
+
+    -- Only a replacing pair takes the host's passive off; an additive one is
+    -- keeping both halves, passives included. A fresh card has applied nothing
+    -- yet, so there is nothing to take: what stops the host's own passive
+    -- going on is without_center_hook, when the card is bought.
+    if not fresh and Bind.replacing_special(host) then
+        local center = host.config.center
+        if type(center) == "table" and type(center.remove_from_deck) == "function" then
+            pcall(center.remove_from_deck, center, host, false)
+        end
+        -- ...and its ability-driven ones, for the same reason: the pair speaks
+        -- for the card now, so a hand size or a discard the host brought with
+        -- it is no longer being granted by anything.
+        Bind.intrinsic_passive(host.ability, -1)
+    end
+
+    if type(def.on_merge) == "function" then
+        local ok, err = pcall(def.on_merge, def, host,
+                              Bind.special_state(host, def), fresh)
+        if not ok then
+            CelestasMod.warn_once("bind_merge_" .. tostring(def.key),
+                ("Bind pair %s failed to form: %s"):format(tostring(def.key), tostring(err)))
+        end
+    end
+end
+
+--- Trades the absorbed halves of two merged cards.
+---
+--- Each card is taken apart and put back together with the other's half. Both
+--- are taken apart FIRST, because a swap is one move: doing one card at a time
+--- would have the first card's new pair forming - passives, on_merge and all -
+--- while the second still held the half it is about to give up.
+---
+--- Neither card moves and neither half is created or destroyed, so there is no
+--- edition to settle, no sticker to inherit and nothing to dissolve. What does
+--- change is which pair each card is, and that is what pair_formed says.
+function Bind.swap(a, b)
+    if not (a and b and a ~= b) then return false end
+    -- Two halves is the whole question. A quad has four and no second half to
+    -- trade; a loose Joker has none.
+    for _, card in ipairs({ a, b }) do
+        if not (Bind.is_merged(card) and not Bind.is_quad(card)) then return false end
+    end
+
+    local bound_a = a.ability.celesta_bind
+    local bound_b = b.ability.celesta_bind
+    if not (Bind.unmerge(a, "absorbed") and Bind.unmerge(b, "absorbed")) then
+        return false
+    end
+
+    --- Puts `bound` onto `card`, which is a lone Joker in the row.
+    local function attach(card, bound)
+        -- The state belongs to the PAIR, not to the half carrying it: this
+        -- half is joining a different Joker, so whatever the old pair had
+        -- banked is not this one's. special_state builds a fresh one from the
+        -- new pair's config when it is next asked.
+        bound.special = nil
+        -- What the card is worth on its own, for when it comes apart again.
+        bound.host_sell_cost = card.sell_cost
+        card.ability.celesta_bind = bound
+        card.sell_cost = (card.sell_cost or 0) + (bound.sell_cost or 0)
+        Bind.invalidate_art(card)
+        card.ability_UIBox_table = nil
+        Bind.pair_formed(card)
+    end
+
+    attach(a, bound_b)
+    attach(b, bound_a)
+    return true
 end
 
 --- The mirror, for a merge coming apart while the card stays in the row.
@@ -12603,6 +12695,50 @@ SMODS.Consumable {
                 else
                     Bind.merge(host, absorbed)
                 end
+                return true
+            end,
+        })
+        delay(0.6)
+    end,
+}
+
+-- Swap: the same two-Joker selection, trading halves rather than joining them.
+--
+-- Its own card rather than a mode of Bind, because what a player has selected
+-- says which they want unambiguously: two loose Jokers can only be merged, and
+-- two pairs can only be swapped or made into a quad. A single card would have
+-- had to guess between the last two.
+SMODS.Consumable {
+    key = "swap",
+    set = "Spectral",
+    atlas = "swap",
+    pos = { x = 0, y = 0 },
+
+    cost = 4,
+    unlocked = true,
+    discovered = true,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
+    end,
+
+    can_use = function(self, card)
+        return Bind.swap_selection() ~= nil
+    end,
+
+    use = function(self, card, area, copier)
+        local picked = Bind.swap_selection()
+        if not picked then return end
+        local a, b = picked[1], picked[2]
+
+        G.E_MANAGER:add_event(Event {
+            trigger = "after",
+            delay = 0.4,
+            func = function()
+                play_sound("gold_seal", 1.2, 0.6)
+                a:juice_up(0.4, 0.5)
+                b:juice_up(0.4, 0.5)
+                Bind.swap(a, b)
                 return true
             end,
         })
