@@ -794,7 +794,7 @@ SMODS.Joker {
     cost = 6,
     unlocked = true,
     discovered = false,
-    blueprint_compat = true,
+    blueprint_compat = false,
     eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
@@ -1242,7 +1242,7 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     rarity = 4, cost = 20,
     unlocked = false, discovered = false,
-    blueprint_compat = true, eternal_compat = true,
+    blueprint_compat = false, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
         return {}
@@ -1352,7 +1352,7 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
     unlocked = true, discovered = false,
-    blueprint_compat = true, eternal_compat = true,
+    blueprint_compat = false, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_SEALS.Purple
@@ -1506,7 +1506,7 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 7,
     unlocked = true, discovered = false,
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { target = nil } },
 
@@ -2190,7 +2190,7 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
     unlocked = true, discovered = false,
-    blueprint_compat = true, eternal_compat = true,
+    blueprint_compat = false, eternal_compat = true,
 
     -- last_round is how it fires once per round; see calculate.
     config = { extra = { last_round = -1 } },
@@ -2537,7 +2537,7 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
     unlocked = true, discovered = false,
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
         return {}
@@ -2983,7 +2983,7 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
     unlocked = true, discovered = false,
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { odds = CelestasMod.LIFFEH_ODDS } },
 
@@ -3870,7 +3870,7 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
     unlocked = true, discovered = false,
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     config = { extra = {} },
 
@@ -4516,7 +4516,7 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
     unlocked = false, discovered = false,
-    blueprint_compat = true, eternal_compat = true,
+    blueprint_compat = false, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
         return {}
@@ -4668,7 +4668,7 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
     unlocked = false, discovered = false,
-    blueprint_compat = true, eternal_compat = true,
+    blueprint_compat = false, eternal_compat = true,
     loc_vars = function(self, info_queue, card) return {} end,
     calculate = converter_calculate("Spades", G.C.SPADES, "celesta_spades"),
 }
@@ -4679,7 +4679,7 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
     unlocked = false, discovered = false,
-    blueprint_compat = true, eternal_compat = true,
+    blueprint_compat = false, eternal_compat = true,
     loc_vars = function(self, info_queue, card) return {} end,
     calculate = converter_calculate("Diamonds", G.C.DIAMONDS, "celesta_diamonds"),
 }
@@ -4690,7 +4690,7 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
     unlocked = false, discovered = false,
-    blueprint_compat = true, eternal_compat = true,
+    blueprint_compat = false, eternal_compat = true,
     loc_vars = function(self, info_queue, card) return {} end,
     calculate = converter_calculate("Clubs", G.C.CLUBS, "celesta_clubs"),
 }
@@ -4953,7 +4953,7 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
     unlocked = false, discovered = false,
-    blueprint_compat = true, eternal_compat = true,
+    blueprint_compat = false, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_wild
@@ -5382,7 +5382,7 @@ SMODS.Joker {
     unlocked = true, discovered = false,
     -- A copy would grant a second set of the same slots, which the reset
     -- below could not take back off: the amount applied lives on this card.
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     -- `applied` is what this card has actually handed out. It lives in the
     -- ability table rather than a local because card_limit is saved with the
@@ -5984,7 +5984,7 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
     unlocked = true, discovered = false,
-    blueprint_compat = true, eternal_compat = true,
+    blueprint_compat = false, eternal_compat = true,
 
     config = { extra = { needed = 4 } },
 
@@ -6267,7 +6267,7 @@ SMODS.Joker {
     rarity = 3, cost = 9,
     unlocked = true, discovered = false,
     -- A copy would multiply the same neighbour a second time.
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { scale = 1.5 } },
 
@@ -6426,7 +6426,7 @@ SMODS.Joker {
     rarity = 2, cost = 6,
     unlocked = true, discovered = false,
     -- The work happens at the Seal, not here; there is no trigger to copy.
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_SEALS.Blue
@@ -6945,7 +6945,7 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
     unlocked = true, discovered = false,
-    blueprint_compat = true, eternal_compat = true,
+    blueprint_compat = false, eternal_compat = true,
 
     -- Spades is a vanilla suit, so {C:spades} paints it and there is no
     -- {V:1} colour to thread through vars the way the added suits need.
@@ -7422,7 +7422,7 @@ SMODS.Joker {
     rarity = 1, cost = 4,
     unlocked = true, discovered = false,
     -- It has no calculate to copy; the sell value belongs to this card.
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.per_joker,
@@ -7619,7 +7619,7 @@ SMODS.Joker {
     unlocked = true, discovered = false,
     -- Nothing to copy: the slots belong to this card, and they are given and
     -- taken back by its own hooks.
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { joker_slots = 3, consumable_slots = 1 } },
 
@@ -7770,7 +7770,7 @@ SMODS.Joker {
     -- Half of it is a passive nothing can copy, and a copy of the other half
     -- would read as the whole Joker being copied. Eidolon Wyrm is the same
     -- shape for the same reason.
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { selection = 2, x_mult = 1, x_mult_gain = 0.2 } },
 
@@ -7892,7 +7892,7 @@ SMODS.Joker {
     -- Widening the scoring hand is a yes/no answer; a copy cannot say yes
     -- harder, and the retrigger it could copy is not worth the confusion of
     -- half the Joker being copyable.
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { cards = 2, repetitions = 1 } },
 
@@ -8086,7 +8086,7 @@ SMODS.Joker {
     unlocked = true, discovered = false,
     -- Hand size belongs to this card and is given back by its own hooks;
     -- there is no scoring effect for a copier to repeat.
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { h_size = 4, applied = nil } },
 
@@ -8406,7 +8406,7 @@ SMODS.Joker {
     rarity = 1, cost = 5,
     unlocked = true, discovered = false,
     -- The value belongs to this card; a copy has nothing to add to it.
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { dollars = 1 } },
 
@@ -8489,7 +8489,7 @@ SMODS.Joker {
     rarity = 2, cost = 6,
     unlocked = true, discovered = false,
     -- A copy would triple the interest a second time, off one round.
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { scale = 3, applied = 0 } },
 
@@ -9726,7 +9726,7 @@ SMODS.Joker {
     unlocked = true, discovered = false,
     -- Half of it is a passive nothing can copy, and a copy of the other half
     -- would read as the whole Joker being copied.
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { limit = 3, x_mult_gain = 1, needed = 5 } },
 
@@ -9989,7 +9989,7 @@ SMODS.Joker {
     rarity = 2, cost = 6,
     unlocked = true, discovered = false,
     -- Nothing to copy: what it does happens as it leaves the row.
-    blueprint_compat = false, eternal_compat = false,
+    blueprint_compat = true, eternal_compat = false,
 
     loc_vars = function(self, info_queue, card)
         return { vars = {} }
@@ -10086,7 +10086,7 @@ SMODS.Joker {
     rarity = 3, cost = 8,
     unlocked = true, discovered = false,
     -- What it does happens as it leaves the row, which a copy cannot do.
-    blueprint_compat = false, eternal_compat = false,
+    blueprint_compat = true, eternal_compat = false,
 
     config = { extra = { rounds = 0, needed = 1 } },
 
@@ -10630,7 +10630,7 @@ SMODS.Joker {
     rarity = 2, cost = 6,
     unlocked = true, discovered = false,
     -- A passive the quota lookup reads, not a trigger; there is nothing to copy.
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { percent = 10 } },
 
@@ -11219,7 +11219,7 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     rarity = 3, cost = 8,
     unlocked = true, discovered = false,
-    blueprint_compat = true, eternal_compat = true,
+    blueprint_compat = false, eternal_compat = true,
 
     in_pool = true_star_gated,
 
@@ -11528,7 +11528,7 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     rarity = 1, cost = 5,
     unlocked = true, discovered = false,
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { odds = CelestasMod.MOGU_ODDS } },
 
@@ -11774,7 +11774,7 @@ SMODS.Joker {
     unlocked = true, discovered = false,
     -- A copy would eat a second Joker every round, which is not a copy of one
     -- Joker's worth of anything.
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { rate = 0.1, per = 5, x_chips = 1, consumed = 0,
                          last_round = 0 } },
@@ -12074,7 +12074,7 @@ SMODS.Joker {
     unlocked = true, discovered = false,
     -- The undebuffing belongs to this card and is counted on it; a copy would
     -- spend an allowance it does not own.
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { limit = 20, freed = 0 } },
 
@@ -12194,7 +12194,7 @@ SMODS.Joker {
     unlocked = true, discovered = false,
     -- A copy would score the same held cards a second time, which is a
     -- retrigger of the whole hand rather than a copy of what this does.
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS[HIME_EUTROPHIC]
@@ -12267,7 +12267,7 @@ SMODS.Joker {
     unlocked = true, discovered = false,
     -- A copy sits somewhere else in the row and so counts a different pair of
     -- sides; what it would retrigger is not what this does.
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { max = CelestasMod.CALAMITAS_CAP } },
 

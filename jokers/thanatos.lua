@@ -167,7 +167,7 @@ SMODS.Joker {
     unlocked = true, discovered = false,
     -- A copy would eat the same cards a second time, and there would be none
     -- left for it to eat.
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { e_mult = 1, e_mult_gain = 0.05 } },
 

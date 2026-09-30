@@ -128,7 +128,7 @@ SMODS.Joker {
     -- The gain is not a trigger a copy could take part in - it happens when
     -- something else freezes - and a copy of the multiplier would be a second
     -- Joker's worth of it.
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { x_mult = 1, gain = 0.75 } },
 

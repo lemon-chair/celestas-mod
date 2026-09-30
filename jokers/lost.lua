@@ -1112,7 +1112,7 @@ SMODS.Joker {
     unlocked = false,
     discovered = false,
     -- A copy of a Joker that retriggers Jokers is a knot; Blueprint itself is
-    -- blueprint_compat = false for the same reason.
+    -- blueprint_compat = true for the same reason.
     blueprint_compat = false,
     eternal_compat = true,
 
@@ -2243,7 +2243,7 @@ SMODS.Joker {
     discovered = false,
     -- The price is read off whichever Identity is held; a second one, copy or
     -- not, charges the same $6 and there is no scoring effect to repeat.
-    blueprint_compat = false,
+    blueprint_compat = true,
     eternal_compat = true,
 
     in_pool = function() return false end,

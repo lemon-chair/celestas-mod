@@ -426,7 +426,7 @@ SMODS.Joker {
     unlocked = true, discovered = false,
     -- A copy would run every retained Joker a second time, which is a good
     -- deal more than a copy of one Joker is meant to be.
-    blueprint_compat = false, eternal_compat = true,
+    blueprint_compat = true, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
         return {
