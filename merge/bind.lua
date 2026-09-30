@@ -796,7 +796,7 @@ special("j_celesta_arar", "j_celesta_jaws", {
                             -- are played cards, and the event runs while they
                             -- still carry played_this_ante.
                             CelestasMod.unjudged(target, function()
-                                target:set_ability(G.P_CENTERS[enhancement], nil, true)
+                                target:set_ability(G.P_CENTERS[enhancement])
                             end)
                             return true
                         end
@@ -1134,7 +1134,7 @@ special("j_celesta_arar", "j_celesta_heavenlyfather", {
         target.celesta_arar_claimed = true
         G.E_MANAGER:add_event(Event {
             func = function()
-                target:set_ability(G.P_CENTERS[enhancement], nil, true)
+                target:set_ability(G.P_CENTERS[enhancement])
                 target:juice_up(0.3, 0.5)
                 target.celesta_arar_claimed = nil
 
@@ -1671,7 +1671,7 @@ special("j_celesta_arar", "j_celesta_arielle", {
                     touched = touched + 1
                     G.E_MANAGER:add_event(Event {
                         func = function()
-                            target:set_ability(G.P_CENTERS[enhancement], nil, true)
+                            target:set_ability(G.P_CENTERS[enhancement])
                             target:juice_up(0.3, 0.5)
                             return true
                         end
@@ -3537,7 +3537,7 @@ special("j_celesta_arar", "j_celesta_froggyloch", {
                     target.celesta_arar_claimed = true
                     G.E_MANAGER:add_event(Event {
                         func = function()
-                            target:set_ability(G.P_CENTERS[enhancement], nil, true)
+                            target:set_ability(G.P_CENTERS[enhancement])
                             target:juice_up(0.3, 0.5)
                             target.celesta_arar_claimed = nil
                             return true
@@ -11696,7 +11696,7 @@ do
         target.celesta_arar_claimed = true
         G.E_MANAGER:add_event(Event {
             func = function()
-                target:set_ability(G.P_CENTERS[enhancement], nil, true)
+                target:set_ability(G.P_CENTERS[enhancement])
                 target:juice_up(0.3, 0.5)
                 target.celesta_arar_claimed = nil
                 return true

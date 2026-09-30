@@ -134,7 +134,7 @@ SMODS.Joker {
             target.celesta_arar_claimed = true
             G.E_MANAGER:add_event(Event {
                 func = function()
-                    target:set_ability(G.P_CENTERS[enhancement], nil, true)
+                    target:set_ability(G.P_CENTERS[enhancement])
                     target:juice_up(0.3, 0.5)
                     target.celesta_arar_claimed = nil
                     return true
@@ -969,7 +969,7 @@ SMODS.Joker {
                 and SMODS.pseudorandom_probability(card, "celesta_shoto", 1, card.ability.extra.odds) then
                 -- Under unjudged, for the reason FeFe gives.
                 CelestasMod.unjudged(other, function()
-                    other:set_ability(G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Gash], nil, true)
+                    other:set_ability(G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Gash])
                 end)
                 -- Spare it from breaking on the hand it was gashed in; the
                 -- Gash enhancement consumes this flag on its next destroy
@@ -1330,7 +1330,7 @@ SMODS.Joker {
             target.celesta_mother_claimed = true
             G.E_MANAGER:add_event(Event {
                 func = function()
-                    target:set_ability(G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Exo], nil, true)
+                    target:set_ability(G.P_CENTERS[CelestasMod.ENHANCEMENT_KEYS.Exo])
                     target:juice_up(0.3, 0.5)
                     target.celesta_mother_claimed = nil
                     return true
