@@ -418,6 +418,65 @@ CelestasMod.KURO_RULES = {}
 --- CelestasMod.vedal_step.
 CelestasMod.VEDAL_SCALE_RULES = {}
 
+--- Which Jokers a copier is pointed at right now.
+---
+--- There is no general answer in the game. Every copier has its own rule -
+--- Blueprint takes the one to its right, Brainstorm the leftmost - and none of
+--- them says so anywhere a passive can ask; the rule lives inside a calculate
+--- that only runs while a hand is scoring. So the ones that exist are written
+--- down, one line each, and another mod's copier is simply not covered.
+---
+--- `row` is the Joker row and `i` where the copier sits in it, both worked out
+--- once by copier_targets below rather than by each rule.
+CelestasMod.COPIER_TARGETS = {
+    j_blueprint = function(card, row, i) return { row[i + 1] } end,
+    j_brainstorm = function(card, row, i) return { row[1] } end,
+}
+
+do
+    local J = "j_" .. SMODS.current_mod.prefix .. "_"
+    local T = CelestasMod.COPIER_TARGETS
+    T[J .. "mariyume"] = function(card, row, i) return { row[#row] } end
+    T[J .. "sigrid_bird"] = function(card, row, i)
+        return CelestasMod.neighbours(row, i)
+    end
+    -- An index rather than a card, re-picked every hand; the Joker itself
+    -- reads it the same way.
+    T[J .. "onigiri"] = function(card, row, i)
+        local at = card.ability and card.ability.extra and card.ability.extra.target
+        return { at and row[at] or nil }
+    end
+end
+
+--- The cards `card` is copying, or nothing.
+---
+--- Asked of every card on every frame by Ruben's price, so the cheap test comes
+--- first: almost nothing in the row is a copier, and the table says so without
+--- walking anything.
+function CelestasMod.copier_targets(card)
+    local center = card and card.config and card.config.center
+    local rule = center and CelestasMod.COPIER_TARGETS[center.key]
+    if not rule then return nil end
+
+    local row = G.jokers and G.jokers.cards
+    if not row then return nil end
+    local index
+    for i, held in ipairs(row) do
+        if held == card then index = i break end
+    end
+    if not index then return nil end
+
+    local ok, out = pcall(rule, card, row, index)
+    if not (ok and type(out) == "table") then return nil end
+    -- A copier pointed at itself copies nothing, which every one of them
+    -- already refuses for itself.
+    local targets = {}
+    for _, target in ipairs(out) do
+        if target and target ~= card then targets[#targets + 1] = target end
+    end
+    return targets[1] and targets or nil
+end
+
 --- What CDawg retains beyond Commons.
 ---
 --- Each rule answers a list of rarity numbers while its pair is in the row, and

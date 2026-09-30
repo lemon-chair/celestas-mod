@@ -3900,8 +3900,11 @@ SMODS.Joker {
         -- holding a card that is no longer there; the destroy pass exists
         -- precisely for removing scored cards and runs once scoring is done.
         -- The card pays out for the hand that consumes it.
+        -- A copy takes one too, which is the whole of what copying this
+        -- does: two passes take and two store, and the destroy step still
+        -- removes the card once - it collects a card some Joker flagged, not
+        -- one per flag - so it leaves once and comes back twice.
         if context.destroying_card and context.cardarea == G.play
-            and not context.blueprint
             and G.GAME.current_round.hands_played == 0
             and context.full_hand
             and (any_count
@@ -7340,9 +7343,23 @@ local RUBEN_KEY = "j_celesta_rubensargasm"
 local function ruben_extra_value(card)
     local jokers = #(((G.jokers or {}).cards) or {})
     local total = 0
-    for _, ability in ipairs(CelestasMod.card_abilities(card, RUBEN_KEY, true)) do
-        local per = ability.extra and ability.extra.per_joker
-        total = total + (per or 0) * jokers
+    local function add(from)
+        for _, ability in ipairs(CelestasMod.card_abilities(from, RUBEN_KEY, true)) do
+            local per = ability.extra and ability.extra.per_joker
+            total = total + (per or 0) * jokers
+        end
+    end
+
+    add(card)
+    -- ...and whatever this card is copying. Ruben has no calculate for a copier
+    -- to run - the value IS the Joker - so the only way a copy of it is worth
+    -- anything is for the copier's own price to ask.
+    --
+    -- One hop. A Blueprint copying a Blueprint copying a Ruben gains nothing:
+    -- chains are what the copy stack is for, and a price is not read inside
+    -- one, it is read every frame.
+    for _, target in ipairs(CelestasMod.copier_targets(card) or {}) do
+        add(target)
     end
     return total
 end
@@ -7366,7 +7383,13 @@ local function ruben_applies(card)
         and card.area == G.jokers) then
         return false
     end
-    return CelestasMod.card_is_joker(card, RUBEN_KEY, true)
+    if CelestasMod.card_is_joker(card, RUBEN_KEY, true) then return true end
+    -- ...or a copier pointed at one, which is the only way copying Ruben is
+    -- worth anything: there is no calculate on it to run.
+    for _, target in ipairs(CelestasMod.copier_targets(card) or {}) do
+        if CelestasMod.card_is_joker(target, RUBEN_KEY, true) then return true end
+    end
+    return false
 end
 
 -- Added at set_cost, never stored.
