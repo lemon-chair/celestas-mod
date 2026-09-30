@@ -2240,6 +2240,31 @@ SMODS.Joker {
                 trigger = "after",
                 delay = 0.1,
                 func = function()
+                    -- Say what died, once, before any of it does.
+                    --
+                    -- Nekrolina counts deaths off this context and so does
+                    -- every other pair that is paid by one - it is raised once
+                    -- after a destroy pass with every card that went, which is
+                    -- where vanilla Caino counts its face cards. Without it
+                    -- these three cards died silently and only the Gash card
+                    -- breaking elsewhere was ever counted.
+                    --
+                    -- Raised here rather than by calling SMODS.destroy_cards,
+                    -- and the note above still says why: that helper raises
+                    -- this synchronously, and Neuro DECIDES during the
+                    -- end-of-round pass, so calling it there would open an
+                    -- evaluation inside the one already running. This event is
+                    -- not that moment - it runs once the pass has finished, so
+                    -- the context is raised with nothing nested inside it.
+                    --
+                    -- Before the dissolving, the order destroy_cards uses
+                    -- (utils.lua:2593 raises, :2595 dissolves), so a Joker
+                    -- asked about a card that died can still look at it.
+                    SMODS.calculate_context({
+                        remove_playing_cards = true,
+                        removed = doomed,
+                    })
+
                     -- Backwards, and only the last one animates: removing from
                     -- a list while walking it forwards skips entries, and that
                     -- flag is what stops every card playing the sound at once.
