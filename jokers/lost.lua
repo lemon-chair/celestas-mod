@@ -76,8 +76,13 @@ Lost.CONVERSIONS = {
     [joker("obkatiekat")] = joker("obkhaoskat"),
     [joker("fufu")] = joker("black_hole_sun_fufu"),
     ["j_loyalty_card"] = joker("royalty_card"),
-    ["j_to_do_list"] = joker("to_dont_list"),
-    ["j_flash_card"] = joker("identity"),
+    -- Vanilla's own keys, which are not how either Joker reads: "To Do List"
+    -- is j_todo_list and "Flash Card" is j_flash. Spelled the readable way,
+    -- these two matched no centre at all - a Lost Soul spent on either did
+    -- nothing, and the shop filler that reads this table backwards could never
+    -- offer them.
+    ["j_todo_list"] = joker("to_dont_list"),
+    ["j_flash"] = joker("identity"),
     ["j_obelisk"] = joker("monolith"),
 }
 
