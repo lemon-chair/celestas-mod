@@ -2153,6 +2153,22 @@ return {
                     "the abilities of both",
                 },
             },
+            c_celesta_dice = {
+                name = "Dice",
+                text = {
+                    "{C:attention}Doubles{} all listed {C:green}odds{}",
+                    "for the rest of the run",
+                    "{C:red}-#1#{} hand size",
+                },
+            },
+            c_celesta_plasma = {
+                name = "Plasma",
+                text = {
+                    "{C:attention}Chips{} and {C:attention}Mult{} are {C:attention}balanced{}",
+                    "for the rest of the run",
+                    "{C:red}-#1#{} consumable slot",
+                },
+            },
             c_celesta_swap = {
                 name = "Swap",
                 text = {
@@ -5557,6 +5573,7 @@ return {
             celesta_sin_to_next = "To next level:",
             celesta_sin_level_short = "Lv",
             celesta_unholy_used = "Unbound!",
+            celesta_doubled = "Doubled!",
             celesta_sin_greed = "Greed",
             celesta_sin_lust = "Lust",
             celesta_sin_wrath = "Wrath",

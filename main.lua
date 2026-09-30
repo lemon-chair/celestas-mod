@@ -151,6 +151,11 @@ assert(SMODS.load_file('consumables/enhancers.lua'))()
 assert(SMODS.load_file('consumables/occult.lua'))()
 -- After sins/sins.lua, whose lockout it lifts.
 assert(SMODS.load_file('consumables/unholy.lua'))()
+-- Both wrap a global at load. Dice's has to be installed before jokers/, so
+-- Ellie Minibot's wrap around the same probability funnel sits outside it and
+-- has the last word: a guarantee is already everything and must not be doubled.
+assert(SMODS.load_file('consumables/dice.lua'))()
+assert(SMODS.load_file('consumables/plasma.lua'))()
 -- Gene hands out a seal rather than an enhancement; it reads the seal's key at
 -- use time, so it does not need seals/seals.lua to have loaded first.
 assert(SMODS.load_file('consumables/gene.lua'))()

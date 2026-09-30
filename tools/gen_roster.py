@@ -26,6 +26,7 @@ SHARED = {"jokers", "consumables", "decks", "sleeves", "icon", "seals", "driftwo
           # wear overlays, drawn on top of a playing card
           "tatter", "lucky_card_tatter", "limestone_tatter",
           "bind", "swap", "milk_bottle", "burgundy_brew",
+    "dice", "plasma",
           # the added suits: a 13-cell rank row and a UI pip each
           "suit_stars", "suit_stars_ui",
           "suit_true_stars", "suit_true_stars_ui",
@@ -567,6 +568,22 @@ LOC_TAIL = '''        },
                     "Merge {C:attention}2{} selected {C:attention}Jokers{}",
                     "into one Joker with",
                     "the abilities of both",
+                },
+            },
+            c_celesta_dice = {
+                name = "Dice",
+                text = {
+                    "{C:attention}Doubles{} all listed {C:green}odds{}",
+                    "for the rest of the run",
+                    "{C:red}-#1#{} hand size",
+                },
+            },
+            c_celesta_plasma = {
+                name = "Plasma",
+                text = {
+                    "{C:attention}Chips{} and {C:attention}Mult{} are {C:attention}balanced{}",
+                    "for the rest of the run",
+                    "{C:red}-#1#{} consumable slot",
                 },
             },
             c_celesta_swap = {
@@ -3973,6 +3990,7 @@ LOC_TAIL = '''        },
             celesta_sin_to_next = "To next level:",
             celesta_sin_level_short = "Lv",
             celesta_unholy_used = "Unbound!",
+            celesta_doubled = "Doubled!",
             celesta_sin_greed = "Greed",
             celesta_sin_lust = "Lust",
             celesta_sin_wrath = "Wrath",
