@@ -3333,6 +3333,16 @@ LOC_TAIL = '''        },
                     "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
                 },
             },
+            celesta_bind_koko_berry = {
+                name = "KokoNuts + BerryCrepe",
+                text = {
+                    "At the start of each round, add a",
+                    "{C:mult}Mult{} {C:attention}7 of Spades{} to your deck",
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult per",
+                    "card added to your {C:attention}full deck{}",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
             celesta_bind_cdawg_green = {
                 name = "CDawg + Green Card",
                 text = {

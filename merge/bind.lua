@@ -13234,6 +13234,83 @@ cdawg_pair("j_celesta_cdawg", "cdawg_cdawg", { 2, 3 })
 
 end
 
+-- KokoNuts + BerryCrepe: KokoNuts' seven, made of BerryCrepe's Mult, and a
+-- multiplier that grows with the deck it is filling.
+--
+-- The seven is KokoNuts' own move with one thing changed - Mult where it was
+-- Lucky - so it keeps the rest of it: built in G.play and animated into the
+-- deck the way vanilla Marble Joker does, the getting_sliced guard that stops a
+-- Joker destroyed this frame from still firing, and the `nil, true` that tells
+-- eval_card it triggered so a retrigger Stamp on the pair has something to
+-- repeat.
+--
+-- The count is every card added to the full deck and not only this pair's,
+-- which is what "per card added to full deck" says. playing_card_added is
+-- raised once per batch with the cards in it, from every source that adds any -
+-- so the pair's own seven feeds it, and so does a Marble Joker beside it.
+special("j_celesta_kokonuts", "j_celesta_berrycrepe", {
+    key = "koko_berry",
+    config = { x_mult = 1, x_mult_gain = 0.1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.setting_blind and not context.blueprint
+            and not card.getting_sliced then
+            G.E_MANAGER:add_event(Event {
+                func = function()
+                    local new_card = create_playing_card(
+                        { front = G.P_CARDS.S_7, center = G.P_CENTERS.m_mult },
+                        G.play, nil, nil, { G.C.SECONDARY_SET.Enhanced })
+
+                    SMODS.calculate_effect({
+                        message = localize("celesta_plus_seven"),
+                        colour = G.C.SECONDARY_SET.Enhanced,
+                    }, card)
+
+                    G.E_MANAGER:add_event(Event {
+                        func = function()
+                            draw_card(G.play, G.deck, 90, "up", nil)
+                            return true
+                        end
+                    })
+
+                    -- Which is also what pays this pair: the count below reads
+                    -- the context this raises.
+                    playing_card_joker_effects({ new_card })
+                    return true
+                end
+            })
+            return nil, true
+        end
+
+        if context.playing_card_added and not context.blueprint
+            and not card.getting_sliced then
+            local added = #(context.cards or {})
+            if added == 0 then return end
+            -- Rounded to three places, which is Monolith's reason: a tenth
+            -- is not a tenth in binary, and four of them add up to
+            -- 1.4000000000000001 - which is what the card would then print.
+            state.x_mult = math.floor(
+                (state.x_mult + state.x_mult_gain * added) * 1000 + 0.5) / 1000
+            return {
+                message = localize { type = "variable", key = "a_xmult",
+                                     vars = { state.x_mult } },
+                colour = G.C.MULT, card = card,
+            }
+        end
+
+        -- more_than rather than `>`: this grows a number that Vedal can turn
+        -- into one of Talisman's, and those are tables that Lua 5.1 refuses to
+        -- compare with a number at all.
+        if context.joker_main and CelestasMod.more_than(state.x_mult, 1) then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
 --------------------------------------------------------------------------------
 -- Art: the two faces split corner to corner
 --------------------------------------------------------------------------------
