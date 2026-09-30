@@ -13113,6 +13113,55 @@ end
 end
 
 --------------------------------------------------------------------------------
+-- CDawg's three
+--------------------------------------------------------------------------------
+--
+-- A plain CDawg retains the Commons this mod has sold this run. These widen
+-- which rarities count, and nothing else about it: the list, the orbit, the
+-- tally on the card and CDawg + Ironmouse all read the one function, so they
+-- all widen together.
+--
+-- ADDITIVE, and that is forced rather than chosen. A replacing pair is excluded
+-- from the row lookups (lookup_eligible in globals.lua), so find_joker would
+-- stop finding a CDawg inside its own merge and cdawg_running would answer nil
+-- - the pair would be widening a retention that had just stopped happening.
+-- They have to go on being CDawgs to be a wider CDawg.
+
+do
+
+CelestasMod.CDAWG_RARITY_RULES = CelestasMod.CDAWG_RARITY_RULES or {}
+
+--- Registers `pair`, and the rule that says what holding it retains.
+local function cdawg_pair(other, key, rarities)
+    special("j_celesta_cdawg", other, {
+        key = key,
+        additive = true,
+
+        loc_vars = function(def, card, state)
+            return { vars = { CelestasMod.commons_sold and
+                              CelestasMod.commons_sold() or 0 } }
+        end,
+
+        -- Nothing to calculate: what the pair does is answer the rule below,
+        -- and CDawg's own centre does the retaining exactly as it did.
+        calculate = function(def, card, context, state) end,
+    })
+
+    CelestasMod.CDAWG_RARITY_RULES[#CelestasMod.CDAWG_RARITY_RULES + 1] =
+        function()
+            if specials_held(key)[1] == nil then return nil end
+            return rarities
+        end
+end
+
+cdawg_pair("j_celesta_green_card", "cdawg_green", { 2 })
+cdawg_pair("j_celesta_fuchsia_card", "cdawg_fuchsia", { 3 })
+-- Two of them: everything this mod sells except Legendary, which no rule names.
+cdawg_pair("j_celesta_cdawg", "cdawg_cdawg", { 2, 3 })
+
+end
+
+--------------------------------------------------------------------------------
 -- Art: the two faces split corner to corner
 --------------------------------------------------------------------------------
 

@@ -26,9 +26,51 @@ local CDAWG_KEY = "j_" .. SMODS.current_mod.prefix .. "_cdawg"
 -- worth of ability - the second would score twice off one card - and the orbit
 -- would show the same face twice with nothing to tell them apart.
 
+--- The rarities CDawg is retaining right now.
+---
+--- Common always, and the rest are merges: CDawg + Green Card adds Uncommon,
+--- CDawg + Fuchsia Card adds Rare, CDawg + CDawg adds both. Legendary is in no
+--- rule and nothing records one, so it is never here.
+---
+--- Asked rather than cached, for the reason kuro_sync asks rather than caching:
+--- the pair can be made, sold or debuffed between one sale and the next reading
+--- of the list, and the list is what the orbit and the description are drawn
+--- from.
+function CelestasMod.cdawg_rarities()
+    local out = { [1] = true }
+    for _, rule in ipairs(CelestasMod.CDAWG_RARITY_RULES or {}) do
+        local ok, rarities = pcall(rule)
+        if ok and type(rarities) == "table" then
+            for _, rarity in ipairs(rarities) do out[rarity] = true end
+        end
+    end
+    return out
+end
+
 --- The centre keys CDawg is retaining, in the order they were sold.
+---
+--- Every sale is recorded, whatever its rarity, and the filtering happens HERE
+--- rather than at the sale. That is CDawg's own rule about time: "sold this
+--- run" is a fact about the run and not about what CDawg witnessed, and a merge
+--- made after a sale has the same claim on it that a CDawg bought after one
+--- does. Recording only what was retainable at the time would have made the
+--- order the player did things in matter, silently.
+---
+--- The rarity is read back off the centre rather than stored, so the list is
+--- the shape it has always been and a save written before any of this reads
+--- back unchanged. An unknown centre counts as Common, which is the only thing
+--- such a save could have held.
 function CelestasMod.commons_sold_keys()
-    return (G.GAME and G.GAME.celesta_commons_sold) or {}
+    local sold = (G.GAME and G.GAME.celesta_commons_sold) or {}
+    local retained = CelestasMod.cdawg_rarities()
+    local out = {}
+    for _, key in ipairs(sold) do
+        local center = G.P_CENTERS and G.P_CENTERS[key]
+        if retained[(center and center.rarity) or 1] then
+            out[#out + 1] = key
+        end
+    end
+    return out
 end
 
 --- ...and how many there are. Read by CDawg + Ironmouse as well.

@@ -418,6 +418,14 @@ CelestasMod.KURO_RULES = {}
 --- CelestasMod.vedal_step.
 CelestasMod.VEDAL_SCALE_RULES = {}
 
+--- What CDawg retains beyond Commons.
+---
+--- Each rule answers a list of rarity numbers while its pair is in the row, and
+--- nothing while it is not. merge/bind.lua fills this in and jokers/cdawg.lua
+--- reads it, the way every other rule list here is written from one side and
+--- read from the other.
+CelestasMod.CDAWG_RARITY_RULES = {}
+
 --- Extra factors on what a Eutrophic card copies, each a function taking the
 --- copying card and returning a multiplier. enhancements/enhancements.lua
 --- takes the first that answers, in CelestasMod.eutrophic_scale.
