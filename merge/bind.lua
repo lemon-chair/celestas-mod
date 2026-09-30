@@ -5598,6 +5598,71 @@ local function without_center_hook(card, hook, fn)
     return a, b
 end
 
+--- The centre whose blueprint_compat is lifted right now, if one is.
+---
+--- The gate below opens by lifting that flag, and the filter above reads the
+--- same flag - so without this the lift let the refusing half through, which is
+--- the one thing the filter is there to stop.
+local lifted_center = nil
+
+--- Whether `center` may answer while `context` is a copy being taken.
+---
+--- Outside a copy every half answers, which is every pass but this one. Inside
+--- one, a half speaks only if its own centre says it may - blueprint_compat is
+--- a statement about that Joker and not about whatever it was merged into.
+function Bind.half_is_copyable(card, center, context)
+    if not (context and context.blueprint) then return true end
+    -- A lifted centre is still a centre that said no. The lift is for the
+    -- GATE, which speaks for the whole card; this speaks for one half of it.
+    if center ~= nil and center == lifted_center then return false end
+    return (type(center) == "table" and center.blueprint_compat) and true or false
+end
+
+--- True when either half of `card` would allow being copied.
+local function any_half_copyable(card)
+    local center = card and card.config and card.config.center
+    if type(center) == "table" and center.blueprint_compat then return true end
+    local partner = Bind.partner_center(card)
+    return (type(partner) == "table" and partner.blueprint_compat) and true or false
+end
+
+--- Offers a merged card to a copier when EITHER half allows it.
+---
+--- The reference refuses on config.center.blueprint_compat alone (smods
+--- utils.lua:2089), and that is the host's - so a Suko merged into something
+--- uncopyable was refused for a reason that had nothing to do with Suko. The
+--- flag is lifted on the host's centre for the length of the call and put back
+--- immediately; the pass itself is filtered by half_is_copyable above, so
+--- opening the gate cannot copy the half that refused.
+---
+--- Lifted on the CENTRE, which two cards can share, so the window is kept to
+--- one synchronous call. A nested copier reaching a different card of the same
+--- Joker inside it would see the lifted flag - narrow, and the alternative was
+--- reimplementing the reference's context bookkeeping, which is the part worth
+--- not duplicating.
+local celesta_bind_blueprint_ref = SMODS.blueprint_effect
+function SMODS.blueprint_effect(copier, copied_card, context)
+    local center = copied_card and copied_card.config and copied_card.config.center
+    local lift = Bind.is_merged(copied_card)
+        and type(center) == "table" and not center.blueprint_compat
+        and any_half_copyable(copied_card)
+    if not lift then
+        return celesta_bind_blueprint_ref(copier, copied_card, context)
+    end
+
+    -- Saved and restored rather than set and cleared, the way partner_special
+    -- is: a copy can be taken from inside a copy, and the inner one must not
+    -- clear the mark the outer one is relying on.
+    local saved_lifted = lifted_center
+    lifted_center = center
+    center.blueprint_compat = true
+    local ok, ret = pcall(celesta_bind_blueprint_ref, copier, copied_card, context)
+    center.blueprint_compat = nil
+    lifted_center = saved_lifted
+    if not ok then error(ret, 0) end
+    return ret
+end
+
 local celesta_bind_calculate_joker_ref = Card.calculate_joker
 function Card:calculate_joker(context, ...)
     -- The host's own centre runs inside a recorded window too: it is as
@@ -5614,10 +5679,16 @@ function Card:calculate_joker(context, ...)
     -- evaluation - which is the reason the ref is called first at all.
     local effect, post
     if Bind.is_merged(self) and not running[self] then
-        effect, post = without_center_hook(self, "calculate", function()
-            return with_acting_half(self, "host",
-                celesta_bind_calculate_joker_ref, self, context)
-        end)
+        -- A copier asking may only have the halves that allow being copied.
+        -- The gate in SMODS.blueprint_effect reads config.center, which is the
+        -- host's, so it speaks for a card it is only half of - and once past
+        -- it, nothing else would ask the other half at all.
+        if Bind.half_is_copyable(self, self.config.center, context) then
+            effect, post = without_center_hook(self, "calculate", function()
+                return with_acting_half(self, "host",
+                    celesta_bind_calculate_joker_ref, self, context)
+            end)
+        end
     else
         effect, post = celesta_bind_calculate_joker_ref(self, context, ...)
     end
@@ -5661,6 +5732,8 @@ function Card:calculate_joker(context, ...)
 
     local center = Bind.partner_center(self)
     if not center then return effect, post end
+    -- ...and the same question of the other one.
+    if not Bind.half_is_copyable(self, center, context) then return effect, post end
 
     -- Run through the chain BELOW this wrapper rather than by calling
     -- center.calculate directly.
