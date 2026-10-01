@@ -207,7 +207,11 @@ function CelestasMod.card_is_joker(card, key, count_debuffed)
     end
     -- ...and the half it is standing in for, if it is standing in for one.
     local lent = lent_half(card)
-    return (lent and lent.center and lent.center.key == key) and true or false
+    if lent and lent.center and lent.center.key == key then return true end
+    -- ...and a Joker a CDawg is retaining, which is held the same way: by a card
+    -- that is not that Joker's own centre. jokers/cdawg.lua owns the rule.
+    local holds = CelestasMod.cdawg_holds
+    return (holds and holds(card, key)) and true or false
 end
 
 --- True when `card` is a merge, asked from anywhere - a lend included.
@@ -264,6 +268,13 @@ function CelestasMod.card_abilities(card, key, count_debuffed)
         out[#out + 1] = bind.ability
     end
 
+    -- ...and the Jokers a CDawg is retaining, each with the table it has been
+    -- scaling in.
+    local holds = CelestasMod.cdawg_holds
+    for _, ability in ipairs((holds and holds(card, key)) or {}) do
+        out[#out + 1] = ability
+    end
+
     return out
 end
 
@@ -303,6 +314,16 @@ function CelestasMod.find_joker(key, count_debuffed)
                 local lent = lent_half(card)
                 if lent and lent.center and lent.center.key == key then
                     out[#out + 1] = { card = card, ability = lent.ability }
+                end
+
+                -- ...and a Joker a CDawg is retaining: the card in the row is
+                -- the CDawg, and the ability is the one the retained Joker has
+                -- been scaling in. This is what makes the Jokers whose effect
+                -- is a hook somewhere else, rather than a calculate, work
+                -- from a CDawg at all.
+                local holds = CelestasMod.cdawg_holds
+                for _, ability in ipairs((holds and holds(card, key)) or {}) do
+                    out[#out + 1] = { card = card, ability = ability }
                 end
             end
         end

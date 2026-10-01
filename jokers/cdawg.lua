@@ -218,23 +218,78 @@ end
 --- Joker that scales has to keep its growth, and that growth belongs to this
 --- card - a second CDawg scales its own copy, and selling one does not take
 --- the other's progress with it.
-local function cdawg_ability(card, key, center)
-    card.ability.celesta_cdawg = card.ability.celesta_cdawg or {}
-    local held = card.ability.celesta_cdawg[key]
+local function cdawg_ability_in(holder, key, center)
+    holder.celesta_cdawg = holder.celesta_cdawg or {}
+    local held = holder.celesta_cdawg[key]
     if held then
         -- A table written before this mirrored vanilla's is missing the fields
         -- that made it raise, `name` among them. Filled in rather than replaced,
         -- and only where there is nothing there: a run in progress keeps
         -- whatever its retained Jokers have grown.
-        for field, value in pairs(vanilla_ability(center)) do
-            if held[field] == nil then held[field] = value end
+        --
+        -- Once, and marked: this is asked for by the lookups below as well as
+        -- by every context, and building vanilla's forty fields each time to
+        -- compare them against a table that is already complete is waste.
+        if not held.celesta_complete then
+            for field, value in pairs(vanilla_ability(center)) do
+                if held[field] == nil then held[field] = value end
+            end
+            held.celesta_complete = true
         end
         return held
     end
 
     held = vanilla_ability(center)
-    card.ability.celesta_cdawg[key] = held
+    held.celesta_complete = true
+    holder.celesta_cdawg[key] = held
     return held
+end
+
+local function cdawg_ability(card, key, center)
+    return cdawg_ability_in(card.ability, key, center)
+end
+
+--- Every ability table that is a CDawg's, on `card`: its own if it is one, and the
+--- absorbed half's if it has one bound into it - both, for CDawg + CDawg.
+---
+--- The place a retained Joker's table lives is the CDawg half's ability, which is
+--- not always card.ability: a merge keeps the absorbed half's under celesta_bind.
+local function cdawg_holders(card)
+    local out = {}
+    local center = card.config and card.config.center
+    if center and center.key == CDAWG_KEY and card.ability then
+        out[#out + 1] = card.ability
+    end
+    local Bind = CelestasMod.Bind
+    if Bind and Bind.is_merged and Bind.is_merged(card)
+        and not (Bind.replacing_special and Bind.replacing_special(card)) then
+        local half = card.ability.celesta_bind
+        if half and half.key == CDAWG_KEY and half.ability then
+            out[#out + 1] = half.ability
+        end
+    end
+    return out
+end
+
+--- Runs `fn` with `card` lent `center` and `ability`, and puts it back.
+---
+--- The same lend cdawg_run makes for a calculate, for the hooks that are not one.
+--- Returns whether it raised, and what, so a retained Joker that cannot be run
+--- from somebody else's card is a warning rather than a crash.
+local function cdawg_with(card, center, ability, fn)
+    local saved_center, saved_key, saved_ability =
+        card.config.center, card.config.center_key, card.ability
+
+    card.config.center = center
+    card.config.center_key = center.key or saved_key
+    card.ability = ability
+
+    local ok, err = pcall(fn)
+
+    card.config.center = saved_center
+    card.config.center_key = saved_key
+    card.ability = saved_ability
+    return ok, err
 end
 
 --- True when `center` is not something CDawg keeps at all.
@@ -389,6 +444,192 @@ local function is_cdawg(card)
         return card.ability.celesta_bind.key == CDAWG_KEY
     end
     return false
+end
+
+--------------------------------------------------------------------------------
+-- A retained Joker in the row: arriving, updating, leaving
+--------------------------------------------------------------------------------
+--
+-- What a Joker does besides score. add_to_deck when it arrives, the centre's
+-- update every frame it is in the row, remove_from_deck when it leaves - and the
+-- two stats vanilla's own add_to_deck reads off ANY Joker's ability, h_size and
+-- d_size (card.lua:757-764), in vanilla's order: the centre's hook first, the
+-- generic stat after, which is the order Vantacrow's adopt step relies on to zero
+-- them in time.
+--
+-- Applied to the CDawg CARD, which is the one that is in the row. Recorded on the
+-- holder's ability as a list of what has been granted, because that is what makes
+-- it safe to do twice: the game does not call add_to_deck for a card loaded from a
+-- save, so what a run holds comes back with it and this must not hand it out again.
+-- The list is saved with the card; a Joker on it is not applied a second time.
+--
+-- Reconciled rather than triggered: what is wanted is "the Jokers retained now,
+-- while CDawg is in the row and not debuffed", and what has been granted is the
+-- list. Whatever differs is applied or released. That one rule covers a sale, a
+-- debuff, the pair that widened the range being sold, and a Joker being retained
+-- for the first time - without a hook on each.
+
+--- Raised, in the lend, when a retained Joker's hook errors. Once per Joker.
+local function passive_failed(what, key, err)
+    CelestasMod.warn_once("cdawg_" .. what .. "_" .. tostring(key),
+        ("CDawg could not %s %s: %s"):format(what, tostring(key), tostring(err)))
+end
+
+--- vanilla's own generic stats, from card.lua:757 and :822.
+local function generic_stats(ability, sign)
+    local size = ability.h_size or 0
+    if size ~= 0 and G.hand then G.hand:change_size(sign * size) end
+    local discards = ability.d_size or 0
+    if discards > 0 and G.GAME and G.GAME.round_resets then
+        G.GAME.round_resets.discards = G.GAME.round_resets.discards + sign * discards
+        if ease_discard then ease_discard(sign * discards) end
+    end
+end
+
+local function passive_apply(card, key, center, ability)
+    local ok, err = cdawg_with(card, center, ability, function()
+        if type(center.add_to_deck) == "function" then
+            center:add_to_deck(card, false)
+        end
+        generic_stats(ability, 1)
+    end)
+    if not ok then passive_failed("apply", key, err) end
+end
+
+local function passive_release(card, key, center, ability)
+    local ok, err = cdawg_with(card, center, ability, function()
+        if type(center.remove_from_deck) == "function" then
+            center:remove_from_deck(card, false)
+        end
+        generic_stats(ability, -1)
+    end)
+    if not ok then passive_failed("release", key, err) end
+end
+
+--- Brings what `card` has granted in line with what it is retaining.
+---
+--- `dt` is the frame's, when this is the per-frame pass and nil when it is only
+--- reconciling after an arrival or a departure: the centre's update runs on the
+--- first and not the second.
+local function cdawg_passives(card, dt)
+    if card.celesta_cdawg_busy then return end
+    card.celesta_cdawg_busy = true
+
+    local wanted, order = {}, {}
+    if card.added_to_deck and not card.debuff and G.GAME then
+        for _, key in ipairs(CelestasMod.commons_sold_keys()) do
+            wanted[key] = true
+            order[#order + 1] = key
+        end
+    end
+
+    for _, holder in ipairs(cdawg_holders(card)) do
+        local granted = holder.celesta_cdawg_granted
+        if not granted then
+            granted = {}
+            holder.celesta_cdawg_granted = granted
+        end
+
+        -- Out first, so a swap never holds both.
+        local leaving = {}
+        for key in pairs(granted) do
+            if not wanted[key] then leaving[#leaving + 1] = key end
+        end
+        for _, key in ipairs(leaving) do
+            local center = G.P_CENTERS and G.P_CENTERS[key]
+            if center then
+                passive_release(card, key, center,
+                                cdawg_ability_in(holder, key, center))
+            end
+            granted[key] = nil
+        end
+
+        for _, key in ipairs(order) do
+            local center = G.P_CENTERS[key]
+            if center and not granted[key] then
+                passive_apply(card, key, center,
+                              cdawg_ability_in(holder, key, center))
+                granted[key] = true
+            end
+        end
+
+        if dt then
+            for _, key in ipairs(order) do
+                local center = G.P_CENTERS[key]
+                if center and granted[key] and type(center.update) == "function" then
+                    local ok, err = cdawg_with(card, center,
+                        cdawg_ability_in(holder, key, center),
+                        function() center:update(card, dt) end)
+                    if not ok then passive_failed("update", key, err) end
+                end
+            end
+        end
+    end
+
+    card.celesta_cdawg_busy = nil
+end
+
+-- Guarded the way the sell hook is: there is always a Card:add_to_deck in the
+-- game, and not always one in a harness that has sliced a single file open.
+local celesta_cdawg_add_ref = Card.add_to_deck
+if celesta_cdawg_add_ref then
+    function Card:add_to_deck(...)
+        local ret = celesta_cdawg_add_ref(self, ...)
+        if is_cdawg(self) then cdawg_passives(self) end
+        return ret
+    end
+end
+
+local celesta_cdawg_remove_ref = Card.remove_from_deck
+if celesta_cdawg_remove_ref then
+    function Card:remove_from_deck(...)
+        local ret = celesta_cdawg_remove_ref(self, ...)
+        if is_cdawg(self) then cdawg_passives(self) end
+        return ret
+    end
+end
+
+local celesta_cdawg_update_ref = Card.update
+if celesta_cdawg_update_ref then
+    function Card:update(dt, ...)
+        local ret = celesta_cdawg_update_ref(self, dt, ...)
+        if self.added_to_deck and is_cdawg(self) then cdawg_passives(self, dt) end
+        return ret
+    end
+end
+
+--------------------------------------------------------------------------------
+-- A retained Joker is found, like a merge's absorbed half
+--------------------------------------------------------------------------------
+
+--- The ability tables a CDawg on `card` holds for `key`, or nil.
+---
+--- Read by CelestasMod.find_joker, card_is_joker and card_abilities in
+--- globals.lua, which count a merge's absorbed half as a Joker in the row for
+--- exactly this reason: a Joker that a card holds, and that is not that card's own
+--- centre, is still a Joker in the row to everything asking.
+---
+--- Not while the card is being RUN as `key`, and that needs no check of its own:
+--- during a lend the card's centre IS the retained Joker's, so is_cdawg - asked
+--- first - already says no. The lookups count the lend once, on that basis; counting
+--- it again here would be two Jokers for as long as one was acting.
+function CelestasMod.cdawg_holds(card, key)
+    if not (card and card.config and is_cdawg(card)) then return nil end
+
+    local center = G.P_CENTERS and G.P_CENTERS[key]
+    if not center or cdawg_never(center) then return nil end
+
+    local retained = false
+    for _, kept in ipairs(CelestasMod.commons_sold_keys()) do
+        if kept == key then retained = true break end
+    end
+    if not retained then return nil end
+
+    local out = {}
+    for _, holder in ipairs(cdawg_holders(card)) do
+        out[#out + 1] = cdawg_ability_in(holder, key, center)
+    end
+    return out[1] and out or nil
 end
 
 --- Everything the retained Jokers have banked onto CDawg's sell price.
