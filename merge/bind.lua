@@ -13299,11 +13299,14 @@ local function cdawg_pair(other, key, rarities, foreign)
     end
 end
 
-cdawg_pair("j_celesta_green_card", "cdawg_green", { 2 })
-cdawg_pair("j_celesta_fuchsia_card", "cdawg_fuchsia", { 3 })
+-- Each opens its own rarity on both axes, which is what makes a run restricted
+-- to one rarity and the CDawg merged for it the same set of Jokers.
+cdawg_pair("j_celesta_green_card", "cdawg_green", { 2 }, { 2 })
+cdawg_pair("j_celesta_fuchsia_card", "cdawg_fuchsia", { 3 }, { 3 })
 -- Two of them: everything this mod sells except Legendary, which no rule names.
+-- This mod's only, as its card says - the other axis is the three above.
 cdawg_pair("j_celesta_cdawg", "cdawg_cdawg", { 2, 3 })
--- The other axis: no new rarity, the Commons of everything that is not us.
+-- Common is already open to this mod's, so this pair is the foreign axis alone.
 cdawg_pair("j_celesta_blue_card", "cdawg_blue", nil, { 1 })
 
 end

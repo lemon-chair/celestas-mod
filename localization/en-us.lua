@@ -4939,18 +4939,18 @@ return {
             celesta_bind_cdawg_green = {
                 name = "CDawg + Green Card",
                 text = {
-                    "Also retains the abilities of each",
-                    "{C:attention}Uncommon{} Joker from this",
-                    "mod sold this run",
+                    "Also retains the abilities of",
+                    "each {C:attention}Uncommon{} Joker",
+                    "sold this run",
                     "{C:inactive}(Currently {C:attention}#1#{C:inactive} retained)",
                 },
             },
             celesta_bind_cdawg_fuchsia = {
                 name = "CDawg + Fuchsia Card",
                 text = {
-                    "Also retains the abilities of each",
-                    "{C:attention}Rare{} Joker from this",
-                    "mod sold this run",
+                    "Also retains the abilities of",
+                    "each {C:attention}Rare{} Joker",
+                    "sold this run",
                     "{C:inactive}(Currently {C:attention}#1#{C:inactive} retained)",
                 },
             },
