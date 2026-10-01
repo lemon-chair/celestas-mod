@@ -277,6 +277,7 @@ end
 local function cdawg_run(card, center, ability, context)
     local saved_center, saved_key, saved_ability =
         card.config.center, card.config.center_key, card.ability
+    local saved_cost, saved_sell = card.cost, card.sell_cost
 
     card.config.center = center
     card.config.center_key = center.key or saved_key
@@ -284,9 +285,20 @@ local function cdawg_run(card, center, ability, context)
 
     local ok, effect = pcall(celesta_cdawg_calculate_ref, card, context)
 
+    -- Asked before the ability goes back, because the answer is about what the
+    -- retained Joker did while it was the one on the card. Egg is the one that
+    -- does: it grows its own extra_value and then calls set_cost, which priced
+    -- CDawg out of a table belonging to a Joker that is not in the row.
+    local repriced = card.cost ~= saved_cost or card.sell_cost ~= saved_sell
+
     card.config.center = saved_center
     card.config.center_key = saved_key
     card.ability = saved_ability
+
+    -- Priced again with CDawg's own ability back on it, which is where the
+    -- banked totals are added properly (the set_cost wrap below). Only when
+    -- something moved the price: this runs once per retained Joker per context.
+    if repriced and card.set_cost then card:set_cost() end
 
     if not ok then
         CelestasMod.warn_once("cdawg_" .. tostring(center.key),
@@ -395,6 +407,53 @@ local function is_cdawg(card)
         return card.ability.celesta_bind.key == CDAWG_KEY
     end
     return false
+end
+
+--- Everything the retained Jokers have banked onto CDawg's sell price.
+---
+--- Vanilla computes a card's sell value in Card:set_cost as
+---     sell_cost = max(1, floor(cost/2)) + (ability.extra_value or 0)
+--- and the only extra_value it can see is CDawg's own. A retained Egg grows the
+--- extra_value of the table CDawg lends IT, which vanilla will never look at.
+---
+--- Read off the retained tables rather than banked into CDawg's own
+--- extra_value, which is Ruben Sargasm's reason: a derived total stored one
+--- level down card.ability is a number Cryptid's misprintize walks and
+--- randomises, and it then disagrees with the description that recomputes it.
+---
+--- Only what is RETAINED. A table for a Joker the row has stopped retaining -
+--- the pair that widened the range was sold - is still on the card, and its
+--- value is not the host's any more.
+local function cdawg_banked_value(card)
+    local held = card.ability and card.ability.celesta_cdawg
+    if type(held) ~= "table" then return 0 end
+
+    local total = 0
+    for _, key in ipairs(CelestasMod.commons_sold_keys()) do
+        local ability = held[key]
+        total = total + ((ability and ability.extra_value) or 0)
+    end
+    return total
+end
+
+--- Read by the tests, which ask it of a card rather than of the file.
+CelestasMod.cdawg_banked_value = cdawg_banked_value
+
+-- No guard against firing mid-lend, and none is needed: is_cdawg reads
+-- config.center, which during a lend is the retained Joker's centre, so it
+-- answers false. That is the same reason Bind's own wrapper passes a lent card
+-- straight through.
+local celesta_cdawg_cost_ref = Card.set_cost
+function Card:set_cost(...)
+    local ret = celesta_cdawg_cost_ref(self, ...)
+    if not is_cdawg(self) then return ret end
+
+    local banked = cdawg_banked_value(self)
+    if banked > 0 then
+        self.sell_cost = (self.sell_cost or 0) + banked
+        self.sell_cost_label = self.facing == "back" and "?" or self.sell_cost
+    end
+    return ret
 end
 
 local celesta_cdawg_draw_ref = Card.draw
