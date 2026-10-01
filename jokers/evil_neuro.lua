@@ -457,16 +457,22 @@ end
 -- down r terms, which is what is computed - the two factorials it is written
 -- as would both overflow long before their quotient did.
 --
--- Chips are read the way scoring reads them: the rank's nominal value plus
--- get_chip_bonus, which is where a Bonus card's, a Milk Bottle's and any other
--- permanent upgrade all live.
+-- Chips are read the way scoring reads them, which is get_chip_bonus ALONE. It is
+-- not "the bonus": it is the card's whole Chip value - the rank's nominal, a Bonus
+-- card's, a Milk Bottle's and any other permanent upgrade, all in one - and a Stone
+-- Card's is only its bonus, because it has no rank to score (card.lua, get_chip_bonus).
+--
+-- This used to add base.nominal on top. That counted every rank twice: a King is 10
+-- Chips, read as 20, so two Kings paid P(20, 20) = 20! = 2.4e18 where P(10, 10) is
+-- 3,628,800 - and it counted the rank of a Stone Card, which has none.
 
 --- What this card is worth in Chips, upgrades included.
 local function chip_value(card)
     if not card then return 0 end
-    local nominal = (card.base and card.base.nominal) or 0
-    local bonus = card.get_chip_bonus and card:get_chip_bonus() or 0
-    return nominal + bonus
+    if card.get_chip_bonus then return card:get_chip_bonus() end
+    -- Not a card the game made, so nothing here knows what it is worth beyond its
+    -- rank. A stand-in; the real ones all have the method.
+    return (card.base and card.base.nominal) or 0
 end
 
 -- Two cards of ten chips each is already 10!/0! - three and a half million.
