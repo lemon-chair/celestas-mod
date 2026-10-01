@@ -5471,8 +5471,10 @@ return {
             },
         },
         challenge_names = {
+            c_celesta_bird_feeder = "Bird Feeder",
             c_celesta_dairy_farm = "Dairy Farm",
             c_celesta_joker_printer = "Joker Printer",
+            c_celesta_the_passage = "The Passage",
         },
         labels = {
             m_celesta_exo = "Exo Card",

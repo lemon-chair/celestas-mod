@@ -172,3 +172,83 @@ SMODS.Challenge {
         },
     },
 }
+
+--------------------------------------------------------------------------------
+-- The three Jokers that can end either challenge below
+--------------------------------------------------------------------------------
+--
+-- Both of them are one eternal Joker and a run built around not being able to
+-- get rid of it, so a Joker that takes the Eternal off is a Joker that ends the
+-- challenge. Three of them can: Smug Alana takes one sticker off a Frozen Joker
+-- as it melts, Fenari takes one off a random Joker at the end of every round,
+-- and FireOniRei takes every sticker off every Joker a Boss Blind is beaten
+-- with.
+--
+-- One list for both, because it is one reason. banned_cards is read and never
+-- written - Game:start_run copies each id into G.GAME.banned_keys
+-- (game.lua:2185), and the challenge screen reads the same table to draw the
+-- cards (UI_definitions.lua:6094) - so sharing it cannot let the two come to
+-- disagree.
+
+local STICKER_STRIPPERS = {
+    { id = "j_celesta_smugalana" },
+    { id = "j_celesta_fenari" },
+    { id = "j_celesta_fireonirei" },
+}
+
+--------------------------------------------------------------------------------
+-- The Passage - everything you buy goes the same way
+--------------------------------------------------------------------------------
+--
+-- Urschleim eats one of your Jokers at the end of every round and keeps a tenth
+-- of its sell value as Chips. Eternal, so the mouth is the one thing in the row
+-- that cannot be sold - and it is not on its own menu either: urschleim_menu
+-- passes over its own family and over anything eternal
+-- (jokers/implemented.lua), so every Joker bought after it is food and it never
+-- is.
+--
+-- Nothing else: no modifier, no second Joker, no consumable. The Joker is the
+-- challenge.
+
+SMODS.Challenge {
+    key = "the_passage",
+
+    jokers = {
+        { id = "j_celesta_urschleim", eternal = true },
+    },
+
+    restrictions = {
+        banned_cards = STICKER_STRIPPERS,
+    },
+
+    rules = {
+        custom = {},
+        modifiers = {},
+    },
+}
+
+--------------------------------------------------------------------------------
+-- Bird Feeder - the hand is what you feed it
+--------------------------------------------------------------------------------
+--
+-- Dokibird destroys the played cards that did not score, when exactly one of
+-- them did, and gives what they were holding to the one that did - permanently.
+-- Eternal, so that is not a trade taken when it suits: it is the shape of every
+-- hand for the rest of the run, and the deck is what is being spent.
+
+SMODS.Challenge {
+    key = "bird_feeder",
+
+    jokers = {
+        { id = "j_celesta_dokibird", eternal = true },
+    },
+
+    restrictions = {
+        banned_cards = STICKER_STRIPPERS,
+    },
+
+    rules = {
+        custom = {},
+        modifiers = {},
+    },
+}
