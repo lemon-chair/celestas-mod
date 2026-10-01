@@ -157,8 +157,80 @@ end
 
 local celesta_cdawg_calculate_ref = Card.calculate_joker
 
---- The ability table CDawg keeps for `key`, built from the centre's config the
---- first time it is asked for.
+--- The ability table the game itself would give a card of `center`.
+---
+--- Mirrored from Card:set_ability's `new_ability` (card.lua:559 onward) rather
+--- than built from the centre's config, which is what this used to do and what
+--- made every retained Joker that reached vanilla's own chain raise rather than
+--- pay: card.lua:3976 is `self.ability.x_mult > 1`, and the table had no x_mult
+--- on it. Two dozen fields are read that way, each with a default that is not
+--- nil.
+---
+--- `name` is the one that matters most. A Joker from this mod does its work in
+--- center.calculate, which is reached off the centre; a Joker from the base game
+--- does its work in a chain of `self.ability.name ==` checks (card.lua:2611
+--- onward), and a table with no name matches none of them.
+---
+--- Mirrored rather than called, because set_ability is not a table builder: it
+--- resizes the card, rebuilds its sprites, takes it out of the deck and puts it
+--- back, and clears the centre's used mark - all of which belong to a card
+--- actually becoming that Joker, and none of which CDawg is doing.
+local function vanilla_ability(center)
+    local config = type(center.config) == "table" and center.config or {}
+    local held = {
+        -- set_ability's own fallback, for a centre that carries no name.
+        name = center.name or center.key,
+        effect = center.effect,
+        set = "Joker",
+        mult = config.mult or 0,
+        h_mult = config.h_mult or 0,
+        h_x_mult = config.h_x_mult or 0,
+        h_dollars = config.h_dollars or 0,
+        p_dollars = config.p_dollars or 0,
+        t_mult = config.t_mult or 0,
+        t_chips = config.t_chips or 0,
+        x_mult = config.Xmult or config.x_mult or 1,
+        h_chips = config.h_chips or 0,
+        x_chips = config.x_chips or 1,
+        h_x_chips = config.h_x_chips or 1,
+        repetitions = config.repetitions or 0,
+        h_size = config.h_size or 0,
+        d_size = config.d_size or 0,
+        type = config.type or "",
+        order = center.order,
+        extra_value = 0,
+        perma_bonus = 0,
+        perma_x_chips = 0,
+        perma_mult = 0,
+        perma_x_mult = 0,
+        perma_h_chips = 0,
+        perma_h_x_chips = 0,
+        perma_h_mult = 0,
+        perma_h_x_mult = 0,
+        perma_p_dollars = 0,
+        perma_h_dollars = 0,
+        perma_repetitions = 0,
+        card_limit = 0,
+        extra_slots_used = 0,
+        bonus = config.bonus or 0,
+    }
+
+    -- ...and then every key of the centre's config on top, which is vanilla's
+    -- last word on the table and how a Joker's own fields arrive.
+    for key, value in pairs(config) do
+        if key ~= "bonus" then
+            held[key] = type(value) == "table" and copy_table(value) or value
+        end
+    end
+
+    -- Not vanilla's - it leaves `extra` nil for a centre without one - but this
+    -- mod's Jokers reach into ability.extra without asking, and a retained one
+    -- is not in a position to be given one later.
+    held.extra = held.extra or {}
+    return held
+end
+
+--- The ability table CDawg keeps for `key`, built the first time it is asked for.
 ---
 --- Its own table per key, and kept on CDawg rather than on G.GAME: a retained
 --- Joker that scales has to keep its growth, and that growth belongs to this
@@ -167,12 +239,18 @@ local celesta_cdawg_calculate_ref = Card.calculate_joker
 local function cdawg_ability(card, key, center)
     card.ability.celesta_cdawg = card.ability.celesta_cdawg or {}
     local held = card.ability.celesta_cdawg[key]
-    if held then return held end
+    if held then
+        -- A table written before this mirrored vanilla's is missing the fields
+        -- that made it raise, `name` among them. Filled in rather than replaced,
+        -- and only where there is nothing there: a run in progress keeps
+        -- whatever its retained Jokers have grown.
+        for field, value in pairs(vanilla_ability(center)) do
+            if held[field] == nil then held[field] = value end
+        end
+        return held
+    end
 
-    held = { set = "Joker", extra = {} }
-    if type(center.config) == "table" then held = copy_table(center.config) end
-    held.set = "Joker"
-    held.extra = held.extra or {}
+    held = vanilla_ability(center)
     card.ability.celesta_cdawg[key] = held
     return held
 end
