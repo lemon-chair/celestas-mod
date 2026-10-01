@@ -43,6 +43,8 @@ end
 
 CelestasMod.obsidian_ranks = obsidian_ranks
 
+local OBSIDIAN_KEY = CelestasMod.ENHANCEMENT_KEYS.Obsidian
+
 SMODS.Enhancement {
     key = "obsidian",
     atlas = "enh_obsidian",
@@ -70,20 +72,51 @@ SMODS.Enhancement {
             return { x_mult = x }
         end
 
-        -- The end-of-round pass over cards still in hand, which is how Driftwood and
-        -- Foliage act at the end of a round. The suit is left exactly as it is.
-        if context.end_of_round and context.cardarea == G.hand
-            and not context.blueprint and not context.repetition then
-            local ranks = obsidian_ranks(card)
-            if #ranks == 0 then return end
-            local rank = pseudorandom_element(ranks, pseudoseed("celesta_obsidian_rank"))
-            G.E_MANAGER:add_event(Event {
-                func = function()
-                    SMODS.change_base(card, nil, rank)
-                    card:juice_up(0.3, 0.5)
-                    return true
-                end
-            })
-        end
+        -- Its rank is changed by the mod-level pass below, which reaches the whole deck. Not
+        -- here: this is only ever asked of cards in hand, and a card asked by both would
+        -- change twice.
     end,
 }
+
+--- Changes this card's rank to another its suit has a card for. The suit is left exactly as
+--- it is - change_base is told nothing about it - and a card with nowhere to go stays put.
+local function rerank(card)
+    local ranks = obsidian_ranks(card)
+    if #ranks == 0 then return end
+    local rank = pseudorandom_element(ranks, pseudoseed("celesta_obsidian_rank"))
+    G.E_MANAGER:add_event(Event {
+        func = function()
+            SMODS.change_base(card, nil, rank)
+            card:juice_up(0.3, 0.5)
+            return true
+        end
+    })
+end
+
+--------------------------------------------------------------------------------
+-- The end of the round, over the whole deck
+--------------------------------------------------------------------------------
+--
+-- Every Obsidian card in the run, wherever it is: in hand, in the draw pile, in the discard.
+-- G.playing_cards is the run's whole deck (see CelestasMod.prune_unrenderable_cards in
+-- globals.lua for what it is), so a card does not have to be drawn to be reached.
+--
+-- main_eval is what makes this once per round: the end-of-round evaluation is raised through
+-- the Joker row, the playing cards and the individual targets in turn, and only the last of
+-- those is this mod's. game_over is skipped - a run that has just been lost has no next round
+-- for the rank to matter in.
+--
+-- Chained, so a mod-level calculate someone else gives this mod later is not lost.
+
+local celesta_obsidian_mod_calculate = SMODS.current_mod.calculate
+
+SMODS.current_mod.calculate = function(self, context)
+    if context.end_of_round and context.main_eval and not context.game_over then
+        for _, card in ipairs(G.playing_cards or {}) do
+            if SMODS.has_enhancement(card, OBSIDIAN_KEY) then rerank(card) end
+        end
+    end
+    if celesta_obsidian_mod_calculate then
+        return celesta_obsidian_mod_calculate(self, context)
+    end
+end
