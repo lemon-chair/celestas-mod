@@ -71,48 +71,6 @@ function CelestasMod.unjudged(card, fn)
     if not ok then error(err, 0) end
 end
 
---------------------------------------------------------------------------------
--- TEMPORARY [pillar] trace - remove once the Eros report is pinned down.
---------------------------------------------------------------------------------
---
--- Names whoever debuffs a card that is being PLAYED, which is the thing the
--- report describes and the one thing the source cannot settle: SMODS' own
--- set_ability clears played_this_ante before it re-judges (card.lua:392-400,
--- then :490), so neither Eros nor LaynaLazar can reach The Pillar through it -
--- something else in the stack is doing it, and this says what.
---
--- Logged at most a dozen times a session, with the traceback of the call that
--- did it.
-
-local celesta_pillar_trace_ref = (type(Blind) == "table") and Blind.debuff_card
-local celesta_pillar_traced = 0
-
-if celesta_pillar_trace_ref then
-    function Blind:debuff_card(card, from_blind)
-        local was = card and card.debuff
-        local ret = celesta_pillar_trace_ref(self, card, from_blind)
-
-        if card and card.debuff and not was and celesta_pillar_traced < 12
-            and card.ability and card.ability.played_this_ante then
-            celesta_pillar_traced = celesta_pillar_traced + 1
-            sendInfoMessage(
-                ("[pillar] %s of %s debuffed by %s | area=%s state=%s enh=%s%s")
-                    :format(
-                        tostring(card.base and card.base.value),
-                        tostring(card.base and card.base.suit),
-                        tostring(self.name),
-                        (card.area == G.play and "play")
-                            or (card.area == G.hand and "hand") or "other",
-                        tostring(G.STATE),
-                        tostring(card.config and card.config.center
-                            and card.config.center.key),
-                        debug.traceback("", 2)),
-                "CelestasMod")
-        end
-        return ret
-    end
-end
-
 -- Hooks
 
 local loc_colour_ref = loc_colour
