@@ -36,6 +36,24 @@ end
 
 CelestasMod.plasma_balanced = balanced_run
 
+--- True when the run is on the Plasma Deck, or on its Card Sleeves sleeve.
+---
+--- Those already balance the score, so this Spectral has nothing to give them. Asked of
+--- G.GAME.selected_back.effect.center.key, the idiom vanilla's own deck checks use, and of
+--- the sleeve key Card Sleeves keeps on G.GAME (sleeve_casl_plasma), which a saved run
+--- keeps too. A different question from balanced_run: that one is "has this card been
+--- used", and is what the balancing hook reads - folding this into it would make the
+--- hook balance a second time on the deck that already did.
+local function on_plasma_deck()
+    if not G.GAME then return false end
+    local back = G.GAME.selected_back
+    local center = back and back.effect and back.effect.center
+    if center and center.key == "b_plasma" then return true end
+    return G.GAME.selected_sleeve == "sleeve_casl_plasma"
+end
+
+CelestasMod.on_plasma_deck = on_plasma_deck
+
 --------------------------------------------------------------------------------
 -- The balancing
 --------------------------------------------------------------------------------
@@ -109,12 +127,14 @@ SMODS.Consumable {
         return { vars = { card.ability.extra.slots } }
     end,
 
+    -- Neither once it has been used this run, nor in a run that is already on the
+    -- Plasma Deck or its sleeve.
     in_pool = function(self)
-        return not balanced_run()
+        return not balanced_run() and not on_plasma_deck()
     end,
 
     can_use = function(self, card)
-        return not balanced_run()
+        return not balanced_run() and not on_plasma_deck()
     end,
 
     use = function(self, card, area, copier)

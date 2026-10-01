@@ -5803,8 +5803,8 @@ function Card:calculate_joker(context, ...)
     self.ability = self.ability.celesta_bind.ability
     local saved_lent = Bind.lent[self]
     Bind.lent[self] = { center = saved_center, ability = saved_ability }
-    local ok, partner = pcall(with_acting_half, self, "absorbed",
-                              celesta_bind_calculate_joker_ref, self, context)
+    local ok, partner, partner_post = pcall(with_acting_half, self, "absorbed",
+                                            celesta_bind_calculate_joker_ref, self, context)
     Bind.lent[self] = saved_lent
     self.config.center, self.ability = saved_center, saved_ability
     self.config.center_key = saved_key
@@ -5816,6 +5816,9 @@ function Card:calculate_joker(context, ...)
             ("Bind could not run %s: %s"):format(tostring(center.key), tostring(partner)))
         return effect, post
     end
+    -- `nil, true`: the half did its work in a queued event and says it triggered. Carried
+    -- out, or eval_card never learns the merge did anything and will not retrigger it.
+    post = post or partner_post
     if type(partner) ~= "table" then return effect, post end
 
     -- Both halves can want to say something, and an effect table carries only
@@ -13372,6 +13375,186 @@ special("j_celesta_kokonuts", "j_celesta_berrycrepe", {
         end
     end,
 })
+
+--------------------------------------------------------------------------------
+-- Obsidian's pairs
+--------------------------------------------------------------------------------
+
+--- One unenhanced card held in hand, picked at random and CLAIMED, or nil.
+---
+--- Arar's own shape (jokers/implemented.lua): c_base is the unenhanced playing-card
+--- centre, and the flag excludes a card already taken this pass, because set_ability is
+--- deferred into an event and a Blueprint copy evaluating in the same pass would otherwise
+--- still see it as unenhanced and could waste the copy re-picking it.
+local function arar_claim(seed)
+    if not (G.hand and G.hand.cards) then return nil end
+    local candidates = {}
+    for _, held in ipairs(G.hand.cards) do
+        if held.config.center == G.P_CENTERS.c_base and not held.celesta_arar_claimed then
+            candidates[#candidates + 1] = held
+        end
+    end
+    if #candidates == 0 then return nil end
+    local target = pseudorandom_element(candidates, pseudoseed(seed))
+    target.celesta_arar_claimed = true
+    return target
+end
+
+--- ...and what becomes of it: changed in an event, so it happens where the player can see.
+---
+--- Plain set_ability, not the delayed form: the delayed one leaves the sprite blank until
+--- the event runs, and a card that is enhanced from inside one has no business waiting for
+--- a second event to have a face (Liffeh + Arar showed exactly that).
+local function arar_enhance(target, center)
+    G.E_MANAGER:add_event(Event {
+        func = function()
+            target:set_ability(center)
+            target:juice_up(0.3, 0.5)
+            target.celesta_arar_claimed = nil
+            return true
+        end
+    })
+end
+
+-- Arar + Jax: Arar's start-of-round card, weathered - Scoria or Sandstone, either.
+--
+-- One roll between the two, so neither is likelier than the other. Both are stones: the
+-- card loses its rank and suit, which is what Polish does to one as well.
+--
+-- No blueprint guard, which is Arar's own: a copy picks ANOTHER card, and the claim flag
+-- is what keeps it off the one already taken.
+special("j_celesta_arar", "j_celesta_jaxvtuber", {
+    key = "arar_jax",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.first_hand_drawn then return end
+        local keys = CelestasMod.ENHANCEMENT_KEYS or {}
+        local options = {}
+        for _, name in ipairs({ "Scoria", "Sandstone" }) do
+            if keys[name] and G.P_CENTERS[keys[name]] then
+                options[#options + 1] = G.P_CENTERS[keys[name]]
+            end
+        end
+        if #options == 0 then return end
+
+        local target = arar_claim("celesta_bind_arar_jax")
+        if not target then return end
+
+        arar_enhance(target, pseudorandom_element(options,
+            pseudoseed("celesta_bind_arar_jax_pick")))
+        return {
+            message = localize("k_upgrade_ex"),
+            colour = G.C.SECONDARY_SET.Enhanced,
+            card = card,
+        }
+    end,
+})
+
+-- Arar + Mallie Sprout: Arar's start-of-round card, made Obsidian.
+special("j_celesta_arar", "j_celesta_malliesprout", {
+    key = "arar_malliesprout",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.first_hand_drawn then return end
+        local obsidian = G.P_CENTERS[(CelestasMod.ENHANCEMENT_KEYS or {}).Obsidian or ""]
+        if not obsidian then return end
+
+        local target = arar_claim("celesta_bind_arar_malliesprout")
+        if not target then return end
+
+        arar_enhance(target, obsidian)
+        return {
+            message = localize("k_upgrade_ex"),
+            colour = G.C.SECONDARY_SET.Enhanced,
+            card = card,
+        }
+    end,
+})
+
+--- The Jokers that copy another Joker, by centre key.
+---
+--- A list that is the ask's own, written out rather than read off anything: nothing in this
+--- mod says which Jokers are "blueprint-like" in one place (CelestasMod.COPIER_TARGETS is
+--- what each copier points at, which is a different question). Blueprint and Brainstorm are
+--- the base game's; the six after them are this mod's.
+CelestasMod.BLUEPRINT_LIKE = {
+    "j_blueprint", "j_brainstorm",
+    "j_celesta_mariyume", "j_celesta_sigrid_bird", "j_celesta_nana_ruru",
+    "j_celesta_onigiri", "j_celesta_schematic", "j_celesta_calamitas",
+}
+
+--- How many of them are owned.
+---
+--- Through find_joker, which counts a merge's absorbed half as in the row and leaves a
+--- debuffed card out - so a Blueprint merged into something else is still owned, and one
+--- that is debuffed is not. Two of the same one are two.
+local function blueprint_like_owned()
+    local owned = 0
+    for _, key in ipairs(CelestasMod.BLUEPRINT_LIKE) do
+        owned = owned + #CelestasMod.find_joker(key)
+    end
+    return owned
+end
+
+-- FroggyLoch + Bluto: Bluto retriggers the two copiers; this retriggers everything the
+-- copiers' owner plays, once for each of them.
+--
+-- The repetition pass over the played hand, the question Mime and Hack ask of a held or a
+-- played card. Asked of the count at the moment, not at the moment the pair was made, so
+-- buying a copier mid-run counts from the next card on.
+special("j_celesta_froggyloch", "j_celesta_bluto", {
+    key = "froggyloch_bluto",
+
+    loc_vars = function(def, card, state)
+        return { vars = { blueprint_like_owned() } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.repetition and context.cardarea == G.play
+                and context.other_card) then
+            return
+        end
+        local owned = blueprint_like_owned()
+        if owned <= 0 then return end
+        return { repetitions = owned, card = card }
+    end,
+})
+
+--- The pair, so the Polish rule below can name it once.
+local HARUKA_KLOEKROC = "haruka_kloekroc"
+
+-- Haruka + KloeKroc: Polish makes Obsidian of both stones.
+--
+-- Polish turns a Stone Card into Sandstone and a Limestone one into Scoria. While this is in
+-- the row it turns either into Obsidian instead, which is a rule on what Polish hands out
+-- (CelestasMod.POLISH_RULES) and not a second Tarot: one list, so the card Polish is
+-- described as and the card it makes cannot come apart.
+special("j_celesta_harukakaribu", "j_celesta_kloekroc", {
+    key = HARUKA_KLOEKROC,
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+-- Guarded like every other rule list written from this side: the harnesses load this
+-- file without globals.lua, where the list is made.
+CelestasMod.POLISH_RULES = CelestasMod.POLISH_RULES or {}
+CelestasMod.POLISH_RULES[#CelestasMod.POLISH_RULES + 1] = function(into, from)
+    local holder = Bind.find_special(HARUKA_KLOEKROC)
+    if not (holder and not holder.debuff) then return nil end
+    return (CelestasMod.ENHANCEMENT_KEYS or {}).Obsidian
+end
 
 --------------------------------------------------------------------------------
 -- Art: the two faces split corner to corner

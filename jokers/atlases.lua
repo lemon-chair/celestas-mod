@@ -695,6 +695,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "kloekroc",
+    path = "kloekroc.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "kokonuts",
     path = "kokonuts.png",
     px = 71,
@@ -767,6 +774,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "lucypyre",
     path = "lucypyre.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "malliesprout",
+    path = "malliesprout.png",
     px = 71,
     py = 95,
 }

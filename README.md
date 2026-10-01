@@ -6,7 +6,7 @@ here was drawn by a person, and I do not support Gen-AI or AI art.
 A large VTuber-themed content mod for [Balatro](https://www.playbalatro.com/),
 built on [Steamodded](https://github.com/Steamodded/smods).
 
-216 Jokers, and three Spectral cards that do things to them: **Bind** fuses two
+218 Jokers, and three Spectral cards that do things to them: **Bind** fuses two
 Jokers into one, **Swap** trades the second Joker of two merged ones, and the
 last turns a Joker into a harder, worse-tempered version of itself.
 
@@ -34,13 +34,13 @@ made it.
 
 ## What's in it
 
-- **216 Jokers**: 60 Common, 78 Uncommon, 43 Rare, 13 Legendary, and 22 of a
+- **218 Jokers**: 60 Common, 80 Uncommon, 43 Rare, 13 Legendary, and 22 of a
   new rarity
 - **Bind**, a Spectral that merges **2 selected Jokers into one** with the
   abilities of both, with **300 unique combinations**
 - **Swap**, a Spectral that trades the **second Joker** of 2 merged ones
 - **3 new suits**
-- **8 new enhancements**
+- **9 new enhancements**
 - **5 new seals**
 - **10 new decks**
 - **12 new Boss Blinds**

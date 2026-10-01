@@ -954,6 +954,13 @@ return {
                     "always {C:attention}scored{} when played",
                 },
             },
+            j_celesta_kloekroc = {
+                name = "KloeKroc",
+                text = {
+                    "{C:attention}Obsidian{} cards count as any suit,",
+                    "and can't be debuffed by Boss Blinds",
+                },
+            },
             j_celesta_kokonuts = {
                 name = "KokoNuts",
                 text = {
@@ -1055,6 +1062,13 @@ return {
                 text = {
                     "Reduces {C:attention}Blind{} size",
                     "by {C:attention}#1#%{}",
+                },
+            },
+            j_celesta_malliesprout = {
+                name = "Mallie Sprout",
+                text = {
+                    "At the start of the round, adds",
+                    "an {C:attention}Obsidian{} card to your full deck",
                 },
             },
             j_celesta_maplechicken = {
@@ -2422,6 +2436,16 @@ return {
                     "{C:green}#1# in #2#{} chance for {C:chips}+#3#{} Chips",
                     "{C:green}#4# in #5#{} chance for {X:chips,C:white}^#6#{} Chips",
                     "{C:inactive}no rank or suit",
+                },
+            },
+            m_celesta_obsidian = {
+                name = "Obsidian Card",
+                text = {
+                    "{X:chips,C:white}X#1#{} Chips or {X:mult,C:white}X#1#{} Mult",
+                    "when scored",
+                    "{C:green}#2# in #3#{} chance for both",
+                    "Changes {C:attention}rank{} at the end of the round",
+                    "{C:inactive}(suit stays the same)",
                 },
             },
             m_celesta_foliage = {
@@ -4917,6 +4941,38 @@ return {
                     "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
                 },
             },
+            celesta_bind_arar_jax = {
+                name = "Arar + Jax",
+                text = {
+                    "At the start of the round, enhances",
+                    "{C:attention}1{} unenhanced card held in hand to",
+                    "{C:attention}Scoria{} or {C:attention}Sandstone{}",
+                },
+            },
+            celesta_bind_arar_malliesprout = {
+                name = "Arar + Mallie Sprout",
+                text = {
+                    "At the start of the round, enhances",
+                    "a random unenhanced card held in",
+                    "hand to {C:attention}Obsidian{}",
+                },
+            },
+            celesta_bind_froggyloch_bluto = {
+                name = "FroggyLoch + Bluto",
+                text = {
+                    "Retrigger each played card {C:attention}1{} time",
+                    "for each blueprint-like Joker owned",
+                    "{C:inactive}(Currently {C:attention}#1#{C:inactive} owned)",
+                },
+            },
+            celesta_bind_haruka_kloekroc = {
+                name = "Haruka Karibu + KloeKroc",
+                text = {
+                    "The Tarot {C:attention}Polish{} enhances {C:attention}Stone{}",
+                    "and {C:attention}Limestone{} cards to {C:attention}Obsidian{}",
+                    "instead of {C:attention}Sandstone{} and {C:attention}Scoria{}",
+                },
+            },
             celesta_bind_koko_berry = {
                 name = "KokoNuts + BerryCrepe",
                 text = {
@@ -5518,6 +5574,7 @@ return {
             m_celesta_gash = "Gash Card",
             m_celesta_scoria = "Scoria Card",
             m_celesta_foliage = "Foliage Card",
+            m_celesta_obsidian = "Obsidian Card",
             celesta_tattered = "Tattered",
             celesta_cracked = "Cracked",
             celesta_chipped = "Chipped",
@@ -5605,6 +5662,7 @@ return {
             celesta_diamonds = "All Diamonds!",
             celesta_clubs = "All Clubs!",
             celesta_plus_seven = "+7 of Spades",
+            celesta_plus_obsidian = "+Obsidian",
             celesta_downpour = "Downpour!",
             celesta_swapped = "Swapped!",
             celesta_no_upgrade = "Nothing to upgrade!",

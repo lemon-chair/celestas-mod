@@ -18,6 +18,7 @@ CelestasMod.ENHANCEMENT_KEYS = {
     Sandstone = "m_" .. SMODS.current_mod.prefix .. "_sandstone",
     Scoria = "m_" .. SMODS.current_mod.prefix .. "_scoria",
     Foliage = "m_" .. SMODS.current_mod.prefix .. "_foliage",
+    Obsidian = "m_" .. SMODS.current_mod.prefix .. "_obsidian",
 }
 
 -- Shared so Saruei can target this exact roll through fix_probability, and so
@@ -77,6 +78,9 @@ local function play_scoring_sound(key)
         end,
     })
 end
+
+--- Shared with enhancements/obsidian.lua, which scores through Limestone's sound.
+CelestasMod.play_scoring_sound = play_scoring_sound
 
 --- True when a Nostro is in play and able to act.
 --- Asked at the moment a Gash breaks rather than cached: Nostro can be

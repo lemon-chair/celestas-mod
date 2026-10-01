@@ -50,6 +50,9 @@ SMODS.Atlas { key = 'enh_limestone', path = 'enh_limestone.png', px = 71, py = 9
 SMODS.Atlas { key = 'enh_driftwood', path = 'enh_driftwood.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'enh_sandstone', path = 'enh_sandstone.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'enh_scoria', path = 'enh_scoria.png', px = 71, py = 95 }
+-- Supplied at 72x96 / 144x192 and trimmed to the card cell, then cut to the card
+-- silhouette, rather than resized: pixel art scaled by a fraction is another picture.
+SMODS.Atlas { key = 'enh_obsidian', path = 'enh_obsidian.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'enh_foliage', path = 'enh_foliage.png', px = 71, py = 95 }
 -- Ace fronts with the rank glyph stripped, for Driftwood (tools/gen_driftwood_fronts.py).
 SMODS.Atlas { key = 'driftwood_fronts', path = 'driftwood_fronts.png', px = 71, py = 95 }
@@ -132,6 +135,7 @@ assert(SMODS.load_file('sins/sidebar.lua'))()
 -- Enhancements load before jokers: Shoto, Saruei and MOTHERv3 all
 -- reference CelestasMod.ENHANCEMENT_KEYS.
 assert(SMODS.load_file('enhancements/enhancements.lua'))()
+assert(SMODS.load_file('enhancements/obsidian.lua'))()
 assert(SMODS.load_file('blinds/blinds.lua'))()
 assert(SMODS.load_file('editions/frozen.lua'))()
 -- After enhancements: it classifies their keys into cracked/chipped.

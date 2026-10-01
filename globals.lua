@@ -464,6 +464,13 @@ end
 --- read from the other.
 CelestasMod.CDAWG_RARITY_RULES = {}
 
+--- What Polish turns a stone into, when a Joker pair says it makes something else.
+---
+--- Each rule takes the enhancement key Polish was about to hand out and the key of the
+--- stone it is working on, and answers a different key - or nil to leave it. merge/bind.lua
+--- fills this in and consumables/enhancers.lua reads it when a card is used.
+CelestasMod.POLISH_RULES = {}
+
 --- Extra factors on what a Eutrophic card copies, each a function taking the
 --- copying card and returning a multiplier. enhancements/enhancements.lua
 --- takes the first that answers, in CelestasMod.eutrophic_scale.

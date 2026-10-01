@@ -47,7 +47,16 @@ local POLISH = {
 --- What Polish would turn `chosen` into, or nil if it is not a stone.
 local function polished_into(chosen)
     for from, into in pairs(POLISH) do
-        if SMODS.has_enhancement(chosen, from) then return into end
+        if SMODS.has_enhancement(chosen, from) then
+            -- A Joker pair can say Polish makes something else of this stone
+            -- (CelestasMod.POLISH_RULES in globals.lua). A rule that raises is a rule
+            -- that said nothing: Polish must go on working without it.
+            for _, rule in ipairs(CelestasMod.POLISH_RULES or {}) do
+                local ok, other = pcall(rule, into, from)
+                if ok and other then return other end
+            end
+            return into
+        end
     end
     return nil
 end
