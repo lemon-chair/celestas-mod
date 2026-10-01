@@ -3898,6 +3898,9 @@ LOC_TAIL = '''        },
             ch_c_celesta_nutshack_deck = {
                 "Every card is a {C:attention}Lucky 7 of Spades{}",
             },
+            ch_c_celesta_orbital_warning = {
+                "{C:red}WARNING: MAY BE BROKEN{}",
+            },
             ch_c_celesta_orbital_common = {
                 "Only {C:blue}Common{} Jokers appear",
             },

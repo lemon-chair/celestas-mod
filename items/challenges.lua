@@ -525,6 +525,8 @@ local function orbital_challenge(orbital)
 
         rules = {
             custom = {
+                -- First, because it is a warning about the two below it.
+                { id = "celesta_orbital_warning" },
                 { id = orbital.rule },
                 { id = "celesta_orbital_prices", value = ORBITAL_PRICE },
             },
