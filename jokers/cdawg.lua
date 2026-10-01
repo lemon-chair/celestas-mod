@@ -266,16 +266,31 @@ local ORBIT_X, ORBIT_Y = 0.72, 0.56
 --- Read by the tests, which hold these to the distance the orbit is drawn at.
 CelestasMod.CDAWG_ORBIT = { size = ORBIT_SIZE, x = ORBIT_X, y = ORBIT_Y }
 
---- One sprite per atlas, built on first use: the atlases do not exist while
+--- One sprite per CENTRE, built on first use: the atlases do not exist while
 --- this file is loading.
+---
+--- Per centre and not per sheet, which it used to be. `pos` is baked into the
+--- Sprite and every Joker in the base game shares one sheet, so keying on the
+--- sheet gave the second vanilla Joker retained the first one's face.
 local orbit_sprites = {}
 
 local function orbit_sprite(center)
-    local key = center.atlas or center.key
-    if not key then return nil end
+    -- The sheet the game itself would draw this centre from: its own atlas if
+    -- it has one and its set's otherwise, which is how Card:set_sprites
+    -- resolves it (card.lua:183).
+    --
+    -- The fallback is the whole of what lets a Joker from outside this mod
+    -- appear here at all. Every Joker in this mod has an atlas of its own, so
+    -- asking for center.atlas alone always found one; a vanilla Joker has none
+    -- - j_egg is one cell of G.ASSET_ATLAS.Joker - so the lookup found nothing,
+    -- and a CDawg retaining the base game's Commons had an empty orbit however
+    -- many it was holding.
+    local sheet = center.atlas or center.set
+    local key = center.key or sheet
+    if not (sheet and key) then return nil end
     if orbit_sprites[key] ~= nil then return orbit_sprites[key] or nil end
 
-    local atlas = G.ASSET_ATLAS[key]
+    local atlas = G.ASSET_ATLAS[sheet]
     if not atlas then
         -- false rather than nil, so a missing atlas is asked about once
         -- rather than every frame of every card.
