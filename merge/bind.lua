@@ -9235,6 +9235,17 @@ function CardArea:add_to_highlighted(card, silent)
     if not ok then error(err, 0) end
 end
 
+--- Is the card context.destroy_card names one the player PLAYED?
+---
+--- The destroy pass is not one pass over the played hand: it runs over every
+--- area SMODS.get_card_areas('playing_cards', 'destroying_cards') hands it,
+--- which is G.hand as well as G.play (state_events.lua:751). A played card
+--- arrives with cardarea set to G.play if it scored and to the string
+--- "unscored" if it did not; a card held in hand arrives as G.hand.
+local function destroying_played(context)
+    return context.cardarea == G.play or context.cardarea == "unscored"
+end
+
 --------------------------------------------------------------------------------
 -- Dokibird + Snuffy
 --------------------------------------------------------------------------------
@@ -9246,10 +9257,12 @@ end
 -- order.
 --
 -- context.destroy_card is raised once for every card in the played hand,
--- scoring and unscoring alike (SMODS utils.lua:2061), which is why this does
--- not narrow by cardarea the way Dokibird alone does. Saying `remove` is what
--- destroys the card, and it buys the animation, the removal from the deck and
--- the remove_playing_cards pass other Jokers watch, all for free.
+-- scoring and unscoring alike (SMODS utils.lua:2058), which is why this does
+-- not narrow to the unscoring ones the way Dokibird alone does - but it is
+-- raised for the cards held in hand too, so it still has to ask whether the
+-- card was played at all. Saying `remove` is what destroys the card, and it
+-- buys the animation, the removal from the deck and the remove_playing_cards
+-- pass other Jokers watch, all for free.
 --
 -- The cap and the rate are written out rather than read from
 -- CelestasMod.DOKIBIRD_CAP: this file is loaded before jokers/implemented.lua,
@@ -9264,7 +9277,8 @@ special("j_celesta_dokibird", "j_celesta_snuffy", {
     end,
 
     calculate = function(def, card, context, state)
-        if not (context.destroy_card and not context.blueprint
+        if not (context.destroy_card and destroying_played(context)
+                and not context.blueprint
                 and not context.retrigger_joker) then return end
         local hand = context.full_hand
         local target = hand and hand[1]
@@ -10457,10 +10471,12 @@ special("j_celesta_eros", "j_celesta_kokonuts", {
 -- it finds here is face cards - eaten, for three times what they were holding.
 --
 -- context.destroy_card is raised once for every card in the played hand,
--- scoring and unscoring alike (SMODS utils.lua:2061), so this eats every face
--- card played rather than only the ones that scored. Saying `remove` is what
--- destroys it, and it buys the animation, the removal from the deck and the
--- remove_playing_cards pass other Jokers watch.
+-- scoring and unscoring alike (SMODS utils.lua:2058), so this eats every face
+-- card played rather than only the ones that scored. It is raised for the cards
+-- held in hand as well, though, and those are not the player's to eat - which
+-- is what destroying_played asks. Saying `remove` is what destroys it, and it
+-- buys the animation, the removal from the deck and the remove_playing_cards
+-- pass other Jokers watch.
 --
 -- "Stored Chips" is get_chip_bonus - the card's rank, its enhancement's bonus
 -- and any permanent bonus on top - which is the reading Dokibird's line uses
@@ -10474,8 +10490,8 @@ special("j_celesta_eros", "j_celesta_laynalazar", {
     end,
 
     calculate = function(def, card, context, state)
-        if context.destroy_card and not context.blueprint
-            and not context.retrigger_joker then
+        if context.destroy_card and destroying_played(context)
+            and not context.blueprint and not context.retrigger_joker then
             local doomed = context.destroy_card
             if not (doomed.is_face and doomed:is_face()) then return end
 
