@@ -9951,7 +9951,7 @@ function CelestasMod.rares_sold()
     return (G.GAME and G.GAME.celesta_rares_sold) or 0
 end
 
---- Notes a Common from this mod on the run's list, if it is not on it already.
+--- Notes a sold Joker on the run's list, if it is not on it already.
 ---
 --- CDawg retains one of each, however many copies were sold: two Fufus are one
 --- Fufu's worth of ability, and the orbit would show the same face twice with
@@ -9961,6 +9961,11 @@ end
 --- the merge counts the same as one made after. So every rarity a merge could
 --- ever reach is written down, and jokers/cdawg.lua decides what is retained.
 ---
+--- Where the Joker came from is not asked here either, and for the same reason:
+--- CDawg + Blue Card retains the base game's Commons, and a Common sold before
+--- that pair was made has the same claim on it as one sold after. Asking
+--- is_ours at the sale is what made that impossible.
+---
 --- Listed rather than bounded, because `rarity` is not always a number - this
 --- mod's own Lost Jokers carry a rarity of their own, and another mod's could
 --- be anything at all. Legendary is deliberately absent: no merge reaches it.
@@ -9968,7 +9973,7 @@ local RETAINABLE_RARITY = { [1] = true, [2] = true, [3] = true }
 
 local function record_joker_sold(center)
     if not (G.GAME and center and RETAINABLE_RARITY[center.rarity]
-        and CelestasMod.is_ours(center) and center.key) then
+        and center.key) then
         return
     end
     -- One list, and it means "what CDawg retains" - so a Joker it will never

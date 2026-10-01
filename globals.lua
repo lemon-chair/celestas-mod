@@ -485,6 +485,17 @@ end
 --- read from the other.
 CelestasMod.CDAWG_RARITY_RULES = {}
 
+--- ...and which of those rarities it retains from OUTSIDE this mod.
+---
+--- The same shape, because it is a second axis and not a wider first one: a
+--- rule answers the rarity numbers it opens to foreign Jokers, so CDawg + Blue
+--- Card opening Common and CDawg + Green Card opening Uncommon come to this
+--- mod's Uncommons and the base game's Commons rather than to everything.
+---
+--- A rarity has to be in BOTH to be retained from elsewhere: nothing is
+--- retained that CDawg is not retaining at all.
+CelestasMod.CDAWG_FOREIGN_RULES = {}
+
 --- Extra factors on what a Eutrophic card copies, each a function taking the
 --- copying card and returning a multiplier. enhancements/enhancements.lua
 --- takes the first that answers, in CelestasMod.eutrophic_scale.

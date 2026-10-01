@@ -4927,6 +4927,15 @@ return {
                     "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
                 },
             },
+            celesta_bind_cdawg_blue = {
+                name = "CDawg + Blue Card",
+                text = {
+                    "Also retains the abilities of each",
+                    "{C:attention}Common{} Joker from the base",
+                    "game sold this run",
+                    "{C:inactive}(Currently {C:attention}#1#{C:inactive} retained)",
+                },
+            },
             celesta_bind_cdawg_green = {
                 name = "CDawg + Green Card",
                 text = {

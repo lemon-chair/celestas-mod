@@ -13239,9 +13239,15 @@ end
 --------------------------------------------------------------------------------
 --
 -- A plain CDawg retains the Commons this mod has sold this run. These widen
--- which rarities count, and nothing else about it: the list, the orbit, the
--- tally on the card and CDawg + Ironmouse all read the one function, so they
--- all widen together.
+-- which rarities count and whether Jokers from outside this mod count, and
+-- nothing else about it: the list, the orbit, the tally on the card and CDawg +
+-- Ironmouse all read the one function, so they all widen together.
+--
+-- Two axes rather than one wider one. A pair opens rarities among this mod's
+-- Jokers, or rarities among everything else, and a rarity has to be open in
+-- both to be retained from elsewhere - so Blue Card beside Green Card is this
+-- mod's Uncommons and the base game's Commons, and not the base game's
+-- Uncommons.
 --
 -- ADDITIVE, and that is forced rather than chosen. A replacing pair is excluded
 -- from the row lookups (lookup_eligible in globals.lua), so find_joker would
@@ -13252,9 +13258,14 @@ end
 do
 
 CelestasMod.CDAWG_RARITY_RULES = CelestasMod.CDAWG_RARITY_RULES or {}
+CelestasMod.CDAWG_FOREIGN_RULES = CelestasMod.CDAWG_FOREIGN_RULES or {}
 
---- Registers `pair`, and the rule that says what holding it retains.
-local function cdawg_pair(other, key, rarities)
+--- Registers `pair`, and the rules that say what holding it retains.
+---
+--- `rarities` are opened among this mod's Jokers and `foreign` among everything
+--- else; a pair gives one or the other, and a rule that would answer nothing is
+--- not registered at all.
+local function cdawg_pair(other, key, rarities, foreign)
     special("j_celesta_cdawg", other, {
         key = key,
         additive = true,
@@ -13269,17 +13280,31 @@ local function cdawg_pair(other, key, rarities)
         calculate = function(def, card, context, state) end,
     })
 
-    CelestasMod.CDAWG_RARITY_RULES[#CelestasMod.CDAWG_RARITY_RULES + 1] =
-        function()
+    --- Answers the list while the pair is in the row, and nothing while it is
+    --- not - which is what makes selling the pair narrow CDawg back again.
+    local function while_held(list)
+        return function()
             if specials_held(key)[1] == nil then return nil end
-            return rarities
+            return list
         end
+    end
+
+    if rarities then
+        CelestasMod.CDAWG_RARITY_RULES[#CelestasMod.CDAWG_RARITY_RULES + 1] =
+            while_held(rarities)
+    end
+    if foreign then
+        CelestasMod.CDAWG_FOREIGN_RULES[#CelestasMod.CDAWG_FOREIGN_RULES + 1] =
+            while_held(foreign)
+    end
 end
 
 cdawg_pair("j_celesta_green_card", "cdawg_green", { 2 })
 cdawg_pair("j_celesta_fuchsia_card", "cdawg_fuchsia", { 3 })
 -- Two of them: everything this mod sells except Legendary, which no rule names.
 cdawg_pair("j_celesta_cdawg", "cdawg_cdawg", { 2, 3 })
+-- The other axis: no new rarity, the Commons of everything that is not us.
+cdawg_pair("j_celesta_blue_card", "cdawg_blue", nil, { 1 })
 
 end
 

@@ -1,7 +1,8 @@
 --- CDAWG [Legendary]
 ---
 --- Keeps the abilities of every Common Joker from this mod sold this run, and
---- shows them as small faces turning around its own.
+--- shows them as small faces turning around its own. Its merges widen that two
+--- ways: which rarities count, and whether Jokers from outside this mod do.
 ---
 --- Its own file for the reason Cryogen has one: it wraps a global at load -
 --- Card.draw, for the orbit - and jokers/implemented.lua is sliced apart and
@@ -47,6 +48,23 @@ function CelestasMod.cdawg_rarities()
     return out
 end
 
+--- The rarities CDawg is retaining from outside this mod.
+---
+--- Empty for a plain CDawg, which is what "from this mod" on its own card
+--- means. CDawg + Blue Card opens Common.
+---
+--- Asked rather than cached, for the reason cdawg_rarities is.
+function CelestasMod.cdawg_foreign_rarities()
+    local out = {}
+    for _, rule in ipairs(CelestasMod.CDAWG_FOREIGN_RULES or {}) do
+        local ok, rarities = pcall(rule)
+        if ok and type(rarities) == "table" then
+            for _, rarity in ipairs(rarities) do out[rarity] = true end
+        end
+    end
+    return out
+end
+
 --- The centre keys CDawg is retaining, in the order they were sold.
 ---
 --- Every sale is recorded, whatever its rarity, and the filtering happens HERE
@@ -56,17 +74,26 @@ end
 --- does. Recording only what was retainable at the time would have made the
 --- order the player did things in matter, silently.
 ---
+--- Where a Joker came from is filtered here for the same reason, and used to be
+--- filtered at the sale instead. A vanilla Common sold before the pair existed
+--- would never have been written down, so the pair would have retained nothing
+--- from before itself - which is exactly the silent dependence on order that
+--- moving the rarity test here was meant to end.
+---
 --- The rarity is read back off the centre rather than stored, so the list is
 --- the shape it has always been and a save written before any of this reads
---- back unchanged. An unknown centre counts as Common, which is the only thing
---- such a save could have held.
+--- back unchanged. An unknown centre counts as Common AND as one of ours, which
+--- between them are the only thing such a save could have held.
 function CelestasMod.commons_sold_keys()
     local sold = (G.GAME and G.GAME.celesta_commons_sold) or {}
     local retained = CelestasMod.cdawg_rarities()
+    local foreign = CelestasMod.cdawg_foreign_rarities()
     local out = {}
     for _, key in ipairs(sold) do
         local center = G.P_CENTERS and G.P_CENTERS[key]
-        if retained[(center and center.rarity) or 1] then
+        local rarity = (center and center.rarity) or 1
+        local mine = center == nil or CelestasMod.is_ours(center)
+        if retained[rarity] and (mine or foreign[rarity]) then
             out[#out + 1] = key
         end
     end
