@@ -5016,6 +5016,63 @@ local function geega_henya_scale()
     return Bind.special_state(holder, def).scale
 end
 
+-- What a merged Joker is worth: both halves, in what it sells for and - on the
+-- Fusion Deck, the one place a merged Joker is ever for sale - in what it costs.
+--
+-- Both are worked out inside Card:set_cost from the HOST's own base cost
+-- (card.lua:505), and it runs again whenever a shop price moves, a card is
+-- bought or sold, or an edition changes. Bind.merge writes the combined sell
+-- price once, so the next set_cost put it back to the host's alone; the
+-- absorbed half's share is added to the ANSWER here instead, which a second
+-- call recomputes from base and so cannot compound.
+--
+-- Defined before the wrappers below so they scale the combined figures, the
+-- way they scale any other Joker's.
+
+--- The halves a merged card carries besides its own: one for a pair, three for
+--- a quad (members[1] is the host).
+local function absorbed_keys(bound)
+    if type(bound.members) == "table" then
+        local keys = {}
+        for i = 2, #bound.members do keys[#keys + 1] = bound.members[i] end
+        return keys
+    end
+    return { bound.key }
+end
+
+--- What a Joker of this centre would cost on its own, by the formula
+--- set_cost applies to the host: base cost plus inflation, less the discount,
+--- never under 1. The edition's surcharge is the host's and is not repeated.
+local function own_cost(key)
+    local center = G.P_CENTERS and G.P_CENTERS[key]
+    local base = type(center) == "table" and center.cost
+    if type(base) ~= "number" then return 0 end
+    local game = G.GAME or {}
+    return math.max(1, math.floor((base + (game.inflation or 0) + 0.5)
+        * (100 - (game.discount_percent or 0)) / 100))
+end
+
+local celesta_bind_worth_cost_ref = Card.set_cost
+function Card:set_cost(...)
+    local ret = celesta_bind_worth_cost_ref(self, ...)
+    local bound = self.ability and self.ability.celesta_bind
+    if type(bound) ~= "table" then return ret end
+
+    if type(self.sell_cost) == "number" and type(bound.sell_cost) == "number" then
+        self.sell_cost = self.sell_cost + bound.sell_cost
+        self.sell_cost_label = self.facing == "back" and "?" or self.sell_cost
+    end
+
+    -- A Rental costs 1 whatever it is, and that is left alone.
+    if type(self.cost) == "number" and not self.ability.rental
+        and CelestasMod.run_has_deck and CelestasMod.run_has_deck("fusion") then
+        for _, key in ipairs(absorbed_keys(bound)) do
+            self.cost = self.cost + own_cost(key)
+        end
+    end
+    return ret
+end
+
 -- sell_cost is worked out inside Card:set_cost, from the card's base cost
 -- (card.lua:512). Doubling the ANSWER rather than the card means a second
 -- call recomputes from base and cannot compound, and a Joker that stops being

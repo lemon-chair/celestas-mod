@@ -793,7 +793,12 @@ local function fusion_fuse(card)
         partner:remove()
         if used and key then used[key] = before[key] end
 
-        if merged then return true end
+        if merged then
+            -- Priced as both halves now rather than whenever the shop next
+            -- re-prices it: Card:set_cost adds the partner's share.
+            if type(card.set_cost) == "function" then card:set_cost() end
+            return true
+        end
     end
     return false
 end
