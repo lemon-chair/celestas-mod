@@ -5472,8 +5472,26 @@ return {
         -- misc_functions.lua:2052), so a second line is simply dropped. Every
         -- one of vanilla's own is a single line for the same reason.
         v_text = {
-            ch_c_celesta_printer_stake = {
+            ch_c_celesta_gold_base = {
                 "Blind base sizes are {C:attention}Gold Stake{}'s",
+            },
+            ch_c_celesta_plasma_blinds = {
+                "Blind requirements are {C:attention}X#1#{}",
+            },
+            ch_c_celesta_nutshack_deck = {
+                "Every card is a {C:attention}Lucky 7 of Spades{}",
+            },
+            ch_c_celesta_orbital_common = {
+                "Only {C:blue}Common{} Jokers appear",
+            },
+            ch_c_celesta_orbital_uncommon = {
+                "Only {C:green}Uncommon{} Jokers appear",
+            },
+            ch_c_celesta_orbital_rare = {
+                "Only {C:red}Rare{} Jokers appear",
+            },
+            ch_c_celesta_orbital_prices = {
+                "Joker prices are {C:attention}X#1#{}",
             },
             ch_c_celesta_printer_quota = {
                 "Blind requirement {C:attention}X1{}, {C:attention}X3{}, {C:attention}X6{}, {C:attention}X10{} ... by Ante",
@@ -5483,6 +5501,10 @@ return {
             c_celesta_bird_feeder = "Bird Feeder",
             c_celesta_dairy_farm = "Dairy Farm",
             c_celesta_joker_printer = "Joker Printer",
+            c_celesta_orbital_i = "Orbital I",
+            c_celesta_orbital_ii = "Orbital II",
+            c_celesta_orbital_iii = "Orbital III",
+            c_celesta_the_nutshack = "The Nutshack",
             c_celesta_the_passage = "The Passage",
         },
         labels = {
