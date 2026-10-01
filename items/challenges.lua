@@ -341,28 +341,26 @@ SMODS.Challenge {
 }
 
 --------------------------------------------------------------------------------
--- Orbital I, II and III - one rarity, twice the price, and CDawg keeping it
+-- Orbital I, II and III - twice the price, and a CDawg that starts merged
 --------------------------------------------------------------------------------
 --
--- Three runs of one shape. Every Joker the run offers is a single rarity, each
--- costs twice what it would, and the eternal CDawg you start with is already
--- merged with the card that makes it retain that rarity - from this mod and from
--- the base game both. So the Jokers the shop offers are exactly the Jokers the
--- orbit can keep, and the run is spent buying them to sell them.
+-- Three runs of one shape. Every Joker costs twice what it would, and the eternal
+-- CDawg you start with is already merged with a card that widens what it retains.
+-- Each also follows the Ecstasy Deck's rules: only this mod's Jokers, a Bind to
+-- start with, and a chance of a Bind or The Soul in the shop.
 --
---   I    Blue Card     Common
---   II   Green Card    Uncommon
---   III  Fuchsia Card  Rare
+-- Every rarity of this mod's Jokers can appear. The three differ only by the card
+-- CDawg starts merged with:
+--
+--   I    Blue Card     retains Uncommons as well
+--   II   Green Card    retains Rares as well
+--   III  Fuchsia Card  retains Legendaries as well
 
---- Each Orbital: the Joker merged into CDawg, the rarity the run deals in, and
---- the rule that says so on the challenge screen.
+--- Each Orbital: the Joker merged into CDawg.
 local ORBITALS = {
-    { key = "orbital_i",   partner = "j_celesta_blue_card",
-      rarity = 1, rule = "celesta_orbital_common" },
-    { key = "orbital_ii",  partner = "j_celesta_green_card",
-      rarity = 2, rule = "celesta_orbital_uncommon" },
-    { key = "orbital_iii", partner = "j_celesta_fuchsia_card",
-      rarity = 3, rule = "celesta_orbital_rare" },
+    { key = "orbital_i",   partner = "j_celesta_blue_card" },
+    { key = "orbital_ii",  partner = "j_celesta_green_card" },
+    { key = "orbital_iii", partner = "j_celesta_fuchsia_card" },
 }
 
 --- What a Joker costs on an Orbital run, as a multiple of what it would.
@@ -372,38 +370,19 @@ local ORBITAL_PRICE = 2
 ---
 --- Built at load, like PRINTER_KEY above and for the same reason: the prefix
 --- comes off SMODS.current_mod, which is nil by the time any of this is asked.
+---
+--- Each is also registered as following the Ecstasy Deck's rules, which is what
+--- puts The Soul and a Bind in its shop (items/decks.lua).
 local ORBITAL_BY_ID = {}
 for _, orbital in ipairs(ORBITALS) do
-    ORBITAL_BY_ID["c_" .. SMODS.current_mod.prefix .. "_" .. orbital.key] = orbital
+    local id = "c_" .. SMODS.current_mod.prefix .. "_" .. orbital.key
+    ORBITAL_BY_ID[id] = orbital
+    CelestasMod.ECSTASY_CHALLENGES[id] = true
 end
 
 --- The Orbital being played, or nil.
 local function orbital_run()
     return ORBITAL_BY_ID[G.GAME and G.GAME.challenge]
-end
-
---------------------------------------------------------------------------------
--- ...only one rarity is offered
---------------------------------------------------------------------------------
---
--- SMODS.poll_rarity is the one place a Joker's rarity is rolled: vanilla's
--- get_current_pool asks it for the Joker pool and for every modded ObjectType
--- with rarities of its own (common_events.lua:2266, :2275). So one wrap covers
--- the shop, the packs, a Wraith and a tag alike.
---
--- Narrowed to the Joker pool, because another ObjectType's rarities are its own
--- and a number is not an answer to them.
---
--- The Soul is untouched and that is not an oversight: get_current_pool takes the
--- Legendary pool when it is asked for a legendary and never rolls at all, so a
--- Soul found in a pack still gives what it gives. The CDawg the run starts with
--- is Legendary too - "only Commons appear" is about what the run OFFERS.
-
-local celesta_orbital_poll_ref = SMODS.poll_rarity
-function SMODS.poll_rarity(pool_key, ...)
-    local orbital = orbital_run()
-    if orbital and pool_key == "Joker" then return orbital.rarity end
-    return celesta_orbital_poll_ref(pool_key, ...)
 end
 
 --------------------------------------------------------------------------------
@@ -519,16 +498,34 @@ local function orbital_challenge(orbital)
             { id = "j_celesta_cdawg", eternal = true },
         },
 
+        -- The Ecstasy Deck's own starting Bind.
+        consumeables = {
+            { id = "c_celesta_bind" },
+        },
+
         restrictions = {
             banned_cards = STICKER_STRIPPERS,
         },
 
+        --- The Ecstasy Deck's pool rule, from the code that deck uses. After the
+        --- deck's own apply and before banned_cards is written (game.lua:2111,
+        --- :2117), onto a table both only ever add keys to.
+        apply = function(self)
+            CelestasMod.ban_other_jokers()
+        end,
+
         rules = {
             custom = {
-                -- First, because it is a warning about the two below it.
+                -- First, because it is a warning about the rules below it.
                 { id = "celesta_orbital_warning" },
-                { id = orbital.rule },
+                { id = "celesta_orbital_pool" },
                 { id = "celesta_orbital_prices", value = ORBITAL_PRICE },
+                -- Read off the deck's own table, so the screen cannot say a
+                -- number the shop is not rolling.
+                { id = "celesta_orbital_shop_bind",
+                  value = CelestasMod.ECSTASY_SHOP[1].odds },
+                { id = "celesta_orbital_shop_soul",
+                  value = CelestasMod.ECSTASY_SHOP[2].odds },
             },
             modifiers = {},
         },

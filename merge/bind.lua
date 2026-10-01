@@ -13239,15 +13239,12 @@ end
 --------------------------------------------------------------------------------
 --
 -- A plain CDawg retains the Commons this mod has sold this run. These widen
--- which rarities count and whether Jokers from outside this mod count, and
--- nothing else about it: the list, the orbit, the tally on the card and CDawg +
--- Ironmouse all read the one function, so they all widen together.
+-- which rarities count, and nothing else about it: the list, the orbit, the tally
+-- on the card and CDawg + Ironmouse all read the one function, so they all widen
+-- together.
 --
--- Two axes rather than one wider one. A pair opens rarities among this mod's
--- Jokers, or rarities among everything else, and a rarity has to be open in
--- both to be retained from elsewhere - so Blue Card beside Green Card is this
--- mod's Uncommons and the base game's Commons, and not the base game's
--- Uncommons.
+-- This mod's Jokers only, every one of them. The base game was briefly in range
+-- and is not any more.
 --
 -- ADDITIVE, and that is forced rather than chosen. A replacing pair is excluded
 -- from the row lookups (lookup_eligible in globals.lua), so find_joker would
@@ -13258,21 +13255,22 @@ end
 do
 
 CelestasMod.CDAWG_RARITY_RULES = CelestasMod.CDAWG_RARITY_RULES or {}
-CelestasMod.CDAWG_FOREIGN_RULES = CelestasMod.CDAWG_FOREIGN_RULES or {}
 
---- Registers `pair`, and the rules that say what holding it retains.
----
---- `rarities` are opened among this mod's Jokers and `foreign` among everything
---- else; a pair gives one or the other, and a rule that would answer nothing is
---- not registered at all.
-local function cdawg_pair(other, key, rarities, foreign)
+--- Registers `pair`, and the rule that says what holding it retains.
+local function cdawg_pair(other, key, rarities)
     special("j_celesta_cdawg", other, {
         key = key,
         additive = true,
 
         loc_vars = function(def, card, state)
-            return { vars = { CelestasMod.commons_sold and
-                              CelestasMod.commons_sold() or 0 } }
+            return {
+                vars = { CelestasMod.commons_sold and
+                         CelestasMod.commons_sold() or 0 },
+                -- What a plain CDawg lists: every retained Joker's own running
+                -- total. A merged one is still the CDawg holding them.
+                main_end = CelestasMod.cdawg_totals
+                    and CelestasMod.cdawg_totals(card) or nil,
+            }
         end,
 
         -- Nothing to calculate: what the pair does is answer the rule below,
@@ -13280,34 +13278,21 @@ local function cdawg_pair(other, key, rarities, foreign)
         calculate = function(def, card, context, state) end,
     })
 
-    --- Answers the list while the pair is in the row, and nothing while it is
-    --- not - which is what makes selling the pair narrow CDawg back again.
-    local function while_held(list)
-        return function()
+    -- Answers the list while the pair is in the row, and nothing while it is
+    -- not - which is what makes selling the pair narrow CDawg back again.
+    CelestasMod.CDAWG_RARITY_RULES[#CelestasMod.CDAWG_RARITY_RULES + 1] =
+        function()
             if specials_held(key)[1] == nil then return nil end
-            return list
+            return rarities
         end
-    end
-
-    if rarities then
-        CelestasMod.CDAWG_RARITY_RULES[#CelestasMod.CDAWG_RARITY_RULES + 1] =
-            while_held(rarities)
-    end
-    if foreign then
-        CelestasMod.CDAWG_FOREIGN_RULES[#CelestasMod.CDAWG_FOREIGN_RULES + 1] =
-            while_held(foreign)
-    end
 end
 
--- Each opens its own rarity on both axes, which is what makes a run restricted
--- to one rarity and the CDawg merged for it the same set of Jokers.
-cdawg_pair("j_celesta_green_card", "cdawg_green", { 2 }, { 2 })
-cdawg_pair("j_celesta_fuchsia_card", "cdawg_fuchsia", { 3 }, { 3 })
--- Two of them: everything this mod sells except Legendary, which no rule names.
--- This mod's only, as its card says - the other axis is the three above.
+-- One rarity up the ladder each, Common being what a plain CDawg already keeps.
+cdawg_pair("j_celesta_blue_card", "cdawg_blue", { 2 })
+cdawg_pair("j_celesta_green_card", "cdawg_green", { 3 })
+cdawg_pair("j_celesta_fuchsia_card", "cdawg_fuchsia", { 4 })
+-- Two of them: everything this mod sells except Legendary, which is Fuchsia's.
 cdawg_pair("j_celesta_cdawg", "cdawg_cdawg", { 2, 3 })
--- Common is already open to this mod's, so this pair is the foreign axis alone.
-cdawg_pair("j_celesta_blue_card", "cdawg_blue", nil, { 1 })
 
 end
 
@@ -13658,10 +13643,16 @@ function Card:generate_UIBox_ability_table(...)
     if not (def and type(box) == "table") then return box end
 
     local state = Bind.special_state(self, def)
-    local vars = {}
+    local vars, main_end = {}, nil
     if type(def.loc_vars) == "function" then
         local ok, res = pcall(def.loc_vars, def, self, state)
-        if ok and type(res) == "table" and res.vars then vars = res.vars end
+        if ok and type(res) == "table" then
+            if res.vars then vars = res.vars end
+            -- One extra node under the written lines, which is what Steamodded
+            -- does with it (game_object.lua:1858). CDawg's pairs use it to list
+            -- what each retained Joker has reached, the way CDawg itself does.
+            main_end = res.main_end
+        end
     end
 
     local loc_key = "celesta_bind_" .. def.key
@@ -13673,6 +13664,7 @@ function Card:generate_UIBox_ability_table(...)
         return box
     end
     box.main = aut.main
+    if main_end then box.main[#box.main + 1] = main_end end
 
     -- The pair's own name, in place of the host's.
     local name_rows = {}

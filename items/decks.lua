@@ -180,6 +180,26 @@ SMODS.Back {
 -- this prefix, and asking SMODS.current_mod at runtime is not supported.
 local CELESTA_JOKER_PREFIX = 'j_' .. SMODS.current_mod.prefix .. '_'
 
+--- Takes every Joker that is not this mod's out of the run's pools.
+---
+--- The Ecstasy Deck's whole pool rule, shared so the Orbital challenges follow it
+--- from the same code rather than from a copy of it.
+function CelestasMod.ban_other_jokers()
+    if not (G.GAME and G.GAME.banned_keys) then return end
+    for key, center in pairs(G.P_CENTERS) do
+        if center.set == 'Joker'
+            and key:sub(1, #CELESTA_JOKER_PREFIX) ~= CELESTA_JOKER_PREFIX then
+            G.GAME.banned_keys[key] = true
+        end
+    end
+end
+
+--- Challenges that follow the Ecstasy Deck's rules, keyed by challenge id.
+---
+--- Filled in by items/challenges.lua, which loads after this file, and read when
+--- a shop card is made - long after both exist.
+CelestasMod.ECSTASY_CHALLENGES = {}
+
 SMODS.Back {
     key = 'ecstasy',
     atlas = 'decks',
@@ -208,13 +228,7 @@ SMODS.Back {
     end,
 
     apply = function(self, back)
-        if not (G.GAME and G.GAME.banned_keys) then return end
-        for key, center in pairs(G.P_CENTERS) do
-            if center.set == 'Joker'
-                and key:sub(1, #CELESTA_JOKER_PREFIX) ~= CELESTA_JOKER_PREFIX then
-                G.GAME.banned_keys[key] = true
-            end
-        end
+        CelestasMod.ban_other_jokers()
     end,
 }
 
@@ -241,9 +255,12 @@ CelestasMod.ECSTASY_SHOP = {
     { key = 'c_soul',             odds = 200, seed = 'celesta_ecstasy_soul' },
 }
 
---- True while the run is being played on the Ecstasy Deck, or its sleeve.
+--- True while the run is following the Ecstasy Deck's rules: played on the deck
+--- or its sleeve, or on a challenge that says it follows them.
 local function on_ecstasy()
-    return CelestasMod.run_has_deck('ecstasy')
+    if CelestasMod.run_has_deck('ecstasy') then return true end
+    return G.GAME ~= nil and G.GAME.challenge ~= nil
+        and CelestasMod.ECSTASY_CHALLENGES[G.GAME.challenge] == true
 end
 
 local celesta_ecstasy_shop_ref = create_card_for_shop

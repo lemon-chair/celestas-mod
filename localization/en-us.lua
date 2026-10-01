@@ -4930,9 +4930,9 @@ return {
             celesta_bind_cdawg_blue = {
                 name = "CDawg + Blue Card",
                 text = {
-                    "Also retains the abilities of each",
-                    "{C:attention}Common{} Joker from the base",
-                    "game sold this run",
+                    "Also retains the abilities of",
+                    "each {C:attention}Uncommon{} Joker from",
+                    "this mod sold this run",
                     "{C:inactive}(Currently {C:attention}#1#{C:inactive} retained)",
                 },
             },
@@ -4940,8 +4940,8 @@ return {
                 name = "CDawg + Green Card",
                 text = {
                     "Also retains the abilities of",
-                    "each {C:attention}Uncommon{} Joker",
-                    "sold this run",
+                    "each {C:attention}Rare{} Joker from",
+                    "this mod sold this run",
                     "{C:inactive}(Currently {C:attention}#1#{C:inactive} retained)",
                 },
             },
@@ -4949,8 +4949,8 @@ return {
                 name = "CDawg + Fuchsia Card",
                 text = {
                     "Also retains the abilities of",
-                    "each {C:attention}Rare{} Joker",
-                    "sold this run",
+                    "each {C:attention}Legendary{} Joker from",
+                    "this mod sold this run",
                     "{C:inactive}(Currently {C:attention}#1#{C:inactive} retained)",
                 },
             },
@@ -5484,14 +5484,14 @@ return {
             ch_c_celesta_orbital_warning = {
                 "{C:red}WARNING: MAY BE BROKEN{}",
             },
-            ch_c_celesta_orbital_common = {
-                "Only {C:blue}Common{} Jokers appear",
+            ch_c_celesta_orbital_pool = {
+                "Only {C:attention}Celesta's Mod{} Jokers appear",
             },
-            ch_c_celesta_orbital_uncommon = {
-                "Only {C:green}Uncommon{} Jokers appear",
+            ch_c_celesta_orbital_shop_bind = {
+                "{C:green}1 in #1#{} chance for a {C:spectral}Bind{} in the shop",
             },
-            ch_c_celesta_orbital_rare = {
-                "Only {C:red}Rare{} Jokers appear",
+            ch_c_celesta_orbital_shop_soul = {
+                "{C:green}1 in #1#{} chance for {C:spectral}The Soul{} in the shop",
             },
             ch_c_celesta_orbital_prices = {
                 "Joker prices are {C:attention}X#1#{}",

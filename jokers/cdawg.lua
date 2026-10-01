@@ -1,8 +1,8 @@
 --- CDAWG [Legendary]
 ---
 --- Keeps the abilities of every Common Joker from this mod sold this run, and
---- shows them as small faces turning around its own. Its merges widen that two
---- ways: which rarities count, and whether Jokers from outside this mod do.
+--- shows them as small faces turning around its own. Its merges widen which
+--- rarities count - always among this mod's Jokers, never beyond them.
 ---
 --- Its own file for the reason Cryogen has one: it wraps a global at load -
 --- Card.draw, for the orbit - and jokers/implemented.lua is sliced apart and
@@ -29,9 +29,10 @@ local CDAWG_KEY = "j_" .. SMODS.current_mod.prefix .. "_cdawg"
 
 --- The rarities CDawg is retaining right now.
 ---
---- Common always, and the rest are merges: CDawg + Green Card adds Uncommon,
---- CDawg + Fuchsia Card adds Rare, CDawg + CDawg adds both. Legendary is in no
---- rule and nothing records one, so it is never here.
+--- Common always, and the rest are merges: CDawg + Blue Card adds Uncommon,
+--- CDawg + Green Card adds Rare, CDawg + Fuchsia Card adds Legendary, and
+--- CDawg + CDawg adds Uncommon and Rare. CDawg itself is the one Legendary that
+--- can never be retained: see celesta_cdawg_never on its centre.
 ---
 --- Asked rather than cached, for the reason kuro_sync asks rather than caching:
 --- the pair can be made, sold or debuffed between one sale and the next reading
@@ -48,37 +49,19 @@ function CelestasMod.cdawg_rarities()
     return out
 end
 
---- The rarities CDawg is retaining from outside this mod.
----
---- Empty for a plain CDawg, which is what "from this mod" on its own card
---- means. CDawg + Blue Card opens Common.
----
---- Asked rather than cached, for the reason cdawg_rarities is.
-function CelestasMod.cdawg_foreign_rarities()
-    local out = {}
-    for _, rule in ipairs(CelestasMod.CDAWG_FOREIGN_RULES or {}) do
-        local ok, rarities = pcall(rule)
-        if ok and type(rarities) == "table" then
-            for _, rarity in ipairs(rarities) do out[rarity] = true end
-        end
-    end
-    return out
-end
-
 --- The centre keys CDawg is retaining, in the order they were sold.
 ---
---- Every sale is recorded, whatever its rarity, and the filtering happens HERE
---- rather than at the sale. That is CDawg's own rule about time: "sold this
+--- Every sale of this mod's Jokers is recorded, whatever its rarity, and the
+--- RARITY filtering happens HERE rather than at the sale. That is CDawg's own rule about time: "sold this
 --- run" is a fact about the run and not about what CDawg witnessed, and a merge
 --- made after a sale has the same claim on it that a CDawg bought after one
 --- does. Recording only what was retainable at the time would have made the
 --- order the player did things in matter, silently.
 ---
---- Where a Joker came from is filtered here for the same reason, and used to be
---- filtered at the sale instead. A vanilla Common sold before the pair existed
---- would never have been written down, so the pair would have retained nothing
---- from before itself - which is exactly the silent dependence on order that
---- moving the rarity test here was meant to end.
+--- Where a Joker came from is asked here as well, though the sale only records
+--- this mod's. A save written while the base game was briefly in range still
+--- holds some of those, and "from this mod" is a promise about what is retained,
+--- so they are skipped rather than trusted to have been kept out.
 ---
 --- The rarity is read back off the centre rather than stored, so the list is
 --- the shape it has always been and a save written before any of this reads
@@ -87,13 +70,12 @@ end
 function CelestasMod.commons_sold_keys()
     local sold = (G.GAME and G.GAME.celesta_commons_sold) or {}
     local retained = CelestasMod.cdawg_rarities()
-    local foreign = CelestasMod.cdawg_foreign_rarities()
     local out = {}
     for _, key in ipairs(sold) do
         local center = G.P_CENTERS and G.P_CENTERS[key]
         local rarity = (center and center.rarity) or 1
         local mine = center == nil or CelestasMod.is_ours(center)
-        if retained[rarity] and (mine or foreign[rarity]) then
+        if mine and retained[rarity] then
             out[#out + 1] = key
         end
     end
@@ -593,6 +575,13 @@ local function cdawg_totals(card)
     return { { n = G.UIT.C, config = { align = "m" }, nodes = rows } }
 end
 
+--- ...and CDawg's merges show the same rows under their own description.
+---
+--- Exported rather than reached for, because merge/bind.lua is loaded before
+--- this file: the pairs ask for it by name while a card is being described,
+--- which is long after both files exist.
+CelestasMod.cdawg_totals = cdawg_totals
+
 --------------------------------------------------------------------------------
 -- The Joker
 --------------------------------------------------------------------------------
@@ -603,6 +592,11 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     rarity = 4, cost = 20,
     unlocked = true, discovered = false,
+    -- CDawg + Fuchsia Card retains Legendaries, and this is one. A CDawg
+    -- retaining a CDawg would run its own calculate from inside its own
+    -- calculate, once per retained copy, forever. The sale of one is simply not
+    -- recorded (record_joker_sold in jokers/implemented.lua).
+    celesta_cdawg_never = true,
     -- A copy would run every retained Joker a second time, which is a good
     -- deal more than a copy of one Joker is meant to be.
     blueprint_compat = true, eternal_compat = true,
