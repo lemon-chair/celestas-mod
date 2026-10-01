@@ -352,8 +352,40 @@ SMODS.Blind {
 -- Both check `disabled` themselves. Blind:calculate does not, unlike
 -- press_play - so without it Adfree would hold the Blind shut and these two
 -- would go on halving.
+--
+-- Half of an odd total is not a whole number, and Balatro's are. These used to
+-- return a bare multiplier and leave the fraction where it fell, which put
+-- 330.75 chips on a run whose readout said 331: the display rounds what it
+-- prints and the score multiplies what is there, so every hand under either
+-- Blind read higher than it landed.
+--
+-- Vanilla's own halving rounds instead. The Flint (blind.lua:537) is
+--     math.max(math.floor(mult*0.5 + 0.5), 1),
+--     math.max(math.floor(hand_chips*0.5 + 0.5), 0)
+-- so the rounding and the floor under Mult are both copied from it rather than
+-- chosen here. A hand that keeps no Mult at all scores nothing, which is a
+-- different Blind from this one.
 
 local HALF = 0.5
+
+--- Half of `total`, rounded the way The Flint rounds, and never below `floor`.
+local function halved(total, floor_at)
+    return math.max(math.floor(total * HALF + 0.5), floor_at)
+end
+
+--- What to return to land the running total on `wanted`.
+---
+--- An addition rather than a multiplication, because a multiplier cannot pick
+--- a number: SMODS applies `chips` and `mult` through the scoring parameter's
+--- own modify(amount), so the difference is what puts the total exactly there.
+---
+--- Talisman's big numbers keep the multiplier. math.floor cannot be asked of
+--- one - it is a table, not a number - and a fraction inside a total that large
+--- is not what anybody is reading off the screen.
+local function halve(total, floor_at, key, x_key)
+    if type(total) ~= "number" then return { [x_key] = HALF } end
+    return { [key] = halved(total, floor_at) - total }
+end
 
 SMODS.Blind {
     key = "star",
@@ -373,7 +405,7 @@ SMODS.Blind {
     calculate = function(self, blind, context)
         if blind.disabled then return end
         if context.final_scoring_step then
-            return { x_chips = HALF }
+            return halve(hand_chips, 0, "chips", "x_chips")
         end
     end,
 }
@@ -395,7 +427,7 @@ SMODS.Blind {
     calculate = function(self, blind, context)
         if blind.disabled then return end
         if context.final_scoring_step then
-            return { x_mult = HALF }
+            return halve(mult, 1, "mult", "x_mult")
         end
     end,
 }
