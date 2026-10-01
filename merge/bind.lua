@@ -4357,13 +4357,26 @@ special("j_celesta_ellie_minibot", "j_celesta_chrchie", {
     end,
 })
 
--- Shoomimi + MinikoMew: a 1 in 4 chance that a shop reroll costs nothing.
+-- Shoomimi + MinikoMew: a 1 in 4 chance that a reroll makes the next one
+-- cheaper instead of dearer.
 --
--- Rolled as the reroll button is pressed, before G.FUNCS.reroll_shop charges
--- anything (button_callbacks.lua:2920), and paid for with one of vanilla's own
--- free rerolls - Chaos the Clown's. calculate_reroll_cost then prices the
--- reroll at $0, and a free reroll does not raise the price of the next one.
--- A reroll that was already free is not rolled for.
+-- calculate_reroll_cost is the one place the price is worked out
+-- (common_events.lua:2630): it puts a dollar on the round's running increase
+-- and rebuilds the price from it. Nico Viras halves that dollar there and Mogu
+-- stops it, so this is where the mod already comes when it has something to say
+-- about the price - and hooking it rather than the shop button covers every
+-- reroll, Chaos the Clown's and a Director's Cut's included.
+--
+-- Rolled AFTER vanilla has added its dollar, so what is taken off is whatever
+-- was put on. The increase is then written a dollar below where it started and
+-- the price rebuilt by calling vanilla again with the increment skipped:
+-- vanilla still owns both sums that way, including the temp_reroll_cost a
+-- Voucher may have put in the way. A free reroll adds nothing, so there is
+-- nothing to turn around and nothing is rolled for.
+--
+-- Nico Viras and Mogu wrap this afterwards and so sit outside it. Both stand
+-- down when the increase did not go up, which is what a decrease looks like
+-- from there - so a win here is the last word on the price.
 special("j_celesta_shoomimi", "j_celesta_minikomew", {
     key = "shoomimi_miniko",
     config = { odds = 4 },
@@ -4377,26 +4390,46 @@ special("j_celesta_shoomimi", "j_celesta_minikomew", {
     calculate = function(def, card, context, state) end,
 })
 
-local celesta_bind_reroll_shop_ref = G.FUNCS and G.FUNCS.reroll_shop
-if celesta_bind_reroll_shop_ref then
-    G.FUNCS.reroll_shop = function(e)
+local celesta_bind_reroll_cost_ref = calculate_reroll_cost
+if type(celesta_bind_reroll_cost_ref) == "function" then
+    function calculate_reroll_cost(skip_increment, ...)
         local round = G.GAME and G.GAME.current_round
-        if round and (round.reroll_cost or 0) > 0 and (round.free_rerolls or 0) <= 0 then
-            for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
-                local def = Bind.special_of(held)
-                if def and def.key == "shoomimi_miniko" and not held.debuff then
-                    local state = Bind.special_state(held, def)
-                    if SMODS.pseudorandom_probability(held, "celesta_bind_shoomimi_miniko",
-                            1, state.odds, "celesta_bind_shoomimi_miniko") then
-                        round.free_rerolls = (round.free_rerolls or 0) + 1
-                        calculate_reroll_cost(true)
-                        held:juice_up(0.3, 0.4)
-                        break
-                    end
+        if skip_increment or not round then
+            return celesta_bind_reroll_cost_ref(skip_increment, ...)
+        end
+
+        local before = round.reroll_cost_increase or 0
+        local ret = celesta_bind_reroll_cost_ref(skip_increment, ...)
+        local added = (round.reroll_cost_increase or 0) - before
+        -- A free reroll returns before the increase is touched, and so does
+        -- anything else that decides this one is not chargeable.
+        if added <= 0 then return ret end
+
+        -- Every pair held rolls its own chance and every one that lands takes
+        -- another dollar off. Mogu rolls once however many are out because a
+        -- price either moves or it does not; this is a figure, and a second
+        -- one has something to add to it.
+        local down = 0
+        for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
+            local held_def = Bind.special_of(held)
+            if held_def and held_def.key == "shoomimi_miniko" and not held.debuff then
+                local state = Bind.special_state(held, held_def)
+                if SMODS.pseudorandom_probability(held, "celesta_bind_shoomimi_miniko",
+                        1, state.odds, "celesta_bind_shoomimi_miniko") then
+                    down = down + added
+                    held:juice_up(0.3, 0.4)
                 end
             end
         end
-        return celesta_bind_reroll_shop_ref(e)
+        if down <= 0 then return ret end
+
+        -- Never past free: the price is money the player hands over, and the
+        -- base is what a reroll costs with nothing added to it.
+        local resets = G.GAME.round_resets or {}
+        local base = resets.temp_reroll_cost or resets.reroll_cost or 0
+        round.reroll_cost_increase = math.max(before - down, -base)
+        celesta_bind_reroll_cost_ref(true, ...)
+        return ret
     end
 end
 

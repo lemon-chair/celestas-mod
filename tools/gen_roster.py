@@ -2742,8 +2742,9 @@ LOC_TAIL = '''        },
             celesta_bind_shoomimi_miniko = {
                 name = "Shoomimi + Minikomew",
                 text = {
-                    "{C:green}#1# in #2#{} chance for a",
-                    "shop {C:attention}reroll{} to cost nothing",
+                    "{C:green}#1# in #2#{} chance for the shop",
+                    "{C:attention}reroll{} price to {C:money}decrease{}",
+                    "instead of {C:attention}increase{}",
                 },
             },
             celesta_bind_chrchie_miniko = {
