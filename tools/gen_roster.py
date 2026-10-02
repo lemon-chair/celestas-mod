@@ -3949,6 +3949,15 @@ LOC_TAIL = '''        },
             ch_c_celesta_nutshack_deck = {
                 "Every card is a {C:attention}Lucky 7 of Spades{}",
             },
+            ch_c_celesta_wednesday_deck = {
+                "Every card is a {C:attention}Wild Card{}",
+            },
+            ch_c_celesta_start_pairs = {
+                "Starting Jokers are {C:attention}merged{} in pairs",
+            },
+            ch_c_celesta_start_quad = {
+                "Starting Jokers are {C:attention}merged{} into one",
+            },
             ch_c_celesta_orbital_warning = {
                 "{C:red}WARNING: MAY BE BROKEN{}",
             },
@@ -3977,6 +3986,9 @@ LOC_TAIL = '''        },
             c_celesta_orbital_iii = "Orbital III",
             c_celesta_the_nutshack = "The Nutshack",
             c_celesta_the_passage = "The Passage",
+            c_celesta_tarobu = "Tarobu",
+            c_celesta_infinity_draw = "Infinity Draw",
+            c_celesta_wild_card_wednesday = "Wild Card Wednesday",
         },
         labels = {
             m_celesta_exo = "Exo Card",

@@ -474,6 +474,11 @@ local celesta_orbital_start_run_ref = Game.start_run
 function Game:start_run(args)
     local ret = celesta_orbital_start_run_ref(self, args)
 
+    -- A run being CONTINUED already holds what it started with: its CDawg is
+    -- already merged, and G.GAME.challenge is read back off the save, so without
+    -- this the merge would be made a second time over the first.
+    if args and args.savetext then return ret end
+
     local orbital = orbital_run()
     if orbital then
         G.E_MANAGER:add_event(Event {
@@ -533,3 +538,175 @@ local function orbital_challenge(orbital)
 end
 
 for _, orbital in ipairs(ORBITALS) do orbital_challenge(orbital) end
+
+--------------------------------------------------------------------------------
+-- Tarobu and Infinity Draw - a run that starts with a merge already made
+--------------------------------------------------------------------------------
+--
+-- Tarobu starts with two Haruka Karibu + Haruka Karibu, Infinity Draw with one
+-- Ben + Ben + Ben + Ben. A challenge can only list Jokers, so each is listed as
+-- the Jokers it is made of - eternal, and negative where asked - and merged once
+-- they are in the row.
+--
+-- Merged through Bind's own row merge rather than built as stand-ins the way an
+-- Orbital's CDawg partner is, because these halves are real cards in the row:
+-- the merge moves their passives across as it would for a player, and the half
+-- that dissolves takes its own back, so Haruka's count and a Ben's hand size
+-- come out right without any of it being written here. Matching editions are
+-- never lost in a merge, so a negative pair stays negative, and Eternal is
+-- inherited from every half.
+
+--- Challenge id -> what is merged: the Joker, and how many go into each card
+--- (2 for a pair, 4 for the quad).
+local START_MERGES = {}
+START_MERGES["c_" .. SMODS.current_mod.prefix .. "_tarobu"] =
+    { joker = "j_celesta_harukakaribu", size = 2 }
+START_MERGES["c_" .. SMODS.current_mod.prefix .. "_infinity_draw"] =
+    { joker = "j_celesta_ben", size = 4 }
+
+--- The unmerged Jokers in the row that are `key`, left to right.
+local function loose_jokers(key)
+    local Bind = CelestasMod.Bind
+    local out = {}
+    for _, card in ipairs((G.jokers and G.jokers.cards) or {}) do
+        local held = card.config and (card.config.center_key
+            or (card.config.center and card.config.center.key))
+        if held == key and not Bind.is_merged(card) then out[#out + 1] = card end
+    end
+    return out
+end
+
+--- Merges every full group of `plan.size` loose Jokers into one card, the
+--- leftmost of each group standing as the host.
+local function merge_starting_jokers(plan)
+    local Bind = CelestasMod.Bind
+    if not (Bind and Bind.merge and Bind.merge_quad) then
+        CelestasMod.warn_once("start_merge_no_bind",
+            "A starting merge was asked for but Bind is not loaded")
+        return
+    end
+
+    local loose = loose_jokers(plan.joker)
+    for first = 1, #loose - plan.size + 1, plan.size do
+        local group = {}
+        for offset = 0, plan.size - 1 do group[#group + 1] = loose[first + offset] end
+
+        local ok, merged = pcall(function()
+            if plan.size == 2 then return Bind.merge(group[1], group[2]) end
+            return Bind.merge_quad(group)
+        end)
+        if not (ok and merged) then
+            CelestasMod.warn_once("start_merge_" .. plan.joker,
+                ("A challenge could not merge its starting %s: %s"):format(
+                    plan.joker, ok and "refused" or tostring(merged)))
+        end
+    end
+end
+
+-- Queued AFTER start_run returns, for the Orbitals' reason: the challenge's
+-- Jokers are added from events queued inside it, and one queued here lands
+-- behind them. And not for a continued run, which already has its merges.
+local celesta_start_merge_start_run_ref = Game.start_run
+function Game:start_run(args)
+    local ret = celesta_start_merge_start_run_ref(self, args)
+    if args and args.savetext then return ret end
+
+    local plan = START_MERGES[G.GAME and G.GAME.challenge]
+    if plan then
+        G.E_MANAGER:add_event(Event {
+            func = function()
+                merge_starting_jokers(plan)
+                return true
+            end
+        })
+    end
+    return ret
+end
+
+--- Four of one Joker, each eternal and each of the edition given.
+local function four_of(id, edition)
+    local out = {}
+    for i = 1, 4 do out[i] = { id = id, eternal = true, edition = edition } end
+    return out
+end
+
+-- Tarobu: two Haruka Karibu + Haruka Karibu, so the Tarots are X4 for each, and
+-- every Tarot is X16 as the run starts. The three vouchers are the Tarot ones,
+-- plus the one slot for what they make.
+SMODS.Challenge {
+    key = "tarobu",
+
+    -- Four, for two merged pairs.
+    jokers = four_of("j_celesta_harukakaribu", "negative"),
+
+    vouchers = {
+        { id = "v_tarot_merchant" },
+        { id = "v_tarot_tycoon" },
+        { id = "v_crystal_ball" },
+    },
+
+    restrictions = {
+        banned_cards = STICKER_STRIPPERS,
+    },
+
+    rules = {
+        custom = {
+            { id = "celesta_start_pairs" },
+        },
+        modifiers = {},
+    },
+}
+
+-- Infinity Draw: Benception, kept. It draws the whole deck at the start of a
+-- round, so the two vouchers that raise the hand size are the two that cannot
+-- be bought.
+local INFINITY_BANNED = {}
+for _, banned in ipairs(STICKER_STRIPPERS) do INFINITY_BANNED[#INFINITY_BANNED + 1] = banned end
+INFINITY_BANNED[#INFINITY_BANNED + 1] = { id = "v_paint_brush" }
+INFINITY_BANNED[#INFINITY_BANNED + 1] = { id = "v_palette" }
+
+SMODS.Challenge {
+    key = "infinity_draw",
+
+    jokers = four_of("j_celesta_ben"),
+
+    restrictions = {
+        banned_cards = INFINITY_BANNED,
+    },
+
+    rules = {
+        custom = {
+            { id = "celesta_start_quad" },
+        },
+        modifiers = {},
+    },
+}
+
+--------------------------------------------------------------------------------
+-- Wild Card Wednesday - every card in the deck is Wild
+--------------------------------------------------------------------------------
+--
+-- Fifty-two cards, one of each rank and suit, each a Wild Card: the Nutshack's
+-- deck shape (card_from_control reads s, r and e off each entry), with the whole
+-- ordinary deck in place of one card repeated.
+
+local WEDNESDAY_DECK = {}
+for _, suit in ipairs({ "H", "C", "D", "S" }) do
+    for _, rank in ipairs({ "2", "3", "4", "5", "6", "7", "8", "9",
+                            "T", "J", "Q", "K", "A" }) do
+        WEDNESDAY_DECK[#WEDNESDAY_DECK + 1] = { s = suit, r = rank, e = "m_wild" }
+    end
+end
+
+SMODS.Challenge {
+    key = "wild_card_wednesday",
+
+    deck = { type = "Challenge Deck", cards = WEDNESDAY_DECK },
+
+    rules = {
+        custom = {
+            { id = "celesta_wednesday_deck" },
+        },
+        modifiers = {},
+    },
+}
