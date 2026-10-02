@@ -5556,6 +5556,27 @@ return {
             ch_c_celesta_pool_only = {
                 "Only {C:attention}#1#{} Jokers (and their Lost forms) appear",
             },
+            ch_c_celesta_pool_red = {
+                "Only {C:attention}Red{} Jokers appear ({C:attention}#1#{})",
+            },
+            ch_c_celesta_pool_orange = {
+                "Only {C:attention}Orange{} Jokers appear ({C:attention}#1#{})",
+            },
+            ch_c_celesta_pool_yellow = {
+                "Only {C:attention}Yellow{} Jokers appear ({C:attention}#1#{})",
+            },
+            ch_c_celesta_pool_green = {
+                "Only {C:attention}Green{} Jokers appear ({C:attention}#1#{})",
+            },
+            ch_c_celesta_pool_blue = {
+                "Only {C:attention}Blue{} Jokers appear ({C:attention}#1#{})",
+            },
+            ch_c_celesta_pool_purple = {
+                "Only {C:attention}Purple{} Jokers appear ({C:attention}#1#{})",
+            },
+            ch_c_celesta_pool_pink = {
+                "Only {C:attention}Pink{} Jokers appear ({C:attention}#1#{})",
+            },
             ch_c_celesta_orbital_warning = {
                 "{C:red}WARNING: MAY BE BROKEN{}",
             },

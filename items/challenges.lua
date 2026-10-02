@@ -864,6 +864,15 @@ function CelestasMod.ban_jokers_outside(listed)
     end
 end
 
+--- The rule line each pool shows. A colour names itself - "Only Red Jokers appear
+--- (44)" - which takes a line of its own per colour, as a rule is rendered from one
+--- loc key and has room for one number. Men's Shoes is not a colour and keeps the
+--- plain line.
+local function pool_rule_id(key)
+    if key == "mens_shoes" then return "celesta_pool_only" end
+    return "celesta_pool_" .. key
+end
+
 --- Registers one pool challenge. Eight challenges, one shape, one place to change it.
 local function pool_challenge(key)
     local listed = POOL_JOKERS[key]
@@ -878,7 +887,7 @@ local function pool_challenge(key)
             custom = {
                 -- The count rather than the names: eight lists of up to sixty-five
                 -- would not fit the Rules tab.
-                { id = "celesta_pool_only", value = #listed },
+                { id = pool_rule_id(key), value = #listed },
             },
             modifiers = {},
         },
