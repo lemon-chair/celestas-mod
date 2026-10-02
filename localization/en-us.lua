@@ -877,7 +877,7 @@ return {
                 },
             },
             j_celesta_itsdeadlyboop = {
-                name = "ItsDeadlyBoop",
+                name = "Deadly Boop",
                 text = {
                     "{X:mult,C:white}X#1#{} Mult and {X:chips,C:white}X#2#{} Chips",
                     "if played hand contains",
@@ -3564,7 +3564,7 @@ return {
                 },
             },
             celesta_bind_yoka_boop = {
-                name = "Yoka Siri + ItsDeadlyBoop",
+                name = "Yoka Siri + Deadly Boop",
                 text = {
                     "{C:green}#1# in #2#{} chance to multiply the values",
                     "of the Joker to the right by {X:attention,C:white}X#3#{}",
@@ -5553,6 +5553,9 @@ return {
             ch_c_celesta_start_quad = {
                 "Starting Jokers are {C:attention}merged{} into one",
             },
+            ch_c_celesta_pool_only = {
+                "Only {C:attention}#1#{} Jokers (and their Lost forms) appear",
+            },
             ch_c_celesta_orbital_warning = {
                 "{C:red}WARNING: MAY BE BROKEN{}",
             },
@@ -5584,6 +5587,14 @@ return {
             c_celesta_tarobu = "Tarobu",
             c_celesta_infinity_draw = "Infinity Draw",
             c_celesta_wild_card_wednesday = "Wild Card Wednesday",
+            c_celesta_mens_shoes = "Men's Shoes",
+            c_celesta_red = "Red",
+            c_celesta_orange = "Orange",
+            c_celesta_yellow = "Yellow",
+            c_celesta_green = "Green",
+            c_celesta_blue = "Blue",
+            c_celesta_purple = "Purple",
+            c_celesta_pink = "Pink",
         },
         labels = {
             m_celesta_exo = "Exo Card",
