@@ -46,7 +46,7 @@ made it.
 - **12 new Boss Blinds**
 - **17 new consumables**, plus a new type of consumable with 13 cards and its
   own booster pack
-- **11 challenges**
+- **19 challenges**
 
 ## Requirements
 

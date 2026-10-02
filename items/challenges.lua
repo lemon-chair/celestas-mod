@@ -710,3 +710,184 @@ SMODS.Challenge {
         modifiers = {},
     },
 }
+
+--------------------------------------------------------------------------------
+-- Men's Shoes, Red, Orange, Yellow, Green, Blue, Purple, Pink - only these Jokers
+--------------------------------------------------------------------------------
+--
+-- Eight challenges of one shape: a run with no starting Joker and no other rule,
+-- where only a listed set of Jokers can appear - in the shop, in a pack, from a
+-- consumable, anywhere the game rolls a Joker from the pool.
+--
+-- Done the way the Ecstasy Deck restricts its own pool, which is to ban what is
+-- NOT wanted rather than to list what is. banned_cards would put every one of the
+-- hundreds of Jokers outside the list on the challenge screen, so it is the
+-- challenge's `apply` that writes G.GAME.banned_keys instead: after the deck's own
+-- and before banned_cards is read (game.lua:2111, :2117), onto a table both only
+-- ever add keys to.
+--
+-- A Lost Soul's Joker is allowed exactly when the Joker it was made from is. The
+-- list of which is Lost.CONVERSIONS (jokers/lost.lua), read when the run starts
+-- rather than copied here, so a conversion added later follows the rule without
+-- this file hearing about it.
+--
+-- Every pool has Commons, Uncommons and Rares to roll, so the shop never has to
+-- fall back on vanilla's answer to an empty pool (a plain Joker, which ignores the
+-- ban list). Legendaries are only ever rolled by The Soul, and Purple has none:
+-- there The Soul can give that fallback.
+
+--- The Jokers each pool allows, as the challenge lists them: this mod's by
+--- j_celesta_<key>, vanilla's by their own.
+local POOL_JOKERS = {
+    mens_shoes = {
+        "j_celesta_arar", "j_celesta_shoto", "j_celesta_papamutt", "j_celesta_cdawg",
+        "j_celesta_bluto", "j_celesta_nagzz", "j_celesta_jaws", "j_celesta_liffeh",
+        "j_celesta_baddaboom", "j_celesta_jowol", "j_celesta_heavenlyfather",
+        "j_celesta_axialmatt", "j_celesta_bricky", "j_celesta_cyyuvtuber", "j_celesta_ray",
+        "j_celesta_nostro", "j_celesta_rtgame", "j_celesta_ariesakana", "j_celesta_taehoongie",
+        "j_celesta_rubensargasm", "j_celesta_unnamed", "j_celesta_occi", "j_celesta_shiabun",
+        "j_celesta_shaoanvt", "j_celesta_vantacrow_bringer", "j_celesta_lordaethelstan",
+        "j_celesta_kuro",
+    },
+    red = {
+        "j_lusty_joker", "j_credit_card", "j_raised_fist", "j_even_steven", "j_scary_face",
+        "j_hack", "j_red_card", "j_superposition", "j_madness", "j_rocket", "j_baron",
+        "j_drunkard", "j_reserved_parking", "j_gift", "j_popcorn", "j_bloodstone", "j_matador",
+        "j_family", "j_tribe", "j_chicot", "j_celesta_xm05_thanatos", "j_celesta_zentreya",
+        "j_celesta_berrycrepe", "j_celesta_laynalazar", "j_celesta_overezeggs",
+        "j_celesta_fefe", "j_celesta_neuro", "j_celesta_jowol", "j_celesta_smugalana",
+        "j_celesta_heavenlyfather", "j_celesta_beribug", "j_celesta_fenari",
+        "j_celesta_slimegod", "j_celesta_pipi", "j_celesta_saiiren", "j_celesta_yoclesh",
+        "j_celesta_fireonirei", "j_celesta_adfree", "j_celesta_nanoless", "j_celesta_kuro",
+        "j_celesta_angelsteps", "j_celesta_lucypyre", "j_celesta_calamitas",
+        "j_celesta_malliesprout",
+    },
+    orange = {
+        "j_greedy_joker", "j_vagabond", "j_juggler", "j_erosion", "j_diet_cola", "j_trousers",
+        "j_campfire", "j_flower_pot", "j_yorick", "j_burnt", "j_bootstraps",
+        "j_shoot_the_moon", "j_celesta_blessed_phoenix_egg", "j_celesta_yharon",
+        "j_celesta_demenishki", "j_celesta_smugalana", "j_celesta_axialmatt",
+        "j_celesta_birdyovo", "j_celesta_clover", "j_celesta_ebiko", "j_celesta_sinder",
+        "j_celesta_taehoongie", "j_celesta_glowypumpkin", "j_celesta_sonneflower",
+        "j_celesta_smittenseraph", "j_celesta_maplechicken", "j_celesta_buffpup",
+        "j_celesta_auteru", "j_celesta_obkatiekat", "j_celesta_squchan",
+        "j_celesta_mellowmabel", "j_celesta_glassesjournal", "j_celesta_lordaethelstan",
+        "j_celesta_calamitas",
+    },
+    yellow = {
+        "j_gros_michel", "j_cavendish", "j_ride_the_bus", "j_todo_list", "j_shortcut",
+        "j_midas_mask", "j_golden", "j_smiley", "j_ticket", "j_rough_gem", "j_certificate",
+        "j_brainstorm", "j_hit_the_road", "j_cartomancer", "j_celesta_kokonuts",
+        "j_celesta_arielle", "j_celesta_yuzu", "j_celesta_baddaboom", "j_celesta_jaws",
+        "j_celesta_sunnysplosion", "j_celesta_kirana", "j_celesta_sigrid_bird",
+        "j_celesta_sansin", "j_celesta_henya", "j_celesta_nana_ruru", "j_celesta_shenpai",
+        "j_celesta_cerbervt", "j_celesta_rubensargasm", "j_celesta_minikomew",
+        "j_celesta_grimmi", "j_celesta_suko", "j_celesta_jummy", "j_celesta_chrchie",
+        "j_celesta_dooby", "j_celesta_nimi", "j_celesta_dokibird",
+    },
+    green = {
+        "j_ceremonial", "j_chaos", "j_pareidolia", "j_green_joker", "j_blackboard",
+        "j_turtle_bean", "j_to_the_moon", "j_baseball", "j_flash", "j_troubadour", "j_oops",
+        "j_trio", "j_perkeo", "j_celesta_green_card", "j_celesta_boosfer", "j_celesta_ben",
+        "j_celesta_kumi", "j_celesta_maya", "j_celesta_crelly", "j_celesta_rosedoodle",
+        "j_celesta_limealicious", "j_celesta_pandabearlily", "j_celesta_x3dustco",
+        "j_celesta_liffeh", "j_celesta_kloekroc", "j_celesta_harukakaribu",
+        "j_celesta_heavenlyfather", "j_celesta_vedal", "j_celesta_ray", "j_celesta_suto",
+        "j_celesta_kael", "j_celesta_kairyucrocodile", "j_celesta_piapiufo",
+        "j_celesta_augustanomoly", "j_celesta_radiaactive", "j_celesta_rynxryn",
+        "j_celesta_juniperactias", "j_celesta_alluux", "j_celesta_cupidyle", "j_celesta_momo",
+    },
+    blue = {
+        "j_gluttenous_joker", "j_mystic_summit", "j_fibonacci", "j_supernova", "j_odd_todd",
+        "j_splash", "j_blue_joker", "j_superposition", "j_ice_cream", "j_seance", "j_cloud_9",
+        "j_luchador", "j_baseball", "j_selzer", "j_trousers", "j_castle", "j_walkie_talkie",
+        "j_onyx_agate", "j_flower_pot", "j_blueprint", "j_seeing_double", "j_order", "j_duo",
+        "j_triboulet", "j_satellite", "j_celesta_blue_card", "j_celesta_eidolonwyrm",
+        "j_celesta_cryogen", "j_celesta_shylily", "j_celesta_spite", "j_celesta_beepers",
+        "j_celesta_aquwa", "j_celesta_yuy_ix", "j_celesta_shoomimi", "j_celesta_bao",
+        "j_celesta_yomiquinnely", "j_celesta_saruei", "j_celesta_bearthewitch",
+        "j_celesta_moomerrily", "j_celesta_bluto", "j_celesta_amalee", "j_celesta_vulpixie",
+        "j_celesta_mintfantome", "j_celesta_bricky", "j_celesta_cyyuvtuber",
+        "j_celesta_radicalmari", "j_celesta_monikacinnyroll", "j_celesta_milky",
+        "j_celesta_rinpenrose", "j_celesta_fream", "j_celesta_eros", "j_celesta_nihmune",
+        "j_celesta_nana_ruru", "j_celesta_vienna", "j_celesta_cosmic", "j_celesta_ariesakana",
+        "j_celesta_yokasiri", "j_celesta_geega", "j_celesta_fufu", "j_celesta_isaa",
+        "j_celesta_kourra", "j_celesta_occi", "j_celesta_silvervale", "j_celesta_froot",
+        "j_celesta_mogu",
+    },
+    purple = {
+        "j_wrathful_joker", "j_8_ball", "j_sixth_sense", "j_fortune_teller", "j_arrowhead",
+        "j_celesta_uzuri", "j_celesta_megalodon", "j_celesta_chacha", "j_celesta_onigiri",
+        "j_celesta_michi", "j_celesta_shoto", "j_celesta_aicandii", "j_celesta_jaxvtuber",
+        "j_celesta_hannahhyrule", "j_celesta_kyaree", "j_celesta_rtgame", "j_celesta_nostro",
+        "j_celesta_vexoria", "j_celesta_nihmune", "j_celesta_cerbervt",
+        "j_celesta_projektmelody", "j_celesta_pristinezero", "j_celesta_rainhoe",
+        "j_celesta_shaoanvt", "j_celesta_shiabun", "j_celesta_nyanners",
+        "j_celesta_itsdeadlyboop", "j_celesta_nekrolina", "j_celesta_moopybuns",
+        "j_celesta_squchan", "j_celesta_astrum_aureus", "j_celesta_froot", "j_celesta_kiri",
+        "j_celesta_elara", "j_celesta_fleshy", "j_celesta_nicoviras", "j_celesta_snuffy",
+        "j_celesta_hime",
+    },
+    pink = {
+        "j_four_fingers", "j_ramen", "j_trading", "j_celesta_froggyloch",
+        "j_celesta_fuchsia_card", "j_celesta_kokonuts", "j_celesta_cottontail",
+        "j_celesta_motherv3", "j_celesta_ironmouse", "j_celesta_meicha",
+        "j_celesta_pomatomaster", "j_celesta_dejavudea", "j_celesta_camila",
+        "j_celesta_spongeybuns", "j_celesta_chibidoki", "j_celesta_mariyume",
+        "j_celesta_el_xox", "j_celesta_fream", "j_celesta_mooni", "j_celesta_matarakan",
+        "j_celesta_trickywi", "j_celesta_rainyrentyn", "j_celesta_snapscube", "j_celesta_giwi",
+        "j_celesta_suko", "j_celesta_toma", "j_celesta_pheromoan", "j_celesta_torioriane",
+        "j_celesta_lucia", "j_celesta_urschleim", "j_celesta_tobs",
+    },
+}
+
+--- Every Joker a pool allows: the ones it lists, and the Lost form of each of those.
+local function pool_allowed(listed)
+    local allowed = {}
+    for _, key in ipairs(listed) do allowed[key] = true end
+
+    local conversions = CelestasMod.Lost and CelestasMod.Lost.CONVERSIONS
+    for base, lost in pairs(conversions or {}) do
+        if allowed[base] then allowed[lost] = true end
+    end
+    return allowed
+end
+
+--- Bans every Joker that is not in `listed` or the Lost form of one that is.
+function CelestasMod.ban_jokers_outside(listed)
+    if not (G.GAME and G.GAME.banned_keys) then return end
+    local allowed = pool_allowed(listed)
+    for key, center in pairs(G.P_CENTERS) do
+        if center.set == "Joker" and not allowed[key] then
+            G.GAME.banned_keys[key] = true
+        end
+    end
+end
+
+--- Registers one pool challenge. Eight challenges, one shape, one place to change it.
+local function pool_challenge(key)
+    local listed = POOL_JOKERS[key]
+    SMODS.Challenge {
+        key = key,
+
+        apply = function(self)
+            CelestasMod.ban_jokers_outside(listed)
+        end,
+
+        rules = {
+            custom = {
+                -- The count rather than the names: eight lists of up to sixty-five
+                -- would not fit the Rules tab.
+                { id = "celesta_pool_only", value = #listed },
+            },
+            modifiers = {},
+        },
+    }
+end
+
+for _, key in ipairs({ "mens_shoes", "red", "orange", "yellow", "green", "blue", "purple", "pink" }) do
+    pool_challenge(key)
+end
+
+--- Read by the tests, which ask what a pool allows rather than restating it.
+CelestasMod.CHALLENGE_POOLS = POOL_JOKERS
