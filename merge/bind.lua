@@ -7705,6 +7705,25 @@ special("j_celesta_harukakaribu", "j_celesta_nyanners", {
     end,
 })
 
+-- Haruka Karibu + Haruka Karibu: Tarot values X4.
+--
+-- Additive, and the number is not computed here. Both halves keep running, and
+-- Haruka counts the Harukas in play through find_joker, which reports a card
+-- merged from two of them as two - so the pair is already worth the scale
+-- squared, exactly as two of them side by side in the row are. This entry gives
+-- the pair a name and a description in the Collection, as Yharon + Yharon's
+-- does; the figure it prints is that same power.
+special("j_celesta_harukakaribu", "j_celesta_harukakaribu", {
+    key = "haruka_haruka",
+    additive = true,
+
+    loc_vars = function(def, card, state)
+        return { vars = { (CelestasMod.HARUKA_SCALE or 2) ^ 2 } }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
 -- CDawg + Ironmouse: CDawg keeps what the Commons left behind and Ironmouse is
 -- the exponent, so the pile of them is one.
 --

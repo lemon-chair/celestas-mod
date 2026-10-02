@@ -2921,6 +2921,13 @@ LOC_TAIL = '''        },
                     "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
                 },
             },
+            celesta_bind_haruka_haruka = {
+                name = "Haruka Karibu + Haruka Karibu",
+                text = {
+                    "Values on {C:tarot}Tarot{} cards",
+                    "are {C:attention}#1# times{} as large",
+                },
+            },
             celesta_bind_yharon_yharon = {
                 name = "Yharon, Dragon of Rebirth + Yharon, Dragon of Rebirth",
                 text = {
