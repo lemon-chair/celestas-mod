@@ -747,7 +747,7 @@ local POOL_JOKERS = {
         "j_celesta_nostro", "j_celesta_rtgame", "j_celesta_ariesakana", "j_celesta_taehoongie",
         "j_celesta_rubensargasm", "j_celesta_unnamed", "j_celesta_occi", "j_celesta_shiabun",
         "j_celesta_shaoanvt", "j_celesta_vantacrow_bringer", "j_celesta_lordaethelstan",
-        "j_celesta_kuro",
+        "j_celesta_kuro", "j_celesta_boosfer",
     },
     red = {
         "j_lusty_joker", "j_credit_card", "j_raised_fist", "j_even_steven", "j_scary_face",
