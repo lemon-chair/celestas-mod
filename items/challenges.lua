@@ -715,6 +715,14 @@ local function row_challenge_index(row)
     return inner and inner.config and inner.config.id
 end
 
+--- Removes whatever a dropped row had made, so nothing of it is left registered.
+local function discard_row(node)
+    if type(node) ~= "table" then return end
+    local object = node.config and node.config.object
+    if type(object) == "table" and type(object.remove) == "function" then object:remove() end
+    for _, child in ipairs(node.nodes or {}) do discard_row(child) end
+end
+
 --- Turns the page vanilla built into the one with `group` merged into one row.
 local function merge_tier_rows(page, group)
     local indices = tier_indices(group)
@@ -762,6 +770,8 @@ local function merge_tier_rows(page, group)
     -- The completed box is for the group: green once the last of them is won.
     local box = first.nodes[3] and first.nodes[3].nodes and first.nodes[3].nodes[1]
     if box then
+        -- The tick the row already had is replaced, so it is removed.
+        for _, old in ipairs(box.nodes or {}) do discard_row(old) end
         box.config.colour = beaten and G.C.GREEN or G.C.BLACK
         box.nodes = beaten and { { n = G.UIT.O, config = { object =
             Sprite(0, 0, 0.4, 0.4, G.ASSET_ATLAS["icons"], { x = 1, y = 0 }) } } } or {}
@@ -769,9 +779,64 @@ local function merge_tier_rows(page, group)
 
     -- The other two rows are the same button now. Highest first, so the first
     -- removal does not move the second.
-    table.remove(page.nodes, at[3])
-    table.remove(page.nodes, at[2])
+    discard_row(table.remove(page.nodes, at[3]))
+    discard_row(table.remove(page.nodes, at[2]))
     return page
+end
+
+--------------------------------------------------------------------------------
+-- ...and a page is ten ROWS
+--------------------------------------------------------------------------------
+--
+-- Vanilla cuts the list into pages of ten challenges. With a chain as one row a
+-- page that held one would show eight or nine rows, and every page after it would
+-- be short the same way. So the list is cut here instead, into pages of ten of the
+-- rows that are actually shown.
+--
+-- Only the vanilla rows a page needs are built, by asking the page function for
+-- each vanilla page those challenges fall on - so whatever else is done to a row,
+-- by Steamodded or another mod, is still done. The rows that come with them and
+-- are not on this page are thrown away, along with the tick sprite a finished
+-- challenge's row carries: a Sprite is registered with the game the moment it is
+-- made, and one that is dropped without being removed is updated every frame for
+-- the rest of the session.
+
+--- The rows the list shows, in order: each a first and a last challenge index, and
+--- the chain it is when it is one. A chain is a row only while its three sit
+--- together, which they do for as long as they are registered together.
+local function tier_entries()
+    local chain_at = {}
+    for _, group in ipairs(TIER_GROUPS) do
+        local indices = tier_indices(group)
+        if indices and indices[2] == indices[1] + 1 and indices[3] == indices[2] + 1 then
+            chain_at[indices[1]] = { group = group, last = indices[3] }
+        end
+    end
+
+    local entries, k = {}, 1
+    while k <= #G.CHALLENGES do
+        local chain = chain_at[k]
+        entries[#entries + 1] = { first = k, last = chain and chain.last or k,
+                                  group = chain and chain.group or nil }
+        k = (chain and chain.last or k) + 1
+    end
+    return entries
+end
+
+--- The rows per page: vanilla's own number, set when the list is opened.
+local function rows_per_page()
+    return G.CHALLENGE_PAGE_SIZE or 10
+end
+
+--- The button a row's focus lands on: the whole button's, or a chain's first segment.
+local function row_focus_config(row)
+    local button = row and row.nodes and row.nodes[2]
+    local inner = button and button.nodes and button.nodes[1]
+    if inner and inner.nodes and inner.nodes[1] and inner.nodes[1].config
+        and not inner.config.id then
+        inner = inner.nodes[1]
+    end
+    return inner and inner.config
 end
 
 -- Only where there is a challenge list to edit: the test harnesses that load this file
@@ -779,11 +844,105 @@ end
 local celesta_tier_list_page_ref = G.UIDEF and G.UIDEF.challenge_list_page
 if celesta_tier_list_page_ref then
     function G.UIDEF.challenge_list_page(_page)
-        local page = celesta_tier_list_page_ref(_page)
-        for _, group in ipairs(TIER_GROUPS) do
-            page = merge_tier_rows(page, group)
+        local size = rows_per_page()
+        local entries = tier_entries()
+        local from = (_page or 0) * size + 1
+
+        local wanted = {}
+        for position = from, math.min(from + size - 1, #entries) do
+            wanted[#wanted + 1] = entries[position]
         end
-        return page
+
+        -- Every vanilla row those rows are made of, by challenge index, from the
+        -- vanilla pages they fall on.
+        local built, root = {}, nil
+        if #wanted > 0 then
+            local low = math.floor((wanted[1].first - 1) / size)
+            local high = math.floor((wanted[#wanted].last - 1) / size)
+            for raw_page = low, high do
+                local page = celesta_tier_list_page_ref(raw_page)
+                root = root or page
+                for _, row in ipairs((page and page.nodes) or {}) do
+                    built[row_challenge_index(row)] = row
+                end
+            end
+        end
+
+        local rows, used = {}, {}
+        for _, entry in ipairs(wanted) do
+            if entry.group then
+                local together = { nodes = {} }
+                for index = entry.first, entry.last do
+                    together.nodes[#together.nodes + 1] = built[index]
+                    used[index] = true
+                end
+                together = merge_tier_rows(together, entry.group)
+                for _, row in ipairs(together.nodes) do rows[#rows + 1] = row end
+            else
+                rows[#rows + 1] = built[entry.first]
+                used[entry.first] = true
+            end
+        end
+
+        for index, row in pairs(built) do
+            if not used[index] then discard_row(row) end
+        end
+
+        -- Vanilla puts the controller on the first row of each page, unless it is
+        -- already on the page selector. The first row is a different row now.
+        local on_selector = G.CONTROLLER and G.CONTROLLER.focused
+            and G.CONTROLLER.focused.target
+            and G.CONTROLLER.focused.target.config
+            and G.CONTROLLER.focused.target.config.id == "challenge_page"
+        for position, row in ipairs(rows) do
+            local config = row_focus_config(row)
+            if config and config.focus_args then
+                config.focus_args.snap_to = position == 1 and not on_selector
+            end
+        end
+
+        root = root or { n = G.UIT.ROOT,
+                         config = { align = "cm", padding = 0.1, colour = G.C.CLEAR } }
+        root.nodes = rows
+        return root
+    end
+end
+
+--- The page selector's own table, found in the list's definition by the callback it
+--- carries.
+local function find_page_selector(node)
+    if type(node) ~= "table" then return nil end
+    local ref = node.config and node.config.ref_table
+    if type(ref) == "table" and ref.opt_callback == "change_challenge_list_page" then
+        return ref
+    end
+    for _, child in ipairs(node.nodes or {}) do
+        local found = find_page_selector(child)
+        if found then return found end
+    end
+    return nil
+end
+
+-- ...and the selector counts pages of rows: vanilla builds its "Page 1/5" labels
+-- from the number of challenges.
+local celesta_tier_list_ref = G.UIDEF and G.UIDEF.challenge_list
+if celesta_tier_list_ref then
+    function G.UIDEF.challenge_list(from_game_over)
+        local list = celesta_tier_list_ref(from_game_over)
+
+        local selector = find_page_selector(list)
+        if selector and selector.options then
+            local pages = math.max(1, math.ceil(#tier_entries() / rows_per_page()))
+            -- On the selector's own table, which the cycle buttons hold and read
+            -- `options` and `current_option_val` off every time they are pressed.
+            local options = {}
+            for i = 1, pages do
+                options[i] = localize("k_page") .. " " .. i .. "/" .. pages
+            end
+            selector.options = options
+            selector.current_option_val = options[selector.current_option or 1]
+        end
+        return list
     end
 end
 

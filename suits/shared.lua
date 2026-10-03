@@ -223,6 +223,46 @@ end
 
 
 --------------------------------------------------------------------------------
+-- ...and out of a challenge's preview of its deck
+--------------------------------------------------------------------------------
+--
+-- The prototypes are lifted out of G.P_CARDS only for the length of start_run, so
+-- outside it the table is whole - and the Deck tab of the challenge screen builds
+-- a challenge's deck, when the challenge does not list its own cards, by walking
+-- G.P_CARDS (UI_definitions.lua:6237). It showed every challenge with a plain
+-- deck as holding Stars and Leaves, which the run it starts never deals.
+--
+-- Lifted for the length of that one call, as create_card does it above. Only the
+-- Deck tab, and only for a deck that is not listed card by card: a challenge that
+-- names its own cards - Leaf Litter's are all Leaf - looks each one up in
+-- G.P_CARDS, and has to find it.
+local celesta_suits_challenge_tab_ref = G.UIDEF and G.UIDEF.challenge_description_tab
+if celesta_suits_challenge_tab_ref then
+    function G.UIDEF.challenge_description_tab(args)
+        if not (args and args._tab == "Deck") then
+            return celesta_suits_challenge_tab_ref(args)
+        end
+        local challenge = G.CHALLENGES and G.CHALLENGES[args._id]
+        if challenge and challenge.deck and challenge.deck.cards then
+            return celesta_suits_challenge_tab_ref(args)
+        end
+
+        local hidden = {}
+        for key, proto in pairs(G.P_CARDS) do
+            if CelestasMod.CONVERSION_SUITS[proto.suit] then hidden[key] = proto end
+        end
+        for key in pairs(hidden) do G.P_CARDS[key] = nil end
+
+        -- pcall, so a failure while drawing the tab cannot leave the suits missing.
+        local ok, ret = pcall(celesta_suits_challenge_tab_ref, args)
+        for key, proto in pairs(hidden) do G.P_CARDS[key] = proto end
+        if not ok then error(ret, 0) end
+        return ret
+    end
+end
+
+
+--------------------------------------------------------------------------------
 -- Suits a card answers to that are not its own
 --------------------------------------------------------------------------------
 --
