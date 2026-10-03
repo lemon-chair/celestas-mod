@@ -1169,3 +1169,74 @@ end
 
 --- Read by the tests, which ask what a pool allows rather than restating it.
 CelestasMod.CHALLENGE_POOLS = POOL_JOKERS
+
+--------------------------------------------------------------------------------
+-- Starboard - one eternal Boosfer, and the one slot it fills
+--------------------------------------------------------------------------------
+--
+-- A modifier is an absolute value (see the top of this file), so "four fewer Joker
+-- slots" is joker_slots = 1: vanilla's five, less four. Boosfer is eternal and takes
+-- that slot, so there is nowhere to put a second Joker at all.
+--
+-- Nothing else is asked for, so nothing else is here: no banned Jokers, so the
+-- three that take an Eternal off (see STICKER_STRIPPERS) can still take Boosfer's.
+
+SMODS.Challenge {
+    key = "starboard",
+
+    jokers = {
+        { id = "j_celesta_boosfer", eternal = true },
+    },
+
+    rules = {
+        custom = {},
+        modifiers = {
+            -- Absolute, not a delta: vanilla starts on 5, so four fewer is 1.
+            { id = "joker_slots", value = 1 },
+        },
+    },
+}
+
+--------------------------------------------------------------------------------
+-- Leaf Litter - the deck is two sets of Leaf cards
+--------------------------------------------------------------------------------
+--
+-- Twenty-six cards: every rank of the Leaf suit, twice, and no other suit.
+--
+-- Leaf is conversion-only: suits/shared.lua lifts its prototypes out of G.P_CARDS
+-- for the whole of Game:start_run so that no deck is dealt it, and a challenge deck
+-- looks each card up there by `<suit>_<rank>`. A deck that lists Leaf cards would
+-- therefore be looking up cards that are not there. A challenge's `apply` runs
+-- after the deck's own and before the starting deck is built (game.lua:2117, then
+-- :2407), which is the window the Plaid Deck uses to put them back - and this is
+-- the same call.
+--
+-- Leaf's card_key is L, written into every save as part of its card ids and never
+-- changed (suits/leaf.lua).
+
+local LEAF_CARD_KEY = "L"
+
+local LEAF_LITTER_DECK = {}
+for _ = 1, 2 do
+    for _, rank in ipairs({ "2", "3", "4", "5", "6", "7", "8", "9",
+                            "T", "J", "Q", "K", "A" }) do
+        LEAF_LITTER_DECK[#LEAF_LITTER_DECK + 1] = { s = LEAF_CARD_KEY, r = rank }
+    end
+end
+
+SMODS.Challenge {
+    key = "leaf_litter",
+
+    deck = { type = "Challenge Deck", cards = LEAF_LITTER_DECK },
+
+    apply = function(self)
+        CelestasMod.deal_conversion_suits()
+    end,
+
+    rules = {
+        custom = {
+            { id = "celesta_leaf_litter_deck" },
+        },
+        modifiers = {},
+    },
+}

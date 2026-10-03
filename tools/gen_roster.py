@@ -3985,6 +3985,9 @@ LOC_TAIL = '''        },
             ch_c_celesta_start_laynalazar_eros = {
                 "{C:attention}LaynaLazar{} and {C:attention}Eros{} start {C:attention}merged{}",
             },
+            ch_c_celesta_leaf_litter_deck = {
+                "The deck is two sets of {C:attention}Leaf{} cards",
+            },
             ch_c_celesta_orbital_warning = {
                 "{C:red}WARNING: MAY BE BROKEN{}",
             },
@@ -4026,6 +4029,8 @@ LOC_TAIL = '''        },
             c_celesta_blue = "Blue",
             c_celesta_purple = "Purple",
             c_celesta_pink = "Pink",
+            c_celesta_starboard = "Starboard",
+            c_celesta_leaf_litter = "Leaf Litter",
         },
         labels = {
             m_celesta_exo = "Exo Card",
