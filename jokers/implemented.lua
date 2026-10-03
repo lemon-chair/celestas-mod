@@ -3237,6 +3237,12 @@ SMODS.Joker {
 
 CelestasMod.HARUKA_SCALE = 2
 
+--- What an OniGiri + Haruka Karibu is worth in place of the doubling: X3 as large.
+--- The pair's own config says the same number (merge/bind.lua is loaded first and
+--- cannot read this one); test_onigiri_merges.py reads both back and fails if they
+--- ever disagree.
+CelestasMod.ONIGIRI_HARUKA_SCALE = 3
+
 local HARUKA_KEY = "j_celesta_harukakaribu"
 
 -- The numeric config fields a Tarot can carry: how many cards it affects
@@ -3278,19 +3284,23 @@ local function haruka_capture()
     end
 end
 
---- Rescales every Tarot centre for `count` copies of Haruka in play.
---- count 0 restores the originals, which is what makes this safe: G.P_CENTERS
+--- Rescales every Tarot centre for `count` copies of Haruka in play, and `paired`
+--- OniGiri + Haruka Karibu merges, each of which is worth X3 where a Haruka is X2.
+--- Both 0 restores the originals, which is what makes this safe: G.P_CENTERS
 --- outlives a run, so a run that ended with Haruka in play must not leak
 --- doubled Tarots into the next one.
-local function haruka_apply(count)
+local function haruka_apply(count, paired)
     haruka_capture()
     local scale = CelestasMod.HARUKA_SCALE ^ count
+        * CelestasMod.ONIGIRI_HARUKA_SCALE ^ (paired or 0)
     for key, saved in pairs(haruka_base) do
         local center = G.P_CENTERS[key]
         if center and center.config then
             for field, base in pairs(saved) do
                 if HARUKA_ODDS[key] and field == "extra" then
-                    center.config[field] = math.max(1, base / scale)
+                    -- To two places: a scale of 3 does not divide the denominator
+                    -- evenly, and 1.3333333333333 is not something to print.
+                    center.config[field] = math.max(1, math.floor(base / scale * 100 + 0.5) / 100)
                 else
                     center.config[field] = base * scale
                 end
@@ -3331,6 +3341,35 @@ local function haruka_count(excluding)
     return n
 end
 
+--- Counts the OniGiri + Haruka Karibu merges in play, ignoring one card. A field
+--- of CelestasMod rather than a local: this file is at Lua's limit of 200 local
+--- variables in its main chunk, and one more would stop it loading at all.
+---
+--- Not through find_joker: a replacing pair speaks for both its halves, so neither
+--- is in play as a Haruka and find_joker rightly does not report one. The pair is
+--- asked for by name instead, and a debuffed one does nothing - as a Haruka's does
+--- not either. The exclusion is haruka_count's, for the reasons given there.
+function CelestasMod.haruka_pair_count(excluding)
+    local Bind = CelestasMod.Bind
+    if not (Bind and Bind.special_of) then return 0 end
+    local n = 0
+    for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
+        if held ~= excluding and not held.debuff then
+            local def = Bind.special_of(held)
+            if def and def.key == "onigiri_haruka" then n = n + 1 end
+        end
+    end
+    return n
+end
+
+--- Recomputes every Tarot from the row as it is. Called by the OniGiri + Haruka
+--- Karibu pair when it arrives, leaves, forms or comes apart, with the card that
+--- is changing excluded and `arriving` true if it is the pair that is coming in.
+--- It recomputes from the captured originals, so calling it twice is harmless.
+function CelestasMod.haruka_refresh(excluding, arriving)
+    haruka_apply(haruka_count(excluding), CelestasMod.haruka_pair_count(excluding) + (arriving and 1 or 0))
+end
+
 -- Loading a save never runs add_to_deck (CardArea:load appends cards
 -- directly), so a run reloaded with Haruka in play would come back with
 -- undoubled Tarots. Recomputing once at the end of start_run covers that, and
@@ -3338,7 +3377,7 @@ end
 local celesta_haruka_start_run_ref = Game.start_run
 function Game:start_run(args)
     local ret = celesta_haruka_start_run_ref(self, args)
-    haruka_apply(haruka_count(nil))
+    haruka_apply(haruka_count(nil), CelestasMod.haruka_pair_count(nil))
     return ret
 end
 
@@ -3357,11 +3396,11 @@ SMODS.Joker {
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        haruka_apply(haruka_count(card) + 1)
+        haruka_apply(haruka_count(card) + 1, CelestasMod.haruka_pair_count(card))
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        haruka_apply(haruka_count(card))
+        haruka_apply(haruka_count(card), CelestasMod.haruka_pair_count(card))
     end,
 }
 
