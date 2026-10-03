@@ -5577,6 +5577,9 @@ return {
             ch_c_celesta_pool_pink = {
                 "Only {C:attention}Pink{} Jokers appear ({C:attention}#1#{})",
             },
+            ch_c_celesta_start_laynalazar_eros = {
+                "{C:attention}LaynaLazar{} and {C:attention}Eros{} start {C:attention}merged{}",
+            },
             ch_c_celesta_orbital_warning = {
                 "{C:red}WARNING: MAY BE BROKEN{}",
             },
@@ -5597,7 +5600,9 @@ return {
             },
         },
         challenge_names = {
-            c_celesta_bird_feeder = "Bird Feeder",
+            c_celesta_bird_feeder = "Bird Feeder I",
+            c_celesta_bird_feeder_ii = "Bird Feeder II",
+            c_celesta_bird_feeder_iii = "Bird Feeder III",
             c_celesta_dairy_farm = "Dairy Farm",
             c_celesta_joker_printer = "Joker Printer",
             c_celesta_orbital_i = "Orbital I",

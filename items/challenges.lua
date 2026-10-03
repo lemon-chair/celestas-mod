@@ -198,6 +198,43 @@ local STICKER_STRIPPERS = {
 }
 
 --------------------------------------------------------------------------------
+-- Challenges that unlock in order
+--------------------------------------------------------------------------------
+--
+-- Bird Feeder I, II and III and Orbital I, II and III are each a chain: the second
+-- cannot be played until the first has been won, nor the third until the second.
+-- Each chain is also ONE button in the challenge list (see "one row in the
+-- challenge list" below), which is why a chain's challenges are registered
+-- together - the list can only join rows that sit on the same page.
+
+--- True when the profile has won the challenge `id`. Vanilla records that when a
+--- challenge run is won (state_events.lua:22).
+local function challenge_beaten(id)
+    local profile = G.PROFILES and G.SETTINGS and G.PROFILES[G.SETTINGS.profile]
+    local progress = profile and profile.challenge_progress
+    return (progress and progress.completed and progress.completed[id]) and true or false
+end
+
+--- The chains, each a list of challenge ids in the order they unlock.
+local TIER_GROUPS = {}
+
+--- id -> the id that has to be beaten first. The first of a chain has none.
+local TIER_REQUIRES = {}
+
+--- Registers a chain: each challenge after the first needs the one before it.
+local function tier_group(ids)
+    TIER_GROUPS[#TIER_GROUPS + 1] = ids
+    for position = 2, #ids do TIER_REQUIRES[ids[position]] = ids[position - 1] end
+end
+
+--- Whether the challenge `id` may be played: the one before it, if any, is won.
+--- Read by each challenge's `unlocked`, and through it by SMODS.challenge_is_unlocked.
+local function tier_unlocked(id)
+    local needs = TIER_REQUIRES[id]
+    return needs == nil or challenge_beaten(needs)
+end
+
+--------------------------------------------------------------------------------
 -- The Passage - everything you buy goes the same way
 --------------------------------------------------------------------------------
 --
@@ -229,13 +266,29 @@ SMODS.Challenge {
 }
 
 --------------------------------------------------------------------------------
--- Bird Feeder - the hand is what you feed it
+-- Bird Feeder I, II and III - the hand is what you feed it
 --------------------------------------------------------------------------------
 --
 -- Dokibird destroys the played cards that did not score, when exactly one of
 -- them did, and gives what they were holding to the one that did - permanently.
 -- Eternal, so that is not a trade taken when it suits: it is the shape of every
 -- hand for the rest of the run, and the deck is what is being spent.
+--
+--   I    Dokibird, and nothing else
+--   II   ...and an eternal LaynaLazar + Eros, already merged
+--   III  ...the same, on the Ecstasy Deck's rules
+--
+-- II and III list LaynaLazar and Eros as two eternal Jokers and merge them once
+-- they are in the row, as Tarobu and Infinity Draw do (see "a run that starts with
+-- a merge already made" below). II is locked until I has been won, and III until II.
+--
+-- I keeps the key bird_feeder it always had, so a profile that has already won it
+-- still has.
+
+local BIRD_FEEDER_I = "c_" .. SMODS.current_mod.prefix .. "_bird_feeder"
+local BIRD_FEEDER_II = "c_" .. SMODS.current_mod.prefix .. "_bird_feeder_ii"
+local BIRD_FEEDER_III = "c_" .. SMODS.current_mod.prefix .. "_bird_feeder_iii"
+tier_group({ BIRD_FEEDER_I, BIRD_FEEDER_II, BIRD_FEEDER_III })
 
 SMODS.Challenge {
     key = "bird_feeder",
@@ -250,6 +303,73 @@ SMODS.Challenge {
 
     rules = {
         custom = {},
+        modifiers = {},
+    },
+}
+
+SMODS.Challenge {
+    key = "bird_feeder_ii",
+
+    unlocked = function(self) return tier_unlocked(BIRD_FEEDER_II) end,
+
+    jokers = {
+        { id = "j_celesta_dokibird", eternal = true },
+        -- Merged by start_run's queued event, LaynaLazar the host.
+        { id = "j_celesta_laynalazar", eternal = true },
+        { id = "j_celesta_eros", eternal = true },
+    },
+
+    restrictions = {
+        banned_cards = STICKER_STRIPPERS,
+    },
+
+    rules = {
+        custom = {
+            { id = "celesta_start_laynalazar_eros" },
+        },
+        modifiers = {},
+    },
+}
+
+-- III is II on the Ecstasy Deck's rules, which is what the Orbitals follow: only
+-- this mod's Jokers, a Bind to start with, and a chance of a Bind or The Soul in
+-- the shop. The same three calls the Orbitals make, for the same reasons (see
+-- orbital_challenge below): the deck's own pool rule, registration for its shop,
+-- and its starting Bind.
+CelestasMod.ECSTASY_CHALLENGES[BIRD_FEEDER_III] = true
+
+SMODS.Challenge {
+    key = "bird_feeder_iii",
+
+    unlocked = function(self) return tier_unlocked(BIRD_FEEDER_III) end,
+
+    jokers = {
+        { id = "j_celesta_dokibird", eternal = true },
+        { id = "j_celesta_laynalazar", eternal = true },
+        { id = "j_celesta_eros", eternal = true },
+    },
+
+    consumeables = {
+        { id = "c_celesta_bind" },
+    },
+
+    restrictions = {
+        banned_cards = STICKER_STRIPPERS,
+    },
+
+    apply = function(self)
+        CelestasMod.ban_other_jokers()
+    end,
+
+    rules = {
+        custom = {
+            { id = "celesta_start_laynalazar_eros" },
+            { id = "celesta_orbital_pool" },
+            { id = "celesta_orbital_shop_bind",
+              value = CelestasMod.ECSTASY_SHOP[1].odds },
+            { id = "celesta_orbital_shop_soul",
+              value = CelestasMod.ECSTASY_SHOP[2].odds },
+        },
         modifiers = {},
     },
 }
@@ -374,24 +494,18 @@ local ORBITAL_PRICE = 2
 --- Each is also registered as following the Ecstasy Deck's rules, which is what
 --- puts The Soul and a Bind in its shop (items/decks.lua).
 ---
---- Each also knows its own id and the one that has to be beaten before it can be
---- played: I has none, II needs I and III needs II.
+--- Each also knows its own id, and the three are a chain: II is locked until I has
+--- been won and III until II has (see "Challenges that unlock in order").
 local ORBITAL_BY_ID = {}
-for position, orbital in ipairs(ORBITALS) do
+local ORBITAL_IDS = {}
+for _, orbital in ipairs(ORBITALS) do
     local id = "c_" .. SMODS.current_mod.prefix .. "_" .. orbital.key
     orbital.id = id
-    orbital.requires = position > 1 and ORBITALS[position - 1].id or nil
     ORBITAL_BY_ID[id] = orbital
+    ORBITAL_IDS[#ORBITAL_IDS + 1] = id
     CelestasMod.ECSTASY_CHALLENGES[id] = true
 end
-
---- True when the profile has won the challenge `id`. Vanilla records that when a
---- challenge run is won (state_events.lua:22).
-local function challenge_beaten(id)
-    local profile = G.PROFILES and G.SETTINGS and G.PROFILES[G.SETTINGS.profile]
-    local progress = profile and profile.challenge_progress
-    return (progress and progress.completed and progress.completed[id]) and true or false
-end
+tier_group(ORBITAL_IDS)
 
 --- The Orbital being played, or nil.
 local function orbital_run()
@@ -514,7 +628,7 @@ local function orbital_challenge(orbital)
         --- SMODS.challenge_is_unlocked, which the challenge list asks of every
         --- row; a profile with everything unlocked still opens it.
         unlocked = function(self)
-            return orbital.requires == nil or challenge_beaten(orbital.requires)
+            return tier_unlocked(orbital.id)
         end,
 
         jokers = {
@@ -560,13 +674,13 @@ end
 for _, orbital in ipairs(ORBITALS) do orbital_challenge(orbital) end
 
 --------------------------------------------------------------------------------
--- ...and the three are one row in the challenge list
+-- ...and a chain is one row in the challenge list
 --------------------------------------------------------------------------------
 --
--- Beat Orbital I to open Orbital II, and II to open III. The list shows them as
--- ONE button in three equal segments instead of three rows: the first reads
--- Orbital I, and each of the others reads Locked until the one before it has been
--- won, then its own name.
+-- Beat Orbital I to open Orbital II, and II to open III - and the same for Bird
+-- Feeder. The list shows each chain as ONE button in three equal segments instead
+-- of three rows: the first reads its own name, and each of the others reads Locked
+-- until the one before it has been won, then its own name.
 --
 -- Built by editing the page vanilla builds rather than building it again, so the
 -- row's number, its place in the page, its completed box and the focus the
@@ -579,13 +693,14 @@ for _, orbital in ipairs(ORBITALS) do orbital_challenge(orbital) end
 -- and a locked one has no callback at all - the same way a locked row does not.
 
 --- The total width of the button, as the other rows' is (minw = 4).
-local ORBITAL_BUTTON_WIDTH = 4
+local TIER_BUTTON_WIDTH = 4
 
---- The G.CHALLENGES index of each Orbital, in order, or nil if any is missing.
-local function orbital_indices()
+--- The G.CHALLENGES index of each challenge in a chain, in order, or nil if any
+--- is missing.
+local function tier_indices(group)
     local out = {}
-    for _, orbital in ipairs(ORBITALS) do
-        local index = get_challenge_int_from_id(orbital.id)
+    for _, id in ipairs(group) do
+        local index = get_challenge_int_from_id(id)
         if not index or index == 0 then return nil end
         out[#out + 1] = index
     end
@@ -600,13 +715,13 @@ local function row_challenge_index(row)
     return inner and inner.config and inner.config.id
 end
 
---- Turns the page vanilla built into the one with the Orbitals merged.
-local function merge_orbital_rows(page)
-    local indices = orbital_indices()
+--- Turns the page vanilla built into the one with `group` merged into one row.
+local function merge_tier_rows(page, group)
+    local indices = tier_indices(group)
     if not (indices and page and page.nodes) then return page end
 
-    -- Where each Orbital's row is on THIS page. Only the whole group is merged:
-    -- three rows that fall across a page break are left as three.
+    -- Where each of the chain's rows is on THIS page. Only the whole chain is
+    -- merged: three rows that fall across a page break are left as three.
     local at = {}
     for position, row in ipairs(page.nodes) do
         local index = row_challenge_index(row)
@@ -618,7 +733,7 @@ local function merge_orbital_rows(page)
 
     local first = page.nodes[at[1]]
     local original = first.nodes[2].nodes[1].config
-    local segment_width = ORBITAL_BUTTON_WIDTH / #indices
+    local segment_width = TIER_BUTTON_WIDTH / #indices
 
     local segments = {}
     local beaten = true
@@ -634,7 +749,8 @@ local function merge_orbital_rows(page)
             button = unlocked and "change_challenge_description" or "nil",
             colour = unlocked and (challenge.button_colour or G.C.RED) or G.C.GREY,
             minw = segment_width,
-            -- Smaller than a row's 0.4: "Orbital III" is wider than a third of the button.
+            -- Smaller than a row's 0.4: "Orbital III" is wider than a third of the button
+            -- (and the button shrinks a name that is still too long, see UIElement).
             scale = 0.3,
             minh = 0.6,
             -- The controller lands on the first, where it landed on the row.
@@ -660,10 +776,14 @@ end
 
 -- Only where there is a challenge list to edit: the test harnesses that load this file
 -- whole have no G.UIDEF, and neither does anything before the game's UI exists.
-local celesta_orbital_list_page_ref = G.UIDEF and G.UIDEF.challenge_list_page
-if celesta_orbital_list_page_ref then
+local celesta_tier_list_page_ref = G.UIDEF and G.UIDEF.challenge_list_page
+if celesta_tier_list_page_ref then
     function G.UIDEF.challenge_list_page(_page)
-        return merge_orbital_rows(celesta_orbital_list_page_ref(_page))
+        local page = celesta_tier_list_page_ref(_page)
+        for _, group in ipairs(TIER_GROUPS) do
+            page = merge_tier_rows(page, group)
+        end
+        return page
     end
 end
 
@@ -672,7 +792,8 @@ end
 --------------------------------------------------------------------------------
 --
 -- Tarobu starts with two Haruka Karibu + Haruka Karibu, Infinity Draw with one
--- Ben + Ben + Ben + Ben. A challenge can only list Jokers, so each is listed as
+-- Ben + Ben + Ben + Ben, and Bird Feeder II and III with a LaynaLazar + Eros. A
+-- challenge can only list Jokers, so each is listed as
 -- the Jokers it is made of - eternal, and negative where asked - and merged once
 -- they are in the row.
 --
@@ -684,13 +805,16 @@ end
 -- never lost in a merge, so a negative pair stays negative, and Eternal is
 -- inherited from every half.
 
---- Challenge id -> what is merged: the Joker, and how many go into each card
---- (2 for a pair, 4 for the quad).
+--- Challenge id -> what is merged. Either copies of one Joker - `joker`, and how many
+--- go into each card (2 for a pair, 4 for the quad) - or two different ones, `pair`,
+--- the first of which stands as the host.
 local START_MERGES = {}
 START_MERGES["c_" .. SMODS.current_mod.prefix .. "_tarobu"] =
     { joker = "j_celesta_harukakaribu", size = 2 }
 START_MERGES["c_" .. SMODS.current_mod.prefix .. "_infinity_draw"] =
     { joker = "j_celesta_ben", size = 4 }
+START_MERGES[BIRD_FEEDER_II] = { pair = { "j_celesta_laynalazar", "j_celesta_eros" } }
+START_MERGES[BIRD_FEEDER_III] = { pair = { "j_celesta_laynalazar", "j_celesta_eros" } }
 
 --- The unmerged Jokers in the row that are `key`, left to right.
 local function loose_jokers(key)
@@ -704,6 +828,22 @@ local function loose_jokers(key)
     return out
 end
 
+--- Merges the two different Jokers of `plan.pair`, the first as the host, if both
+--- are loose in the row. The leftmost of each if there is more than one.
+local function merge_starting_pair(plan)
+    local Bind = CelestasMod.Bind
+    local host = loose_jokers(plan.pair[1])[1]
+    local other = loose_jokers(plan.pair[2])[1]
+    if not (host and other) then return end
+
+    local ok, merged = pcall(Bind.merge, host, other)
+    if not (ok and merged) then
+        CelestasMod.warn_once("start_merge_" .. plan.pair[1] .. "_" .. plan.pair[2],
+            ("A challenge could not merge its starting %s and %s: %s"):format(
+                plan.pair[1], plan.pair[2], ok and "refused" or tostring(merged)))
+    end
+end
+
 --- Merges every full group of `plan.size` loose Jokers into one card, the
 --- leftmost of each group standing as the host.
 local function merge_starting_jokers(plan)
@@ -713,6 +853,7 @@ local function merge_starting_jokers(plan)
             "A starting merge was asked for but Bind is not loaded")
         return
     end
+    if plan.pair then return merge_starting_pair(plan) end
 
     local loose = loose_jokers(plan.joker)
     for first = 1, #loose - plan.size + 1, plan.size do
