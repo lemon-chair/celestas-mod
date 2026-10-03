@@ -4523,6 +4523,86 @@ return {
                     "are {C:attention}#1# times{} as large",
                 },
             },
+            celesta_bind_onigiri_ironmouse = {
+                name = "OniGiri + Ironmouse",
+                text = {
+                    "{E:1,C:mult}^#1#{} Mult",
+                },
+            },
+            celesta_bind_onigiri_kuro = {
+                name = "OniGiri + Kuro",
+                text = {
+                    "{C:attention}Boss Blinds{} are disabled, and gain",
+                    "{C:attention}+#1#{} hand size on {C:attention}odd{} numbered Antes",
+                },
+            },
+            celesta_bind_onigiri_zentreya = {
+                name = "OniGiri + Zentreya",
+                text = {
+                    "{C:attention}Steel Cards{} give {X:mult,C:white}X#1#{} Mult",
+                    "when played and scored",
+                },
+            },
+            celesta_bind_onigiri_froot = {
+                name = "OniGiri + Froot",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult for each",
+                    "{C:attention}Wild Card{} in your {C:attention}full deck{}",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_onigiri_neuro = {
+                name = "OniGiri + Neuro",
+                text = {
+                    "{C:green}#1# in #2#{} chance to destroy cards",
+                    "held in hand at the end of the round",
+                },
+            },
+            celesta_bind_onigiri_bao = {
+                name = "OniGiri + Bao",
+                text = {
+                    "{C:mult}+#1#{} Mult, or {X:mult,C:white}X#2#{} Mult",
+                    "during a {C:blue}Downpour{}",
+                },
+            },
+            celesta_bind_onigiri_kairyu = {
+                name = "OniGiri + Kairyu",
+                text = {
+                    "Gain {C:attention}+#1#{} hand size for each",
+                    "{C:red}discard{} used this round",
+                    "{C:inactive}(Currently {C:attention}+#2#{C:inactive} hand size)",
+                    "{C:inactive}Resets at end of round",
+                },
+            },
+            celesta_bind_onigiri_rainhoe = {
+                name = "OniGiri + Rainhoe",
+                text = {
+                    "{C:attention}X#1#{} interest at end of round",
+                    "if a {C:blue}Downpour{} was active",
+                },
+            },
+            celesta_bind_onigiri_haruka = {
+                name = "OniGiri + Haruka Karibu",
+                text = {
+                    "Values on {C:tarot}Tarot{} cards",
+                    "are {C:attention}#1# times{} as large",
+                },
+            },
+            celesta_bind_onigiri_shylily = {
+                name = "OniGiri + ShyLily",
+                text = {
+                    "Retriggers the {C:attention}last{} played",
+                    "card {C:attention}#1#{} additional times",
+                },
+            },
+            celesta_bind_koko_neuro = {
+                name = "KokoNuts + Neuro",
+                text = {
+                    "At the end of the round,",
+                    "converts cards held in hand",
+                    "to {C:attention}7s{}",
+                },
+            },
             celesta_bind_yharon_yharon = {
                 name = "Yharon, Dragon of Rebirth + Yharon, Dragon of Rebirth",
                 text = {
@@ -5725,6 +5805,7 @@ return {
             celesta_plus_seven = "+7 of Spades",
             celesta_plus_obsidian = "+Obsidian",
             celesta_downpour = "Downpour!",
+            celesta_sevens = "Sevens!",
             celesta_swapped = "Swapped!",
             celesta_no_upgrade = "Nothing to upgrade!",
             celesta_downgrade = "Downgrade!",

@@ -13634,6 +13634,481 @@ CelestasMod.POLISH_RULES[#CelestasMod.POLISH_RULES + 1] = function(into, from)
 end
 
 --------------------------------------------------------------------------------
+-- OniGiri, and KokoNuts + Neuro
+--------------------------------------------------------------------------------
+--
+-- OniGiri copies a random Joker. Bound to anything below it stops doing that: a
+-- replacing pair speaks for both halves, like every pair that is not marked
+-- additive, so the merged card is the pair's effect and nothing else.
+--
+-- Most of these are another Joker's own effect under a different number, and
+-- each is written the way that Joker writes it - Ironmouse's ^Mult through
+-- ironmouse_pays, Bao's Downpour through raining, Rainhoe's interest through
+-- pair_interest_hold, Kairyu's hand size through bind_resize - so a pair cannot
+-- come to disagree with the Joker it is made from.
+--
+-- Everything in here is inside a do ... end, and its helpers are fields of one table,
+-- because this file's main chunk is within a handful of Lua's limit of 200 local
+-- variables: a local more per helper would have stopped it loading at all.
+
+do
+local OG = {}
+
+--- Neuro's end-of-round pass, for a pair that acts on the cards held in hand then.
+---
+--- cardarea == G.jokers is what marks the once-per-round Joker pass, as it does
+--- for Neuro itself, and the round it last ran is kept on the pair's own state
+--- because end_of_round reaches a Joker more than once. Set BEFORE anything is
+--- decided, which Neuro itself need not do: it only acts when there is something to
+--- destroy, and a pair that rolls would otherwise roll again on the next pass.
+---
+--- Answers true on the one pass in a round that should act.
+function OG.neuro_round_pass(state, context)
+    if not (context.end_of_round and context.cardarea == G.jokers
+            and not context.blueprint) then return false end
+    if not (G.hand and G.GAME and #G.hand.cards >= 1) then return false end
+    if state.last_round == G.GAME.round then return false end
+    state.last_round = G.GAME.round
+    return true
+end
+
+-- OniGiri + Ironmouse: ^1.6 Mult.
+special("j_celesta_onigiri", "j_celesta_ironmouse", {
+    key = "onigiri_ironmouse",
+    config = { e_mult = 1.6 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.e_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.joker_main then
+            return ironmouse_pays("onigiri_ironmouse", "OniGiri + Ironmouse",
+                                  state.e_mult)
+        end
+    end,
+})
+
+-- OniGiri + Kuro: Kuro's shut Boss, and more hand to hold on the same Antes.
+--
+-- Kuro's hold is jokers/implemented.lua's, shared with Adfree and Kuro + Arielle,
+-- so none of them can fight over the flag: this adds a rule to the list kuro_sync
+-- asks, as Kuro + Arielle does, because the merged card is no longer a Kuro and
+-- would otherwise hold nothing.
+--
+-- The hand size is given when the Blind is set on an odd Ante and taken back when
+-- the round ends, in Kairyu's own shape (a difference against what this pair has
+-- already handed out, kept on its state so a reload cannot lose track of it).
+-- A pair formed or bought in the middle of an odd-Ante round catches up.
+--- What the pair should be handing out right now: its hand size while a Blind is
+--- being faced on an odd Ante, nothing at any other time.
+function OG.kuro_owed(state)
+    if G.GAME and G.GAME.facing_blind and CelestasMod.ante_parity_is(1) then
+        return state.h_size
+    end
+    return 0
+end
+
+special("j_celesta_onigiri", "j_celesta_kuro", {
+    key = "onigiri_kuro",
+    config = { h_size = 2, applied = 0 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.h_size } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.setting_blind and not context.blueprint then
+            CelestasMod.kuro_sync()
+            if CelestasMod.ante_parity_is(1)
+                and bind_resize(state, state.h_size) > 0 then
+                return {
+                    message = localize { type = "variable", key = "a_handsize",
+                                         vars = { state.h_size } },
+                    colour = G.C.FILTER, card = card,
+                }
+            end
+        end
+
+        -- main_eval is the once-per-round Joker pass.
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            CelestasMod.hold_boss("kuro", false)
+            if (state.applied or 0) > 0 then
+                bind_resize(state, 0)
+                return { message = localize("k_reset"), colour = G.C.FILTER, card = card }
+            end
+        end
+    end,
+
+    add_to_deck = function(def, card, state, from_debuff)
+        state.applied = 0
+        bind_resize(state, OG.kuro_owed(state))
+    end,
+
+    remove_from_deck = function(def, card, state, from_debuff)
+        bind_resize(state, 0)
+    end,
+
+    -- The pair can form and break mid-round, so the Blind is asked again at both
+    -- moments. Unmerging is queued for the reason every count in this file is: it
+    -- runs while the card is still in the row.
+    on_merge = function(def, card, state, fresh)
+        -- A card born merged has not entered the deck: Card:add_to_deck reaches this
+        -- def's add_to_deck when it arrives. See Bind.merge's `fresh`.
+        if fresh then return end
+        state.applied = 0
+        bind_resize(state, OG.kuro_owed(state))
+        if CelestasMod.kuro_sync then CelestasMod.kuro_sync() end
+    end,
+
+    on_unmerge = function(def, card, state, losing)
+        bind_resize(state, 0)
+        G.E_MANAGER:add_event(Event {
+            func = function()
+                if CelestasMod.kuro_sync then CelestasMod.kuro_sync() end
+                return true
+            end
+        })
+    end,
+})
+
+-- Guarded like every other rule list written from this side: the harnesses load this
+-- file without globals.lua, where the list is made.
+CelestasMod.KURO_RULES = CelestasMod.KURO_RULES or {}
+CelestasMod.KURO_RULES[#CelestasMod.KURO_RULES + 1] = function()
+    return specials_held("onigiri_kuro")[1] ~= nil
+        and CelestasMod.ante_parity_is(1)
+end
+
+-- OniGiri + Zentreya: Steel Cards give X2.5 Mult when played and scored.
+--
+-- Zentreya's own pass: context.individual in G.play is the scoring-card pass.
+special("j_celesta_onigiri", "j_celesta_zentreya", {
+    key = "onigiri_zentreya",
+    config = { x_mult = 2.5 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.individual and context.cardarea == G.play and context.other_card
+            and SMODS.has_enhancement(context.other_card, "m_steel") then
+            return { x_mult = state.x_mult, card = card }
+        end
+    end,
+})
+
+-- OniGiri + Froot: Froot's count of Wild Cards, at a steeper rate.
+--
+-- LIVE off the deck rather than banked, as every Froot pair is: a card that stops
+-- being Wild takes its share with it. X1 PLUS the gain per card, Froot's own
+-- arithmetic, so a deck with no Wild Card scores nothing rather than X0.
+function OG.froot_mult(state)
+    return tidy(1 + state.x_mult_gain * wilds_in_deck())
+end
+
+special("j_celesta_onigiri", "j_celesta_froot", {
+    key = "onigiri_froot",
+    config = { x_mult_gain = 0.8 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, OG.froot_mult(state) } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local x_mult = OG.froot_mult(state)
+        if x_mult > 1 then return { x_mult = x_mult } end
+    end,
+})
+
+-- OniGiri + Neuro: Neuro's end-of-round clearing of the hand, left to chance - and
+-- to every card, enhanced or not.
+--
+-- Rolled once for each card held in hand, the way a chance on "cards" is read
+-- everywhere else in this mod. Destroyed the way Neuro does it, and for its
+-- reasons (see the long note on Neuro): directly in an event rather than through
+-- SMODS.destroy_cards, which would open an evaluation inside the end-of-round pass
+-- that is running, with the removal announced once beforehand so every Joker that
+-- counts deaths still counts these.
+special("j_celesta_onigiri", "j_celesta_neuro", {
+    key = "onigiri_neuro",
+    config = { odds = 2, last_round = -1 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_onigiri_neuro")
+        return { vars = { n, d } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not OG.neuro_round_pass(state, context) then return end
+
+        local doomed = {}
+        for _, held in ipairs(G.hand.cards) do
+            if not held.getting_sliced and not SMODS.is_eternal(held)
+                and SMODS.pseudorandom_probability(card, "celesta_bind_onigiri_neuro",
+                    1, state.odds, "celesta_bind_onigiri_neuro") then
+                doomed[#doomed + 1] = held
+            end
+        end
+        if #doomed == 0 then return end
+
+        G.E_MANAGER:add_event(Event {
+            trigger = "after",
+            delay = 0.1,
+            func = function()
+                SMODS.calculate_context({ remove_playing_cards = true, removed = doomed })
+                -- Backwards, and only the last one animates.
+                for i = #doomed, 1, -1 do
+                    local held = doomed[i]
+                    if SMODS.shatters(held) then
+                        held:shatter()
+                    else
+                        held:start_dissolve(nil, i == #doomed)
+                    end
+                end
+                return true
+            end
+        })
+
+        return { message = localize("celesta_cleared"), colour = G.C.RED, card = card }
+    end,
+})
+
+-- OniGiri + Bao: Bao's Mult, at ten.
+special("j_celesta_onigiri", "j_celesta_bao", {
+    key = "onigiri_bao",
+    config = { mult = 10, x_mult = 10 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.mult, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        if raining() then return { x_mult = state.x_mult } end
+        return { mult = state.mult }
+    end,
+})
+
+-- OniGiri + Kairyu: Kairyu's hand size, two for every discard.
+--
+-- Kairyu's own shape (see jokers/implemented.lua): pre_discard, which fires once per
+-- discard ACTION rather than once per discarded card, and carries `hook` for the
+-- discards a Joker forces, which vanilla does not count against the round. The count
+-- is discards_used plus this one, as discards_used is incremented after the whole
+-- discard has run. Taken back when the round ends, and caught up if the pair arrives
+-- mid-round - and only then, since discards_used is not cleared until the next round
+-- starts and a pair bought in the shop would open it holding the last round's.
+function OG.kairyu_catch_up(state)
+    local round = G.GAME and G.GAME.current_round
+    local used = (G.GAME and G.GAME.facing_blind and round and round.discards_used) or 0
+    state.applied = 0
+    bind_resize(state, used * state.h_size)
+end
+
+special("j_celesta_onigiri", "j_celesta_kairyucrocodile", {
+    key = "onigiri_kairyu",
+    config = { h_size = 2, applied = 0 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.h_size, state.applied } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.pre_discard and not context.blueprint and not context.hook then
+            local round = G.GAME and G.GAME.current_round
+            local used = (round and round.discards_used or 0) + 1
+            local delta = bind_resize(state, used * state.h_size)
+            if delta > 0 then
+                return {
+                    message = localize { type = "variable", key = "a_handsize",
+                                         vars = { delta } },
+                    colour = G.C.FILTER, card = card,
+                }
+            end
+        end
+
+        -- main_eval is the once-per-round Joker pass.
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            if (state.applied or 0) > 0 then
+                bind_resize(state, 0)
+                return { message = localize("k_reset"), colour = G.C.FILTER, card = card }
+            end
+        end
+    end,
+
+    add_to_deck = function(def, card, state, from_debuff)
+        OG.kairyu_catch_up(state)
+    end,
+
+    remove_from_deck = function(def, card, state, from_debuff)
+        bind_resize(state, 0)
+    end,
+
+    on_merge = function(def, card, state, fresh)
+        -- A card born merged has not entered the deck: Card:add_to_deck reaches this
+        -- def's add_to_deck when it arrives. See Bind.merge's `fresh`.
+        if fresh then return end
+        OG.kairyu_catch_up(state)
+    end,
+
+    on_unmerge = function(def, card, state, losing)
+        bind_resize(state, 0)
+    end,
+})
+
+-- OniGiri + Rainhoe: Rainhoe's interest, six times over, on a wet round.
+--
+-- Rainhoe's shape, through the interest hold the Rainhoe pairs share: interest is
+-- not a Joker effect, so G.GAME.interest_amount is raised in the end_of_round pass,
+-- before the cash-out reads it, and lowered at ending_shop so it cannot compound.
+-- The Downpour is asked at the END of the round, as Rainhoe asks it, so which of
+-- the two Jokers sat further left in the row decides nothing.
+special("j_celesta_onigiri", "j_celesta_rainhoe", {
+    key = "onigiri_rainhoe",
+    config = { scale = 6, applied = 0 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.scale } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            local wet = raining() and true or false
+            if pair_interest_hold(state, wet) and wet then
+                return { message = localize("celesta_downpour"), colour = G.C.BLUE,
+                         card = card }
+            end
+        end
+        if context.ending_shop and not context.blueprint then
+            pair_interest_hold(state, false)
+        end
+    end,
+
+    remove_from_deck = function(def, card, state, from_debuff)
+        pair_interest_hold(state, false)
+    end,
+})
+
+-- OniGiri + Haruka Karibu: values on Tarot cards are X3 as large.
+--
+-- Where a Haruka doubles, this triples. A replacing pair, so the merged card is not a
+-- Haruka any more and find_joker rightly does not count one: the scale the pair adds
+-- is Haruka's own to apply (jokers/implemented.lua), which recomputes every Tarot
+-- from the row whenever one of these arrives, leaves, forms or comes apart - and is
+-- asked from here because this file is loaded before that one. It recomputes from
+-- the captured originals every time, so a moment of one too many or too few, while
+-- the half that dissolves is still in the row, settles on its own.
+--
+-- `scale` is written out rather than read from CelestasMod.ONIGIRI_HARUKA_SCALE for
+-- the reason Dokibird + Snuffy writes out its cap; test_onigiri_merges.py reads both
+-- and fails if they ever disagree.
+special("j_celesta_onigiri", "j_celesta_harukakaribu", {
+    key = "onigiri_haruka",
+    config = { scale = 3 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.scale } }
+    end,
+
+    calculate = function(def, card, context, state) end,
+
+    add_to_deck = function(def, card, state, from_debuff)
+        if CelestasMod.haruka_refresh then CelestasMod.haruka_refresh(card, true) end
+    end,
+
+    remove_from_deck = function(def, card, state, from_debuff)
+        if CelestasMod.haruka_refresh then CelestasMod.haruka_refresh(card, false) end
+    end,
+
+    on_merge = function(def, card, state, fresh)
+        -- A card born merged has not entered the deck: Card:add_to_deck reaches this
+        -- def's add_to_deck when it arrives. See Bind.merge's `fresh`.
+        if fresh then return end
+        if CelestasMod.haruka_refresh then CelestasMod.haruka_refresh(nil, false) end
+    end,
+
+    -- Queued, for the reason every count in this file is: unmerging runs while the
+    -- card is still in the row.
+    on_unmerge = function(def, card, state, losing)
+        G.E_MANAGER:add_event(Event {
+            func = function()
+                if CelestasMod.haruka_refresh then CelestasMod.haruka_refresh(nil, false) end
+                return true
+            end
+        })
+    end,
+})
+
+-- OniGiri + ShyLily: the last card played is retriggered four times.
+--
+-- "Last played" is the last card of full_hand, whether or not it scores, as it is for
+-- Bao + ShyLily. The repetition pass is only raised for scoring cards, so a last
+-- card that does not score is never asked about and gets nothing.
+special("j_celesta_onigiri", "j_celesta_shylily", {
+    key = "onigiri_shylily",
+    config = { repetitions = 4 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.repetitions } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.repetition and context.cardarea == G.play
+                and context.other_card) then return end
+        local played = context.full_hand or (G.play and G.play.cards) or {}
+        if context.other_card ~= played[#played] then return end
+        return {
+            message = localize("k_again_ex"),
+            repetitions = state.repetitions,
+            card = card,
+        }
+    end,
+})
+
+-- KokoNuts + Neuro: KokoNuts' sevens, made out of what Neuro would have cleared.
+--
+-- Neuro's moment and its once-per-round pass (OG.neuro_round_pass above), and every
+-- card held in hand rather than the unenhanced ones: the card keeps its suit and
+-- its enhancement and becomes a seven. Through unjudged, because SMODS.change_base
+-- re-judges the card and The Pillar debuffs anything played this Ante; the change is
+-- made in an event, after the pass has finished, as Neuro's own removal is.
+special("j_celesta_kokonuts", "j_celesta_neuro", {
+    key = "koko_neuro",
+    config = { last_round = -1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not OG.neuro_round_pass(state, context) then return end
+
+        local held = {}
+        for _, c in ipairs(G.hand.cards) do held[#held + 1] = c end
+
+        G.E_MANAGER:add_event(Event {
+            trigger = "after",
+            delay = 0.1,
+            func = function()
+                for _, c in ipairs(held) do
+                    CelestasMod.unjudged(c, function() SMODS.change_base(c, nil, "7") end)
+                    c:juice_up(0.3, 0.5)
+                end
+                return true
+            end
+        })
+
+        return { message = localize("celesta_sevens"), colour = G.C.SECONDARY_SET.Enhanced,
+                 card = card }
+    end,
+})
+end
+
+--------------------------------------------------------------------------------
 -- Art: the two faces split corner to corner
 --------------------------------------------------------------------------------
 
