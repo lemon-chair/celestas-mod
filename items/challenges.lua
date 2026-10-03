@@ -373,11 +373,24 @@ local ORBITAL_PRICE = 2
 ---
 --- Each is also registered as following the Ecstasy Deck's rules, which is what
 --- puts The Soul and a Bind in its shop (items/decks.lua).
+---
+--- Each also knows its own id and the one that has to be beaten before it can be
+--- played: I has none, II needs I and III needs II.
 local ORBITAL_BY_ID = {}
-for _, orbital in ipairs(ORBITALS) do
+for position, orbital in ipairs(ORBITALS) do
     local id = "c_" .. SMODS.current_mod.prefix .. "_" .. orbital.key
+    orbital.id = id
+    orbital.requires = position > 1 and ORBITALS[position - 1].id or nil
     ORBITAL_BY_ID[id] = orbital
     CelestasMod.ECSTASY_CHALLENGES[id] = true
+end
+
+--- True when the profile has won the challenge `id`. Vanilla records that when a
+--- challenge run is won (state_events.lua:22).
+local function challenge_beaten(id)
+    local profile = G.PROFILES and G.SETTINGS and G.PROFILES[G.SETTINGS.profile]
+    local progress = profile and profile.challenge_progress
+    return (progress and progress.completed and progress.completed[id]) and true or false
 end
 
 --- The Orbital being played, or nil.
@@ -497,6 +510,13 @@ local function orbital_challenge(orbital)
     SMODS.Challenge {
         key = orbital.key,
 
+        --- Locked until the Orbital before it has been beaten. Read by
+        --- SMODS.challenge_is_unlocked, which the challenge list asks of every
+        --- row; a profile with everything unlocked still opens it.
+        unlocked = function(self)
+            return orbital.requires == nil or challenge_beaten(orbital.requires)
+        end,
+
         jokers = {
             -- The partner is not listed: it never enters the row. It is built as
             -- a stand-in and merged in by orbital_fuse above.
@@ -538,6 +558,114 @@ local function orbital_challenge(orbital)
 end
 
 for _, orbital in ipairs(ORBITALS) do orbital_challenge(orbital) end
+
+--------------------------------------------------------------------------------
+-- ...and the three are one row in the challenge list
+--------------------------------------------------------------------------------
+--
+-- Beat Orbital I to open Orbital II, and II to open III. The list shows them as
+-- ONE button in three equal segments instead of three rows: the first reads
+-- Orbital I, and each of the others reads Locked until the one before it has been
+-- won, then its own name.
+--
+-- Built by editing the page vanilla builds rather than building it again, so the
+-- row's number, its place in the page, its completed box and the focus the
+-- controller snaps to all stay vanilla's. Three things change: the two rows after
+-- the first are taken out, the first row's button becomes three, and its completed
+-- box turns green only once all three are won.
+--
+-- A segment is an ordinary UIBox_button with its challenge's index as its id, so
+-- clicking one runs change_challenge_description exactly as a row's button does,
+-- and a locked one has no callback at all - the same way a locked row does not.
+
+--- The total width of the button, as the other rows' is (minw = 4).
+local ORBITAL_BUTTON_WIDTH = 4
+
+--- The G.CHALLENGES index of each Orbital, in order, or nil if any is missing.
+local function orbital_indices()
+    local out = {}
+    for _, orbital in ipairs(ORBITALS) do
+        local index = get_challenge_int_from_id(orbital.id)
+        if not index or index == 0 then return nil end
+        out[#out + 1] = index
+    end
+    return out
+end
+
+--- The challenge a row's button stands for, read off the row vanilla built: the
+--- button is the second node, and UIBox_button puts the id on its inner node.
+local function row_challenge_index(row)
+    local button = row and row.nodes and row.nodes[2]
+    local inner = button and button.nodes and button.nodes[1]
+    return inner and inner.config and inner.config.id
+end
+
+--- Turns the page vanilla built into the one with the Orbitals merged.
+local function merge_orbital_rows(page)
+    local indices = orbital_indices()
+    if not (indices and page and page.nodes) then return page end
+
+    -- Where each Orbital's row is on THIS page. Only the whole group is merged:
+    -- three rows that fall across a page break are left as three.
+    local at = {}
+    for position, row in ipairs(page.nodes) do
+        local index = row_challenge_index(row)
+        for n, wanted in ipairs(indices) do
+            if index == wanted then at[n] = position end
+        end
+    end
+    if not (at[1] and at[2] and at[3]) then return page end
+
+    local first = page.nodes[at[1]]
+    local original = first.nodes[2].nodes[1].config
+    local segment_width = ORBITAL_BUTTON_WIDTH / #indices
+
+    local segments = {}
+    local beaten = true
+    for n, index in ipairs(indices) do
+        local challenge = G.CHALLENGES[index]
+        local unlocked = SMODS.challenge_is_unlocked(challenge, index)
+        beaten = beaten and challenge_beaten(challenge.id)
+        segments[n] = UIBox_button({
+            id = index,
+            col = true,
+            label = { unlocked and localize(challenge.id, "challenge_names")
+                or localize("k_locked") },
+            button = unlocked and "change_challenge_description" or "nil",
+            colour = unlocked and (challenge.button_colour or G.C.RED) or G.C.GREY,
+            minw = segment_width,
+            -- Smaller than a row's 0.4: "Orbital III" is wider than a third of the button.
+            scale = 0.3,
+            minh = 0.6,
+            -- The controller lands on the first, where it landed on the row.
+            focus_args = n == 1 and original.focus_args or nil,
+        })
+    end
+    first.nodes[2] = { n = G.UIT.C, config = { align = "cm", padding = 0 }, nodes = segments }
+
+    -- The completed box is for the group: green once the last of them is won.
+    local box = first.nodes[3] and first.nodes[3].nodes and first.nodes[3].nodes[1]
+    if box then
+        box.config.colour = beaten and G.C.GREEN or G.C.BLACK
+        box.nodes = beaten and { { n = G.UIT.O, config = { object =
+            Sprite(0, 0, 0.4, 0.4, G.ASSET_ATLAS["icons"], { x = 1, y = 0 }) } } } or {}
+    end
+
+    -- The other two rows are the same button now. Highest first, so the first
+    -- removal does not move the second.
+    table.remove(page.nodes, at[3])
+    table.remove(page.nodes, at[2])
+    return page
+end
+
+-- Only where there is a challenge list to edit: the test harnesses that load this file
+-- whole have no G.UIDEF, and neither does anything before the game's UI exists.
+local celesta_orbital_list_page_ref = G.UIDEF and G.UIDEF.challenge_list_page
+if celesta_orbital_list_page_ref then
+    function G.UIDEF.challenge_list_page(_page)
+        return merge_orbital_rows(celesta_orbital_list_page_ref(_page))
+    end
+end
 
 --------------------------------------------------------------------------------
 -- Tarobu and Infinity Draw - a run that starts with a merge already made
