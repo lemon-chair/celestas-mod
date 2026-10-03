@@ -11586,10 +11586,11 @@ SMODS.Joker {
 -- The gain is written to perma_bonus, which is where a Chip bonus that
 -- outlives the hand lives.
 
---- A played card with this many stored Chips or more is left alone.
+--- A played card with this many stored Chips OR LESS is spent; one with more is
+--- left alone. So a card holding exactly this many is destroyed.
 CelestasMod.DOKIBIRD_CAP = 100
 
---- ...and one under it is worth this much to the card that did score.
+--- ...and each of those is worth this much to the card that did score.
 CelestasMod.DOKIBIRD_RATE = 2
 
 --- The one card that scored, if the hand is the shape this Joker wants.
@@ -11633,15 +11634,16 @@ SMODS.Joker {
         local doomed = context.destroy_card
         local stored = doomed.get_chip_bonus and doomed:get_chip_bonus() or 0
         -- Nothing to take is not a card to destroy, and the cap is what the
-        -- card advertises: a big card is left where it is.
+        -- card advertises - "holding 100 or less" - so a card holding exactly the
+        -- cap is spent and only a bigger one is left where it is.
         --
         -- Through more_than both times. `stored` is a playing card's chip
         -- bonus and this Joker is what makes those large - it writes the
         -- perma_bonus that get_chip_bonus reads back - so it feeds the number
         -- that would break its own guard, and needs no Vedal in the row to get
-        -- there. `a <= 0` is `not (a > 0)`; `a >= b` is `not (b > a)`.
+        -- there. `a <= 0` is `not (a > 0)`.
         if not CelestasMod.more_than(stored, 0)
-            or not CelestasMod.more_than(card.ability.extra.cap, stored) then
+            or CelestasMod.more_than(stored, card.ability.extra.cap) then
             return
         end
 
