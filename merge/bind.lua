@@ -13823,11 +13823,13 @@ special("j_celesta_onigiri", "j_celesta_froot", {
     end,
 })
 
--- OniGiri + Neuro: Neuro's end-of-round clearing of the hand, left to chance - and
--- to every card, enhanced or not.
+-- OniGiri + Neuro: Neuro's end-of-round clearing of the hand, left to chance.
 --
--- Rolled once for each card held in hand, the way a chance on "cards" is read
--- everywhere else in this mod. Destroyed the way Neuro does it, and for its
+-- Neuro's own rule is kept: only the UNENHANCED cards held in hand are at risk
+-- (config.center == c_base, her test), and only those are rolled for - an enhanced card
+-- is not asked, so it neither goes nor spends a roll. Each unenhanced card has its own
+-- chance, the way a chance on "cards" is read everywhere else in this mod. Destroyed the
+-- way Neuro does it, and for its
 -- reasons (see the long note on Neuro): directly in an event rather than through
 -- SMODS.destroy_cards, which would open an evaluation inside the end-of-round pass
 -- that is running, with the removal announced once beforehand so every Joker that
@@ -13847,7 +13849,8 @@ special("j_celesta_onigiri", "j_celesta_neuro", {
 
         local doomed = {}
         for _, held in ipairs(G.hand.cards) do
-            if not held.getting_sliced and not SMODS.is_eternal(held)
+            if held.config.center == G.P_CENTERS.c_base
+                and not held.getting_sliced and not SMODS.is_eternal(held)
                 and SMODS.pseudorandom_probability(card, "celesta_bind_onigiri_neuro",
                     1, state.odds, "celesta_bind_onigiri_neuro") then
                 doomed[#doomed + 1] = held
@@ -14043,11 +14046,11 @@ special("j_celesta_onigiri", "j_celesta_harukakaribu", {
     end,
 })
 
--- OniGiri + ShyLily: the last card played is retriggered four times.
+-- OniGiri + ShyLily: the last SCORING card is retriggered four times.
 --
--- "Last played" is the last card of full_hand, whether or not it scores, as it is for
--- Bao + ShyLily. The repetition pass is only raised for scoring cards, so a last
--- card that does not score is never asked about and gets nothing.
+-- ShyLily's own test, with her number swapped for four: the card being asked about is
+-- compared with the last entry of scoring_hand, so a played card that does not score is
+-- never the one (Bao + ShyLily is the other reading, the last card of the whole hand).
 special("j_celesta_onigiri", "j_celesta_shylily", {
     key = "onigiri_shylily",
     config = { repetitions = 4 },
@@ -14059,8 +14062,8 @@ special("j_celesta_onigiri", "j_celesta_shylily", {
     calculate = function(def, card, context, state)
         if not (context.repetition and context.cardarea == G.play
                 and context.other_card) then return end
-        local played = context.full_hand or (G.play and G.play.cards) or {}
-        if context.other_card ~= played[#played] then return end
+        local scoring = context.scoring_hand or {}
+        if context.other_card ~= scoring[#scoring] then return end
         return {
             message = localize("k_again_ex"),
             repetitions = state.repetitions,
@@ -14104,6 +14107,54 @@ special("j_celesta_kokonuts", "j_celesta_neuro", {
 
         return { message = localize("celesta_sevens"), colour = G.C.SECONDARY_SET.Enhanced,
                  card = card }
+    end,
+})
+
+-- OniGiri + Kson: Kson's Spectral cards, two at a time.
+--
+-- Kson's own deal (jokers/kson_girldm.lua, reached through CelestasMod because this file is
+-- loaded first): asked at context.before with the money the hand was played with, room asked
+-- once per card, so with one slot left it makes one and with none it makes none.
+special("j_celesta_onigiri", "j_celesta_kson", {
+    key = "onigiri_kson",
+    config = { threshold = 40, count = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.threshold, state.count } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.before then return end
+        if not (CelestasMod.kson_ready and CelestasMod.kson_ready(state.threshold)) then return end
+        if CelestasMod.kson_deal(state.count, "celesta_bind_onigiri_kson") <= 0 then return end
+        return {
+            message = localize("k_plus_spectral"),
+            colour = G.C.SECONDARY_SET.Spectral,
+            card = context.blueprint_card or card,
+        }
+    end,
+})
+
+-- OniGiri + GirlDM: GirlDM's extra Tags, four of them.
+--
+-- A copy adds its own, as a copy of GirlDM does.
+special("j_celesta_onigiri", "j_celesta_girldm", {
+    key = "onigiri_girldm",
+    config = { tags = 4 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.tags } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.skip_blind then return end
+        local added = CelestasMod.girldm_tags(state.tags, "celesta_bind_onigiri_girldm")
+        if added <= 0 then return end
+        return {
+            message = localize { type = "variable", key = "celesta_plus_tags",
+                                 vars = { added } },
+            colour = G.C.FILTER, card = context.blueprint_card or card,
+        }
     end,
 })
 end
