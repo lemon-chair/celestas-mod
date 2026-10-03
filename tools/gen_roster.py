@@ -120,6 +120,8 @@ DISPLAY_NAMES = {
     "fenari": "Fenari",
     "malliesprout": "Mallie Sprout",
     "kloekroc": "KloeKroc",
+    "kson": "Kson",
+    "girldm": "GirlDM",
     "geega": "Geega",
     "unnamed": "Unnamed",
     "cosmic": "Cosmic",
@@ -2959,8 +2961,9 @@ LOC_TAIL = '''        },
             celesta_bind_onigiri_neuro = {
                 name = "OniGiri + Neuro",
                 text = {
-                    "{C:green}#1# in #2#{} chance to destroy cards",
-                    "held in hand at the end of the round",
+                    "{C:green}#1# in #2#{} chance to destroy",
+                    "{C:attention}unenhanced{} cards held in hand",
+                    "at the end of the round",
                 },
             },
             celesta_bind_onigiri_bao = {
@@ -2996,8 +2999,9 @@ LOC_TAIL = '''        },
             celesta_bind_onigiri_shylily = {
                 name = "OniGiri + ShyLily",
                 text = {
-                    "Retriggers the {C:attention}last{} played",
-                    "card {C:attention}#1#{} additional times",
+                    "Retriggers the {C:attention}last{}",
+                    "scoring card {C:attention}#1#{}",
+                    "additional times",
                 },
             },
             celesta_bind_koko_neuro = {
@@ -3006,6 +3010,21 @@ LOC_TAIL = '''        },
                     "At the end of the round,",
                     "converts cards held in hand",
                     "to {C:attention}7s{}",
+                },
+            },
+            celesta_bind_onigiri_kson = {
+                name = "OniGiri + Kson",
+                text = {
+                    "If you have {C:money}$#1#{} or more, create",
+                    "{C:attention}#2#{} random {C:spectral}Spectral{} cards when a",
+                    "hand is played {C:inactive}(Must have room)",
+                },
+            },
+            celesta_bind_onigiri_girldm = {
+                name = "OniGiri + GirlDM",
+                text = {
+                    "Upon skipping a {C:attention}Blind{}, gain",
+                    "{C:attention}#1#{} additional random {C:attention}Tags{}",
                 },
             },
             celesta_bind_yharon_yharon = {
@@ -4259,6 +4278,7 @@ LOC_TAIL = '''        },
         -- without Cryptid installed.
         v_dictionary = {
             celesta_powmult = "^#1# Mult",
+            celesta_plus_tags = "+#1# Tags",
             -- Deme + LucyPyre's running total, floated as it climbs.
             celesta_blind_percent = "-#1#% Blind",
             -- The Deck of Sins' upgrade lines. These are read through

@@ -744,6 +744,13 @@ return {
                     "turn {C:dark_edition}Negative{}",
                 },
             },
+            j_celesta_girldm = {
+                name = "GirlDM",
+                text = {
+                    "Upon skipping a {C:attention}Blind{}, gain",
+                    "{C:attention}#1#{} additional random {C:attention}Tags{}",
+                },
+            },
             j_celesta_giwi = {
                 name = "Giwi",
                 text = {
@@ -974,6 +981,14 @@ return {
                 text = {
                     "{C:mult}+#1#{} Mult for every",
                     "{C:chips}#2#{} Chips scored so far",
+                },
+            },
+            j_celesta_kson = {
+                name = "Kson",
+                text = {
+                    "If you have {C:money}$#1#{} or more, create",
+                    "a random {C:spectral}Spectral{} card when a",
+                    "hand is played {C:inactive}(Must have room)",
                 },
             },
             j_celesta_kumi = {
@@ -4554,8 +4569,9 @@ return {
             celesta_bind_onigiri_neuro = {
                 name = "OniGiri + Neuro",
                 text = {
-                    "{C:green}#1# in #2#{} chance to destroy cards",
-                    "held in hand at the end of the round",
+                    "{C:green}#1# in #2#{} chance to destroy",
+                    "{C:attention}unenhanced{} cards held in hand",
+                    "at the end of the round",
                 },
             },
             celesta_bind_onigiri_bao = {
@@ -4591,8 +4607,9 @@ return {
             celesta_bind_onigiri_shylily = {
                 name = "OniGiri + ShyLily",
                 text = {
-                    "Retriggers the {C:attention}last{} played",
-                    "card {C:attention}#1#{} additional times",
+                    "Retriggers the {C:attention}last{}",
+                    "scoring card {C:attention}#1#{}",
+                    "additional times",
                 },
             },
             celesta_bind_koko_neuro = {
@@ -4601,6 +4618,21 @@ return {
                     "At the end of the round,",
                     "converts cards held in hand",
                     "to {C:attention}7s{}",
+                },
+            },
+            celesta_bind_onigiri_kson = {
+                name = "OniGiri + Kson",
+                text = {
+                    "If you have {C:money}$#1#{} or more, create",
+                    "{C:attention}#2#{} random {C:spectral}Spectral{} cards when a",
+                    "hand is played {C:inactive}(Must have room)",
+                },
+            },
+            celesta_bind_onigiri_girldm = {
+                name = "OniGiri + GirlDM",
+                text = {
+                    "Upon skipping a {C:attention}Blind{}, gain",
+                    "{C:attention}#1#{} additional random {C:attention}Tags{}",
                 },
             },
             celesta_bind_yharon_yharon = {
@@ -5854,6 +5886,7 @@ return {
         -- without Cryptid installed.
         v_dictionary = {
             celesta_powmult = "^#1# Mult",
+            celesta_plus_tags = "+#1# Tags",
             -- Deme + LucyPyre's running total, floated as it climbs.
             celesta_blind_percent = "-#1#% Blind",
             -- The Deck of Sins' upgrade lines. These are read through

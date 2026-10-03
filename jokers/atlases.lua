@@ -513,6 +513,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "girldm",
+    path = "girldm.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "giwi",
     path = "giwi.png",
     px = 71,
@@ -711,6 +718,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "kourra",
     path = "kourra.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "kson",
+    path = "kson.png",
     px = 71,
     py = 95,
 }
