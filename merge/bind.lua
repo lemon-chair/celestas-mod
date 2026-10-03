@@ -9369,8 +9369,9 @@ special("j_celesta_dokibird", "j_celesta_snuffy", {
 
         local stored = doomed.get_chip_bonus and doomed:get_chip_bonus() or 0
         -- Nothing to take is not a card to destroy, and the cap is what the
-        -- card advertises: a big card is left where it is.
-        if stored <= 0 or stored >= state.cap then return end
+        -- card advertises - "holding 100 or less" - so a card holding exactly the
+        -- cap is spent and only a bigger one is left where it is.
+        if stored <= 0 or stored > state.cap then return end
 
         local gain = stored * state.rate
         target.ability.perma_bonus = (target.ability.perma_bonus or 0) + gain

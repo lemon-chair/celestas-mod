@@ -1162,7 +1162,7 @@ LOC_TAIL = '''        },
                 name = "Dokibird + Snuffy",
                 text = {
                     "When a hand is played, destroy played",
-                    "cards holding under {C:chips}#1#{} stored {C:chips}Chips{},",
+                    "cards holding {C:chips}#1#{} or less stored {C:chips}Chips{},",
                     "except the {C:attention}leftmost{}, and give that card",
                     "{C:attention}#2#X{} their {C:chips}Chips{} permanently",
                 },
