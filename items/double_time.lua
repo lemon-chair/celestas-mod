@@ -19,13 +19,14 @@
 --   a deck, and a repetition is how a card goes again. Cards that are in the played
 --   hand but do not score, and cards in the deck or discard, are not asked.
 --
---   VOUCHERS are applied twice. A voucher's effect is the work of Card:apply_to_run
---   - a hand more, a slot more, an Ante less - and redeeming one runs that once, so
---   it is run again. The price is paid once: that is redeem's, not apply_to_run's.
---   Steamodded files a copy of the voucher in the Vouchers area every time
---   apply_to_run is called; the second call's copy is held back so it is not there
---   twice. Where a voucher SETS a value rather than adding to it (a discount, a
---   rate) the second pass is the same number again, which is as twice as it gets.
+--   VOUCHERS are bought twice: two for the price of one. A voucher's work is
+--   Card:apply_to_run - a hand more, a slot more, an Ante less - and the copy of the
+--   voucher Steamodded files in the Vouchers area is part of it, so running it again
+--   is a second voucher, with its effect and its place in the pile. Redeeming one
+--   also tells the Jokers a card was bought (context.buying_card), and they are told
+--   again. The price is paid once: that is redeem's, not apply_to_run's. Where a
+--   voucher SETS a value rather than adding to it (a discount, a rate) the second
+--   is the same number again, which is as twice as it gets.
 --
 --   CONSUMABLES are used twice. The second use is queued to run straight after the
 --   first one's own events, still inside the lock the first use took out, and with
@@ -75,29 +76,19 @@ end
 local celesta_double_time_apply_ref = Card.apply_to_run
 function Card:apply_to_run(center, ...)
     celesta_double_time_apply_ref(self, center, ...)
-
-    if not CelestasMod.double_time_active() then return end
-
-    -- The copy Steamodded files in the Vouchers area is held back for the second
-    -- pass, and taken out of the game once the events that pass queued have run.
-    local held = nil
-    local area = G.vouchers
-    local own = area and rawget(area, "emplace")
-    if area then
-        area.emplace = function(_, card) held = held or card end
+    if CelestasMod.double_time_active() then
+        celesta_double_time_apply_ref(self, center, ...)
     end
-    local ok, err = pcall(celesta_double_time_apply_ref, self, center, ...)
-    if area then area.emplace = own end
+end
 
-    if held and type(held.remove) == "function" then
-        G.E_MANAGER:add_event(Event({
-            func = function()
-                held:remove()
-                return true
-            end,
-        }))
+local celesta_double_time_redeem_ref = Card.redeem
+function Card:redeem(...)
+    local ret = celesta_double_time_redeem_ref(self, ...)
+    if CelestasMod.double_time_active() and self.ability and self.ability.set == "Voucher"
+        and type(SMODS.calculate_context) == "function" then
+        SMODS.calculate_context({ buying_card = true, card = self })
     end
-    if not ok then error(err, 0) end
+    return ret
 end
 
 --------------------------------------------------------------------------------
