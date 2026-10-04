@@ -1370,10 +1370,15 @@ SMODS.Challenge {
 -- :2407), which is the window the Plaid Deck uses to put them back - and this is
 -- the same call.
 --
--- Leaf's card_key is L, written into every save as part of its card ids and never
--- changed (suits/leaf.lua).
+-- The suit a card names is the suit's card_key AS REGISTERED, and Steamodded puts the
+-- mod's prefix on that like it does on every other key: Leaf's L (suits/leaf.lua) is
+-- celesta_L by the time a card is looked up, in G.P_CARDS and in the Deck tab alike.
+-- Read from the suit rather than written out, so a deck that names a bare L - which
+-- finds nothing, and crashes the tab that previews it - cannot be written. The
+-- spelled-out form is only for a suit that has not been registered yet.
 
-local LEAF_CARD_KEY = "L"
+local LEAF_SUIT = SMODS.Suits and SMODS.Suits[CelestasMod.LEAF_SUIT or ""]
+local LEAF_CARD_KEY = LEAF_SUIT and LEAF_SUIT.card_key or (SMODS.current_mod.prefix .. "_L")
 
 local LEAF_LITTER_DECK = {}
 for _ = 1, 2 do
