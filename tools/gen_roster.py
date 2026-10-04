@@ -4093,6 +4093,9 @@ LOC_TAIL = '''        },
             ch_c_celesta_double_time = {
                 "Everything {C:attention}triggers twice{}",
             },
+            ch_c_celesta_planetarium_deck = {
+                "Every card has a {C:attention}Blue Seal{}",
+            },
             ch_c_celesta_orbital_warning = {
                 "{C:red}WARNING: MAY BE BROKEN{}",
             },
@@ -4138,6 +4141,7 @@ LOC_TAIL = '''        },
             c_celesta_leaf_litter = "Leaf Litter",
             c_celesta_trigger_happy = "Trigger Happy",
             c_celesta_double_time = "Double-Time",
+            c_celesta_planetarium = "Planetarium",
         },
         labels = {
             m_celesta_exo = "Exo Card",
