@@ -1494,3 +1494,32 @@ SMODS.Challenge {
         modifiers = {},
     },
 }
+
+--------------------------------------------------------------------------------
+-- Planetarium - every card in the deck has a Blue Seal
+--------------------------------------------------------------------------------
+--
+-- Wild Card Wednesday's deck with a seal in place of an enhancement: fifty-two
+-- cards, one of each rank and suit, each carrying a Blue Seal (card_from_control
+-- reads the seal off `g`, as it reads the enhancement off `e`).
+
+local PLANETARIUM_DECK = {}
+for _, suit in ipairs({ "H", "C", "D", "S" }) do
+    for _, rank in ipairs({ "2", "3", "4", "5", "6", "7", "8", "9",
+                            "T", "J", "Q", "K", "A" }) do
+        PLANETARIUM_DECK[#PLANETARIUM_DECK + 1] = { s = suit, r = rank, g = "Blue" }
+    end
+end
+
+SMODS.Challenge {
+    key = "planetarium",
+
+    deck = { type = "Challenge Deck", cards = PLANETARIUM_DECK },
+
+    rules = {
+        custom = {
+            { id = "celesta_planetarium_deck" },
+        },
+        modifiers = {},
+    },
+}
