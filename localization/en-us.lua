@@ -5695,6 +5695,9 @@ return {
             ch_c_celesta_leaf_litter_deck = {
                 "The deck is two sets of {C:attention}Leaf{} cards",
             },
+            ch_c_celesta_trigger_happy = {
+                "Every Joker trigger makes future Blinds {C:attention}#1#%{} bigger",
+            },
             ch_c_celesta_orbital_warning = {
                 "{C:red}WARNING: MAY BE BROKEN{}",
             },
@@ -5738,6 +5741,7 @@ return {
             c_celesta_pink = "Pink",
             c_celesta_starboard = "Starboard",
             c_celesta_leaf_litter = "Leaf Litter",
+            c_celesta_trigger_happy = "Trigger Happy",
         },
         labels = {
             m_celesta_exo = "Exo Card",
