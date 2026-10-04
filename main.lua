@@ -211,6 +211,7 @@ for _, file in ipairs({ 'seals/seals.lua', 'items/decks.lua',
                         -- deck. Does nothing without Card Sleeves.
                         'items/sleeves.lua',
                         'items/challenges.lua',
+                        'items/double_time.lua',
                         -- Names Joker keys, so it reads best after the Jokers
                         -- exist; it only rearranges a menu, so it does not
                         -- actually need them to.
