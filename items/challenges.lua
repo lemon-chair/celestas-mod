@@ -461,26 +461,28 @@ SMODS.Challenge {
 }
 
 --------------------------------------------------------------------------------
--- Orbital I, II and III - twice the price, and a CDawg that starts merged
+-- Orbital I, II, III and IV - twice the price, and a CDawg that starts merged
 --------------------------------------------------------------------------------
 --
--- Three runs of one shape. Every Joker costs twice what it would, and the eternal
+-- Four runs of one shape. Every Joker costs twice what it would, and the eternal
 -- CDawg you start with is already merged with a card that widens what it retains.
 -- Each also follows the Ecstasy Deck's rules: only this mod's Jokers, a Bind to
 -- start with, and a chance of a Bind or The Soul in the shop.
 --
--- Every rarity of this mod's Jokers can appear. The three differ only by the card
+-- Every rarity of this mod's Jokers can appear. The four differ only by the card
 -- CDawg starts merged with:
 --
 --   I    Blue Card     retains Uncommons as well
 --   II   Green Card    retains Rares as well
 --   III  Fuchsia Card  retains Legendaries as well
+--   IV   CDawg         retains Uncommons and Rares as well
 
 --- Each Orbital: the Joker merged into CDawg.
 local ORBITALS = {
     { key = "orbital_i",   partner = "j_celesta_blue_card" },
     { key = "orbital_ii",  partner = "j_celesta_green_card" },
     { key = "orbital_iii", partner = "j_celesta_fuchsia_card" },
+    { key = "orbital_iv",  partner = "j_celesta_cdawg" },
 }
 
 --- What a Joker costs on an Orbital run, as a multiple of what it would.
@@ -494,8 +496,9 @@ local ORBITAL_PRICE = 2
 --- Each is also registered as following the Ecstasy Deck's rules, which is what
 --- puts The Soul and a Bind in its shop (items/decks.lua).
 ---
---- Each also knows its own id, and the three are a chain: II is locked until I has
---- been won and III until II has (see "Challenges that unlock in order").
+--- Each also knows its own id, and the four are a chain: II is locked until I has
+--- been won, III until II has, and IV until III has (see "Challenges that unlock in
+--- order").
 local ORBITAL_BY_ID = {}
 local ORBITAL_IDS = {}
 for _, orbital in ipairs(ORBITALS) do
@@ -737,7 +740,9 @@ local function merge_tier_rows(page, group)
             if index == wanted then at[n] = position end
         end
     end
-    if not (at[1] and at[2] and at[3]) then return page end
+    for n = 1, #indices do
+        if not at[n] then return page end
+    end
 
     local first = page.nodes[at[1]]
     local original = first.nodes[2].nodes[1].config
@@ -759,7 +764,8 @@ local function merge_tier_rows(page, group)
             minw = segment_width,
             -- Smaller than a row's 0.4: "Orbital III" is wider than a third of the button
             -- (and the button shrinks a name that is still too long, see UIElement).
-            scale = 0.3,
+            -- Smaller again for a quarter.
+            scale = #indices > 3 and 0.24 or 0.3,
             minh = 0.6,
             -- The controller lands on the first, where it landed on the row.
             focus_args = n == 1 and original.focus_args or nil,
@@ -777,10 +783,11 @@ local function merge_tier_rows(page, group)
             Sprite(0, 0, 0.4, 0.4, G.ASSET_ATLAS["icons"], { x = 1, y = 0 }) } } } or {}
     end
 
-    -- The other two rows are the same button now. Highest first, so the first
-    -- removal does not move the second.
-    discard_row(table.remove(page.nodes, at[3]))
-    discard_row(table.remove(page.nodes, at[2]))
+    -- The other rows are the same button now. Highest first, so a removal does not
+    -- move the ones still to go.
+    for n = #indices, 2, -1 do
+        discard_row(table.remove(page.nodes, at[n]))
+    end
     return page
 end
 
@@ -802,14 +809,18 @@ end
 -- the rest of the session.
 
 --- The rows the list shows, in order: each a first and a last challenge index, and
---- the chain it is when it is one. A chain is a row only while its three sit
+--- the chain it is when it is one. A chain is a row only while its challenges sit
 --- together, which they do for as long as they are registered together.
 local function tier_entries()
     local chain_at = {}
     for _, group in ipairs(TIER_GROUPS) do
         local indices = tier_indices(group)
-        if indices and indices[2] == indices[1] + 1 and indices[3] == indices[2] + 1 then
-            chain_at[indices[1]] = { group = group, last = indices[3] }
+        local together = indices ~= nil
+        for n = 2, #(indices or {}) do
+            if indices[n] ~= indices[n - 1] + 1 then together = false end
+        end
+        if together then
+            chain_at[indices[1]] = { group = group, last = indices[#indices] }
         end
     end
 

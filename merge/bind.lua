@@ -607,6 +607,21 @@ function Bind.replacing_special(card)
     return nil
 end
 
+--- Whether the pair governing `card` has silenced the half whose centre is `center`.
+---
+--- `mutes` is a pair's way of keeping both halves in the row - an additive pair, which
+--- is what keeps a CDawg findable inside its own merge - without either of them
+--- adding anything more than the pair says. A silenced half runs nothing of its own:
+--- no calculate, none of the hooks the calculate pass does not reach. CDawg + Blue
+--- Card is the case: the Blue Card is there to widen what CDawg retains, and was
+--- also gaining its own Chips for every pack skipped, which a Blue Card that CDawg
+--- is not retaining has no business doing.
+function Bind.half_is_muted(card, center)
+    if not (type(center) == "table" and center.key) then return false end
+    local def = Bind.special_of(card)
+    return (def and type(def.mutes) == "table" and def.mutes[center.key]) and true or false
+end
+
 --- The half of this merge that is NOT the wildcard's anchor.
 function Bind.wildcard_partner(card, def)
     local host, other = pair_keys(card)
@@ -5676,7 +5691,7 @@ Bind.combine = combine
 local function without_center_hook(card, hook, fn)
     local center = card.config and card.config.center
     local hide = type(center) == "table" and type(center[hook]) == "function"
-        and Bind.replacing_special(card) and true or false
+        and (Bind.replacing_special(card) or Bind.half_is_muted(card, center)) and true or false
     if not hide then return fn() end
 
     local saved = center[hook]
@@ -5822,6 +5837,8 @@ function Card:calculate_joker(context, ...)
 
     local center = Bind.partner_center(self)
     if not center then return effect, post end
+    -- A half the pair has silenced says nothing, and does nothing.
+    if Bind.half_is_muted(self, center) then return effect, post end
     -- ...and the same question of the other one.
     if not Bind.half_is_copyable(self, center, context) then return effect, post end
 
@@ -6427,6 +6444,7 @@ local function with_partner(card, hook, fn)
 
     local center = Bind.partner_center(card)
     if not (center and type(center[hook]) == "function") then return nil end
+    if Bind.half_is_muted(card, center) then return nil end
 
     local saved_center, saved_ability = card.config.center, card.ability
     local saved_special = partner_special[card]
@@ -13337,10 +13355,14 @@ do
 CelestasMod.CDAWG_RARITY_RULES = CelestasMod.CDAWG_RARITY_RULES or {}
 
 --- Registers `pair`, and the rule that says what holding it retains.
-local function cdawg_pair(other, key, rarities)
+local function cdawg_pair(other, key, rarities, silences_other)
     special("j_celesta_cdawg", other, {
         key = key,
         additive = true,
+        -- The card is only here to widen the list. What it does for itself, it does
+        -- when CDawg is retaining it - sold, and of a rarity the list now holds -
+        -- and CDawg runs it then, from its own table, whoever it is merged with.
+        mutes = silences_other and { [other] = true } or nil,
 
         loc_vars = function(def, card, state)
             return {
@@ -13368,11 +13390,12 @@ local function cdawg_pair(other, key, rarities)
 end
 
 -- One rarity up the ladder each, Common being what a plain CDawg already keeps.
-cdawg_pair("j_celesta_blue_card", "cdawg_blue", { 2 })
-cdawg_pair("j_celesta_green_card", "cdawg_green", { 3 })
-cdawg_pair("j_celesta_fuchsia_card", "cdawg_fuchsia", { 4 })
+cdawg_pair("j_celesta_blue_card", "cdawg_blue", { 2 }, true)
+cdawg_pair("j_celesta_green_card", "cdawg_green", { 3 }, true)
+cdawg_pair("j_celesta_fuchsia_card", "cdawg_fuchsia", { 4 }, true)
 -- Two of them: everything this mod sells except Legendary, which is Fuchsia's.
-cdawg_pair("j_celesta_cdawg", "cdawg_cdawg", { 2, 3 })
+-- Neither is silenced: each is a CDawg, retaining from its own table.
+cdawg_pair("j_celesta_cdawg", "cdawg_cdawg", { 2, 3 }, false)
 
 end
 

@@ -5732,6 +5732,7 @@ return {
             c_celesta_orbital_i = "Orbital I",
             c_celesta_orbital_ii = "Orbital II",
             c_celesta_orbital_iii = "Orbital III",
+            c_celesta_orbital_iv = "Orbital IV",
             c_celesta_the_nutshack = "The Nutshack",
             c_celesta_the_passage = "The Passage",
             c_celesta_tarobu = "Tarobu",

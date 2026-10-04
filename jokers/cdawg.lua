@@ -800,6 +800,55 @@ local function cdawg_total_rows(card, key)
     return out
 end
 
+--------------------------------------------------------------------------------
+-- The suit a retained Joker is on
+--------------------------------------------------------------------------------
+--
+-- A Joker whose suit MOVES says which one on its own card - "Retriggers scored
+-- Hearts cards" - and a retained one is still on a suit, in the ability table CDawg
+-- holds for it, while CDawg's own card says nothing of it. So a line for each is put
+-- under CDawg's description, next to the running totals, with the suit's name in the
+-- suit's colour.
+--
+-- A registry, because what a Joker's suit is lives in whatever that Joker keeps it
+-- in: each entry is the retained Joker's key and a function from its ability table
+-- to the suit it is on now. Saiiren and Yomi Quinnely walk one rotation on an index
+-- of their own; the rotation is asked at the moment of the description, so a suit
+-- pinned by Yoclesh reads as the pin and not as the index underneath it.
+
+CelestasMod.CDAWG_SUIT_TARGETS = CelestasMod.CDAWG_SUIT_TARGETS or {}
+
+local function rotating_suit(ability)
+    local rotation = CelestasMod.rotation_suits
+    local at = CelestasMod.rotation_suit_at
+    if type(rotation) ~= "function" or type(at) ~= "function" then return nil end
+    local extra = ability and ability.extra
+    return at(rotation(), extra and extra.suit_index)
+end
+
+CelestasMod.CDAWG_SUIT_TARGETS["j_" .. SMODS.current_mod.prefix .. "_saiiren"] = rotating_suit
+CelestasMod.CDAWG_SUIT_TARGETS["j_" .. SMODS.current_mod.prefix .. "_yomiquinnely"] = rotating_suit
+
+--- The line for one retained Joker's suit, or nil if it is not on one.
+local function cdawg_target_row(card, key)
+    local target = CelestasMod.CDAWG_SUIT_TARGETS[key]
+    local center = G.P_CENTERS[key]
+    if type(target) ~= "function" or not center then return nil end
+
+    local ok, suit = pcall(target, cdawg_ability(card, key, center))
+    if not (ok and suit) then return nil end
+
+    local name = localize { type = "name_text", set = "Joker", key = key }
+    local label = localize(suit, "suits_plural")
+    local colour = (G.C.SUITS or {})[suit] or G.C.UI.TEXT_INACTIVE
+    return { n = G.UIT.R, config = { align = "cl" }, nodes = {
+        { n = G.UIT.T, config = { text = "On ", colour = G.C.UI.TEXT_INACTIVE, scale = 0.32 } },
+        { n = G.UIT.T, config = { text = tostring(label), colour = colour, scale = 0.32 } },
+        { n = G.UIT.T, config = { text = " - " .. tostring(name),
+                                  colour = G.C.UI.TEXT_INACTIVE, scale = 0.32 } },
+    } }
+end
+
 --- Every retained Joker's totals, as the one extra node loc_vars may add.
 ---
 --- main_end is appended to the description as a SINGLE node (Steamodded's
@@ -811,6 +860,8 @@ local function cdawg_totals(card)
         for _, row in ipairs(cdawg_total_rows(card, key) or {}) do
             rows[#rows + 1] = row
         end
+        local target = cdawg_target_row(card, key)
+        if target then rows[#rows + 1] = target end
     end
     if #rows == 0 then return nil end
     return { { n = G.UIT.C, config = { align = "m" }, nodes = rows } }
