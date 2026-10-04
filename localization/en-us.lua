@@ -298,6 +298,15 @@ return {
                     "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
                 },
             },
+            j_celesta_bubi = {
+                name = "Bubi",
+                text = {
+                    "{C:attention}Stamps{} no longer have {C:attention}downsides{}",
+                    "when attached to Jokers",
+                    "{C:attention}Stamp Packs{} always have {C:attention}#1#{} Stamps to",
+                    "choose from, one of which is always {C:attention}Rare{}",
+                },
+            },
             j_celesta_buffpup = {
                 name = "Buffpup",
                 text = {
@@ -548,6 +557,13 @@ return {
                     "scored above {C:attention}#3#{}",
                     "{C:celesta_true_star,E:1}X#4#{} extra Mult for each",
                     "{C:celesta_true_star,E:1}True Star{} card in the played hand",
+                },
+            },
+            j_celesta_ekkomori = {
+                name = "Ekkomori",
+                text = {
+                    "After defeating a {C:attention}Boss Blind{},",
+                    "gain a {C:attention}Double Tag{}",
                 },
             },
             j_celesta_el_xox = {
@@ -827,6 +843,14 @@ return {
                 unlock = {
                     "Use a {C:spectral}Lost Soul{} on",
                     "{C:attention}Joker{}",
+                },
+            },
+            j_celesta_hestia = {
+                name = "Hestia",
+                text = {
+                    "Future copies of {C:attention}sold{} Jokers have",
+                    "a {C:green}#1# in #2#{} chance to have",
+                    "{C:attention}doubled{} values {C:inactive}(if possible)",
                 },
             },
             j_celesta_hidden_tech = {
@@ -2807,6 +2831,15 @@ return {
                 text = {
                     "Cards holding more than {C:chips}#1#{} stored",
                     "{C:chips}Chips{} cannot be {C:attention}debuffed{}",
+                },
+            },
+            celesta_bind_bubi_ironmouse = {
+                name = "Bubi + Ironmouse",
+                text = {
+                    "{C:attention}Stamps{} no longer have {C:attention}downsides{}",
+                    "when attached to Jokers",
+                    "{C:attention}Stamp Packs{} always have {C:attention}#1#{} Stamps to",
+                    "choose from, all of which are {C:attention}Rare{}",
                 },
             },
             celesta_bind_dooby_nimi = {

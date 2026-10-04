@@ -13427,6 +13427,22 @@ cdawg_pair("j_celesta_cdawg", "cdawg_cdawg", { 2, 3 }, false)
 
 end
 
+-- Bubi + Ironmouse: Bubi's Stamps, with every stamp in the pack Rare.
+--
+-- No calculate at all, like Dooby + Nimi: what it changes is how the Stamp Packs are filled and
+-- what a stamp costs, both asked by stamps/stamps.lua at the moment they are decided - by name,
+-- since the pair replaces both halves and neither Joker is findable inside it.
+special("j_celesta_bubi", "j_celesta_ironmouse", {
+    key = "bubi_ironmouse",
+
+    loc_vars = function(def, card, state)
+        local Stamps = CelestasMod.Stamps
+        return { vars = { Stamps and Stamps.BUBI_PACK_SIZE or 5 } }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
 -- KokoNuts + BerryCrepe: KokoNuts' seven, made of BerryCrepe's Mult, and a
 -- multiplier that grows with the deck it is filling.
 --

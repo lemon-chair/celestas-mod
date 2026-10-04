@@ -173,11 +173,52 @@ local function roll_tier()
     return #Stamps.TIER_WEIGHTS
 end
 
---- A kind for the next stamp: a tier, then one of the cards in it.
-function Stamps.roll_kind()
-    local pool = Stamps.BY_TIER[roll_tier()]
+--- A kind for the next stamp: a tier, then one of the cards in it. `tier` names one outright,
+--- for a stamp that is promised to be of it.
+function Stamps.roll_kind(tier)
+    local pool = Stamps.BY_TIER[tier or roll_tier()]
     return pseudorandom_element(pool, pseudoseed(KIND_SEED))
 end
+
+--------------------------------------------------------------------------------
+-- Bubi
+--------------------------------------------------------------------------------
+--
+-- Two things Bubi changes, and Bubi + Ironmouse changes a third. All three are asked at the
+-- moment they matter, rather than kept on a card: the Joker can be bought, sold or debuffed
+-- between a pack being seen in the shop and being opened.
+--
+-- The Joker is looked for the way Liffeh is - in the row, or run by a CDawg that has one
+-- sold. The pair is looked for the way Dooby + Nimi is, by name: a replacing pair is not
+-- in the Joker lookups, and Bubi is one of its halves.
+
+local BUBI_KEY = "j_" .. SMODS.current_mod.prefix .. "_bubi"
+
+--- The pair's name, resolved here for the lookup below.
+local BUBI_PAIR = "bubi_ironmouse"
+
+--- The pair, if one is in the row and able to act.
+local function bubi_pair_held()
+    local Bind = CelestasMod.Bind
+    if not (Bind and Bind.find_special) then return false end
+    local holder = Bind.find_special(BUBI_PAIR)
+    return (holder and not holder.debuff) and true or false
+end
+
+--- True while a Bubi - the Joker, a retained one, or the pair - is out.
+function Stamps.bubi()
+    if bubi_pair_held() then return true end
+    if CelestasMod.joker_in_play and CelestasMod.joker_in_play(BUBI_KEY) then return true end
+    return (CelestasMod.cdawg_running and CelestasMod.cdawg_running(BUBI_KEY)) and true or false
+end
+
+--- True while the pair is: every stamp in a Stamp Pack is Rare.
+function Stamps.all_rare()
+    return bubi_pair_held()
+end
+
+--- How many stamps a Stamp Pack holds with a Bubi out.
+Stamps.BUBI_PACK_SIZE = 5
 
 --- The number one stamp of this kind is worth.
 function Stamps.roll_value(kind)
@@ -265,6 +306,8 @@ end
 local function downside_rows(stamp, kind)
     local rows = {}
     local picked = stamp and stamp.downside
+    -- Nothing to read about a cost that is not going to be paid.
+    if Stamps.bubi() then return nil end
     if Downsides.entry(picked) then
         local entry = Downsides.entry(picked)
         for _, row in ipairs(localized_rows("celesta_stamp_downside", {}, true)) do
@@ -420,8 +463,8 @@ function Stamps.press(card)
             joker:juice_up(0.5, 0.6)
             -- The cost is paid as the stamp lands, not when the card was
             -- picked up: the description said what it would be, and this is
-            -- the moment it becomes true.
-            Downsides.apply(stamp.downside)
+            -- the moment it becomes true. With a Bubi out there is none.
+            if not Stamps.bubi() then Downsides.apply(stamp.downside) end
             return true
         end,
     })
@@ -454,6 +497,33 @@ Stamps.PACK_MAX = 5
 --- come back to is the same pack.
 local PACK_ROLLED = "celesta_pack_rolled"
 local PACK_SEED = "celesta_stamp_pack_size"
+
+--- What the pack holds right now: the size it rolled, or a Bubi's five.
+function Stamps.pack_extra(ability)
+    if Stamps.bubi() then return Stamps.BUBI_PACK_SIZE end
+    return ability.extra
+end
+
+--- The tier stamp number `i` of this pack is promised to be, or nil for an ordinary roll.
+---
+--- With a Bubi out one stamp in the pack is always Rare - a place picked once for the pack and
+--- kept on it, so the Rare is not always the first - and with Bubi + Ironmouse every one is.
+--- A place kept from before the pack shrank - a modifier arriving since - is picked again, so
+--- a Rare is never missing.
+function Stamps.guaranteed_tier(card, i)
+    if Stamps.all_rare() then return 3 end
+    if not Stamps.bubi() then return nil end
+
+    local ability = card and card.ability
+    if not ability then return nil end
+    local size = math.max(1, Stamps.pack_extra(ability)
+        + ((G.GAME and G.GAME.modifiers and G.GAME.modifiers.booster_size_mod) or 0))
+    if not ability.celesta_rare_slot or ability.celesta_rare_slot > size then
+        ability.celesta_rare_slot = pseudorandom(pseudoseed("celesta_bubi_slot"), 1, size)
+    end
+    if i == ability.celesta_rare_slot then return 3 end
+    return nil
+end
 
 SMODS.Booster {
     key = "stamp_pack",
@@ -491,19 +561,23 @@ SMODS.Booster {
         -- pack exists to have a size - so the honest answer is the range it
         -- rolls in rather than either end of it.
         local size = card and card.ability and card.ability[PACK_ROLLED]
-            and math.max(1, cfg.extra + bonus) or nil
+            and math.max(1, Stamps.pack_extra(cfg) + bonus) or nil
         local most = size or math.max(1, Stamps.PACK_MAX + bonus)
+        if not size and Stamps.bubi() then
+            most = math.max(1, Stamps.BUBI_PACK_SIZE + bonus)
+        end
 
         return {
             vars = {
                 math.min(cfg.choose + (mods.booster_choice_mod or 0), most),
-                size or (math.max(1, Stamps.PACK_MIN + bonus) .. "-" .. most),
+                size or (Stamps.bubi() and most
+                    or (math.max(1, Stamps.PACK_MIN + bonus) .. "-" .. most)),
             },
         }
     end,
 
     create_card = function(self, card, i)
-        local kind = Stamps.roll_kind()
+        local kind = Stamps.roll_kind(Stamps.guaranteed_tier(card, i))
         return {
             set = Stamps.SET,
             key = kind and Stamps.center_key(kind.key) or nil,
@@ -702,4 +776,22 @@ function Card:generate_UIBox_ability_table(vars_only)
         end
     end
     return ui
+end
+
+--------------------------------------------------------------------------------
+-- ...and opened at Bubi's size
+--------------------------------------------------------------------------------
+--
+-- A pack rolls its size once, when it is made, and may be sitting in the shop for rounds
+-- before it is bought. Bubi may arrive in between, so the size is settled when the pack is
+-- opened, which is the one moment it is read (card.lua:1976).
+
+local celesta_stamp_open_ref = Card.open
+function Card:open(...)
+    if self.ability and self.ability.set == "Booster" and self.config
+        and self.config.center and self.config.center.kind == Stamps.SET
+        and Stamps.bubi() then
+        self.ability.extra = Stamps.BUBI_PACK_SIZE
+    end
+    return celesta_stamp_open_ref(self, ...)
 end

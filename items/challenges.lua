@@ -1172,8 +1172,9 @@ SMODS.Challenge {
 --
 -- Every pool has Commons, Uncommons and Rares to roll, so the shop never has to
 -- fall back on vanilla's answer to an empty pool (a plain Joker, which ignores the
--- ban list). Legendaries are only ever rolled by The Soul, and Purple has none:
--- there The Soul can give that fallback.
+-- ban list). Legendaries are only ever rolled by The Soul, and a pool with none
+-- leaves the Soul to give that fallback: Red, Orange, Yellow, Green, Blue and Pink
+-- have none of this mod's.
 
 --- The Jokers each pool allows, as the challenge lists them: this mod's by
 --- j_celesta_<key>, vanilla's by their own.
@@ -1186,7 +1187,7 @@ local POOL_JOKERS = {
         "j_celesta_nostro", "j_celesta_rtgame", "j_celesta_ariesakana", "j_celesta_taehoongie",
         "j_celesta_rubensargasm", "j_celesta_unnamed", "j_celesta_occi", "j_celesta_shiabun",
         "j_celesta_shaoanvt", "j_celesta_vantacrow_bringer", "j_celesta_lordaethelstan",
-        "j_celesta_kuro", "j_celesta_boosfer",
+        "j_celesta_kuro", "j_celesta_boosfer", "j_celesta_bubi",
     },
     red = {
         "j_lusty_joker", "j_credit_card", "j_raised_fist", "j_even_steven", "j_scary_face",
@@ -1235,6 +1236,7 @@ local POOL_JOKERS = {
         "j_celesta_kael", "j_celesta_kairyucrocodile", "j_celesta_piapiufo",
         "j_celesta_augustanomoly", "j_celesta_radiaactive", "j_celesta_rynxryn",
         "j_celesta_juniperactias", "j_celesta_alluux", "j_celesta_cupidyle", "j_celesta_momo",
+        "j_celesta_girldm",
     },
     blue = {
         "j_gluttenous_joker", "j_mystic_summit", "j_fibonacci", "j_supernova", "j_odd_todd",
@@ -1252,7 +1254,7 @@ local POOL_JOKERS = {
         "j_celesta_nana_ruru", "j_celesta_vienna", "j_celesta_cosmic", "j_celesta_ariesakana",
         "j_celesta_yokasiri", "j_celesta_geega", "j_celesta_fufu", "j_celesta_isaa",
         "j_celesta_kourra", "j_celesta_occi", "j_celesta_silvervale", "j_celesta_froot",
-        "j_celesta_mogu",
+        "j_celesta_mogu", "j_celesta_ekkomori",
     },
     purple = {
         "j_wrathful_joker", "j_8_ball", "j_sixth_sense", "j_fortune_teller", "j_arrowhead",
@@ -1265,7 +1267,7 @@ local POOL_JOKERS = {
         "j_celesta_itsdeadlyboop", "j_celesta_nekrolina", "j_celesta_moopybuns",
         "j_celesta_squchan", "j_celesta_astrum_aureus", "j_celesta_froot", "j_celesta_kiri",
         "j_celesta_elara", "j_celesta_fleshy", "j_celesta_nicoviras", "j_celesta_snuffy",
-        "j_celesta_hime",
+        "j_celesta_hime", "j_celesta_kson", "j_celesta_bubi",
     },
     pink = {
         "j_four_fingers", "j_ramen", "j_trading", "j_celesta_froggyloch",
@@ -1276,7 +1278,7 @@ local POOL_JOKERS = {
         "j_celesta_el_xox", "j_celesta_fream", "j_celesta_mooni", "j_celesta_matarakan",
         "j_celesta_trickywi", "j_celesta_rainyrentyn", "j_celesta_snapscube", "j_celesta_giwi",
         "j_celesta_suko", "j_celesta_toma", "j_celesta_pheromoan", "j_celesta_torioriane",
-        "j_celesta_lucia", "j_celesta_urschleim", "j_celesta_tobs",
+        "j_celesta_lucia", "j_celesta_urschleim", "j_celesta_tobs", "j_celesta_hestia",
     },
 }
 

@@ -122,6 +122,9 @@ DISPLAY_NAMES = {
     "kloekroc": "KloeKroc",
     "kson": "Kson",
     "girldm": "GirlDM",
+    "hestia": "Hestia",
+    "ekkomori": "Ekkomori",
+    "bubi": "Bubi",
     "geega": "Geega",
     "unnamed": "Unnamed",
     "cosmic": "Cosmic",
@@ -1199,6 +1202,15 @@ LOC_TAIL = '''        },
                 text = {
                     "Cards holding more than {C:chips}#1#{} stored",
                     "{C:chips}Chips{} cannot be {C:attention}debuffed{}",
+                },
+            },
+            celesta_bind_bubi_ironmouse = {
+                name = "Bubi + Ironmouse",
+                text = {
+                    "{C:attention}Stamps{} no longer have {C:attention}downsides{}",
+                    "when attached to Jokers",
+                    "{C:attention}Stamp Packs{} always have {C:attention}#1#{} Stamps to",
+                    "choose from, all of which are {C:attention}Rare{}",
                 },
             },
             celesta_bind_dooby_nimi = {

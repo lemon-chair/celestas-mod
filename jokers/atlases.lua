@@ -205,6 +205,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "bubi",
+    path = "bubi.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "buffpup",
     path = "buffpup.png",
     px = 71,
@@ -375,6 +382,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "eidolonwyrm",
     path = "eidolonwyrm.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "ekkomori",
+    path = "ekkomori.png",
     px = 71,
     py = 95,
 }
@@ -585,6 +599,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "herojim",
     path = "herojim.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "hestia",
+    path = "hestia.png",
     px = 71,
     py = 95,
 }

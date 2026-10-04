@@ -5607,14 +5607,14 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Nana & Ruru [Rare] - a chance to run a merged Joker again.
+-- Nana & Ruru [Uncommon] - a chance to run a merged Joker again.
 --------------------------------------------------------------------------------
 
 SMODS.Joker {
     key = "nana_ruru",
     atlas = "nana_ruru",
     pos = { x = 0, y = 0 },
-    rarity = 3, cost = 9,
+    rarity = 2, cost = 9,
     unlocked = false, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
@@ -10052,6 +10052,12 @@ if celesta_grimmi_sell_ref then
                 G.GAME.celesta_rares_sold = (G.GAME.celesta_rares_sold or 0) + 1
             end
             record_joker_sold(config.center)
+            -- Hestia's: every Joker sold this run, whoever's it is. Kept by key, as a set.
+            local sold_key = config.center_key or (config.center and config.center.key)
+            if sold_key then
+                G.GAME.celesta_sold_keys = G.GAME.celesta_sold_keys or {}
+                G.GAME.celesta_sold_keys[sold_key] = true
+            end
         end
 
         return ret
