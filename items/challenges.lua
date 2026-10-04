@@ -1399,3 +1399,98 @@ SMODS.Challenge {
         modifiers = {},
     },
 }
+
+--------------------------------------------------------------------------------
+-- Trigger Happy - every Joker that goes off makes the Blinds to come bigger
+--------------------------------------------------------------------------------
+--
+-- One percent of the Blind's base size for every trigger, ADDED rather than
+-- compounded: a hundred triggers is twice the quota, as a hundred of any other
+-- percentage-of-base in this mod would be. A trigger is a Joker answering a context
+-- with an effect, or with the second value that says it did its work in an event
+-- (`nil, true`) - counted at Card:calculate_joker, the one place every Joker's answer
+-- passes through, so Jokers from this mod, the base game and others are all counted
+-- and nothing has to know the challenge exists.
+--
+-- Not every context is a Joker DOING something. Some are questions put to every Joker
+-- about everything - may this be retriggered, is this card of that kind, what are the
+-- odds - and a Joker answering one has changed a number, not triggered. Those are
+-- left out; an effect on a hand being scored, a card being bought or a Blind being set
+-- is counted.
+--
+-- "Future": the tally is read when a Blind's size is worked out. A Blind in progress
+-- was sized when it was set (blind.lua:118) and does not grow under the player; the
+-- next one, and every Blind the ladder shows, is asked afterwards. Wrapped on
+-- get_blind_amount, as Joker Printer's quota is, for the same reason: it is the one
+-- function the Blind and the panel offering it both go through.
+
+local TRIGGER_HAPPY_KEY = "c_" .. SMODS.current_mod.prefix .. "_trigger_happy"
+
+--- How much of the base size one trigger adds.
+CelestasMod.TRIGGER_HAPPY_GAIN = 0.01
+
+--- Contexts a Joker answers as a question rather than by doing something.
+local TRIGGER_HAPPY_QUERIES = {
+    retrigger_joker_check = true, mod_probability = true, fix_probability = true,
+    check_eternal = true, check_enhancement = true, modify_scoring_hand = true,
+    modify_hand = true, evaluate_poker_hand = true, debuff_hand = true,
+    create_shop_card = true, modify_shop_card = true,
+}
+
+--- How many times the run's Jokers have triggered.
+function CelestasMod.trigger_happy_count()
+    return (G.GAME and G.GAME.celesta_triggers) or 0
+end
+
+--- What a Blind's base size is multiplied by now.
+function CelestasMod.trigger_happy_scale()
+    return 1 + CelestasMod.TRIGGER_HAPPY_GAIN * CelestasMod.trigger_happy_count()
+end
+
+local celesta_trigger_happy_ref = Card.calculate_joker
+function Card:calculate_joker(context, ...)
+    local effect, post = celesta_trigger_happy_ref(self, context, ...)
+
+    if (post or (type(effect) == "table" and next(effect)))
+        and G.GAME and G.GAME.challenge == TRIGGER_HAPPY_KEY
+        -- Jokers only: the calculate walk reaches consumables and vouchers by the
+        -- same method, and a Tarot answering a context is not a Joker triggering.
+        and self.ability and self.ability.set == "Joker"
+        and type(context) == "table" then
+        local query = false
+        for name in pairs(TRIGGER_HAPPY_QUERIES) do
+            if context[name] then query = true break end
+        end
+        if not query then G.GAME.celesta_triggers = CelestasMod.trigger_happy_count() + 1 end
+    end
+
+    return effect, post
+end
+
+local celesta_trigger_happy_blind_ref = get_blind_amount
+if type(celesta_trigger_happy_blind_ref) == "function" then
+    function get_blind_amount(ante, ...)
+        local amount = celesta_trigger_happy_blind_ref(ante, ...)
+        if not (G.GAME and G.GAME.challenge == TRIGGER_HAPPY_KEY) then return amount end
+        return amount * CelestasMod.trigger_happy_scale()
+    end
+end
+
+SMODS.Challenge {
+    key = "trigger_happy",
+
+    jokers = {
+        { id = "j_celesta_spongeybuns", eternal = true },
+    },
+
+    restrictions = {
+        banned_cards = STICKER_STRIPPERS,
+    },
+
+    rules = {
+        custom = {
+            { id = "celesta_trigger_happy", value = 1 },
+        },
+        modifiers = {},
+    },
+}
