@@ -137,6 +137,7 @@ assert(SMODS.load_file('sins/sidebar.lua'))()
 assert(SMODS.load_file('enhancements/enhancements.lua'))()
 assert(SMODS.load_file('enhancements/obsidian.lua'))()
 assert(SMODS.load_file('blinds/blinds.lua'))()
+assert(SMODS.load_file('blinds/pillar.lua'))()
 assert(SMODS.load_file('editions/frozen.lua'))()
 -- After enhancements: it classifies their keys into cracked/chipped.
 assert(SMODS.load_file('wear/tattered.lua'))()
