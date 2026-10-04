@@ -851,7 +851,7 @@ special("j_celesta_crelly", "j_celesta_kokonuts", {
                 -- whether the card can actually go, so eternals are refused
                 -- here or the row keeps a card that was told to leave.
                 if SMODS.is_eternal and SMODS.is_eternal(target) then return end
-                state.x_mult = state.x_mult + state.x_mult_gain
+                Bind.grow(card, state, "x_mult", state.x_mult_gain)
                 return {
                     remove = true,
                     message = localize { type = "variable", key = "a_xmult",
@@ -927,7 +927,7 @@ special("j_celesta_demenishki", "j_celesta_camila", {
             -- An unknown edition, from another mod, is worth the plain rate
             -- rather than nothing.
             local gain = DEME_CAMILA_GAINS[edition] or DEME_CAMILA_GAINS.none
-            state.x_mult = state.x_mult + gain
+            Bind.grow(card, state, "x_mult", gain)
             return {
                 message = localize { type = "variable", key = "a_xmult",
                                      vars = { state.x_mult } },
@@ -962,7 +962,7 @@ special("j_celesta_jaxvtuber", "j_celesta_bricky", {
             local limestone = (CelestasMod.ENHANCEMENT_KEYS or {}).Limestone
             if scored and (SMODS.has_enhancement(scored, "m_stone")
                 or (limestone and SMODS.has_enhancement(scored, limestone))) then
-                state.chips = state.chips + state.chip_mod
+                Bind.grow(card, state, "chips", state.chip_mod)
                 return {
                     message = localize { type = "variable", key = "a_chips",
                                          vars = { state.chips } },
@@ -1394,7 +1394,7 @@ special("j_celesta_cottontail", "j_celesta_demenishki", {
         if context.individual and context.cardarea == G.play
             and not context.blueprint and context.other_card
             and context.other_card.seal == (CelestasMod.SEAL_KEYS or {}).Star then
-            state.x_mult = state.x_mult + state.x_mult_gain
+            Bind.grow(card, state, "x_mult", state.x_mult_gain)
             return {
                 message = localize { type = "variable", key = "a_xmult",
                                      vars = { state.x_mult } },
@@ -1477,7 +1477,7 @@ special("j_celesta_neuro", "j_celesta_vedal", {
         if context.remove_playing_cards and not context.blueprint then
             local gone = #(context.removed or {})
             if gone > 0 then
-                state.x_mult = state.x_mult + state.x_mult_gain * gone
+                Bind.grow(card, state, "x_mult", state.x_mult_gain * gone)
                 return {
                     message = localize { type = "variable", key = "a_xmult",
                                          vars = { state.x_mult } },
@@ -1616,7 +1616,7 @@ special("j_celesta_heavenlyfather", "j_celesta_baddaboom", {
 
     calculate = function(def, card, context, state)
         if context.skipping_booster and not context.blueprint then
-            state.x_mult = state.x_mult + state.x_mult_gain
+            Bind.grow(card, state, "x_mult", state.x_mult_gain)
             return {
                 message = localize { type = "variable", key = "a_xmult",
                                      vars = { state.x_mult } },
@@ -1743,7 +1743,7 @@ special("j_celesta_crelly", "j_celesta_vedal", {
             local target = pseudorandom_element(G.consumeables.cards,
                 pseudoseed("celesta_bind_crelly_vedal"))
 
-            state.x_mult = state.x_mult + state.x_mult_gain
+            Bind.grow(card, state, "x_mult", state.x_mult_gain)
             -- Respects eternal and undestroyable stickers, and animates it.
             SMODS.destroy_cards(target)
             return {
@@ -1885,7 +1885,7 @@ special("j_celesta_ariesakana", "j_celesta_yokasiri", {
         -- place by the time joker_main asks for the total.
         if context.before and not context.blueprint then
             if all_stars(flush_cards(context)) then
-                state.x_chips = state.x_chips + state.x_chip_mod
+                Bind.grow(card, state, "x_chips", state.x_chip_mod)
                 return {
                     message = localize { type = "variable", key = "a_xchips",
                                          vars = { state.x_chips } },
@@ -1926,7 +1926,7 @@ special("j_celesta_demenishki", "j_celesta_lucypyre", {
     calculate = function(def, card, context, state)
         if context.before and not context.blueprint then
             if #context.full_hand == 1 then
-                state.percent = state.percent + state.percent_gain
+                Bind.grow(card, state, "percent", state.percent_gain)
                 return {
                     message = localize { type = "variable",
                                          key = "celesta_blind_percent",
@@ -1984,7 +1984,7 @@ special("j_celesta_demenishki", "j_celesta_boosfer", {
     calculate = function(def, card, context, state)
         if context.before and not context.blueprint then
             if #context.full_hand == 1 then
-                state.x_mult = state.x_mult + state.x_mult_gain
+                Bind.grow(card, state, "x_mult", state.x_mult_gain)
                 return {
                     message = localize { type = "variable", key = "a_xmult",
                                          vars = { state.x_mult } },
@@ -2415,7 +2415,7 @@ special("j_celesta_sonneflower", "j_celesta_birdyovo", {
                          card = card }
             end
 
-            state.x_mult = state.x_mult + state.x_mult_gain * leaves
+            Bind.grow(card, state, "x_mult", state.x_mult_gain * leaves)
             return {
                 message = localize { type = "variable", key = "a_xmult",
                                      vars = { state.x_mult } },
@@ -2448,7 +2448,7 @@ special("j_celesta_arielle", "j_celesta_ironmouse", {
         -- the end-of-round pass over the hand is G.hand, so neither reaches it.
         if context.individual and context.cardarea == G.play
             and not context.blueprint then
-            state.e_mult = state.e_mult + state.e_mult_gain
+            Bind.grow(card, state, "e_mult", state.e_mult_gain)
             return {
                 message = localize { type = "variable", key = "celesta_powmult",
                                      vars = { state.e_mult } },
@@ -2580,7 +2580,7 @@ special("j_celesta_aquwa", "j_celesta_megalodon", {
             local played = #(context.full_hand or {})
             if played > 0 then
                 local per = state.mult_gain * (raining() and state.rain_scale or 1)
-                state.mult = state.mult + per * played
+                Bind.grow(card, state, "mult", per * played)
                 return {
                     message = localize { type = "variable", key = "a_mult",
                                          vars = { state.mult } },
@@ -3148,7 +3148,7 @@ special("j_celesta_ironmouse", "j_celesta_michi", {
         if context.discard and not context.blueprint then
             local other = context.other_card
             if other and other.seal == "Purple" then
-                state.e_mult = state.e_mult + state.e_mult_gain
+                Bind.grow(card, state, "e_mult", state.e_mult_gain)
                 return {
                     message = localize { type = "variable", key = "celesta_powmult",
                                          vars = { state.e_mult } },
@@ -3494,7 +3494,7 @@ special("j_celesta_berrycrepe", "j_celesta_cweamcat", {
     calculate = function(def, card, context, state)
         if context.before and not context.blueprint then
             if context.scoring_name == state.hand then
-                state.mult = state.mult + state.mult_gain
+                Bind.grow(card, state, "mult", state.mult_gain)
                 return {
                     message = localize { type = "variable", key = "a_mult",
                                          vars = { state.mult } },
@@ -3976,7 +3976,7 @@ special("j_celesta_yuzu", "j_celesta_juniperactias", {
                 if base and base.suit == CelestasMod.STARS_SUIT then added = added + 1 end
             end
             if added == 0 then return end
-            state.x_chips = state.x_chips + state.x_chip_gain * added
+            Bind.grow(card, state, "x_chips", state.x_chip_gain * added)
             return {
                 message = localize { type = "variable", key = "a_xchips", vars = { state.x_chips } },
                 colour = G.C.CHIPS, card = card,
@@ -4119,7 +4119,7 @@ special("j_celesta_shenpai", "j_celesta_rtgame", {
                 if count >= 4 then four = true break end
             end
             if four and sum > 0 then
-                state.x_mult = state.x_mult + state.x_mult_gain * sum
+                Bind.grow(card, state, "x_mult", state.x_mult_gain * sum)
                 return {
                     message = localize { type = "variable", key = "a_xmult", vars = { state.x_mult } },
                     colour = G.C.MULT, card = card,
@@ -4181,7 +4181,7 @@ special("j_celesta_rinpenrose", "j_celesta_rtgame", {
             local steps = math.floor(state.bank / state.chips_per_step)
             if steps > 0 then
                 state.bank = state.bank - steps * state.chips_per_step
-                state.x_mult = state.x_mult + steps * state.x_mult_gain
+                Bind.grow(card, state, "x_mult", steps * state.x_mult_gain)
                 return {
                     message = localize { type = "variable", key = "a_xmult", vars = { state.x_mult } },
                     colour = G.C.MULT, card = card,
@@ -4537,7 +4537,7 @@ special("j_celesta_ironmouse", "j_celesta_projektmelody", {
             gain = state.skip_gain
         end
         if gain then
-            state.e_mult = pow_after(state.e_mult, gain)
+            Bind.grow(card, state, "e_mult", gain, pow_after)
             return {
                 message = localize { type = "variable", key = "celesta_powmult",
                                      vars = { state.e_mult } },
@@ -4785,7 +4785,7 @@ special("j_celesta_kokonuts", "j_celesta_laynalazar", {
     calculate = function(def, card, context, state)
         local removed = layna_strips(card, context, "m_lucky")
         if removed > 0 then
-            state.mult = state.mult + state.mult_gain * removed
+            Bind.grow(card, state, "mult", state.mult_gain * removed)
             return {
                 message = localize { type = "variable", key = "a_mult",
                                      vars = { state.mult } },
@@ -4830,7 +4830,8 @@ special("j_celesta_crelly", "j_celesta_laynalazar", {
     calculate = function(def, card, context, state)
         local removed = layna_strips(card, context, "m_mult")
         if removed > 0 then
-            state.x_mult = tidy(state.x_mult + state.x_mult_gain * removed)
+            Bind.grow(card, state, "x_mult", state.x_mult_gain * removed,
+                      function(initial, modifier) return tidy(initial + modifier) end)
             return {
                 message = localize { type = "variable", key = "a_xmult",
                                      vars = { state.x_mult } },
@@ -5179,7 +5180,7 @@ special("j_celesta_spite", "j_celesta_megalodon", {
     end,
 
     on_ectoplast = function(def, card, state)
-        state.mult = state.mult + state.mult_gain
+        Bind.grow(card, state, "mult", state.mult_gain)
         SMODS.calculate_effect({
             message = localize { type = "variable", key = "a_mult",
                                  vars = { state.mult } },
@@ -5672,6 +5673,36 @@ end
 --- question to answer about their effects. One copy, so the two cannot come to
 --- disagree about what adding two Jokers together means.
 Bind.combine = combine
+
+--- Grows a pair's number the way a scaling Joker grows its own: through SMODS.scale_card.
+---
+--- A pair keeps its numbers in its state, not in the card's ability, and used to add to them
+--- directly - which is a growth nothing else in the game could see. Vedal hooks the scaling
+--- call, so a pair that did not make it was out of Vedal's reach however it was merged.
+---
+--- `amount` is this growth's own size (a rate times however many it was earned for), so it is
+--- marked as an event's own amount: Vedal raises each event to its own power instead of
+--- remembering a rate from the first. `settle` is how the total is kept - rounded, tidied,
+--- Talisman-safe - for the pairs that did more than add; given the number before and the
+--- amount, it answers the number after.
+---
+--- The message is left to the pair, which words its own. Without a scaling call to go
+--- through (no run, or Steamodded without it) it is the plain add it always was.
+function Bind.grow(card, state, field, amount, settle)
+    local function add(ref, key, initial, modifier)
+        ref[key] = settle and settle(initial, modifier) or (initial + modifier)
+    end
+    if card and G.deck and type(SMODS.scale_card) == "function" then
+        local name = "pair_" .. field
+        SMODS.scale_card(card, {
+            ref_table = state, ref_value = field,
+            scalar_table = { [name] = amount }, scalar_value = name,
+            operation = add, no_message = true, celesta_amount = true,
+        })
+    else
+        add(state, field, state[field], amount)
+    end
+end
 
 --- Runs `fn` with the host centre's `hook` hidden, so vanilla's own dispatch
 --- skips it.
@@ -7516,7 +7547,7 @@ quad({
         -- Jaws's counter, fed by every card that scores...
         if context.individual and context.cardarea == G.play
             and context.other_card and not context.blueprint then
-            state.chips = state.chips + state.chip_gain
+            Bind.grow(card, state, "chips", state.chip_gain)
             return {
                 message = localize { type = "variable", key = "a_chips",
                                      vars = { state.chips } },
@@ -7542,7 +7573,7 @@ quad({
                 and trigger.ability.set == "Joker") then return end
             if trigger == card then return end
 
-            state.chips = state.chips + state.chip_gain
+            Bind.grow(card, state, "chips", state.chip_gain)
             return {
                 message = localize { type = "variable", key = "a_chips",
                                      vars = { state.chips } },
@@ -7673,7 +7704,7 @@ special("j_celesta_buffpup", "j_celesta_aicandii", {
             end
             if leaves == 0 then return end
 
-            state.chips = state.chips + state.per * leaves
+            Bind.grow(card, state, "chips", state.per * leaves)
             return {
                 message = localize { type = "variable", key = "a_chips",
                                      vars = { state.chips } },
@@ -7829,7 +7860,7 @@ quad({
             if steps <= 0 then return end
 
             state.pool = state.pool - steps * state.per_chips
-            state.e_mult = state.e_mult + state.e_mult_gain * steps
+            Bind.grow(card, state, "e_mult", state.e_mult_gain * steps)
             return {
                 message = localize { type = "variable", key = "celesta_powmult",
                                      vars = { state.e_mult } },
@@ -8195,7 +8226,7 @@ special("j_celesta_moopybuns", "j_celesta_berrycrepe", {
         -- context.buying_card is raised once for each thing bought - a Joker,
         -- a consumable, a voucher, a pack - which is what MoopyBuns counts.
         if context.buying_card and not context.blueprint then
-            state.mult = state.mult + state.mult_gain
+            Bind.grow(card, state, "mult", state.mult_gain)
             return {
                 message = localize { type = "variable", key = "a_mult",
                                      vars = { state.mult } },
@@ -9495,7 +9526,7 @@ special("j_celesta_dooby", "j_celesta_dokibird", {
     calculate = function(def, card, context, state)
         if context.ending_shop and not context.blueprint then
             if not shop_was_quiet() then return end
-            state.chips = state.chips + state.chip_gain
+            Bind.grow(card, state, "chips", state.chip_gain)
             return {
                 message = localize { type = "variable", key = "a_chips",
                                      vars = { state.chips } },
@@ -9613,7 +9644,7 @@ if celesta_gay_women_debuff_ref then
         card.celesta_gay_freed = round
 
         local state = Bind.special_state(holder, def)
-        state.chips = state.chips + state.chip_gain
+        Bind.grow(holder, state, "chips", state.chip_gain)
         card_eval_status_text(holder, "extra", nil, nil, nil,
             { message = localize { type = "variable", key = "a_chips",
                                    vars = { state.chips } },
@@ -9721,7 +9752,7 @@ special("j_celesta_amalee", "j_celesta_rinpenrose", {
             -- that earned it: a storm that ends between hands does not take
             -- back what it was worth.
             local per = snowing() and state.snow_gain or state.mult_gain
-            state.mult = state.mult + steps * per
+            Bind.grow(card, state, "mult", steps * per)
             return {
                 message = localize { type = "variable", key = "a_mult",
                                      vars = { state.mult } },
@@ -9746,7 +9777,7 @@ special("j_celesta_ironmouse", "j_celesta_dokibird", {
 
     calculate = function(def, card, context, state)
         if context.after and not context.blueprint then
-            state.chips = state.chips + state.chip_gain
+            Bind.grow(card, state, "chips", state.chip_gain)
             return {
                 message = localize { type = "variable", key = "a_chips",
                                      vars = { state.chips } },
@@ -9784,7 +9815,7 @@ special("j_celesta_ironmouse", "j_celesta_rinpenrose", {
             local steps = math.floor(state.bank / state.chips_per_step)
             if steps <= 0 then return end
             state.bank = state.bank - steps * state.chips_per_step
-            state.e_mult = state.e_mult + steps * state.e_mult_gain
+            Bind.grow(card, state, "e_mult", steps * state.e_mult_gain)
             return {
                 message = localize { type = "variable", key = "celesta_powmult",
                                      vars = { state.e_mult } },
@@ -9827,7 +9858,7 @@ special("j_celesta_dokibird", "j_celesta_rinpenrose", {
             local steps = math.floor(state.bank / state.mult_per_step)
             if steps <= 0 then return end
             state.bank = state.bank - steps * state.mult_per_step
-            state.chips = state.chips + steps * state.chip_gain
+            Bind.grow(card, state, "chips", steps * state.chip_gain)
             return {
                 message = localize { type = "variable", key = "a_chips",
                                      vars = { state.chips } },
@@ -10302,7 +10333,7 @@ special("j_celesta_froot", "j_celesta_momo", {
         -- the flush that earned the gain is the first hand to be paid by it.
         if context.before and not context.blueprint
             and contains_flush(context.scoring_name) then
-            state.x_mult = state.x_mult + state.x_mult_gain
+            Bind.grow(card, state, "x_mult", state.x_mult_gain)
             return {
                 message = localize { type = "variable", key = "a_xmult",
                                      vars = { state.x_mult } },
@@ -10594,7 +10625,7 @@ special("j_celesta_eros", "j_celesta_laynalazar", {
             if not (doomed.is_face and doomed:is_face()) then return end
 
             local stored = doomed.get_chip_bonus and doomed:get_chip_bonus() or 0
-            state.chips = state.chips + stored * state.rate
+            Bind.grow(card, state, "chips", stored * state.rate)
             return {
                 remove = true,
                 message = localize { type = "variable", key = "a_chips",
@@ -10618,10 +10649,7 @@ special("j_celesta_eros", "j_celesta_laynalazar", {
 -- the hand scores and those cards do not pay their Chips this hand. That is
 -- the trade, and it is vanilla Vampire's shape.
 --
--- Banked plainly rather than through SMODS.scale_card, which is how every
--- other pair in this file grows. Eros alone goes through scale_card and so is
--- reachable by Vedal; no merge in this file is, and making this the one
--- exception would be a change to Vedal rather than to Eros.
+-- Banked through Bind.grow, as every pair in this file grows, so Vedal reaches it.
 special("j_celesta_eros", "j_celesta_grimmi", {
     key = "eros_grimmi",
     config = { chips = 0, chip_gain = 36 },
@@ -10635,7 +10663,7 @@ special("j_celesta_eros", "j_celesta_grimmi", {
             local removed = CelestasMod.eros_strip
                 and CelestasMod.eros_strip(context.scoring_hand) or 0
             if removed <= 0 then return end
-            state.chips = state.chips + state.chip_gain * removed
+            Bind.grow(card, state, "chips", state.chip_gain * removed)
             return {
                 message = localize { type = "variable", key = "a_chips",
                                      vars = { state.chips } },
@@ -11041,7 +11069,7 @@ special("j_celesta_el_xox", "j_celesta_crelly", {
             local held = (G.GAME and G.GAME.dollars) or 0
             if CelestasMod.more_than(state.cost, held) then return end
             ease_dollars(-state.cost)
-            state.x_mult = state.x_mult + state.x_mult_gain
+            Bind.grow(card, state, "x_mult", state.x_mult_gain)
             return {
                 message = localize { type = "variable", key = "a_xmult",
                                      vars = { state.x_mult } },
@@ -11214,7 +11242,7 @@ special("j_celesta_el_xox", "j_celesta_obkatiekat", {
 
     calculate = function(def, card, context, state)
         if context.before and not context.blueprint then
-            state.e_chips = state.e_chips + state.e_chips_gain
+            Bind.grow(card, state, "e_chips", state.e_chips_gain)
         end
 
         if context.joker_main then
@@ -11634,7 +11662,7 @@ special("j_celesta_kumi", "j_celesta_crelly", {
             -- or the deck keeps a card that was told to leave.
             if SMODS.is_eternal and SMODS.is_eternal(target) then return end
 
-            state.x_mult = state.x_mult + state.x_mult_gain
+            Bind.grow(card, state, "x_mult", state.x_mult_gain)
             -- `remove` and `dollars` are both other_calculation_keys, so one
             -- table can destroy the card and pay out at once. The roll is per
             -- card destroyed, which is Kumi's own.
@@ -11737,7 +11765,7 @@ special("j_celesta_kairyucrocodile", "j_celesta_aicandii", {
             local round = G.GAME and G.GAME.current_round
             local used = (round and round.discards_used) or 0
             if used <= 0 then return end
-            state.mult = state.mult + state.mult_gain * used
+            Bind.grow(card, state, "mult", state.mult_gain * used)
             return {
                 message = localize { type = "variable", key = "a_mult",
                                      vars = { state.mult } },
@@ -11784,7 +11812,7 @@ special("j_celesta_aicandii", "j_celesta_rosedoodle", {
             local round = G.GAME and G.GAME.current_round
             local unused = (round and round.discards_left) or 0
             if unused <= 0 then return end
-            state.x_mult = state.x_mult + state.x_mult_gain * unused
+            Bind.grow(card, state, "x_mult", state.x_mult_gain * unused)
             return {
                 message = localize { type = "variable", key = "a_xmult",
                                      vars = { state.x_mult } },
@@ -11817,7 +11845,7 @@ special("j_celesta_aicandii", "j_celesta_ironmouse", {
             local round = G.GAME and G.GAME.current_round
             local unused = (round and round.discards_left) or 0
             if unused <= 0 then return end
-            state.e_mult = pow_after(state.e_mult, state.e_mult_gain * unused)
+            Bind.grow(card, state, "e_mult", state.e_mult_gain * unused, pow_after)
             return {
                 message = localize { type = "variable", key = "celesta_powmult",
                                      vars = { state.e_mult } },
@@ -12378,7 +12406,7 @@ special("j_celesta_kairyucrocodile", "j_celesta_ironmouse", {
 
     calculate = function(def, card, context, state)
         if context.pre_discard and not context.blueprint and not context.hook then
-            state.e_mult = pow_after(state.e_mult, state.e_mult_gain)
+            Bind.grow(card, state, "e_mult", state.e_mult_gain, pow_after)
             return {
                 message = localize { type = "variable", key = "celesta_powmult",
                                      vars = { state.e_mult } },
@@ -12609,7 +12637,7 @@ special("j_celesta_fefe", "j_celesta_ironmouse", {
                 -- One raise for the lot rather than one per card: the exponent
                 -- adds either way, and a single message reads as the hand it
                 -- was earned by.
-                state.e_mult = pow_after(state.e_mult, state.e_mult_gain * hearts)
+                Bind.grow(card, state, "e_mult", state.e_mult_gain * hearts, pow_after)
                 return {
                     message = localize { type = "variable", key = "celesta_powmult",
                                          vars = { state.e_mult } },
@@ -12640,7 +12668,7 @@ special("j_celesta_fefe", "j_celesta_silvervale", {
         if removed then
             local hearts = count_suit(removed, HEARTS)
             if hearts > 0 then
-                state.x_mult = state.x_mult + state.x_mult_gain * hearts
+                Bind.grow(card, state, "x_mult", state.x_mult_gain * hearts)
                 return {
                     message = localize { type = "variable", key = "a_xmult",
                                          vars = { state.x_mult } },
@@ -12704,7 +12732,7 @@ special("j_celesta_vexoria", "j_celesta_vexoria", {
                 -- Counted one at a time, because each one raises what the next
                 -- is worth.
                 paid = paid + state.dollars
-                state.dollars = state.dollars + state.dollars_gain
+                Bind.grow(card, state, "dollars", state.dollars_gain)
             end
         end
         if paid <= 0 then return end
@@ -13002,7 +13030,7 @@ special("j_celesta_neuro", "j_celesta_evil_neuro", {
                 and not (context.blueprint_card or card).getting_sliced)
             or (context.end_of_round and context.main_eval and not context.blueprint)
         if rises then
-            state.n = state.n + state.gain
+            Bind.grow(card, state, "n", state.gain)
             return {
                 message = localize { type = "variable", key = "a_xmult",
                                      vars = { state.n } },
@@ -13081,7 +13109,7 @@ special("j_celesta_demenishki", "j_celesta_auteru", {
         if context.before and not context.blueprint then
             for _, played in ipairs(context.scoring_hand or {}) do
                 if played.is_suit and played:is_suit(CelestasMod.LEAF_SUIT) then
-                    state.x_chips = state.x_chips + state.x_chip_gain
+                    Bind.grow(card, state, "x_chips", state.x_chip_gain)
                     return {
                         message = localize { type = "variable", key = "a_xchips",
                                              vars = { state.x_chips } },
@@ -13139,7 +13167,7 @@ special("j_celesta_cweamcat", "j_obelisk", {
         -- Chips is the first hand paid them.
         if context.before and not context.blueprint then
             if not CelestasMod.is_most_played(context.scoring_name) then
-                state.chips = state.chips + state.chip_gain
+                Bind.grow(card, state, "chips", state.chip_gain)
                 return {
                     message = localize { type = "variable", key = "a_chips",
                                          vars = { state.chips } },
@@ -13174,7 +13202,7 @@ special("j_celesta_cweamcat", "j_celesta_aquwa", {
             if CelestasMod.is_most_played(context.scoring_name) then
                 local gain = state.chip_gain
                     * (raining() and state.rain_scale or 1)
-                state.chips = state.chips + gain
+                Bind.grow(card, state, "chips", gain)
                 return {
                     message = localize { type = "variable", key = "a_chips",
                                          vars = { state.chips } },
@@ -13211,7 +13239,7 @@ special("j_celesta_demenishki", "j_celesta_fream", {
         if context.before and not context.blueprint then
             for _, played in ipairs(context.full_hand or {}) do
                 if SMODS.has_enhancement(played, "m_wild") then
-                    state.x_mult = state.x_mult + state.x_mult_gain
+                    Bind.grow(card, state, "x_mult", state.x_mult_gain)
                     return {
                         message = localize { type = "variable", key = "a_xmult",
                                              vars = { state.x_mult } },
@@ -13458,8 +13486,10 @@ special("j_celesta_kokonuts", "j_celesta_berrycrepe", {
             -- Rounded to three places, which is Monolith's reason: a tenth
             -- is not a tenth in binary, and four of them add up to
             -- 1.4000000000000001 - which is what the card would then print.
-            state.x_mult = math.floor(
-                (state.x_mult + state.x_mult_gain * added) * 1000 + 0.5) / 1000
+            Bind.grow(card, state, "x_mult", state.x_mult_gain * added,
+                      function(initial, modifier)
+                          return math.floor((initial + modifier) * 1000 + 0.5) / 1000
+                      end)
             return {
                 message = localize { type = "variable", key = "a_xmult",
                                      vars = { state.x_mult } },

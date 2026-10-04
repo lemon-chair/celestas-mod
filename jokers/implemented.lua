@@ -2804,6 +2804,14 @@ local function vedal_rewrite(card, args)
     if CelestasMod.card_is_joker(card, VEDAL_KEY, true) then return end
     if not next(CelestasMod.find_joker(VEDAL_KEY)) then return end
 
+    -- ...nor a special merge that has a Vedal for one of its halves. The pair stands in for
+    -- both, so the lookup above no longer finds the Vedal in it and cannot say so.
+    local Bind = CelestasMod.Bind
+    local pair = Bind and Bind.special_of and Bind.special_of(card)
+    for _, half in ipairs(pair and pair.halves or {}) do
+        if half == VEDAL_KEY then return end
+    end
+
     local scalar_table = args.scalar_table or args.ref_table
         or (card.ability and card.ability.extra)
     if type(scalar_table) ~= "table" then return end
@@ -2817,7 +2825,10 @@ local function vedal_rewrite(card, args)
 
     local seen = vedal_progress(card, tostring(args.scalar_value), current)
     seen.n = seen.n + 1
-    scalar_table[args.scalar_value] = seen.scalar * vedal_power(seen.n, seen.x)
+    -- A merge's growth is a different size each time (a rate times however many it was earned
+    -- for), so there is no rate to remember from the first: each event is raised as it comes.
+    local base = args.celesta_amount and current or seen.scalar
+    scalar_table[args.scalar_value] = base * vedal_power(seen.n, seen.x)
     seen.x = seen.x + CelestasMod.vedal_step()
 end
 
