@@ -2247,7 +2247,7 @@ return {
                 },
             },
         },
-        -- The stamps. Thirteen cards over eight drawings, one per line of
+        -- The stamps. Fifteen cards over ten drawings, one per line of
         -- the list they were asked from - which is why three of them are
         -- called Money Stamp and two Retrigger Stamp. The number each one
         -- shows is the one it rolled; in the Collection, where nothing has
@@ -2355,6 +2355,21 @@ return {
                     "Attach to a {C:attention}Joker{}",
                     "Retrigger it {C:attention}#1#{} #2#",
                     "every time it triggers",
+                },
+            },
+            c_celesta_stamp_lucky = {
+                name = "Lucky Stamp",
+                text = {
+                    "Attach to a {C:attention}Joker{}",
+                    "All {C:green}odds{} listed on it",
+                    "are {C:attention}guaranteed{}",
+                },
+            },
+            c_celesta_stamp_favor = {
+                name = "Favor Stamp",
+                text = {
+                    "Attach to a {C:attention}Joker{} it can go on",
+                    "Changes how that Joker works",
                 },
             },
         },
@@ -5391,6 +5406,296 @@ return {
             celesta_stamp_mark_retrigger = {
                 text = {
                     "{C:attention}Stamp:{} retrigger {C:attention}#1#{} #2#",
+                },
+            },
+            celesta_stamp_mark_lucky = {
+                text = {
+                    "{C:attention}Stamp:{} listed {C:green}odds{} are guaranteed",
+                },
+            },
+            celesta_stamp_favor_j_loyalty_card = {
+                text = {
+                    "{X:mult,C:white}X4{} Mult every hand played,",
+                    "not every {C:attention}6th{} hand",
+                },
+            },
+            celesta_stamp_favor_j_drivers_license = {
+                text = {
+                    "{X:mult,C:white}X3{} Mult every hand played,",
+                    "no enhanced cards needed",
+                },
+            },
+            celesta_stamp_favor_j_yorick = {
+                text = {
+                    "Gains {X:mult,C:white}X1{} Mult every",
+                    "{C:attention}5{} cards discarded",
+                },
+            },
+            celesta_stamp_favor_j_blue_joker = {
+                text = {
+                    "{C:chips}+2{} Chips for each card in",
+                    "your {C:attention}full deck{}",
+                },
+            },
+            celesta_stamp_favor_j_todo_list = {
+                text = {
+                    "Targets your {C:attention}most played{} hand",
+                },
+            },
+            celesta_stamp_favor_j_obelisk = {
+                text = {
+                    "Does not reset when",
+                    "the streak is broken",
+                },
+            },
+            celesta_stamp_favor_j_ride_the_bus = {
+                text = {
+                    "Does not reset when",
+                    "the streak is broken",
+                },
+            },
+            celesta_stamp_favor_j_madness = {
+                text = {
+                    "No longer destroys Jokers",
+                },
+            },
+            celesta_stamp_favor_j_stuntman = {
+                text = {
+                    "Removes the {C:red}-2{} hand size",
+                },
+            },
+            celesta_stamp_favor_j_merry_andy = {
+                text = {
+                    "Removes the {C:red}-1{} hand size",
+                },
+            },
+            celesta_stamp_favor_j_troubadour = {
+                text = {
+                    "Removes the {C:red}-1{} Hand each round",
+                },
+            },
+            celesta_stamp_favor_j_burglar = {
+                text = {
+                    "No longer loses your {C:red}discards{}",
+                },
+            },
+            celesta_stamp_favor_j_ice_cream = {
+                text = {
+                    "Stays at {C:chips}+100{} Chips",
+                },
+            },
+            celesta_stamp_favor_j_popcorn = {
+                text = {
+                    "Stays at {C:mult}+20{} Mult",
+                },
+            },
+            celesta_stamp_favor_j_turtle_bean = {
+                text = {
+                    "Stays at {C:attention}+5{} hand size",
+                },
+            },
+            celesta_stamp_favor_j_selzer = {
+                text = {
+                    "Lasts forever, not just the",
+                    "next {C:attention}10{} hands",
+                },
+            },
+            celesta_stamp_favor_j_gros_michel = {
+                text = {
+                    "Never goes extinct",
+                },
+            },
+            celesta_stamp_favor_j_cavendish = {
+                text = {
+                    "Never goes extinct",
+                },
+            },
+            celesta_stamp_favor_j_ramen = {
+                text = {
+                    "Is not worn away by discards",
+                },
+            },
+            celesta_stamp_favor_j_dna = {
+                text = {
+                    "Active on every hand,",
+                    "not just the first",
+                },
+            },
+            celesta_stamp_favor_j_sixth_sense = {
+                text = {
+                    "Active on every hand,",
+                    "not just the first",
+                },
+            },
+            celesta_stamp_favor_j_trading = {
+                text = {
+                    "Active on every discard,",
+                    "not just the first",
+                },
+            },
+            celesta_stamp_favor_j_burnt = {
+                text = {
+                    "Active on every discard,",
+                    "not just the first",
+                },
+            },
+            celesta_stamp_favor_j_acrobat = {
+                text = {
+                    "Active on every hand,",
+                    "not just the final one",
+                },
+            },
+            celesta_stamp_favor_j_dusk = {
+                text = {
+                    "Active on every hand,",
+                    "not just the final one",
+                },
+            },
+            celesta_stamp_favor_j_celesta_dokibird = {
+                text = {
+                    "Removes the {C:chips}100{} Chip cap",
+                },
+            },
+            celesta_stamp_favor_j_celesta_blessed_phoenix_egg = {
+                text = {
+                    "Hatches once it reaches {C:attention}7/7{},",
+                    "with no Soul needed",
+                },
+            },
+            celesta_stamp_favor_j_celesta_glassesjournal = {
+                text = {
+                    "{C:attention}Gold{} cards are dealt right",
+                    "after {C:attention}Steel{} cards",
+                },
+            },
+            celesta_stamp_favor_j_celesta_obkatiekat = {
+                text = {
+                    "No longer needs every",
+                    "Joker slot filled",
+                },
+            },
+            celesta_stamp_favor_j_celesta_slimegod = {
+                text = {
+                    "Both abilities are always active",
+                },
+            },
+            celesta_stamp_favor_j_celesta_pristinezero = {
+                text = {
+                    "No longer needs exactly {C:money}$0{}",
+                },
+            },
+            celesta_stamp_favor_j_celesta_matarakan = {
+                text = {
+                    "No longer destroys itself. Gives",
+                    "{C:money}X1.5{} money for each thing sold",
+                },
+            },
+            celesta_stamp_favor_j_celesta_unnamed = {
+                text = {
+                    "Cards dealt face down are",
+                    "flipped face up automatically",
+                },
+            },
+            celesta_stamp_favor_j_celesta_yokasiri = {
+                text = {
+                    "Activates after any Blind,",
+                    "not just Boss Blinds",
+                },
+            },
+            celesta_stamp_favor_j_celesta_eros = {
+                text = {
+                    "Gains {C:chips}+15{} Chips for each",
+                    "{C:attention}Bonus{} card played, not removed",
+                },
+            },
+            celesta_stamp_favor_j_celesta_laynalazar = {
+                text = {
+                    "Gains {C:mult}+4{} Mult for each",
+                    "{C:attention}Mult{} card played, not removed",
+                },
+            },
+            celesta_stamp_favor_j_celesta_megalodon = {
+                text = {
+                    "Gained Mult is divided by {C:attention}5{},",
+                    "but is {C:attention}permanent{}",
+                },
+            },
+            celesta_stamp_favor_j_celesta_urschleim = {
+                text = {
+                    "No longer destroys Jokers",
+                },
+            },
+            celesta_stamp_favor_j_celesta_fireonirei = {
+                text = {
+                    "Removes the {C:red}-1{} hand size",
+                },
+            },
+            celesta_stamp_favor_j_celesta_hidden_tech = {
+                text = {
+                    "{C:green}0 in 20{} chance to be destroyed",
+                },
+            },
+            celesta_stamp_favor_j_celesta_adfree = {
+                text = {
+                    "Holds the Boss on every hand,",
+                    "not just the first",
+                },
+            },
+            celesta_stamp_favor_j_celesta_yuy_ix = {
+                text = {
+                    "Active on every hand,",
+                    "not just the final one",
+                },
+            },
+            celesta_stamp_favor_j_celesta_hannahhyrule = {
+                text = {
+                    "Active on every hand,",
+                    "not just the final one",
+                },
+            },
+            celesta_stamp_favor_j_celesta_camila = {
+                text = {
+                    "Active on every hand,",
+                    "not just the first",
+                },
+            },
+            celesta_stamp_favor_j_celesta_isaa = {
+                text = {
+                    "Active on every hand,",
+                    "not just the first",
+                },
+            },
+            celesta_stamp_favor_j_celesta_pandabearlily = {
+                text = {
+                    "Active on every hand,",
+                    "not just the first",
+                },
+            },
+            celesta_stamp_favor_j_celesta_monolith = {
+                text = {
+                    "Does not reset when",
+                    "the streak is broken",
+                },
+            },
+            celesta_stamp_favor_j_celesta_demenishki = {
+                text = {
+                    "Does not reset when",
+                    "the streak is broken",
+                },
+            },
+            celesta_stamp_favor_j_celesta_bao = {
+                text = {
+                    "Always counts as a {C:blue}Downpour{}",
+                },
+            },
+            celesta_stamp_favor_j_celesta_monikacinnyroll = {
+                text = {
+                    "Always counts as a {C:blue}Downpour{}",
+                },
+            },
+            celesta_stamp_favor_j_celesta_rainhoe = {
+                text = {
+                    "Always counts as a {C:blue}Downpour{}",
                 },
             },
         },

@@ -2368,7 +2368,9 @@ SMODS.Joker {
                     colour = G.C.MULT,
                     card = card,
                 }
-            elseif extra.x_mult > 1 then
+            elseif extra.x_mult > 1
+                -- A Favor Stamp: a hand that is not the most played one takes nothing away.
+                and not (CelestasMod.favored and CelestasMod.favored(card)) then
                 extra.x_mult = 1
                 return { message = localize("k_reset"), card = card }
             end

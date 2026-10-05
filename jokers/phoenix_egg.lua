@@ -24,6 +24,12 @@ local SOUL_KEY = "c_soul"
 --- Rounds it has to sit through.
 local ROUNDS = 7
 
+--- True when the run has banned the Joker the Spectral turns into.
+local function egg_banned()
+    local banned = G.GAME and G.GAME.banned_keys
+    return (banned and banned[EGG_JOKER_KEY]) and true or false
+end
+
 --------------------------------------------------------------------------------
 -- The Spectral
 --------------------------------------------------------------------------------
@@ -50,6 +56,15 @@ SMODS.Consumable {
     soul_set = "Spectral",
     soul_rate = 0.003,
 
+    -- Pulling it makes the Joker, so it only turns up in a run where that Joker is allowed.
+    -- The Soul-type roll asks nothing but this: a ban on the Joker does not stop it, and the
+    -- Pull then asked for a banned Joker and was given a different one - Nekrolina, on the
+    -- Purple challenge. The colour challenges ban every Joker they do not list, so the egg
+    -- is left to the Orange one that lists it.
+    in_pool = function(self, args)
+        return not egg_banned()
+    end,
+
     loc_vars = function(self, info_queue, card)
         return { vars = { ROUNDS } }
     end,
@@ -63,6 +78,7 @@ SMODS.Consumable {
     -- same breath cannot both claim the last slot.
     can_use = function(self, card)
         if not (G.jokers and G.jokers.config) then return false end
+        if egg_banned() then return false end
         return #G.jokers.cards + (G.GAME.joker_buffer or 0)
             < G.jokers.config.card_limit
     end,
@@ -134,6 +150,12 @@ SMODS.Joker {
             if extra.rounds >= extra.needed then return end
 
             extra.rounds = extra.rounds + 1
+
+            -- A Favor Stamp hatches it the round it is ready, with no Soul to spend.
+            if extra.rounds >= extra.needed and CelestasMod.favored
+                and CelestasMod.favored(card) and CelestasMod.egg_hatch then
+                CelestasMod.egg_hatch(card)
+            end
             return {
                 message = extra.rounds .. "/" .. extra.needed,
                 colour = G.C.FILTER,
@@ -248,6 +270,18 @@ local function hatch(egg)
             return true
         end,
     })
+end
+
+--- Hatches an egg that is the card itself. Not one that is merged into another Joker: that
+--- card is somebody else's, and turning it into Yharon would take the host with it.
+---
+--- Exported for the Favor Stamp, which hatches a ready egg without a Soul.
+function CelestasMod.egg_hatch(card)
+    local Bind = CelestasMod.Bind
+    if Bind and Bind.lent and Bind.lent[card] then return end
+    local center = card and card.config and card.config.center
+    if not (center and center.key == EGG_JOKER_KEY) then return end
+    hatch(card)
 end
 
 -- Spending a Soul while an egg is ready hatches it INSTEAD of making a

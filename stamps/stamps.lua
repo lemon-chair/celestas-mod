@@ -47,7 +47,7 @@ Stamps.SET = "celesta_Stamp"
 -- the two Retrigger Stamps - so this is a list of ART, not of stamps.
 
 local ART = { "mult", "chips", "x_mult", "x_chips",
-              "e_mult", "e_chips", "money", "retrigger" }
+              "e_mult", "e_chips", "money", "retrigger", "lucky", "favor" }
 
 -- Written out one by one rather than looped over ART, which would be shorter
 -- and would hide all eight from tools/check_atlases.py: that reads the calls
@@ -62,6 +62,8 @@ SMODS.Atlas { key = "stamp_e_mult",    path = "stamp_e_mult.png",    px = 71, py
 SMODS.Atlas { key = "stamp_e_chips",   path = "stamp_e_chips.png",   px = 71, py = 95 }
 SMODS.Atlas { key = "stamp_money",     path = "stamp_money.png",     px = 71, py = 95 }
 SMODS.Atlas { key = "stamp_retrigger", path = "stamp_retrigger.png", px = 71, py = 95 }
+SMODS.Atlas { key = "stamp_lucky",     path = "stamp_lucky.png",     px = 71, py = 95 }
+SMODS.Atlas { key = "stamp_favor",     path = "stamp_favor.png",     px = 71, py = 95 }
 
 -- The pack art is 57x93, which is neither a card's shape nor a card's size, so
 -- it is CENTRED in a card-sized cell rather than given one of its own - the
@@ -107,6 +109,12 @@ Stamps.KINDS = {
     { key = "x_chips",  art = "x_chips",  tier = 1, effect = "x_chips", min = 11, max = 15, div = 10 },
 
     -- ---------------- uncommon ----------------
+    -- Favor is the Joker-specific one: it changes how a listed Joker works, so it pays nothing
+    -- per trigger (`passive`), can only be put on a Joker it has an effect for (`needs`), and only
+    -- turns up in a pack while there is one to put it on. What it does to each is in
+    -- stamps/favor.lua.
+    { key = "favor", art = "favor", tier = 2, effect = "favor", min = 1, max = 1,
+      passive = true, needs = "favor" },
     { key = "x_mult_uncommon",  art = "x_mult",    tier = 2, effect = "x_mult",    min = 16, max = 20, div = 10 },
     { key = "x_chips_uncommon", art = "x_chips",   tier = 2, effect = "x_chips",   min = 16, max = 20, div = 10 },
     { key = "money_uncommon",   art = "money",     tier = 2, effect = "dollars",   min = 3,  max = 4 },
@@ -118,6 +126,9 @@ Stamps.KINDS = {
     -- way Ironmouse does rather than carrying a fallback: the enhancements
     -- that DO carry one are playing cards, which a player can be holding
     -- before they ever find out.
+    -- Lucky is a rule about chance rather than a payout: the odds listed on the Joker it is on
+    -- are guaranteed (asked in SMODS.get_probability_vars, below).
+    { key = "lucky", art = "lucky", tier = 3, effect = "lucky", min = 1, max = 1, passive = true },
     { key = "e_mult",         art = "e_mult",    tier = 3, effect = "e_mult",    min = 11, max = 15, div = 10 },
     { key = "e_chips",        art = "e_chips",   tier = 3, effect = "e_chips",   min = 11, max = 15, div = 10 },
     { key = "money_rare",     art = "money",     tier = 3, effect = "dollars",   min = 5,  max = 6 },
@@ -176,8 +187,25 @@ end
 --- A kind for the next stamp: a tier, then one of the cards in it. `tier` names one outright,
 --- for a stamp that is promised to be of it.
 function Stamps.roll_kind(tier)
-    local pool = Stamps.BY_TIER[tier or roll_tier()]
+    local tier_pool = Stamps.BY_TIER[tier or roll_tier()]
+
+    -- A kind that `needs` something is left out while the run has nothing for it: a Favor Stamp
+    -- only turns up when there is a Joker to put it on.
+    local pool = {}
+    for _, kind in ipairs(tier_pool) do
+        if not kind.needs or Stamps.can_appear(kind) then pool[#pool + 1] = kind end
+    end
+    if #pool == 0 then pool = tier_pool end
     return pseudorandom_element(pool, pseudoseed(KIND_SEED))
+end
+
+--- Whether a kind that needs something may turn up now.
+function Stamps.can_appear(kind)
+    if kind.needs == "favor" then
+        local Favor = CelestasMod.Favor
+        return (Favor and Favor.has_target()) and true or false
+    end
+    return true
 end
 
 --------------------------------------------------------------------------------
@@ -347,12 +375,37 @@ function Stamps.of(card)
         or nil
 end
 
+--- The stamp a card is wearing, whichever half of it is running.
+---
+--- Bind lends a card the absorbed half's ability for the length of that half's own calculate,
+--- and the stamp is on the card's own, which is out of reach for that long. The lend is looked
+--- through, so a Joker asked about itself from inside a merge still knows what it wears.
+function Stamps.worn(card)
+    if type(card) ~= "table" then return nil end
+    local Bind = CelestasMod.Bind
+    local lent = Bind and Bind.lent and Bind.lent[card]
+    local ability = (lent and lent.ability) or card.ability
+    return ability and ability.celesta_stamp or nil
+end
+
+--- True when `card` wears a Stamp of this effect.
+function Stamps.wears(card, effect)
+    local kind = Stamps.kind(Stamps.worn(card))
+    return (kind and kind.effect == effect) and true or false
+end
+
+--- Whether a Joker is wearing a Favor Stamp: what the Jokers it can go on ask about themselves.
+function CelestasMod.favored(card) return Stamps.wears(card, "favor") end
+
+--- ...and a Lucky Stamp.
+function CelestasMod.lucky(card) return Stamps.wears(card, "lucky") end
+
 --- The one highlighted Joker a stamp may be used on, or nil.
 ---
 --- Exactly one, so there is never a question of which was meant - the same
 --- rule the Blank Joker's Tarots go by. A Joker already stamped is not one:
 --- each Joker can only have one.
-function Stamps.target()
+function Stamps.target(kind_key)
     local picked = G.jokers and G.jokers.highlighted
     if not (picked and #picked == 1) then return nil end
     local joker = picked[1]
@@ -360,6 +413,13 @@ function Stamps.target()
         return nil
     end
     if joker.ability.celesta_stamp then return nil end
+
+    -- A Favor Stamp goes only on a Joker it has an effect for.
+    local kind = kind_key and Stamps.BY_KEY[kind_key]
+    if kind and kind.needs == "favor" then
+        local Favor = CelestasMod.Favor
+        if not (Favor and Favor.accepts(joker)) then return nil end
+    end
     return joker
 end
 
@@ -427,9 +487,24 @@ for _, kind in ipairs(Stamps.KINDS) do
             local mine = Stamps.BY_KEY[self.celesta_stamp_kind]
             local stamp = card and card.ability
                 and card.ability.celesta_stamp_roll
+            local main_end = downside_rows(stamp, mine)
+
+            -- A Favor Stamp lists the Jokers it can go on: the ones in the run, with what it does
+            -- to each, or all of them where there is no run to ask (the Collection).
+            local Favor = CelestasMod.Favor
+            local listing = mine.effect == "favor" and Favor and Favor.listing_rows()
+            if listing and #listing > 0 then
+                if main_end then
+                    for i, row in ipairs(listing) do
+                        table.insert(main_end[1].nodes, i, row)
+                    end
+                else
+                    main_end = { { n = G.UIT.C, config = { align = "m" }, nodes = listing } }
+                end
+            end
             return {
                 vars = stamp_vars(stamp, mine),
-                main_end = downside_rows(stamp, mine),
+                main_end = main_end,
             }
         end,
 
@@ -438,7 +513,7 @@ for _, kind in ipairs(Stamps.KINDS) do
         -- `return false` for a key it does not know, which would grey the
         -- button out forever.
         can_use = function(self, card)
-            return Stamps.target() ~= nil
+            return Stamps.target(self.celesta_stamp_kind) ~= nil
         end,
 
         use = function(self, card, area, copier)
@@ -449,12 +524,19 @@ end
 
 --- Put the stamp on the chosen Joker and pay for it.
 function Stamps.press(card)
-    local joker = Stamps.target()
     local stamp = card and card.ability and card.ability.celesta_stamp_roll
+    local joker = Stamps.target(stamp and stamp.kind)
     if not (joker and stamp) then return end
 
     joker.ability.celesta_stamp = stamp
     if G.jokers then G.jokers:unhighlight_all() end
+
+    -- A Favor Stamp changes things the moment it lands: a hand size given back, a counter
+    -- shortened, an egg that is ready hatched.
+    local kind = Stamps.kind(stamp)
+    if kind and kind.effect == "favor" and CelestasMod.Favor then
+        CelestasMod.Favor.press(joker)
+    end
 
     G.E_MANAGER:add_event(Event {
         trigger = "after",
@@ -630,7 +712,7 @@ function Stamps.payout(card, context)
     end
 
     local kind = Stamps.kind(Stamps.of(card))
-    if not kind or kind.effect == "retrigger" then return nil end
+    if not kind or kind.effect == "retrigger" or kind.passive then return nil end
 
     -- What the Joker was actually doing, which is what decides whether this
     -- was a trigger worth paying for.
@@ -759,6 +841,12 @@ local function mark_rows(card)
     local stamp = Stamps.of(card)
     local kind = Stamps.kind(stamp)
     if not kind then return nil end
+
+    -- A Favor Stamp says what it does to THIS Joker, which is the one line each Joker has.
+    if kind.effect == "favor" then
+        local Favor = CelestasMod.Favor
+        return Favor and Favor.mark_rows(card, localized_rows) or nil
+    end
     return localized_rows("celesta_stamp_mark_" .. kind.effect,
                           stamp_vars(stamp, kind), false)
 end

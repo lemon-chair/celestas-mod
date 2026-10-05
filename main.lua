@@ -141,6 +141,10 @@ assert(SMODS.load_file('blinds/pillar.lua'))()
 assert(SMODS.load_file('editions/frozen.lua'))()
 -- After enhancements: it classifies their keys into cracked/chipped.
 assert(SMODS.load_file('wear/tattered.lua'))()
+-- The Favor Stamp's wrap of Card:calculate_joker, for the base game's Jokers. BEFORE bind.lua:
+-- Bind runs the absorbed half of a merge by calling the function beneath its own wrapper, and
+-- the half's Favor handler has to be down there to be found.
+assert(SMODS.load_file('stamps/favor.lua'))()
 -- After the jokers exist, so a merged joker can run any of their centres.
 assert(SMODS.load_file('merge/bind.lua'))()
 -- After bind.lua: it lists the pairs that file registers.
@@ -181,6 +185,8 @@ assert(SMODS.load_file('consumables/targets.lua'))()
 
 assert(SMODS.load_file('stamps/downsides.lua'))()
 assert(SMODS.load_file('stamps/stamps.lua'))()
+-- The Lucky Stamp's guarantee, which is a wrap on the same funnel Dice and Ellie Minibot use.
+assert(SMODS.load_file('stamps/lucky.lua'))()
 
 --------------------------------------------------------------------------------
 -- Jokers: auto-loaded from jokers/.

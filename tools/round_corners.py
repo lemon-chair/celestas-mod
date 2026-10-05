@@ -64,7 +64,7 @@ SHARED = {"jokers", "consumables", "decks", "sleeves", "icon", "seals", "driftwo
           # is 57x93 and not a card at all.
           "stamp_mult", "stamp_chips", "stamp_x_mult", "stamp_x_chips",
           "stamp_e_mult", "stamp_e_chips", "stamp_money",
-          "stamp_retrigger", "stamp_pack",
+          "stamp_retrigger", "stamp_lucky", "stamp_favor", "stamp_pack",
 }
 CARD_W, CARD_H = 71, 95
 

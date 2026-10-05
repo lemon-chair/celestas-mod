@@ -57,6 +57,8 @@ STAMPS = {
     "stamp_e_chips": "chips_stamp_exponent",
     "stamp_money": "money_stamp",
     "stamp_retrigger": "retrigger_stamp",
+    "stamp_lucky": "lucky_stamp",
+    "stamp_favor": "favor_stamp",
 }
 
 PACK = "stamp_pack"

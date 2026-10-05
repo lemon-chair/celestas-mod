@@ -1254,7 +1254,7 @@ local POOL_JOKERS = {
         "j_celesta_nana_ruru", "j_celesta_vienna", "j_celesta_cosmic", "j_celesta_ariesakana",
         "j_celesta_yokasiri", "j_celesta_geega", "j_celesta_fufu", "j_celesta_isaa",
         "j_celesta_kourra", "j_celesta_occi", "j_celesta_silvervale", "j_celesta_froot",
-        "j_celesta_mogu", "j_celesta_ekkomori",
+        "j_celesta_mogu", "j_celesta_ekkomori", "j_celesta_hime",
     },
     purple = {
         "j_wrathful_joker", "j_8_ball", "j_sixth_sense", "j_fortune_teller", "j_arrowhead",
@@ -1267,7 +1267,7 @@ local POOL_JOKERS = {
         "j_celesta_itsdeadlyboop", "j_celesta_nekrolina", "j_celesta_moopybuns",
         "j_celesta_squchan", "j_celesta_astrum_aureus", "j_celesta_froot", "j_celesta_kiri",
         "j_celesta_elara", "j_celesta_fleshy", "j_celesta_nicoviras", "j_celesta_snuffy",
-        "j_celesta_hime", "j_celesta_kson", "j_celesta_bubi",
+        "j_celesta_kson", "j_celesta_bubi",
     },
     pink = {
         "j_four_fingers", "j_ramen", "j_trading", "j_celesta_froggyloch",
