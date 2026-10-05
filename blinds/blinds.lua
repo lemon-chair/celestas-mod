@@ -42,6 +42,53 @@ local function event_id()
                           tostring(round.discards_left) }, "/")
 end
 
+--- Says whether the hand being played has triggered the Boss Blind's ability.
+---
+--- Matador pays when `G.GAME.blind.triggered` is set as it is asked (card.lua:2737 and :3720),
+--- and every vanilla Blind sets it itself, in the hook where its ability bites (blind.lua:484-563:
+--- The Flint in modify_hand, The Tooth in press_play, a debuffed scoring card in the scoring
+--- pass). None of this mod's did, so Matador paid on none of them.
+---
+--- Written on the Blind in play, which is not the object a Blind's own hooks are handed: those
+--- get the definition, and `triggered` is read off G.GAME.blind. A hand that does not trigger it
+--- writes false rather than leaving the last hand's answer, since nothing else ever clears it.
+function CelestasMod.blind_triggered(did)
+    local blind = G.GAME and G.GAME.blind
+    if blind then blind.triggered = did and true or false end
+end
+
+--- A modify_hand that says whether this hand triggered the Blind: `answer` is true, or a function
+--- that is asked.
+---
+--- modify_hand and not press_play, because of the order a hand is played in: press_play as it is
+--- played, then Blind:debuff_hand, which sets `triggered = false` for every Blind with a debuff
+--- table (blind.lua:522) - every Steamodded Blind has one - and only then modify_hand and the
+--- Jokers. A flag set in press_play is gone before Matador is asked. It is Flint's own hook for
+--- the same reason (blind.lua:537).
+---
+--- The hand itself is left as it is: mult and chips go straight back, and `false` says it was not
+--- modded, so nothing is announced.
+local function says_triggered(answer)
+    return function(self, cards, poker_hands, text, mult, hand_chips)
+        local did = answer
+        if type(answer) == "function" then did = answer() end
+        CelestasMod.blind_triggered(did)
+        return mult, hand_chips, false
+    end
+end
+
+--- What press_play worked out about this hand, for the Blinds that only know then.
+local function pending_trigger()
+    local blind = G.GAME and G.GAME.blind
+    return blind and blind.celesta_pending or false
+end
+
+--- Notes, in press_play, whether this hand will have triggered the Blind.
+local function note_trigger(did)
+    local blind = G.GAME and G.GAME.blind
+    if blind then blind.celesta_pending = did and true or false end
+end
+
 --- True when this card or joker is stopped from triggering for this event.
 ---
 --- The roll goes through SMODS.pseudorandom_probability rather than a plain
@@ -70,6 +117,9 @@ local function clover_suppresses(obj)
     -- switches everything off is far worse than one that misses a card.
     local suppressed = ok and not triggered or false
     decisions[obj] = { id = id, suppressed = suppressed }
+    -- Stopping a trigger is its ability going off. This is asked while the hand scores, which is
+    -- after the flag has been cleared for it.
+    if suppressed then CelestasMod.blind_triggered(true) end
     return suppressed
 end
 
@@ -218,6 +268,9 @@ SMODS.Blind {
         -- disabled, so there is nothing to check here.
         ease_dollars(-CelestasMod.GREED_COST)
     end,
+
+    -- Every hand costs.
+    modify_hand = says_triggered(true),
 }
 
 --------------------------------------------------------------------------------
@@ -284,6 +337,8 @@ SMODS.Blind {
 
     press_play = function(self)
         local cards = played_cards()
+        -- A single card has nothing to shuffle with, so it did not go off.
+        note_trigger(#cards >= 2)
         if #cards < 2 then return end
 
         -- What the hand is carrying, in hand order.
@@ -306,6 +361,8 @@ SMODS.Blind {
             end)
         end
     end,
+
+    modify_hand = says_triggered(pending_trigger),
 }
 
 SMODS.Blind {
@@ -325,14 +382,20 @@ SMODS.Blind {
     press_play = function(self)
         local base = G.P_CENTERS and G.P_CENTERS.c_base
         if not base then return end
+        -- It went off when it took an enhancement off something.
+        local stripped = false
         for _, card in ipairs(played_cards()) do
             if card.config and card.config.center ~= base then
+                stripped = true
                 CelestasMod.unjudged(card, function()
                     card:set_ability(base, nil, true)
                 end)
             end
         end
+        note_trigger(stripped)
     end,
+
+    modify_hand = says_triggered(pending_trigger),
 }
 
 --------------------------------------------------------------------------------
@@ -402,6 +465,10 @@ SMODS.Blind {
     loc_vars = function(self) return { vars = {} } end,
     collection_loc_vars = function(self) return { vars = {} } end,
 
+    -- Halving comes last, after Matador has been asked, so it is said as the hand is set up:
+    -- every hand is halved, and every hand triggers it.
+    modify_hand = says_triggered(true),
+
     calculate = function(self, blind, context)
         if blind.disabled then return end
         if context.final_scoring_step then
@@ -423,6 +490,8 @@ SMODS.Blind {
 
     loc_vars = function(self) return { vars = {} } end,
     collection_loc_vars = function(self) return { vars = {} } end,
+
+    modify_hand = says_triggered(true),
 
     calculate = function(self, blind, context)
         if blind.disabled then return end
@@ -527,6 +596,9 @@ SMODS.Blind {
         brick_take()
     end,
 
+    -- A card taken from every hand.
+    modify_hand = says_triggered(true),
+
     defeat = function(self) brick_release() end,
     disable = function(self) brick_release() end,
 }
@@ -624,6 +696,14 @@ SMODS.Blind {
     set_blind = function(self) wyrm_sync() end,
     defeat = function(self) wyrm_sync() end,
     disable = function(self) wyrm_sync() end,
+
+    -- It is in play for a hand when there is a consumable it is holding shut.
+    modify_hand = says_triggered(function()
+        for _, card in ipairs((G.consumeables and G.consumeables.cards) or {}) do
+            if card[WYRM_MARK] then return true end
+        end
+        return false
+    end),
 }
 
 --------------------------------------------------------------------------------
@@ -701,6 +781,14 @@ SMODS.Blind {
     set_blind = function(self) horn_sync() end,
     defeat = function(self) horn_sync() end,
     disable = function(self) horn_sync() end,
+
+    -- It is in play for a hand when there is a Joker it is holding in place.
+    modify_hand = says_triggered(function()
+        for _, card in ipairs((G.jokers and G.jokers.cards) or {}) do
+            if card[HORN_MARK] then return true end
+        end
+        return false
+    end),
 }
 
 --------------------------------------------------------------------------------
@@ -823,6 +911,11 @@ SMODS.Blind {
         -- and is left alone.
         return flower_at_an_end(card)
     end,
+
+    -- It is in play for a hand when there is a Joker at an end to wither.
+    modify_hand = says_triggered(function()
+        return #((G.jokers and G.jokers.cards) or {}) > 0
+    end),
 }
 
 --------------------------------------------------------------------------------
