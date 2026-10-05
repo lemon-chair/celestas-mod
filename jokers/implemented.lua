@@ -441,8 +441,14 @@ SMODS.Joker {
         -- Mult this hand. context.scoring_hand is only populated here.
         if context.before and not context.blueprint then
             local removed = {}
+            -- A Favor Stamp: the Mult Cards are counted, and left as they are.
+            local keeps = CelestasMod.favored and CelestasMod.favored(card)
             for _, played in ipairs(context.scoring_hand) do
-                if SMODS.has_enhancement(played, "m_mult")
+                if keeps then
+                    if SMODS.has_enhancement(played, "m_mult") and not played.debuff then
+                        removed[#removed + 1] = played
+                    end
+                elseif SMODS.has_enhancement(played, "m_mult")
                     and not played.debuff
                     and not played.celesta_stripped then
                     removed[#removed + 1] = played
@@ -591,8 +597,10 @@ SMODS.Joker {
 
     calculate = function(self, card, context)
         -- hands_left == 0 is how vanilla Dusk detects the final hand.
+        -- A Favor Stamp makes every hand the final one.
         if context.individual and context.cardarea == G.play
-            and G.GAME.current_round.hands_left == 0 then
+            and (G.GAME.current_round.hands_left == 0
+                 or (CelestasMod.favored and CelestasMod.favored(card))) then
             return {
                 x_mult = card.ability.extra.x_mult,
                 colour = G.C.RED,
@@ -642,6 +650,10 @@ SMODS.Joker {
                 message_key = "a_mult",
                 message_colour = G.C.MULT,
                 operation = function(ref_table, ref_value, initial, scaling)
+                    -- A Favor Stamp: a fifth of the gain, and it is kept for good.
+                    if CelestasMod.favored and CelestasMod.favored(card) then
+                        scaling = scaling / 5
+                    end
                     ref_table[ref_value] = initial + scaling * #context.full_hand
                 end
             })
@@ -653,7 +665,8 @@ SMODS.Joker {
 
         -- context.main_eval is the once-per-round joker pass; without it this
         -- also fires during the per-card and repetition passes.
-        if context.end_of_round and context.main_eval and not context.blueprint then
+        if context.end_of_round and context.main_eval and not context.blueprint
+            and not (CelestasMod.favored and CelestasMod.favored(card)) then
             if CelestasMod.more_than(card.ability.extra.mult, 0) then
                 card.ability.extra.mult = 0
                 return {
@@ -1075,7 +1088,9 @@ SMODS.Joker {
 
     calculate = function(self, card, context)
         if context.joker_main then
-            if CelestasMod.Arena.is_active("downpour") then
+            -- A Favor Stamp keeps the Downpour on for it all the time.
+            if CelestasMod.Arena.is_active("downpour")
+                or (CelestasMod.favored and CelestasMod.favored(card)) then
                 return { x_mult = card.ability.extra.x_mult }
             end
             return { mult = card.ability.extra.mult }
@@ -1283,7 +1298,9 @@ SMODS.Joker {
                                          vars = { card.ability.extra.x_mult } },
                     colour = G.C.MULT, card = card,
                 }
-            elseif CelestasMod.more_than(card.ability.extra.x_mult, 1) then
+            elseif CelestasMod.more_than(card.ability.extra.x_mult, 1)
+                -- A Favor Stamp: a streak that is broken is kept.
+                and not (CelestasMod.favored and CelestasMod.favored(card)) then
                 card.ability.extra.x_mult = 1
                 return { message = localize("k_reset"), colour = G.C.RED, card = card }
             end
@@ -1686,8 +1703,10 @@ SMODS.Joker {
     calculate = function(self, card, context)
         -- hands_played == 0 during context.before means this IS the first hand
         -- of the round; the counter only increments afterwards.
+        -- A Favor Stamp makes every hand the first one.
         if context.before and not context.blueprint
-            and G.GAME.current_round.hands_played == 0
+            and (G.GAME.current_round.hands_played == 0
+                 or (CelestasMod.favored and CelestasMod.favored(card)))
             and #context.full_hand == 1 then
             local suit = context.full_hand[1].base.suit
             if not suit then return end
@@ -2481,7 +2500,9 @@ SMODS.Joker {
 
     calculate = function(self, card, context)
         -- hands_left == 0 is how vanilla Dusk detects the final hand.
-        if context.joker_main and G.GAME.current_round.hands_left == 0 then
+        -- A Favor Stamp makes every hand the final one.
+        if context.joker_main and (G.GAME.current_round.hands_left == 0
+                or (CelestasMod.favored and CelestasMod.favored(card))) then
             return {
                 x_mult = card.ability.extra.x,
                 x_chips = card.ability.extra.x,
@@ -3765,8 +3786,10 @@ SMODS.Joker {
         -- Arena.active() already expires an effect that outlived its round,
         -- so this cannot keep retriggering into a later round if a save was
         -- reloaded mid-Downpour.
+        -- A Favor Stamp keeps the Downpour on for it all the time.
         if context.repetition and context.cardarea == G.play
-            and CelestasMod.Arena.is_active("downpour") then
+            and (CelestasMod.Arena.is_active("downpour")
+                 or (CelestasMod.favored and CelestasMod.favored(card))) then
             return {
                 message = localize("k_again_ex"),
                 repetitions = card.ability.extra.repetitions,
@@ -3954,8 +3977,10 @@ SMODS.Joker {
         -- does: two passes take and two store, and the destroy step still
         -- removes the card once - it collects a card some Joker flagged, not
         -- one per flag - so it leaves once and comes back twice.
+        -- A Favor Stamp makes every hand the first one.
         if context.destroying_card and context.cardarea == G.play
-            and G.GAME.current_round.hands_played == 0
+            and (G.GAME.current_round.hands_played == 0
+                 or (CelestasMod.favored and CelestasMod.favored(card)))
             and context.full_hand
             and (any_count
                  or (#context.full_hand == 1
@@ -4942,7 +4967,18 @@ SMODS.Joker {
         -- the enhancement is stripped before the hand scores and those cards
         -- do not pay their Chips this hand. scoring_hand is only populated here.
         if context.before and not context.blueprint then
-            local removed = CelestasMod.eros_strip(context.scoring_hand)
+            local removed
+            if CelestasMod.favored and CelestasMod.favored(card) then
+                -- A Favor Stamp: the Bonus Cards are counted and left as they are.
+                removed = 0
+                for _, played in ipairs(context.scoring_hand or {}) do
+                    if SMODS.has_enhancement(played, "m_bonus") and not played.debuff then
+                        removed = removed + 1
+                    end
+                end
+            else
+                removed = CelestasMod.eros_strip(context.scoring_hand)
+            end
 
             if removed > 0 then
                 SMODS.scale_card(card, {
@@ -6332,7 +6368,11 @@ SMODS.Joker {
         -- main_eval is the once-per-round Joker pass.
         if context.end_of_round and context.main_eval and not context.blueprint then
             local blind = G.GAME and G.GAME.blind
-            if not (blind and blind.boss) then return end
+            -- A Favor Stamp makes it every Blind rather than every Boss Blind.
+            if not (blind and (blind.boss
+                    or (CelestasMod.favored and CelestasMod.favored(card)))) then
+                return
+            end
 
             local row = G.jokers and G.jokers.cards
             if not row then return end
@@ -6693,8 +6733,22 @@ SMODS.Joker {
 -- arrived with. It is cleared when the card lands anywhere else, which is
 -- every route out of the play area.
 
+-- A Favor Stamp on Unnamed turns every card dealt face down face up as it arrives, which is
+-- what `stay_flipped` asks emplace NOT to do - so it is taken back at the door. The card is
+-- then never marked wheel_flipped either, and never reaches the table face down.
+function CelestasMod.unnamed_flips_face_up()
+    if not (CelestasMod.favored and CelestasMod.find_joker) then return false end
+    for _, found in ipairs(CelestasMod.find_joker("j_celesta_unnamed")) do
+        if CelestasMod.favored(found.card) then return true end
+    end
+    return false
+end
+
 local celesta_unnamed_emplace_ref = CardArea.emplace
 function CardArea:emplace(card, location, stay_flipped)
+    if card and stay_flipped and self == G.hand and CelestasMod.unnamed_flips_face_up() then
+        stay_flipped = nil
+    end
     if card then
         if self == G.play then
             card.celesta_played_flipped = (card.facing == "back") or nil
@@ -6921,8 +6975,16 @@ end
 --- Whether this hand is the one Isaa gets back.
 local function isaa_returns_this_hand()
     local round = G.GAME and G.GAME.current_round
-    if not round or (round.hands_played or 0) ~= 0 then return false end
+    if not round then return false end
     if not (G.play and G.play.cards and #G.play.cards > 0) then return false end
+    if (round.hands_played or 0) ~= 0 then
+        -- A Favor Stamp makes every hand the first one.
+        if not (CelestasMod.favored and CelestasMod.find_joker) then return false end
+        for _, found in ipairs(CelestasMod.find_joker("j_celesta_isaa")) do
+            if CelestasMod.favored(found.card) then return true end
+        end
+        return false
+    end
     return isaa_in_play()
 end
 
@@ -7082,6 +7144,20 @@ SMODS.Joker {
     end,
 
     calculate = function(self, card, context)
+        -- A Favor Stamp ends the savings account: nothing is stored and nothing dies. Each sale
+        -- pays X1.5 as it is made - the payout_mult of what was sold, floored the way the
+        -- account's own payout is - which is the sale itself plus the rest.
+        local favored = CelestasMod.favored and CelestasMod.favored(card)
+        if favored and context.selling_card and context.card and not context.blueprint then
+            local price = context.card.sell_cost or 0
+            local extra = math.floor(price * card.ability.extra.payout_mult) - price
+            if extra > 0 then
+                return { dollars = extra, colour = G.C.MONEY, card = card }
+            end
+            return
+        end
+        if favored then return end
+
         if context.selling_card and context.card and not context.blueprint then
             local price = context.card.sell_cost or 0
             if price > 0 then
@@ -7286,7 +7362,9 @@ SMODS.Joker {
     end,
 
     calculate = function(self, card, context)
-        if context.joker_main and money_eq(money(), 0) then
+        -- A Favor Stamp takes the $0 off the conditions: it pays whatever is held.
+        if context.joker_main and (money_eq(money(), 0)
+            or (CelestasMod.favored and CelestasMod.favored(card))) then
             return { x_mult = card.ability.extra.x_mult }
         end
     end,
@@ -7866,7 +7944,9 @@ SMODS.Joker {
     update = function(self, card, front)
         if not card.added_to_deck then return end
         local blind = slime_blind()
-        local want = (blind == "Small" or blind == "Boss")
+        -- Both abilities are on all the time under a Favor Stamp.
+        local always = CelestasMod.favored and CelestasMod.favored(card)
+        local want = (always or blind == "Small" or blind == "Boss")
             and card.ability.extra.selection or 0
         selection_sync(card, want)
     end,
@@ -7876,7 +7956,10 @@ SMODS.Joker {
         -- ones in G.hand - which is what "held in hand" means.
         if context.before and not context.blueprint then
             local blind = slime_blind()
-            if not (blind == "Big" or blind == "Boss") then return end
+            if not (blind == "Big" or blind == "Boss"
+                    or (CelestasMod.favored and CelestasMod.favored(card))) then
+                return
+            end
 
             local pairs_held = slime_pairs()
             if pairs_held <= 0 then return end
@@ -8578,6 +8661,8 @@ SMODS.Joker {
         -- main_eval is the once-per-round Joker pass.
         if context.end_of_round and context.main_eval and not context.blueprint then
             local wet = CelestasMod.Arena and CelestasMod.Arena.is_active("downpour")
+            -- A Favor Stamp keeps the Downpour on for it all the time.
+            if CelestasMod.favored and CelestasMod.favored(card) then wet = true end
             if rainhoe_hold(card, wet and true or false) then
                 return {
                     message = localize("celesta_downpour"),
@@ -8673,7 +8758,11 @@ SMODS.Joker {
             if not (row and row.cards and row.config) then return end
             -- A Negative Joker raises card_limit with it, so "full" stays the
             -- honest question rather than a fixed five.
-            if #row.cards < (row.config.card_limit or 0) then return end
+            -- A Favor Stamp takes the full row off the conditions.
+            if #row.cards < (row.config.card_limit or 0)
+                and not (CelestasMod.favored and CelestasMod.favored(card)) then
+                return
+            end
             if not exponential_supported() then return end
             return { e_chips = card.ability.extra.e_chips }
         end
@@ -9645,7 +9734,7 @@ end
 
 --- Where a card goes in the deal, low to high; the highest is dealt first.
 ---
---- 3 is the Gene Seal's and outranks the Joker's two, because the seal is put
+--- 4 is the Gene Seal's and outranks the Joker's, because the seal is put
 --- on one named card by spending a Tarot on it and the Joker is a standing
 --- rule over a whole category. A player who paid to move one card to the front
 --- should see it there.
@@ -9655,15 +9744,28 @@ end
 ---
 --- A Glassesjournal merge's cards share Steel's place: both are a standing rule
 --- over a category, and within one place the shuffle's order stands.
-local function deal_rank(card, glasses, rules)
+---
+--- A Favor Stamp on Glassesjournal puts Gold Cards between Steel and the Aces: 4 is the Gene
+--- Seal's, 3 Steel's, 2 the Gold Cards' when `gold` is set, and 1 the Aces'.
+local function deal_rank(card, glasses, rules, gold)
     local gene = CelestasMod.SEAL_KEYS and CelestasMod.SEAL_KEYS.Gene
-    if gene and card.seal == gene then return 3 end
-    if glasses and SMODS.has_enhancement(card, "m_steel") then return 2 end
+    if gene and card.seal == gene then return 4 end
+    if glasses and SMODS.has_enhancement(card, "m_steel") then return 3 end
     for _, rule in ipairs(rules or {}) do
-        if rule(card) then return 2 end
+        if rule(card) then return 3 end
     end
+    if gold and SMODS.has_enhancement(card, "m_gold") then return 2 end
     if glasses and card.get_id and card:get_id() == 14 then return 1 end
     return 0
+end
+
+--- Whether a Glassesjournal in play wears a Favor Stamp.
+function CelestasMod.glasses_favored()
+    if not CelestasMod.favored then return false end
+    for _, found in ipairs(CelestasMod.find_joker(GLASSES_KEY)) do
+        if CelestasMod.favored(found.card) then return true end
+    end
+    return false
 end
 
 local function deal_reorder()
@@ -9674,10 +9776,11 @@ local function deal_reorder()
     local rules, weights = glasses_pair_rules()
     -- One bucket per rank, filled in deck order, so the sort is stable within
     -- a rank without needing a comparator that can tie.
-    local buckets = { [0] = {}, {}, {}, {} }
+    local buckets = { [0] = {}, {}, {}, {}, {} }
     local ranked = false
+    local gold = glasses and CelestasMod.glasses_favored()
     for _, card in ipairs(deck) do
-        local rank = deal_rank(card, glasses, rules)
+        local rank = deal_rank(card, glasses, rules, gold)
         if rank > 0 then ranked = true end
         local bucket = buckets[rank]
         bucket[#bucket + 1] = card
@@ -9686,7 +9789,7 @@ local function deal_reorder()
     if not ranked and #weights == 0 then return end
 
     local i = 0
-    for rank = 0, 3 do
+    for rank = 0, 4 do
         if #weights > 0 then order_by_weight(buckets[rank], weights) end
         for _, card in ipairs(buckets[rank]) do
             i = i + 1
@@ -10991,6 +11094,12 @@ local ADFREE_OVER = "celesta_adfree_opening_hand_over"
 --- part-way through a round, where no flag was ever written but the counter
 --- is already right.
 local function adfree_first_hand()
+    -- A Favor Stamp on an Adfree makes it every hand: the Boss never gets its turn.
+    if CelestasMod.favored and CelestasMod.find_joker then
+        for _, found in ipairs(CelestasMod.find_joker(ADFREE_KEY)) do
+            if CelestasMod.favored(found.card) then return true end
+        end
+    end
     if G.GAME and G.GAME[ADFREE_OVER] then return false end
     local round = G.GAME and G.GAME.current_round
     return round and (round.hands_played or 0) == 0 or false
@@ -11698,8 +11807,11 @@ SMODS.Joker {
         -- perma_bonus that get_chip_bonus reads back - so it feeds the number
         -- that would break its own guard, and needs no Vedal in the row to get
         -- there. `a <= 0` is `not (a > 0)`.
-        if not CelestasMod.more_than(stored, 0)
-            or CelestasMod.more_than(stored, card.ability.extra.cap) then
+        --
+        -- A Favor Stamp takes the cap off: every card the hand did not score is spent.
+        if not CelestasMod.more_than(stored, 0) then return end
+        if CelestasMod.more_than(stored, card.ability.extra.cap)
+            and not (CelestasMod.favored and CelestasMod.favored(card)) then
             return
         end
 
@@ -11901,7 +12013,10 @@ SMODS.Joker {
         local x_chips = (extra.x_chips or 1) + gain
         local consumed = (extra.consumed or 0) + 1
 
-        SMODS.destroy_cards(victim)
+        -- A Favor Stamp: it eats for the Chips and the count, and the Joker stays.
+        if not (CelestasMod.favored and CelestasMod.favored(card)) then
+            SMODS.destroy_cards(victim)
+        end
 
         -- One more of itself every `per` meals. Made before the sync, so the
         -- new card is written the same numbers as the rest of them.
@@ -12009,6 +12124,8 @@ SMODS.Joker {
         end
 
         local extra = card.ability.extra
+        -- A Favor Stamp: the chance to be destroyed is 0 in 20, and the clock stays at nothing.
+        if CelestasMod.favored and CelestasMod.favored(card) then return end
         if not SMODS.pseudorandom_probability(
             card, HIDDEN_TECH_DEATH_SEED, extra.chance, extra.odds) then
             -- Lived. The next one is that much less likely to be survived.
