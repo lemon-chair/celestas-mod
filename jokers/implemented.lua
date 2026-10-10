@@ -3323,8 +3323,11 @@ end
 --- doubled Tarots into the next one.
 local function haruka_apply(count, paired)
     haruka_capture()
+    -- The Purgatory Deck's boon is one more factor in the same product: it is read off the run,
+    -- so a run that is not on that deck, and the next run, both start at 1.
     local scale = CelestasMod.HARUKA_SCALE ^ count
         * CelestasMod.ONIGIRI_HARUKA_SCALE ^ (paired or 0)
+        * ((G.GAME and G.GAME.celesta_tarot_scale) or 1)
     for key, saved in pairs(haruka_base) do
         local center = G.P_CENTERS[key]
         if center and center.config then

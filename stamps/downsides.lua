@@ -193,6 +193,10 @@ local function most_played_hand()
     return name
 end
 
+-- Shared with items/purgatory.lua, which lowers and raises hands for its own reasons.
+Downsides.plain = plain
+Downsides.most_played_hand = most_played_hand
+
 --- Take `levels` off the most played hand, never below level 1.
 ---
 --- Clamped because nothing else clamps it: level_up_hand with a negative

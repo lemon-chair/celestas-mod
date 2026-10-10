@@ -9,6 +9,30 @@
 
 CelestasMod.CLOVER_ODDS = 2
 
+--- The odds The Clover rolls against once its buff is on, as 1 in this.
+CelestasMod.CLOVER_ODDS_BUFFED = 4
+
+--- True when the Purgatory Deck's curse for this Blind has been taken (items/purgatory.lua keeps
+--- them, one flag per Blind, in the run's own state). A Blind asks for its own and nothing else.
+function CelestasMod.boss_buffed(name)
+    local state = G.GAME and G.GAME.celesta_purgatory
+    return (state and state.buffs and state.buffs[name]) and true or false
+end
+
+--- The odds on The Clover right now.
+local function clover_odds()
+    if CelestasMod.boss_buffed("clover") then return CelestasMod.CLOVER_ODDS_BUFFED end
+    return CelestasMod.CLOVER_ODDS
+end
+
+--- True when this is the pass for the end of a round that was won, and the Blind is still on:
+--- the per-card passes share the flag, and a Blind that was disabled does nothing at the end of
+--- it either. The Blinds that destroy something once they are beaten (Purgatory's buffs) ask.
+local function beaten(context, blind)
+    return context.end_of_round and not context.individual and not context.repetition
+        and not context.game_over and not (blind and blind.disabled)
+end
+
 local CLOVER_SEED = "celesta_clover"
 -- Resolved at load: SMODS.current_mod is only valid while the mod is loading,
 -- and the hooks below run for the rest of the session.
@@ -110,7 +134,7 @@ local function clover_suppresses(obj)
 
     clover_rolling = true
     local ok, triggered = pcall(SMODS.pseudorandom_probability, obj,
-        CLOVER_SEED, 1, CelestasMod.CLOVER_ODDS, CLOVER_SEED)
+        CLOVER_SEED, 1, clover_odds(), CLOVER_SEED)
     clover_rolling = false
 
     -- A roll that errored lets the object through: a boss that silently
@@ -179,7 +203,7 @@ SMODS.Blind {
         -- number actually rolled: with Oops! All 6s in play the text reads
         -- "2 in 2" and the blind is visibly doing nothing.
         local numerator, denominator = SMODS.get_probability_vars(
-            nil, 1, CelestasMod.CLOVER_ODDS, CLOVER_SEED)
+            nil, 1, clover_odds(), CLOVER_SEED)
         return { vars = { numerator, denominator } }
     end,
 
@@ -307,6 +331,17 @@ end
 
 local GOAT_SEED = "celesta_goat"
 
+--- Purgatory's Goat and Frog buffs mark the cards they have spent; this is the destroy pass asking
+--- whether one of them is among those. The mark is on the card itself and not its ability: it
+--- lives for the one hand and is not something to save.
+local function celesta_doomed_card(context)
+    local card = context.destroy_card
+    if card and card.celesta_doomed then
+        card.celesta_doomed = nil
+        return { remove = true }
+    end
+end
+
 --- A shuffled copy, Fisher-Yates off the run's own stream so a seeded run
 --- deals the same hand twice.
 local function goat_shuffle(list)
@@ -353,6 +388,15 @@ SMODS.Blind {
         centers = goat_shuffle(centers)
         editions = goat_shuffle(editions)
 
+        -- Purgatory's buff: whatever is left without an enhancement is destroyed once the hand
+        -- has scored (see `calculate`).
+        if CelestasMod.boss_buffed("goat") then
+            local base = G.P_CENTERS and G.P_CENTERS.c_base
+            for i, card in ipairs(cards) do
+                card.celesta_doomed = ((centers[i] or base) == base) or nil
+            end
+        end
+
         for i, card in ipairs(cards) do
             CelestasMod.unjudged(card, function()
                 card:set_ability(centers[i] or G.P_CENTERS.c_base, nil, true)
@@ -363,6 +407,10 @@ SMODS.Blind {
     end,
 
     modify_hand = says_triggered(pending_trigger),
+
+    calculate = function(self, blind, context)
+        return celesta_doomed_card(context)
+    end,
 }
 
 SMODS.Blind {
@@ -390,12 +438,18 @@ SMODS.Blind {
                 CelestasMod.unjudged(card, function()
                     card:set_ability(base, nil, true)
                 end)
+                -- Purgatory's buff: a card that lost its enhancement is destroyed after scoring.
+                if CelestasMod.boss_buffed("frog") then card.celesta_doomed = true end
             end
         end
         note_trigger(stripped)
     end,
 
     modify_hand = says_triggered(pending_trigger),
+
+    calculate = function(self, blind, context)
+        return celesta_doomed_card(context)
+    end,
 }
 
 --------------------------------------------------------------------------------
@@ -533,6 +587,17 @@ SMODS.Blind {
     recalc_debuff = function(self, card, from_blind)
         return card.seal ~= nil
     end,
+
+    -- Purgatory's buff: a card with a seal still in the hand is destroyed when the round is won.
+    -- This is the end_of_round pass, which is raised before the hand is cleared away.
+    calculate = function(self, blind, context)
+        if not (CelestasMod.boss_buffed("robot") and beaten(context, blind)) then return end
+        local doomed = {}
+        for _, held in ipairs((G.hand and G.hand.cards) or {}) do
+            if held.seal then doomed[#doomed + 1] = held end
+        end
+        if #doomed > 0 then SMODS.destroy_cards(doomed) end
+    end,
 }
 
 --------------------------------------------------------------------------------
@@ -598,6 +663,15 @@ SMODS.Blind {
 
     -- A card taken from every hand.
     modify_hand = says_triggered(true),
+
+    -- Purgatory's buff: a card taken from every discard as well. `hook` is The Hook making the
+    -- player discard, which is not a discard they chose.
+    calculate = function(self, blind, context)
+        if context.pre_discard and not context.hook and not blind.disabled
+            and CelestasMod.boss_buffed("brick") then
+            brick_take()
+        end
+    end,
 
     defeat = function(self) brick_release() end,
     disable = function(self) brick_release() end,
@@ -697,6 +771,14 @@ SMODS.Blind {
     defeat = function(self) wyrm_sync() end,
     disable = function(self) wyrm_sync() end,
 
+    -- Purgatory's buff: what it was holding shut is destroyed when the round is won.
+    calculate = function(self, blind, context)
+        if not (CelestasMod.boss_buffed("wyrm") and beaten(context, blind)) then return end
+        local held = {}
+        for i, card in ipairs((G.consumeables and G.consumeables.cards) or {}) do held[i] = card end
+        if #held > 0 then SMODS.destroy_cards(held) end
+    end,
+
     -- It is in play for a hand when there is a consumable it is holding shut.
     modify_hand = says_triggered(function()
         for _, card in ipairs((G.consumeables and G.consumeables.cards) or {}) do
@@ -733,11 +815,9 @@ local function horn_active()
     return blind.config.blind.key == HORN_KEY
 end
 
-local function horn_sync()
-    local row = G.jokers and G.jokers.cards
-    if not row then return end
-    local wanted = horn_active()
-    for _, held in ipairs(row) do
+--- Locks every card of a list, or gives back the ones this locked.
+local function horn_lock(cards, wanted)
+    for _, held in ipairs(cards) do
         local drag = held.states and held.states.drag
         if drag then
             if wanted then
@@ -751,6 +831,16 @@ local function horn_sync()
             end
         end
     end
+end
+
+local function horn_sync()
+    local row = G.jokers and G.jokers.cards
+    if not row then return end
+    local wanted = horn_active()
+    horn_lock(row, wanted)
+    -- Purgatory's buff: the cards held in hand as well. Handed back the same way, so a card that
+    -- left the hand locked is let go the next time it is looked at without it.
+    horn_lock((G.hand and G.hand.cards) or {}, wanted and CelestasMod.boss_buffed("horn"))
 end
 
 CelestasMod.horn_sync = horn_sync
@@ -823,6 +913,16 @@ SMODS.Blind {
 
     recalc_debuff = function(self, card, from_blind)
         return card.edition ~= nil
+    end,
+
+    -- Purgatory's buff: a Joker with an edition is destroyed when the round is won.
+    calculate = function(self, blind, context)
+        if not (CelestasMod.boss_buffed("gem") and beaten(context, blind)) then return end
+        local doomed = {}
+        for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
+            if held.edition then doomed[#doomed + 1] = held end
+        end
+        if #doomed > 0 then SMODS.destroy_cards(doomed) end
     end,
 }
 
@@ -916,6 +1016,16 @@ SMODS.Blind {
     modify_hand = says_triggered(function()
         return #((G.jokers and G.jokers.cards) or {}) > 0
     end),
+
+    -- Purgatory's buff: a Joker that is debuffed when the round is won is destroyed.
+    calculate = function(self, blind, context)
+        if not (CelestasMod.boss_buffed("flower") and beaten(context, blind)) then return end
+        local doomed = {}
+        for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
+            if held.debuff then doomed[#doomed + 1] = held end
+        end
+        if #doomed > 0 then SMODS.destroy_cards(doomed) end
+    end,
 }
 
 --------------------------------------------------------------------------------
