@@ -118,7 +118,15 @@ function Tattered.wear_delay()
     for _ in ipairs(CelestasMod.find_joker("j_celesta_sansin")) do
         factor = factor * Tattered.DELAY_MULTIPLIER
     end
+    -- The Purgatory Deck's curse: cards wear out twice as fast.
+    if Tattered.purgatory("fast_tatter") then factor = factor / 2 end
     return factor
+end
+
+--- True when a rule the Purgatory Deck has put on the run is on (items/purgatory.lua keeps them).
+function Tattered.purgatory(rule)
+    local state = G.GAME and G.GAME.celesta_purgatory
+    return (state and state[rule]) and true or false
 end
 
 --- True for a card Dejavudea has protected. Stored on the card, so the
@@ -180,6 +188,8 @@ end
 function Tattered.record_score(card)
     if not is_playing_card(card) or Tattered.is_tattered(card) then return false end
     if Tattered.is_immune(card) then return false end
+    -- The Purgatory Deck's boon: no card wears out any more.
+    if Tattered.purgatory("no_tatter") then return false end
     local count = (card.ability.celesta_scored or 0) + 1
     card.ability.celesta_scored = count
     if count < threshold(card) * Tattered.wear_delay() then return false end

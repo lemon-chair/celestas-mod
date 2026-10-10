@@ -5,7 +5,7 @@
 ---
 --- The `decks` atlas is one row of card-sized cells, in this order:
 ---     0 Admin   1 Plaid   2 Ecstasy   3 Hell   4 Blizzard   5 Rain
----     6 Verdant 7 Rock    8 Sins     9 Fusion
+---     6 Verdant 7 Rock    8 Sins     9 Fusion   10 Purgatory
 
 local DECK_PREFIX = SMODS.current_mod.prefix
 
@@ -850,5 +850,35 @@ SMODS.Back {
             SMODS.add_card { key = key, area = G.consumeables }
             return true
         end })
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Purgatory Deck - a modifier after every Boss
+--------------------------------------------------------------------------------
+--
+-- After each Boss Blind, and before the cash-out, the run offers three modifiers - each a boon
+-- that comes with a curse - and will not go on until one is taken. The offer can be rerolled
+-- twice, and the run ends at Ante 12 rather than 8.
+--
+-- Everything it does is items/purgatory.lua: the list of modifiers, the box that offers them and
+-- the hooks they stand on. This only starts the run there and hands it every scoring context.
+
+SMODS.Back {
+    key = "purgatory",
+    atlas = "decks",
+    pos = { x = 10, y = 0 },
+
+    unlocked = true,
+    discovered = true,
+
+    apply = function(self, back)
+        CelestasMod.Purgatory.start()
+    end,
+
+    -- A Back is a scoring target, so the end of every round and the start of every Blind come
+    -- through here - which is where the choice is owed and where an extra $5 is paid.
+    calculate = function(self, back, context)
+        return CelestasMod.Purgatory.calculate(context)
     end,
 }

@@ -42,6 +42,7 @@ DECKS = [
     ("rock", "rock"),
     ("sins", "sins"),
     ("fusion", "fusion"),
+    ("purgatory", "purgatory"),
 ]
 
 

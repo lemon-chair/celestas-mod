@@ -214,6 +214,9 @@ end
 -- placeholder art: add it back to this list to re-enable. Its code, atlas and
 -- localization are all still in place.
 for _, file in ipairs({ 'seals/seals.lua', 'items/decks.lua',
+                        -- After decks.lua, which only names it: the Purgatory
+                        -- Deck's own hooks, and what its `calculate` calls.
+                        'items/purgatory.lua',
                         -- After decks.lua: each sleeve is built from its
                         -- deck. Does nothing without Card Sleeves.
                         'items/sleeves.lua',

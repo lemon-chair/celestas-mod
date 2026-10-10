@@ -31,7 +31,7 @@ local PREFIX = SMODS.current_mod.prefix
 -- The order of tools/gen_decks.py's DECKS, which is the order of both sheets:
 -- a sleeve's cell is its deck's.
 local DECKS = { "founders", "plaid", "ecstasy", "hell",
-                "blizzard", "rain", "verdant", "rock", "sins", "fusion" }
+                "blizzard", "rain", "verdant", "rock", "sins", "fusion", "purgatory" }
 
 for i, name in ipairs(DECKS) do
     local back_key = "b_" .. PREFIX .. "_" .. name
