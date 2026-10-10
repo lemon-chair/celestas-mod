@@ -158,7 +158,10 @@ local function give(key, area, opts)
         stickers = opts.stickers, force_stickers = opts.stickers and true or nil,
         key_append = "celesta_purgatory",
     }
-    if card and card.start_materialize then card:start_materialize() end
+    -- No start_materialize: it throws a burst of particles in the card's set colour, and what
+    -- arrives here is the reward for a choice, not a card coming out of a pack. The Admin Deck
+    -- leaves it out of its starting cards for the same reason. A small jolt says it arrived.
+    if card and card.juice_up then card:juice_up(0.5, 0.5) end
     return card
 end
 
