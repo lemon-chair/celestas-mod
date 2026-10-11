@@ -285,7 +285,8 @@ end
 --- took, and one loaded holding none owes nothing.
 function Lost.sync_slots(except, also)
     if not (G.GAME and G.jokers and G.jokers.config) then return end
-    local want = Lost.any_held(except, also) and Lost.SLOT_COST or 0
+    -- The Purgatory Deck's boon: Lost Jokers take no Joker slots.
+    local want = (Lost.any_held(except, also) and not (CelestasMod.purg and CelestasMod.purg("lost_slots"))) and Lost.SLOT_COST or 0
     local applied = G.GAME.celesta_lost_slots or 0
     if want == applied then return end
     -- Taking slots is a negative bump, so one expression serves both ways:

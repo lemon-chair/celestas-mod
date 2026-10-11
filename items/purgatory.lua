@@ -61,6 +61,9 @@ P.BLIND_UP = 1.5
 
 local SEED = "celesta_purgatory"
 
+--- What the warning over a forbidden hand reads (set into SMODS.debuff_text while one is selected).
+P.BANNED_TEXT = nil
+
 --------------------------------------------------------------------------------
 -- The run's state
 --------------------------------------------------------------------------------
@@ -152,15 +155,18 @@ end
 --- Puts a card of this key in an area. Negative is asked for here and nowhere else.
 local function give(key, area, opts)
     opts = opts or {}
+    -- skip_materialize, because create_card plays start_materialize itself unless it is told not
+    -- to: a burst of particles in the card's set colour, which is right for a card coming out of a
+    -- pack and not for what arrives here as the reward for a choice. (Leaving the call out of
+    -- this function was not enough - it is made before this returns.) The Admin Deck leaves it
+    -- out of its starting cards for the same reason. A small jolt says it arrived.
     local card = SMODS.add_card {
         key = key, set = opts.set, rarity = opts.rarity, area = area,
         edition = opts.negative and "e_negative" or nil,
         stickers = opts.stickers, force_stickers = opts.stickers and true or nil,
         key_append = "celesta_purgatory",
+        skip_materialize = true,
     }
-    -- No start_materialize: it throws a burst of particles in the card's set colour, and what
-    -- arrives here is the reward for a choice, not a card coming out of a pack. The Admin Deck
-    -- leaves it out of its starting cards for the same reason. A small jolt says it arrived.
     if card and card.juice_up then card:juice_up(0.5, 0.5) end
     return card
 end
@@ -467,6 +473,157 @@ add { kind = "good", key = "drop_buff",
           if key then st.buffs[key] = nil end
       end }
 
+--- Whether a Joker of this key is owned, either half of a merge, debuffed or not.
+local function owns(key)
+    return #CelestasMod.find_joker(key, true) > 0
+end
+
+--- Gives the run a Tag.
+local function gain_tag(key)
+    G.E_MANAGER:add_event(Event {
+        func = function()
+            add_tag(Tag(key))
+            play_sound("generic1")
+            return true
+        end,
+    })
+end
+
+-- A quad merge, until it is unlocked here, cannot be made on this deck (merge/bind.lua asks
+-- Bind.quad_unlocked). Only a quad that two of its four Jokers are owned for is offered, and
+-- which one is rolled with the offer, so the card names the one that will be unlocked.
+local function quad_options(st)
+    local out = {}
+    local Bind = CelestasMod.Bind
+    for _, def in pairs((Bind and Bind.QUADS) or {}) do
+        if not (st.quads and st.quads[def.key]) then
+            local held = 0
+            for _, member in ipairs(def.members) do
+                if owns(member) then held = held + 1 end
+            end
+            if held >= 2 then out[#out + 1] = def end
+        end
+    end
+    table.sort(out, function(a, b) return a.key < b.key end)
+    return out
+end
+
+--- A quad merge's name as the Collection prints it, or its key where there is none.
+local function quad_name(key)
+    local name = localize { type = "name_text", set = "Other", key = "celesta_bind_" .. tostring(key) }
+    if type(name) ~= "string" or name == "ERROR" then return tostring(key) end
+    return name
+end
+
+add { kind = "good", key = "unlock_quad", repeatable = true,
+      available = function(st) return #quad_options(st) > 0 end,
+      roll = function(st)
+          local def = pick(quad_options(st), "_quad")
+          return def and def.key or nil
+      end,
+      vars = function(arg) return { quad_name(arg) } end,
+      apply = function(st, arg)
+          if not arg then return end
+          st.quads = st.quads or {}
+          st.quads[arg] = true
+      end }
+
+add { kind = "good", key = "d6_tag", repeatable = true,
+      apply = function() gain_tag("tag_d_six") end }
+
+add { kind = "good", key = "stamp_tag", repeatable = true,
+      apply = function() gain_tag("tag_celesta_stamp") end }
+
+add { kind = "good", key = "stamp_slots",
+      available = function() return ((G.GAME.celesta_stamp_slots or 1) < 2) end,
+      apply = function() G.GAME.celesta_stamp_slots = 2 end }
+
+add { kind = "good", key = "egg",
+      available = function()
+          return #jokers() < limit(G.jokers) and not G.GAME.banned_keys["j_celesta_blessed_phoenix_egg"]
+      end,
+      apply = function() give("j_celesta_blessed_phoenix_egg", G.jokers) end }
+
+add { kind = "good", key = "reroll_vouchers",
+      available = function()
+          local used = G.GAME.used_vouchers or {}
+          return not (used.v_reroll_surplus or used.v_reroll_glut)
+      end,
+      -- Redeemed the way a deck's own vouchers are (back.lua:289): marked, and applied to the run.
+      apply = function()
+          for _, key in ipairs({ "v_reroll_surplus", "v_reroll_glut" }) do
+              G.GAME.used_vouchers[key] = true
+              G.E_MANAGER:add_event(Event {
+                  func = function()
+                      Card.apply_to_run(nil, G.P_CENTERS[key])
+                      return true
+                  end,
+              })
+          end
+      end }
+
+add { kind = "good", key = "lost_slots",
+      available = function()
+          local Lost = CelestasMod.Lost
+          return (Lost and Lost.any_held()) and true or false
+      end,
+      apply = function(st)
+          st.lost_slots = true
+          if CelestasMod.Lost then CelestasMod.Lost.sync_slots() end
+      end }
+
+-- The Jokers a boon changes, one boon each. Each is only offered while the Joker is owned. What it
+-- changes is in the Joker's own code, which reads the flag by this name (CelestasMod.purg).
+local JOKER_BOONS = {
+    { key = "grimmi", joker = "j_celesta_grimmi" },
+    { key = "chacha", joker = "j_celesta_chacha" },
+    { key = "crelly", joker = "j_celesta_crelly" },
+    { key = "calamitas", joker = "j_celesta_calamitas" },
+    { key = "snuffy", joker = "j_celesta_snuffy" },
+    { key = "dokibird", joker = "j_celesta_dokibird" },
+    { key = "lucypyre", joker = "j_celesta_lucypyre" },
+    { key = "aethal", joker = "j_celesta_lordaethelstan" },
+    { key = "heavenlyfather", joker = "j_celesta_heavenlyfather" },
+    { key = "astrum", joker = "j_celesta_astrum_aureus" },
+    { key = "seraph", joker = "j_celesta_smittenseraph" },
+    { key = "isaa", joker = "j_celesta_isaa" },
+}
+P.JOKER_BOONS = JOKER_BOONS
+
+for _, boon in ipairs(JOKER_BOONS) do
+    add { kind = "good", key = boon.key,
+          available = function() return owns(boon.joker) end,
+          apply = function(st)
+              st[boon.key] = true
+              if boon.key == "heavenlyfather" then
+                  -- Already in the row, it has handed out its two; the two more are paid now and
+                  -- written on the card, which is what it gives back when it leaves.
+                  for _, found in ipairs(CelestasMod.find_joker(boon.joker, true)) do
+                      local held = found.ability.celesta_hf_granted
+                      if held then
+                          SMODS.change_booster_limit(2)
+                          found.ability.celesta_hf_granted = held + 2
+                      end
+                  end
+              end
+          end }
+end
+
+add { kind = "good", key = "true_stars",
+      apply = function()
+          local ranks = {}
+          for rank in pairs(SMODS.Ranks or {}) do ranks[#ranks + 1] = rank end
+          table.sort(ranks)
+          local rank = pick(ranks, "_true_star_rank")
+          if not rank then return end
+          for _ = 1, 3 do
+              SMODS.add_card {
+                  set = "Base", suit = CelestasMod.TRUE_STARS_SUIT, rank = rank, area = G.deck,
+                  key_append = "celesta_purgatory",
+              }
+          end
+      end }
+
 -- ---------------------------------------------------------------- curses
 
 add { kind = "bad", key = "rerolls",
@@ -561,10 +718,9 @@ add { kind = "bad", key = "lose_consumables", repeatable = true,
       end }
 
 add { kind = "bad", key = "no_pay", repeatable = true,
-      apply = function()
-          -- The Blind that was just beaten, whose reward is read when the cash-out is counted.
-          if G.GAME.blind then G.GAME.blind.dollars = 0 end
-      end }
+      -- The cash-out about to be counted pays nothing at all: the Blind's reward, the money for
+      -- Hands left over, interest, what Jokers and Tags pay. See "The cash-out" below.
+      apply = function(st) st.no_pay_round = true end }
 
 add { kind = "bad", key = "prices_up",
       apply = function(st)
@@ -684,6 +840,15 @@ add { kind = "bad", key = "lose_editions",
               card:set_edition(nil, true)
           end
       end }
+
+add { kind = "bad", key = "least_hand",
+      -- Only while there is a least-played hand to name: with every hand played the same number
+      -- of times there is none, and the curse would forbid nothing.
+      available = function() return next(P.banned_hands(true)) ~= nil end,
+      apply = function(st) st.no_least_hand = true end }
+
+add { kind = "bad", key = "reroll_two",
+      apply = function(st) st.reroll_two = true end }
 
 -- ---------------------------------------------------------------- the Boss Blinds
 --
@@ -1108,4 +1273,129 @@ function SMODS.poll_rarity(pool_key, rand_key, ...)
         if not empty then return 4 end
     end
     return celesta_purg_rarity_ref(pool_key, rand_key, ...)
+end
+
+--------------------------------------------------------------------------------
+-- The cash-out
+--------------------------------------------------------------------------------
+--
+-- "Earn no money from this Blind" is the whole cash-out and not only the Blind's reward: the
+-- money for Hands left over, interest, and what Jokers and Tags pay are all money earned at
+-- the end of this round, and a curse that took only the first left the rest coming in.
+--
+-- Every row is added through add_round_eval_row, so each is made to say 0, and the last one - the
+-- total the cash-out button pays - is the one the money really comes from. The button is wrapped
+-- as well, as the thing that pays, in case a row was added some other way.
+
+local celesta_purg_row_ref = add_round_eval_row
+function add_round_eval_row(config, ...)
+    local st = live()
+    if st and st.no_pay_round and type(config) == "table" and config.dollars ~= nil then
+        config.dollars = 0
+    end
+    return celesta_purg_row_ref(config, ...)
+end
+
+local celesta_purg_cash_ref = G.FUNCS.cash_out
+G.FUNCS.cash_out = function(e, ...)
+    local st = live()
+    if st and st.no_pay_round then
+        G.GAME.current_round.dollars = 0
+        st.no_pay_round = nil
+    end
+    return celesta_purg_cash_ref(e, ...)
+end
+
+--------------------------------------------------------------------------------
+-- What the Shop does to a reroll
+--------------------------------------------------------------------------------
+
+-- A reroll that costs $2 more each time rather than $1: vanilla adds one, and this adds one
+-- more before it does. calculate_reroll_cost(true) is the call that does not increase it.
+local celesta_purg_reroll_ref = calculate_reroll_cost
+function calculate_reroll_cost(skip_increment, ...)
+    local st = live()
+    if st and st.reroll_two and not skip_increment and G.GAME.current_round then
+        G.GAME.current_round.reroll_cost_increase = (G.GAME.current_round.reroll_cost_increase or 0) + 1
+    end
+    return celesta_purg_reroll_ref(skip_increment, ...)
+end
+
+--------------------------------------------------------------------------------
+-- The hands that cannot be played
+--------------------------------------------------------------------------------
+--
+-- "Least played" is by the number of times the run has played each hand, among the hands the run
+-- can see, and every hand tied for the fewest is out. With every hand tied there is no least, and
+-- nothing is out.
+--
+-- Two things stop a hand: the Play button is greyed, and the hand is debuffed the way The Mouth
+-- debuffs one, which puts the "will not score" warning over the cards with the reason under it.
+-- The warning alone would still let it be played, for nothing.
+
+--- The hands that are out, as a set of names. `ignore_flag` asks who would be, flag or no flag.
+function P.banned_hands(ignore_flag)
+    local out = {}
+    if not ignore_flag then
+        local st = live()
+        if not (st and st.no_least_hand) then return out end
+    end
+    local least, most
+    local counts = {}
+    for name, hand in pairs((G.GAME and G.GAME.hands) or {}) do
+        if SMODS.is_poker_hand_visible(name) then
+            local n = number(hand.played)
+            counts[name] = n
+            if not least or n < least then least = n end
+            if not most or n > most then most = n end
+        end
+    end
+    if not least or least == most then return out end
+    for name, n in pairs(counts) do
+        if n == least then out[name] = true end
+    end
+    return out
+end
+
+local celesta_purg_debuff_ref = Blind.debuff_hand
+function Blind:debuff_hand(cards, hand, handname, ...)
+    local st = live()
+    if st and st.no_least_hand and P.banned_hands()[handname] then
+        P.BANNED_TEXT = localize("celesta_purg_banned_hand")
+        SMODS.debuff_text = P.BANNED_TEXT
+        return true
+    end
+    -- Ours is only ever up for the hand that is forbidden.
+    if SMODS.debuff_text and SMODS.debuff_text == P.BANNED_TEXT then SMODS.debuff_text = nil end
+    return celesta_purg_debuff_ref(self, cards, hand, handname, ...)
+end
+
+--- Whether the hand now highlighted is one that is out. Worked out when the selection changes -
+--- which is when vanilla works out what the hand is - and read every frame by the Play button.
+P.selected_banned = false
+
+local celesta_purg_parse_ref = CardArea.parse_highlighted
+function CardArea:parse_highlighted(...)
+    local out = celesta_purg_parse_ref(self, ...)
+    if self == G.hand then
+        P.selected_banned = false
+        local st = live()
+        if st and st.no_least_hand and #(self.highlighted or {}) > 0 then
+            local name = G.FUNCS.get_poker_hand_info(self.highlighted)
+            P.selected_banned = (name ~= "NULL" and P.banned_hands()[name]) and true or false
+        end
+    end
+    return out
+end
+
+local celesta_purg_can_play_ref = G.FUNCS.can_play
+G.FUNCS.can_play = function(e, ...)
+    celesta_purg_can_play_ref(e, ...)
+    if P.selected_banned and e.config.button then
+        local st = live()
+        if st and st.no_least_hand then
+            e.config.colour = G.C.UI.BACKGROUND_INACTIVE
+            e.config.button = nil
+        end
+    end
 end

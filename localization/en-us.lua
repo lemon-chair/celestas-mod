@@ -5558,6 +5558,125 @@ return {
                     "{C:attention}Boss Blind{} buff",
                 },
             },
+            celesta_purg_good_unlock_quad = {
+                text = {
+                    "Unlock the quad merge",
+                    "{C:attention}#1#{}",
+                },
+            },
+            celesta_purg_good_d6_tag = {
+                text = {
+                    "Gain a {C:attention}D6 Tag{}",
+                },
+            },
+            celesta_purg_good_stamp_tag = {
+                text = {
+                    "Gain a {C:attention}Stamp Tag{}",
+                },
+            },
+            celesta_purg_good_stamp_slots = {
+                text = {
+                    "Jokers can hold up to",
+                    "{C:attention}2{} stamps",
+                },
+            },
+            celesta_purg_good_egg = {
+                text = {
+                    "Gain a",
+                    "{C:attention}Blessed Phoenix Egg{}",
+                },
+            },
+            celesta_purg_good_reroll_vouchers = {
+                text = {
+                    "Gain {C:attention}Reroll Surplus{}",
+                    "and {C:attention}Reroll Glut{}",
+                },
+            },
+            celesta_purg_good_lost_slots = {
+                text = {
+                    "Lost Jokers no longer",
+                    "take Joker slots",
+                },
+            },
+            celesta_purg_good_grimmi = {
+                text = {
+                    "Grimmi also gives {C:attention}2{}",
+                    "{C:dark_edition}Negative{} Tags when sold",
+                },
+            },
+            celesta_purg_good_chacha = {
+                text = {
+                    "Chacha gives an Uncommon",
+                    "and a Rare Joker Tag when sold",
+                },
+            },
+            celesta_purg_good_crelly = {
+                text = {
+                    "Crelly no longer needs to",
+                    "consume consumables to grow",
+                },
+            },
+            celesta_purg_good_calamitas = {
+                text = {
+                    "Calamitas retriggers",
+                    "{C:attention}6{} times, not 4",
+                },
+            },
+            celesta_purg_good_snuffy = {
+                text = {
+                    "Snuffy counts every Hand",
+                    "of the round, not just the left",
+                },
+            },
+            celesta_purg_good_dokibird = {
+                text = {
+                    "Dokibird has no",
+                    "{C:chips}100{} Chip cap",
+                },
+            },
+            celesta_purg_good_lucypyre = {
+                text = {
+                    "LucyPyre takes {C:attention}25%{} off",
+                    "Blinds, not 10%",
+                },
+            },
+            celesta_purg_good_aethal = {
+                text = {
+                    "Aethal gives {C:attention}+6{} shop slots,",
+                    "not +4",
+                },
+            },
+            celesta_purg_good_heavenlyfather = {
+                text = {
+                    "HeavenlyFather gives {C:attention}+4{}",
+                    "booster pack slots, not +2",
+                },
+            },
+            celesta_purg_good_astrum = {
+                text = {
+                    "Astrum Aureus ignores how",
+                    "many cards were played",
+                },
+            },
+            celesta_purg_good_seraph = {
+                text = {
+                    "Smitten Seraph gives {C:attention}+5{}",
+                    "Joker and {C:attention}+2{} consumable slots",
+                },
+            },
+            celesta_purg_good_isaa = {
+                text = {
+                    "Isaa only returns the first",
+                    "hand if it scores {C:attention}25%{}",
+                    "of the Blind",
+                },
+            },
+            celesta_purg_good_true_stars = {
+                text = {
+                    "Add {C:attention}3{} True Star cards",
+                    "of a random rank to your deck",
+                },
+            },
             celesta_purg_bad_rerolls = {
                 text = {
                     "{C:red}-1{} modifier reroll",
@@ -5773,13 +5892,26 @@ return {
             celesta_purg_bad_buff_frog = {
                 text = {
                     "{C:attention}The Frog{} also destroys",
-                    "the cards it strips",
+                    "cards it strips",
+                    "enhancements from",
                 },
             },
             celesta_purg_bad_buff_horn = {
                 text = {
                     "{C:attention}The Horn{} also locks",
                     "the cards in your hand",
+                },
+            },
+            celesta_purg_bad_least_hand = {
+                text = {
+                    "You can no longer play",
+                    "your least-played hand(s)",
+                },
+            },
+            celesta_purg_bad_reroll_two = {
+                text = {
+                    "Rerolls cost {C:money}$2{} more each",
+                    "time, not {C:money}$1{}",
                 },
             },
             celesta_purg_bad_buff_gem = {
@@ -6080,6 +6212,15 @@ return {
             },
         },
 
+        Tag = {
+            tag_celesta_stamp = {
+                name = "Stamp Tag",
+                text = {
+                    "Gives a free",
+                    "{C:attention}Stamp Pack{}",
+                },
+            },
+        },
         Back = {
             b_celesta_ecstasy = {
                 name = "Ecstasy Deck",
@@ -6636,6 +6777,7 @@ return {
             celesta_purg_good = "Boon",
             celesta_purg_bad = "Curse",
             celesta_purg_reroll = "Reroll",
+            celesta_purg_banned_hand = "You cannot play your least-played hand",
         },
         -- Substituted messages. localize hands back the literal 'ERROR' for a
         -- key no loaded dictionary has (misc_functions.lua:1726), and that

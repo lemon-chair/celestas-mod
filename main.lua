@@ -187,6 +187,8 @@ assert(SMODS.load_file('stamps/downsides.lua'))()
 assert(SMODS.load_file('stamps/stamps.lua'))()
 -- The Lucky Stamp's guarantee, which is a wrap on the same funnel Dice and Ellie Minibot use.
 assert(SMODS.load_file('stamps/lucky.lua'))()
+-- The Tag that hands out a free Stamp Pack. Needs the pack, which stamps.lua has registered.
+assert(SMODS.load_file('stamps/tag.lua'))()
 
 --------------------------------------------------------------------------------
 -- Jokers: auto-loaded from jokers/.
@@ -217,6 +219,8 @@ for _, file in ipairs({ 'seals/seals.lua', 'items/decks.lua',
                         -- After decks.lua, which only names it: the Purgatory
                         -- Deck's own hooks, and what its `calculate` calls.
                         'items/purgatory.lua',
+                        -- Eternal and Perishable stop sharing a corner.
+                        'items/stickers.lua',
                         -- After decks.lua: each sleeve is built from its
                         -- deck. Does nothing without Card Sleeves.
                         'items/sleeves.lua',

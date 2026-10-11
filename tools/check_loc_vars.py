@@ -29,6 +29,7 @@ sounds = {}
 -- misc.challenge_names - so they are recorded to keep main.lua loadable and
 -- checked by test_challenges.py instead.
 challenges = {}
+tags = {}
 suits = {}
 -- A Rarity's badge text lives in misc.labels rather than in descriptions, so
 -- like a Suit this is recorded only to keep main.lua loadable.
@@ -62,6 +63,9 @@ SMODS = {
   Booster = function(t) boosters[t.key] = t end,
   Back = function(t) backs[t.key] = t end,
   Challenge = function(t) challenges[t.key] = t end,
+  -- A Tag carries no loc_vars worth checking (the Stamp Tag has none), so it is only recorded to
+  -- keep main.lua loadable.
+  Tag = function(t) tags[t.key] = t end,
   ConsumableTypes = {},
   -- Registered objects by full key. Nothing is registered into it here, so a
   -- file attaching to a Joker by key finds nothing and says so, which is all

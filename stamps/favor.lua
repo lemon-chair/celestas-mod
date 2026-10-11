@@ -93,7 +93,8 @@ end
 function Favor.targets()
     local out = {}
     for _, card in ipairs((G.jokers and G.jokers.cards) or {}) do
-        if not (card.ability and card.ability.celesta_stamp) and Favor.accepts(card) then
+        -- (CelestasMod.Stamps is looked up here: stamps.lua loads after this file.)
+        if CelestasMod.Stamps.has_room(card, "favor") and Favor.accepts(card) then
             out[#out + 1] = card
         end
     end

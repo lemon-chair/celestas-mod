@@ -179,9 +179,11 @@ SMODS.Joker {
         -- `not context.blueprint` so a Blueprint copy cannot eat a second
         -- consumable or double the growth - it still copies the X Mult below.
         if context.ending_shop and not context.blueprint then
-            if #G.consumeables.cards > 0 then
-                local target = pseudorandom_element(G.consumeables.cards,
-                    pseudoseed("celesta_crelly"))
+            -- The Purgatory Deck's boon: it grows without eating anything.
+            local free = (CelestasMod.purg and CelestasMod.purg("crelly"))
+            if free or #G.consumeables.cards > 0 then
+                local target = (not free) and pseudorandom_element(G.consumeables.cards,
+                    pseudoseed("celesta_crelly")) or nil
 
                 SMODS.scale_card(card, {
                     ref_table = card.ability.extra,
@@ -191,7 +193,7 @@ SMODS.Joker {
                 })
 
                 -- Respects eternal/undestroyable stickers and animates the eat.
-                SMODS.destroy_cards(target)
+                if target then SMODS.destroy_cards(target) end
 
                 return {
                     message = localize {
@@ -1485,11 +1487,13 @@ SMODS.Joker {
 
     calculate = function(self, card, context)
         if context.selling_self and not context.blueprint then
-            local tag_key = pseudorandom_element({ "tag_uncommon", "tag_rare" },
-                pseudoseed("celesta_chacha"))
+            -- The Purgatory Deck's boon: both, rather than one of the two.
+            local tag_keys = { (pseudorandom_element({ "tag_uncommon", "tag_rare" },
+                pseudoseed("celesta_chacha"))) }
+            if (CelestasMod.purg and CelestasMod.purg("chacha")) then tag_keys = { "tag_uncommon", "tag_rare" } end
             G.E_MANAGER:add_event(Event {
                 func = function()
-                    add_tag(Tag(tag_key))
+                    for _, tag_key in ipairs(tag_keys) do add_tag(Tag(tag_key)) end
                     play_sound("generic1")
                     return true
                 end
@@ -3455,7 +3459,7 @@ SMODS.Joker {
     config = { extra = { slots = 2 } },
 
     loc_vars = function(self, info_queue, card)
-        return { vars = { card.ability.extra.slots } }
+        return { vars = { card.ability.extra.slots + ((CelestasMod.purg and CelestasMod.purg("heavenlyfather")) and 2 or 0) } }
     end,
 
     -- SMODS.change_booster_limit is the designated API: it moves
@@ -3463,12 +3467,17 @@ SMODS.Joker {
     -- packs, and fills the new slots immediately if the shop is already open.
     -- Pairing it with remove_from_deck means selling the joker, or having it
     -- debuffed, gives the slots back.
+    -- What was handed out is written down on the card, so the Purgatory Deck's boon - two more -
+    -- can be paid to a card already in the row and taken back in full when it leaves.
     add_to_deck = function(self, card, from_debuff)
-        SMODS.change_booster_limit(card.ability.extra.slots)
+        local slots = card.ability.extra.slots + ((CelestasMod.purg and CelestasMod.purg("heavenlyfather")) and 2 or 0)
+        card.ability.celesta_hf_granted = slots
+        SMODS.change_booster_limit(slots)
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        SMODS.change_booster_limit(-card.ability.extra.slots)
+        SMODS.change_booster_limit(-(card.ability.celesta_hf_granted or card.ability.extra.slots))
+        card.ability.celesta_hf_granted = nil
     end,
 }
 
@@ -6184,6 +6193,9 @@ local YOKA_FLAT_VALUES = {
 --- Cryptid's misprintize refuses the same values for the same reason.
 local function yoka_neutral(key, value)
     if value ~= 1 then return false end
+    -- A GAIN of 1 is a number to scale, not a multiplier sitting at its do-nothing value:
+    -- Silvervale's x_mult_gain is 1, and was left as it was.
+    if key:find("gain") then return false end
     return key:find("x_mult") ~= nil or key:find("x_chips") ~= nil
         or key:find("e_mult") ~= nil or key:find("e_chips") ~= nil
 end
@@ -6991,6 +7003,16 @@ local function isaa_returns_this_hand()
     return isaa_in_play()
 end
 
+--- The Purgatory Deck's boon on Isaa: the hand only comes back if it scored at least a quarter of
+--- the Blind. Asked after the hand has scored, so the round's total is the hand's own on the first
+--- hand. True whenever the boon has not been taken.
+function CelestasMod.isaa_scored_enough()
+    if not (CelestasMod.purg and CelestasMod.purg("isaa")) then return true end
+    local blind = G.GAME and G.GAME.blind
+    if not (blind and blind.chips) then return true end
+    return not CelestasMod.more_than(blind.chips * 0.25, G.GAME.chips or 0)
+end
+
 -- The wrap is installed at load if there is anything to wrap, and whether it
 -- was is remembered rather than reported here. A missing hook is only worth
 -- saying out loud to someone who actually has the Joker, so add_to_deck says
@@ -7002,7 +7024,8 @@ local celesta_isaa_to_discard_ref = G.FUNCS and G.FUNCS.draw_from_play_to_discar
 if celesta_isaa_to_discard_ref then
     celesta_isaa_hooked = true
     G.FUNCS.draw_from_play_to_discard = function(e)
-        if isaa_returns_this_hand() and G.FUNCS.draw_from_play_to_hand then
+        if isaa_returns_this_hand() and CelestasMod.isaa_scored_enough()
+            and G.FUNCS.draw_from_play_to_hand then
             for _, isaa in ipairs(CelestasMod.find_joker("j_celesta_isaa")) do
                 card_eval_status_text(isaa.card, "extra", nil, nil, nil,
                     { message = localize("celesta_returned"), colour = G.C.FILTER })
@@ -7741,8 +7764,10 @@ CelestasMod.bump_limit = bump_limit
 --- what the card says.
 local function seraph_slots(card)
     local extra = card.ability.extra
-    return math.floor(extra.joker_slots + 0.5),
-           math.floor(extra.consumable_slots + 0.5)
+    local jokers, consumables = extra.joker_slots, extra.consumable_slots
+    -- The Purgatory Deck's boon: two more Joker slots and one more consumable slot.
+    if (CelestasMod.purg and CelestasMod.purg("seraph")) then jokers, consumables = jokers + 2, consumables + 1 end
+    return math.floor(jokers + 0.5), math.floor(consumables + 0.5)
 end
 
 --- Brings the run's slots in line with what this card currently promises.
@@ -9288,6 +9313,11 @@ SMODS.Joker {
 
 local AETHAL_GRANTED = "celesta_aethal_granted"
 
+--- What this card widens the shop by: its own number, and the Purgatory Deck's two more.
+function CelestasMod.aethal_slots(card)
+    return card.ability.extra.slots + ((CelestasMod.purg and CelestasMod.purg("aethal")) and 2 or 0)
+end
+
 --- Brings the shop's width in line with what this card promises.
 ---
 --- Not while a Bind pair has taken the card over. The merge takes the slots
@@ -9298,7 +9328,7 @@ local function aethal_sync(card)
     if bind and bind.replacing_special and bind.replacing_special(card) then return end
     if not (G.GAME and G.GAME.shop and change_shop_size) then return end
     local held = card.ability[AETHAL_GRANTED] or 0
-    local want = card.ability.extra.slots
+    local want = CelestasMod.aethal_slots(card)
     if held == want then return end
 
     change_shop_size(want - held)
@@ -9330,7 +9360,7 @@ SMODS.Joker {
     config = { extra = { slots = 4 } },
 
     loc_vars = function(self, info_queue, card)
-        return { vars = { card.ability.extra.slots } }
+        return { vars = { CelestasMod.aethal_slots(card) } }
     end,
 
     add_to_deck = function(self, card, from_debuff)
@@ -10013,7 +10043,8 @@ SMODS.Joker {
         if context.individual and context.cardarea == G.play
             and not context.blueprint then
             local hand = context.full_hand or (G.play and G.play.cards) or {}
-            if #hand ~= card.ability.extra.size then return end
+            -- The Purgatory Deck's boon: how many cards were played no longer matters.
+            if #hand ~= card.ability.extra.size and not (CelestasMod.purg and CelestasMod.purg("astrum")) then return end
 
             SMODS.scale_card(card, {
                 ref_table = card.ability.extra,
@@ -10185,6 +10216,17 @@ SMODS.Joker {
 
     calculate = function(self, card, context)
         if not (context.selling_self and not context.blueprint) then return end
+
+        -- The Purgatory Deck's boon: two Negative Tags on top of the Joker.
+        if (CelestasMod.purg and CelestasMod.purg("grimmi")) then
+            G.E_MANAGER:add_event(Event {
+                func = function()
+                    for _ = 1, 2 do add_tag(Tag("tag_negative")) end
+                    play_sound("generic1")
+                    return true
+                end
+            })
+        end
 
         local key = G.GAME and G.GAME.celesta_last_joker_sold
         -- TEMPORARY trace, until this is seen working in a run.
@@ -10768,10 +10810,17 @@ SMODS.Joker {
 local LUCYPYRE_KEY = "j_celesta_lucypyre"
 
 --- What every Blind's quota is multiplied by while LucyPyre is held.
+--- What one LucyPyre takes off, in percent: its own, or 25 under the Purgatory Deck's boon.
+function CelestasMod.lucypyre_percent(ability)
+    local percent = ((ability or {}).extra or {}).percent or 0
+    if (CelestasMod.purg and CelestasMod.purg("lucypyre")) and percent < 25 then percent = 25 end
+    return percent
+end
+
 function CelestasMod.lucypyre_scale()
     local scale = 1
     for _, found in ipairs(CelestasMod.find_joker(LUCYPYRE_KEY)) do
-        local percent = ((found.ability or {}).extra or {}).percent or 0
+        local percent = CelestasMod.lucypyre_percent(found.ability)
         scale = scale * (1 - percent / 100)
     end
 
@@ -10823,7 +10872,7 @@ SMODS.Joker {
     config = { extra = { percent = 10 } },
 
     loc_vars = function(self, info_queue, card)
-        return { vars = { card.ability.extra.percent } }
+        return { vars = { CelestasMod.lucypyre_percent(card.ability) } }
     end,
 }
 
@@ -11814,7 +11863,9 @@ SMODS.Joker {
         -- A Favor Stamp takes the cap off: every card the hand did not score is spent.
         if not CelestasMod.more_than(stored, 0) then return end
         if CelestasMod.more_than(stored, card.ability.extra.cap)
-            and not (CelestasMod.favored and CelestasMod.favored(card)) then
+            and not (CelestasMod.favored and CelestasMod.favored(card))
+            -- ...and so does the Purgatory Deck's boon, for every Dokibird.
+            and not (CelestasMod.purg and CelestasMod.purg("dokibird")) then
             return
         end
 
@@ -11849,6 +11900,10 @@ SMODS.Joker {
 --- How many extra picks this card should be handing out right now.
 local function snuffy_want()
     local round = G.GAME and G.GAME.current_round
+    -- The Purgatory Deck's boon: every Hand of the round, not only the ones still to play.
+    if (CelestasMod.purg and CelestasMod.purg("snuffy")) then
+        return math.max(0, ((round and round.hands_left) or 0) + ((round and round.hands_played) or 0))
+    end
     return math.max(0, (round and round.hands_left) or 0)
 end
 
@@ -12442,9 +12497,16 @@ CelestasMod.CALAMITAS_CAP = 4
 ---
 --- A card not in the row at all is nothing: this is asked of a Joker in the
 --- shop and of the one in the Collection, and neither has a side.
+function CelestasMod.calamitas_cap(extra)
+    local cap = (extra and extra.max) or CelestasMod.CALAMITAS_CAP
+    -- The Purgatory Deck's boon: six, not four.
+    if (CelestasMod.purg and CelestasMod.purg("calamitas")) and cap < 6 then cap = 6 end
+    return cap
+end
+
 function CelestasMod.calamitas_times(card)
     local extra = card and card.ability and card.ability.extra
-    local cap = (extra and extra.max) or CelestasMod.CALAMITAS_CAP
+    local cap = CelestasMod.calamitas_cap(extra)
     local row = G.jokers and G.jokers.cards
     if not row then return 0 end
     for i, held in ipairs(row) do
@@ -12476,7 +12538,7 @@ SMODS.Joker {
     config = { extra = { max = CelestasMod.CALAMITAS_CAP } },
 
     loc_vars = function(self, info_queue, card)
-        return { vars = { card.ability.extra.max,
+        return { vars = { CelestasMod.calamitas_cap(card.ability.extra),
                           CelestasMod.calamitas_times(card) } }
     end,
 

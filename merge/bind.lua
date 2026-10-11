@@ -182,7 +182,7 @@ function Bind.selection()
     -- loose Jokers, or four loose ones: all three are just "the members add
     -- up to a registered group", so there is one test rather than three.
     if #picked >= 2 and #picked <= 4
-        and Bind.quad_for(Bind.group_members(picked)) then
+        and Bind.quad_unlocked(Bind.quad_for(Bind.group_members(picked))) then
         return picked
     end
     return nil
@@ -250,7 +250,7 @@ end
 function Bind.merge_quad(cards)
     local members = Bind.group_members(cards)
     local def = Bind.quad_for(members)
-    if not def then return false end
+    if not Bind.quad_unlocked(def) then return false end
     for _, card in ipairs(cards) do
         if not Bind.can_bind(card) then return false end
     end
@@ -525,6 +525,17 @@ end
 function Bind.quad_for(keys)
     if type(keys) ~= "table" or #keys ~= 4 then return nil end
     return Bind.QUADS[quad_key(keys)]
+end
+
+--- Whether this quad may be MADE right now. Always, except on the Purgatory Deck, where every quad
+--- is locked until a modifier has unlocked it, one at a time (items/purgatory.lua). A quad that
+--- already exists is not asked: a card holding one is a quad whatever is unlocked.
+--- Nothing - not a quad - is not unlocked.
+function Bind.quad_unlocked(def)
+    if not def then return false end
+    if not (CelestasMod.run_has_deck and CelestasMod.run_has_deck("purgatory")) then return true end
+    local state = G.GAME and G.GAME.celesta_purgatory
+    return (state and state.quads and state.quads[def.key]) and true or false
 end
 
 --- Specials that pair one Joker with a CLASS of partners rather than a named

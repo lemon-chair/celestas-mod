@@ -369,10 +369,47 @@ end
 -- one name would have the mark drawn over the pack card too, which already has
 -- the stamp printed on its face.
 
---- The stamp this Joker is wearing, if any.
+--- The stamp this Joker is wearing, if any: the first, which is the one a Joker has when it can
+--- only have one.
 function Stamps.of(card)
     return type(card) == "table" and card.ability and card.ability.celesta_stamp
         or nil
+end
+
+--- The second field a stamp can sit in, once the Purgatory Deck's boon has been taken: a Joker may
+--- then wear two. Drawn to the left of the first.
+local SECOND = "celesta_stamp2"
+
+--- Every stamp a card's ability is wearing, the first and then the second.
+local function stamps_in(ability)
+    local out = {}
+    if type(ability) ~= "table" then return out end
+    if ability.celesta_stamp then out[#out + 1] = ability.celesta_stamp end
+    if ability[SECOND] then out[#out + 1] = ability[SECOND] end
+    return out
+end
+
+--- Every stamp this Joker is wearing.
+function Stamps.all(card)
+    return stamps_in(type(card) == "table" and card.ability or nil)
+end
+
+--- How many stamps a Joker may wear: one, or two with the Purgatory Deck's boon.
+function Stamps.slots()
+    return (G.GAME and G.GAME.celesta_stamp_slots) or 1
+end
+
+--- Whether this Joker has a place for another stamp - and, for `kind_key`, one it may take: a
+--- passive stamp (Lucky, Favor) is not worn twice, as a second would do nothing.
+function Stamps.has_room(card, kind_key)
+    local ability = card and card.ability
+    if not ability then return false end
+    if not ability.celesta_stamp then return true end
+    if Stamps.slots() < 2 or ability[SECOND] then return false end
+    local kind = kind_key and Stamps.BY_KEY[kind_key]
+    local worn = Stamps.kind(ability.celesta_stamp)
+    if kind and worn and kind.passive and kind.effect == worn.effect then return false end
+    return true
 end
 
 --- The stamp a card is wearing, whichever half of it is running.
@@ -388,10 +425,16 @@ function Stamps.worn(card)
     return ability and ability.celesta_stamp or nil
 end
 
---- True when `card` wears a Stamp of this effect.
+--- True when `card` wears a Stamp of this effect, in either place it can be worn.
 function Stamps.wears(card, effect)
-    local kind = Stamps.kind(Stamps.worn(card))
-    return (kind and kind.effect == effect) and true or false
+    if type(card) ~= "table" then return false end
+    local Bind = CelestasMod.Bind
+    local lent = Bind and Bind.lent and Bind.lent[card]
+    for _, stamp in ipairs(stamps_in((lent and lent.ability) or card.ability)) do
+        local kind = Stamps.kind(stamp)
+        if kind and kind.effect == effect then return true end
+    end
+    return false
 end
 
 --- Whether a Joker is wearing a Favor Stamp: what the Jokers it can go on ask about themselves.
@@ -412,7 +455,7 @@ function Stamps.target(kind_key)
     if not (joker and joker.ability and joker.ability.set == "Joker") then
         return nil
     end
-    if joker.ability.celesta_stamp then return nil end
+    if not Stamps.has_room(joker, kind_key) then return nil end
 
     -- A Favor Stamp goes only on a Joker it has an effect for.
     local kind = kind_key and Stamps.BY_KEY[kind_key]
@@ -528,7 +571,12 @@ function Stamps.press(card)
     local joker = Stamps.target(stamp and stamp.kind)
     if not (joker and stamp) then return end
 
-    joker.ability.celesta_stamp = stamp
+    -- The first place if it is free, the second if not.
+    if joker.ability.celesta_stamp then
+        joker.ability[SECOND] = stamp
+    else
+        joker.ability.celesta_stamp = stamp
+    end
     if G.jokers then G.jokers:unhighlight_all() end
 
     -- A Favor Stamp changes things the moment it lands: a hand size given back, a counter
@@ -711,7 +759,26 @@ function Stamps.payout(card, context)
         return nil
     end
 
-    local kind = Stamps.kind(Stamps.of(card))
+    -- Each stamp pays, the second after the first: the second rides on the first's tail.
+    local first
+    for _, stamp in ipairs(Stamps.all(card)) do
+        local payout = Stamps.payout_of(card, stamp, context)
+        if payout then
+            if first then
+                local tail = first
+                while type(tail.extra) == "table" do tail = tail.extra end
+                tail.extra = payout
+            else
+                first = payout
+            end
+        end
+    end
+    return first
+end
+
+--- What one stamp pays for the trigger just reported, or nil.
+function Stamps.payout_of(card, stamp, context)
+    local kind = Stamps.kind(stamp)
     if not kind or kind.effect == "retrigger" or kind.passive then return nil end
 
     -- What the Joker was actually doing, which is what decides whether this
@@ -734,7 +801,6 @@ function Stamps.payout(card, context)
         return nil
     end
 
-    local stamp = Stamps.of(card)
     return { [kind.effect] = stamp.value, card = card, [PAYOUT_FLAG] = true }
 end
 
@@ -769,10 +835,12 @@ end
 
 --- How many extra times this Joker's stamp runs it.
 function Stamps.retriggers(card)
-    local stamp = Stamps.of(card)
-    local kind = Stamps.kind(stamp)
-    if not kind or kind.effect ~= "retrigger" then return 0 end
-    return stamp.value or 0
+    local total = 0
+    for _, stamp in ipairs(Stamps.all(card)) do
+        local kind = Stamps.kind(stamp)
+        if kind and kind.effect == "retrigger" then total = total + (stamp.value or 0) end
+    end
+    return total
 end
 
 local celesta_stamp_retriggers_ref = SMODS.calculate_retriggers
@@ -796,6 +864,10 @@ end
 -- keeps whatever art, edition and enhancement it already had, and the stamp
 -- sits on top of all of it.
 
+--- How far left a second stamp's mark sits, as a share of the card's width: the mark is about 12
+--- of the card's 71 pixels wide, and this is that and a little to spare.
+Stamps.MARK_STEP = 0.19
+
 -- One sprite per drawing, shared by every Joker wearing that stamp. Built on
 -- first use rather than at load: the atlases do not exist yet when this file
 -- runs.
@@ -814,14 +886,18 @@ local celesta_stamp_draw_ref = Card.draw
 function Card:draw(layer)
     celesta_stamp_draw_ref(self, layer)
 
-    local kind = Stamps.kind(Stamps.of(self))
-    if not kind then return end
     if self.facing == "back" or layer == "shadow" then return end
 
-    local sprite = mark_sprite(kind.art)
-    if not sprite then return end
-    sprite.role.draw_major = self
-    sprite:draw_shader("dissolve", nil, nil, nil, self.children.center)
+    -- The first in the corner, and the second to its left, one mark's width over.
+    for place, stamp in ipairs(Stamps.all(self)) do
+        local kind = Stamps.kind(stamp)
+        local sprite = kind and mark_sprite(kind.art)
+        if sprite then
+            sprite.role.draw_major = self
+            sprite:draw_shader("dissolve", nil, nil, nil, self.children.center,
+                               nil, nil, (1 - place) * Stamps.MARK_STEP * G.CARD_W, 0)
+        end
+    end
 end
 
 --------------------------------------------------------------------------------
@@ -838,17 +914,24 @@ end
 
 --- The stamp's line for the card it is on, or nil.
 local function mark_rows(card)
-    local stamp = Stamps.of(card)
-    local kind = Stamps.kind(stamp)
-    if not kind then return nil end
-
-    -- A Favor Stamp says what it does to THIS Joker, which is the one line each Joker has.
-    if kind.effect == "favor" then
-        local Favor = CelestasMod.Favor
-        return Favor and Favor.mark_rows(card, localized_rows) or nil
+    local rows = {}
+    for _, stamp in ipairs(Stamps.all(card)) do
+        local kind = Stamps.kind(stamp)
+        if kind then
+            -- A Favor Stamp says what it does to THIS Joker, which is the one line each Joker has.
+            local more
+            if kind.effect == "favor" then
+                local Favor = CelestasMod.Favor
+                more = Favor and Favor.mark_rows(card, localized_rows) or nil
+            else
+                more = localized_rows("celesta_stamp_mark_" .. kind.effect,
+                                      stamp_vars(stamp, kind), false)
+            end
+            for _, row in ipairs(more or {}) do rows[#rows + 1] = row end
+        end
     end
-    return localized_rows("celesta_stamp_mark_" .. kind.effect,
-                          stamp_vars(stamp, kind), false)
+    if #rows == 0 then return nil end
+    return rows
 end
 
 local celesta_stamp_ui_ref = Card.generate_UIBox_ability_table
