@@ -26,6 +26,8 @@ local COMMUNITY_TAGS = {
     "tag_meteor",
     "tag_buffoon",
     "tag_ethereal",
+    -- This mod's own: opens a free Stamp Pack (stamps/tag.lua).
+    "tag_celesta_stamp",
 }
 
 --- The "double" in the description.

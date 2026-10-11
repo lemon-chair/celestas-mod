@@ -321,6 +321,7 @@ local CREDIT_LINES = {
     "celesta_credit_eidolonwyrm",
     "celesta_credit_astrum",
     "celesta_credit_urschleim",
+    "celesta_credit_monster_kumi",
 }
 
 --- A line of credits text.

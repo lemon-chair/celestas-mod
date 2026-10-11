@@ -1291,6 +1291,13 @@ local function pool_allowed(listed)
     for base, lost in pairs(conversions or {}) do
         if allowed[base] then allowed[lost] = true end
     end
+    -- ...and the other forms a Joker's Lost Soul may make.
+    local alternates = CelestasMod.Lost and CelestasMod.Lost.ALTERNATES
+    for base, others in pairs(alternates or {}) do
+        if allowed[base] then
+            for _, lost in ipairs(others) do allowed[lost] = true end
+        end
+    end
     return allowed
 end
 

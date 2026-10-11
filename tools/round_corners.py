@@ -65,6 +65,8 @@ SHARED = {"jokers", "consumables", "decks", "sleeves", "icon", "seals", "driftwo
           "stamp_mult", "stamp_chips", "stamp_x_mult", "stamp_x_chips",
           "stamp_e_mult", "stamp_e_chips", "stamp_money",
           "stamp_retrigger", "stamp_lucky", "stamp_favor", "stamp_pack",
+          # The Stamp Tag's icon: a 34x34 tag sprite, not a card.
+          "tag_stamp",
 }
 CARD_W, CARD_H = 71, 95
 

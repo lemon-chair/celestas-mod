@@ -4578,6 +4578,9 @@ local function convert_played_base(played, suit, rank)
     end)
 end
 
+-- Shared with Radiation Ebiko in jokers/lost.lua, which rewrites cards the same way.
+CelestasMod.convert_played_base = convert_played_base
+
 local function convert_scoring_to(context, suit)
     local scoring = context.scoring_hand
     if type(scoring) ~= "table" then return 0 end

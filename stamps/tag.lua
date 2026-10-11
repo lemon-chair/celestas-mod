@@ -4,16 +4,16 @@
 --- is given by the Purgatory Deck's "Gain a Stamp tag" boon and by nothing else: it is not in the
 --- pool the skip Tags are drawn from.
 ---
---- Its picture is the Buffoon Tag's for now: the real art has not been drawn. Replace `atlas` and
---- `pos` with an atlas of its own when it has.
+-- A tag sprite is 34x34, which is the cell the base game's own Tags are drawn at.
+SMODS.Atlas { key = "tag_stamp", path = "tag_stamp.png", px = 34, py = 34 }
 
 -- Resolved at load: SMODS.current_mod is only valid while the mod is loading.
 local PACK_KEY = "p_" .. SMODS.current_mod.prefix .. "_stamp_pack"
 
 SMODS.Tag {
     key = "stamp",
-    atlas = "tags",
-    pos = { x = 4, y = 2 },
+    atlas = "tag_stamp",
+    pos = { x = 0, y = 0 },
     config = { type = "new_blind_choice" },
     discovered = true,
 

@@ -268,6 +268,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "cillia",
+    path = "cillia.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "clover",
     path = "clover.png",
     px = 71,
@@ -933,6 +940,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "monster_kumi",
+    path = "monster_kumi.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "moomerrily",
     path = "moomerrily.png",
     px = 71,
@@ -1131,6 +1145,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "radiaactive",
     path = "radiaactive.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "radiation_ebiko",
+    path = "radiation_ebiko.png",
     px = 71,
     py = 95,
 }

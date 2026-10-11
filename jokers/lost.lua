@@ -74,6 +74,7 @@ Lost.CONVERSIONS = {
     ["j_stencil"] = joker("cutout"),
     ["j_credit_card"] = joker("fraudulent_card"),
     [joker("obkatiekat")] = joker("obkhaoskat"),
+    [joker("ebiko")] = joker("radiation_ebiko"),
     [joker("fufu")] = joker("black_hole_sun_fufu"),
     ["j_loyalty_card"] = joker("royalty_card"),
     -- Vanilla's own keys, which are not how either Joker reads: "To Do List"
@@ -86,11 +87,30 @@ Lost.CONVERSIONS = {
     ["j_obelisk"] = joker("monolith"),
 }
 
+--- Further forms a Joker's Lost Soul may make instead of the one above: Kumi becomes Doodle Kumi
+--- or Monster Kumi, which of the two decided at random when the Soul is spent. The first form is
+--- the one in CONVERSIONS; these are the others, and every one of them is read the other way
+--- below, so each fills the shop with the Joker it was.
+Lost.ALTERNATES = {
+    [joker("kumi")] = { joker("monster_kumi") },
+}
+
+--- Every Lost form a Joker has: the one in CONVERSIONS first, then the others, in the order written.
+function Lost.forms(base)
+    local out = {}
+    if Lost.CONVERSIONS[base] then out[1] = Lost.CONVERSIONS[base] end
+    for _, key in ipairs(Lost.ALTERNATES[base] or {}) do out[#out + 1] = key end
+    return out
+end
+
 --- The same table read the other way: which Joker a Corrupt one used to be.
 --- Built rather than written out, so the pair above stays the single place a
 --- conversion is declared.
 Lost.BASE_OF = {}
 for base, corrupt in pairs(Lost.CONVERSIONS) do Lost.BASE_OF[corrupt] = base end
+for base, others in pairs(Lost.ALTERNATES) do
+    for _, corrupt in ipairs(others) do Lost.BASE_OF[corrupt] = base end
+end
 
 --- True for a Joker the Lost Soul can be spent on.
 ---
@@ -195,7 +215,10 @@ local function reveal(center, card)
 end
 
 function Lost.convert(card)
-    local key = Lost.CONVERSIONS[card.config.center.key]
+    local forms = Lost.forms(card.config.center.key)
+    -- One form is the answer; two or more is a roll, on a stream of its own.
+    local key = forms[1]
+    if #forms > 1 then key = pseudorandom_element(forms, pseudoseed("celesta_lost_form")) end
     local center = key and G.P_CENTERS[key]
     if not center then return false end
 
@@ -1524,6 +1547,154 @@ SMODS.Joker {
 
     remove_from_deck = function(self, card, from_debuff)
         Lost.sync_slots(card)
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Monster Kumi
+--------------------------------------------------------------------------------
+--
+-- Kumi's other corrupted form. A Gold Card held in hand is worth $66 at the end of the round, in
+-- all: it pays what it was going to and this makes up the rest, the way Corrupt Maya lands Steel
+-- on exactly X3 rather than adding to it.
+
+--- What one Gold Card held in hand pays at the end of the round on its own account. Read off the
+--- card, as vanilla reads it (card.lua, get_end_of_round_effect: only a positive h_dollars pays),
+--- so a Gold Card whose value something has moved still lands on the figure.
+local function gold_value(other_card)
+    local own = other_card and other_card.ability and other_card.ability.h_dollars
+    return (own and own > 0) and own or 0
+end
+
+SMODS.Joker {
+    key = "monster_kumi",
+    atlas = "monster_kumi",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    -- Hidden in the collection until one has been made; see Corrupt Maya.
+    unlocked = false,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+    -- Whatever it used to be: a shop of Kumis.
+    celesta_lost_shop = true,
+
+    config = { extra = { dollars = 66, joker_slots = Lost.SLOT_COST } },
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS.m_gold
+        return { vars = { card.ability.extra.dollars, card.ability.extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        Lost.sync_slots(nil, card)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        Lost.sync_slots(card)
+    end,
+
+    calculate = function(self, card, context)
+        -- The held-in-hand pass at the end of the round, one raise per Gold Card.
+        if not (context.individual and context.cardarea == G.hand and context.end_of_round) then
+            return
+        end
+        local other = context.other_card
+        if not (other and not other.debuff and SMODS.has_enhancement(other, "m_gold")) then return end
+
+        local owed = card.ability.extra.dollars - gold_value(other)
+        if owed <= 0 then return end
+        return { dollars = owed, card = card }
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Radiation Ebiko
+--------------------------------------------------------------------------------
+--
+-- Ebiko turns the scoring cards to Diamonds; this turns every card - the whole played hand, and
+-- the cards still held in hand - and then retriggers each Diamond that scores, twice.
+--
+-- Rewritten at context.before, synchronously, for the reason Ebiko is: the hand is already named,
+-- and what a card is worth and every suit check made while scoring read the new suit.
+
+--- Turns one card to Diamonds, unless it is one already or has no suit to turn.
+local function to_diamonds(card)
+    if SMODS.has_no_suit(card) or card:is_suit("Diamonds") then return false end
+    CelestasMod.convert_played_base(card, "Diamonds")
+    G.E_MANAGER:add_event(Event {
+        func = function() card:juice_up() return true end
+    })
+    return true
+end
+
+SMODS.Joker {
+    key = "radiation_ebiko",
+    atlas = "radiation_ebiko",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    unlocked = false,
+    discovered = false,
+    blueprint_compat = false,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+    -- Whatever it used to be: a shop of Ebikos.
+    celesta_lost_shop = true,
+
+    config = { extra = { repetitions = 2, joker_slots = Lost.SLOT_COST } },
+
+    loc_vars = function(self, info_queue, card)
+        local extra = card.ability.extra
+        return { vars = { extra.repetitions, extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        Lost.sync_slots(nil, card)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        Lost.sync_slots(card)
+    end,
+
+    calculate = function(self, card, context)
+        if context.before and not context.blueprint then
+            local changed = 0
+            for _, played in ipairs(context.full_hand or context.scoring_hand or {}) do
+                if to_diamonds(played) then changed = changed + 1 end
+            end
+            for _, held in ipairs((G.hand and G.hand.cards) or {}) do
+                if to_diamonds(held) then changed = changed + 1 end
+            end
+            if changed > 0 then
+                return { message = localize("celesta_diamonds"), colour = G.C.DIAMONDS, card = card }
+            end
+            return
+        end
+
+        -- A Diamond that scores, twice more. The suit is asked through is_suit, so a Wild Card is one.
+        if context.repetition and context.cardarea == G.play
+            and context.other_card and context.other_card:is_suit("Diamonds") then
+            return {
+                message = localize("k_again_ex"),
+                repetitions = card.ability.extra.repetitions,
+                card = card,
+            }
+        end
     end,
 }
 

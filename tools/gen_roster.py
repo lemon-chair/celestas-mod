@@ -55,6 +55,8 @@ SHARED = {"jokers", "consumables", "decks", "sleeves", "icon", "seals", "driftwo
           "stamp_mult", "stamp_chips", "stamp_x_mult", "stamp_x_chips",
           "stamp_e_mult", "stamp_e_chips", "stamp_money",
           "stamp_retrigger", "stamp_lucky", "stamp_favor", "stamp_pack",
+          # The Stamp Tag's icon: a 34x34 tag sprite, not a card.
+          "tag_stamp",
 }   # not per-joker art
 
 # Auto title-casing cannot know how a creator styles their own name.
@@ -125,6 +127,9 @@ DISPLAY_NAMES = {
     "hestia": "Hestia",
     "ekkomori": "Ekkomori",
     "bubi": "Bubi",
+    "cillia": "Cillia",
+    "monster_kumi": "Monster Kumi",
+    "radiation_ebiko": "Radiation Ebiko",
     "geega": "Geega",
     "unnamed": "Unnamed",
     "cosmic": "Cosmic",
@@ -497,7 +502,7 @@ LOC_TAIL = '''        },
                     "Gives {C:attention}double{} of one of the",
                     "following Tags at random:",
                     "{C:attention}Standard{}, {C:attention}Charm{}, {C:attention}Meteor{},",
-                    "{C:attention}Buffoon{}, {C:attention}Ethereal{}",
+                    "{C:attention}Buffoon{}, {C:attention}Ethereal{}, {C:attention}Stamp{}",
                 },
             },
             c_celesta_gene = {
@@ -5062,6 +5067,7 @@ LOC_TAIL = '''        },
             celesta_credit_eidolonwyrm = "Eidolon Wyrm art - Nyrallia on DeviantArt",
             celesta_credit_astrum = "Astrum Aureus art - Total Calamity Wiki",
             celesta_credit_urschleim = "Urschleim - Core Keeper wiki",
+            celesta_credit_monster_kumi = "Monster Kumi art - @Medu_Yusa on x.com",
             celesta_credit_rest_1 = "Other art credits can (probably) be found",
             celesta_credit_rest_2 = "through each person's Twitter/BlueSky pages.",
             -- Floating message text. Vanilla has no generic "+card" key

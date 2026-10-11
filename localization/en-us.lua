@@ -386,6 +386,14 @@ return {
                     "{C:inactive}(Currently {C:attention}#2#{C:inactive} cards)",
                 },
             },
+            j_celesta_cillia = {
+                name = "Cillia",
+                text = {
+                    "When a {C:attention}Blind{} is selected,",
+                    "create {C:attention}#1#{} {C:green}Uncommon{} Jokers",
+                    "{C:inactive}(Must have room)",
+                },
+            },
             j_celesta_clover = {
                 name = "Moo Moo Clover",
                 text = {
@@ -1249,6 +1257,20 @@ return {
                     "{C:attention}Obelisk{}",
                 },
             },
+            j_celesta_monster_kumi = {
+                name = "Monster Kumi",
+                text = {
+                    "{C:attention}Gold{} cards held in hand",
+                    "give {C:money}$#1#{} at end of round",
+                    "{C:red}-#2#{} Joker slots, cannot be sold",
+                    "All {C:attention}shop{} items become {C:attention}Kumi{}",
+                    "{C:inactive,s:0.8}Art by @Medu_Yusa on x.com{}",
+                },
+                unlock = {
+                    "Use a {C:spectral}Lost Soul{} on",
+                    "{C:attention}Kumi{}",
+                },
+            },
             j_celesta_moomerrily = {
                 name = "Moo Merrily",
                 text = {
@@ -1498,6 +1520,21 @@ return {
                 text = {
                     "Retriggers {C:blue}Blue Seal{} cards",
                     "held in hand #1# time",
+                },
+            },
+            j_celesta_radiation_ebiko = {
+                name = "Radiation Ebiko",
+                text = {
+                    "When a hand is played, converts",
+                    "played cards and cards held in",
+                    "hand to {C:diamonds}Diamonds{}",
+                    "Retriggers {C:diamonds}Diamond{} cards {C:attention}#1#{} times",
+                    "{C:red}-#2#{} Joker slots, cannot be sold",
+                    "All {C:attention}shop{} items become {C:attention}Ebiko{}",
+                },
+                unlock = {
+                    "Use a {C:spectral}Lost Soul{} on",
+                    "{C:attention}Ebiko{}",
                 },
             },
             j_celesta_radicalmari = {
@@ -2126,7 +2163,7 @@ return {
                     "Gives {C:attention}double{} of one of the",
                     "following Tags at random:",
                     "{C:attention}Standard{}, {C:attention}Charm{}, {C:attention}Meteor{},",
-                    "{C:attention}Buffoon{}, {C:attention}Ethereal{}",
+                    "{C:attention}Buffoon{}, {C:attention}Ethereal{}, {C:attention}Stamp{}",
                 },
             },
             c_celesta_gene = {
@@ -6691,6 +6728,7 @@ return {
             celesta_credit_eidolonwyrm = "Eidolon Wyrm art - Nyrallia on DeviantArt",
             celesta_credit_astrum = "Astrum Aureus art - Total Calamity Wiki",
             celesta_credit_urschleim = "Urschleim - Core Keeper wiki",
+            celesta_credit_monster_kumi = "Monster Kumi art - @Medu_Yusa on x.com",
             celesta_credit_rest_1 = "Other art credits can (probably) be found",
             celesta_credit_rest_2 = "through each person's Twitter/BlueSky pages.",
             -- Floating message text. Vanilla has no generic "+card" key

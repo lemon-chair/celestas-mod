@@ -177,3 +177,54 @@ SMODS.Joker {
         return { vars = { Stamps and Stamps.BUBI_PACK_SIZE or 5 } }
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Cillia [Uncommon] - choosing a Blind brings two Uncommon Jokers.
+--------------------------------------------------------------------------------
+--
+-- Room is asked the way every vanilla Joker-maker asks it, buffer included, and each slot is
+-- reserved across the event that fills it - Riff-Raff's shape, and Squchan's - so two things making
+-- a Joker in the same moment cannot both take the last slot. As many as fit, up to two.
+
+SMODS.Joker {
+    key = "cillia",
+    atlas = "cillia",
+    pos = { x = 0, y = 0 },
+    rarity = 2, cost = 6,
+    unlocked = true, discovered = false,
+    -- A copy makes two more: it is the whole of what this does.
+    blueprint_compat = true, eternal_compat = true,
+
+    config = { extra = { count = 2 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.count } }
+    end,
+
+    calculate = function(self, card, context)
+        if not (context.setting_blind and not (context.blueprint_card or card).getting_sliced) then
+            return
+        end
+        if not (G.jokers and G.jokers.config) then return end
+
+        local free = (G.jokers.config.card_limit or 0) - (#G.jokers.cards + (G.GAME.joker_buffer or 0))
+        free = math.min(free, card.ability.extra.count)
+        if free <= 0 then return end
+
+        for _ = 1, free do
+            G.GAME.joker_buffer = (G.GAME.joker_buffer or 0) + 1
+            G.E_MANAGER:add_event(Event {
+                trigger = "before", delay = 0.0,
+                func = function()
+                    local made = SMODS.add_card { set = "Joker", rarity = "Uncommon", key_append = "celesta_cillia" }
+                    if made then made:start_materialize() end
+                    G.GAME.joker_buffer = math.max(0, (G.GAME.joker_buffer or 1) - 1)
+                    return true
+                end
+            })
+        end
+
+        return { message = localize("k_plus_joker"), colour = G.C.SECONDARY_SET.Joker,
+                 card = context.blueprint_card or card }
+    end,
+}
