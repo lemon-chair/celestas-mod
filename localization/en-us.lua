@@ -4053,14 +4053,14 @@ return {
                 },
             },
             celesta_bind_quad_sinful = {
-                name = "Sinful Joker",
+                name = "Suit Jokers",
                 text = {
                     "Scored cards give {C:mult}+#1#{} Mult",
                     "and then {X:mult,C:white}X#2#{} Mult",
                 },
             },
             celesta_bind_quad_geode = {
-                name = "Geode",
+                name = "Suit Stones",
                 text = {
                     "Scored cards give {C:money}$#1#{}, {C:chips}+#2#{} Chips,",
                     "{C:mult}+#3#{} Mult, and a {C:green}#4# in #5#{} chance",

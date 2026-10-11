@@ -908,6 +908,9 @@ function P.roll_offers(st)
         offers[#offers + 1] = {
             good = good.key,
             bad = bad.key,
+            -- What each one rolled with the offer (the quad merge a boon unlocks, the suit a curse
+            -- removes), kept so the text names it and the choice applies that very thing.
+            good_arg = good.roll and good.roll(st) or nil,
             bad_arg = bad.roll and bad.roll(st) or nil,
         }
     end
@@ -941,7 +944,7 @@ function P.choose(index)
     if G.OVERLAY_MENU then G.FUNCS.exit_overlay_menu() end
 
     for _, entry in ipairs({ good, bad }) do
-        local ok, err = pcall(entry.apply, st, entry == bad and offer.bad_arg or nil)
+        local ok, err = pcall(entry.apply, st, entry == bad and offer.bad_arg or offer.good_arg)
         if not ok then
             CelestasMod.warn_once("purgatory_" .. entry.id,
                 ("Purgatory could not apply %s: %s"):format(entry.id, tostring(err)))
@@ -1002,7 +1005,7 @@ local function offer_panel(index, offer)
                         focus_args = { nav = "wide" } },
              nodes = {
                  label(localize("celesta_purg_good"), G.C.GREEN),
-                 text_box("good", offer.good),
+                 text_box("good", offer.good, offer.good_arg),
                  label(localize("celesta_purg_bad"), G.C.RED),
                  text_box("bad", offer.bad, offer.bad_arg),
              } }
