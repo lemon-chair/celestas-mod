@@ -624,6 +624,14 @@ add { kind = "good", key = "true_stars",
           end
       end }
 
+add { kind = "good", key = "spectral_shop",
+      -- Nothing to change on a deck whose shop already sells them (the Ghost Deck).
+      available = function() return (G.GAME.spectral_rate or 0) <= 0 end,
+      apply = function(st) st.spectral_shop = true end }
+
+add { kind = "good", key = "stamp_packs",
+      apply = function(st) st.stamp_packs = true end }
+
 -- ---------------------------------------------------------------- curses
 
 add { kind = "bad", key = "rerolls",
@@ -849,6 +857,15 @@ add { kind = "bad", key = "least_hand",
 
 add { kind = "bad", key = "reroll_two",
       apply = function(st) st.reroll_two = true end }
+
+add { kind = "bad", key = "no_planets",
+      apply = function(st) st.no_planets = true end }
+
+add { kind = "bad", key = "no_tarots",
+      apply = function(st) st.no_tarots = true end }
+
+add { kind = "bad", key = "destroy_held",
+      apply = function(st) st.destroy_held = true end }
 
 -- ---------------------------------------------------------------- the Boss Blinds
 --
@@ -1276,6 +1293,90 @@ function SMODS.poll_rarity(pool_key, rand_key, ...)
         if not empty then return 4 end
     end
     return celesta_purg_rarity_ref(pool_key, rand_key, ...)
+end
+
+--------------------------------------------------------------------------------
+-- What the shop sells, and what a Joker Pack holds
+--------------------------------------------------------------------------------
+--
+-- The shop rolls a card's set from three rates it reads off G.GAME as each card is made, and the
+-- Tarot and Planet Merchants write the first two again when they are redeemed. So the rates are
+-- moved for the length of that one call and put back after, rather than set once and overwritten.
+-- Spectral cards are as common as the Ghost Deck makes them (2, against 4 for a Tarot).
+
+--- The Spectral rate the boon gives the shop: the Ghost Deck's.
+P.SPECTRAL_SHOP_RATE = 2
+
+local celesta_purg_shop_ref = create_card_for_shop
+function create_card_for_shop(...)
+    local st = live()
+    if not (st and (st.no_tarots or st.no_planets or st.spectral_shop)) then
+        return celesta_purg_shop_ref(...)
+    end
+
+    local game = G.GAME
+    local tarot, planet, spectral = game.tarot_rate, game.planet_rate, game.spectral_rate
+    if st.no_tarots then game.tarot_rate = 0 end
+    if st.no_planets then game.planet_rate = 0 end
+    if st.spectral_shop then
+        game.spectral_rate = math.max(game.spectral_rate or 0, P.SPECTRAL_SHOP_RATE)
+    end
+
+    local out = { pcall(celesta_purg_shop_ref, ...) }
+    game.tarot_rate, game.planet_rate, game.spectral_rate = tarot, planet, spectral
+    if not out[1] then error(out[2], 0) end
+    return unpack(out, 2)
+end
+
+--- The chance a card in a Joker Pack is a Stamp instead: the Omen Globe's, for the Spectral card an
+--- Arcana Pack may hold.
+P.STAMP_PACK_ODDS = 0.2
+
+-- A Joker Pack makes each card through SMODS.create_card with the key_append "buf". A Stamp that
+-- turns up is an ordinary Stamp card; it is taken into the consumable tray (stamps/stamps.lua says
+-- so for a pack of this kind), and put on a Joker from there.
+local celesta_purg_create_ref = SMODS.create_card
+function SMODS.create_card(t, ...)
+    local st = live()
+    local Stamps = CelestasMod.Stamps
+    if st and st.stamp_packs and Stamps and type(t) == "table"
+        and t.set == "Joker" and t.key_append == "buf" and G.pack_cards and t.area == G.pack_cards
+        and pseudorandom(pseudoseed(SEED .. "_stamp_pack")) > 1 - P.STAMP_PACK_ODDS then
+        local kind = Stamps.roll_kind()
+        if kind then
+            return celesta_purg_create_ref({
+                set = Stamps.SET,
+                key = Stamps.center_key(kind.key),
+                area = G.pack_cards,
+                skip_materialize = true,
+            }, ...)
+        end
+    end
+    return celesta_purg_create_ref(t, ...)
+end
+
+--------------------------------------------------------------------------------
+-- The hand at the end of the round
+--------------------------------------------------------------------------------
+--
+-- The cards still held are put away just after what they pay is counted (a Gold Card has paid by
+-- then) and before they go to the discard. Destroyed here, so they never reach it: the ones
+-- destroyed are taken out of the hand at once, so the draws that put the rest away - each takes
+-- whatever the hand holds when it runs - do not pick a card that is on its way out. An Eternal
+-- playing card cannot be destroyed and is put away like any other.
+
+local celesta_purg_put_away_ref = G.FUNCS.draw_from_hand_to_discard
+G.FUNCS.draw_from_hand_to_discard = function(e, ...)
+    local st = live()
+    if st and st.destroy_held and G.hand and G.hand.cards[1] then
+        local held = {}
+        for i, card in ipairs(G.hand.cards) do held[i] = card end
+        SMODS.destroy_cards(held)
+        for _, card in ipairs(held) do
+            if card.destroyed or card.shattered then G.hand:remove_card(card) end
+        end
+    end
+    return celesta_purg_put_away_ref(e, ...)
 end
 
 --------------------------------------------------------------------------------

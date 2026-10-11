@@ -5957,6 +5957,36 @@ return {
                     "Jokers with an edition",
                 },
             },
+            celesta_purg_good_spectral_shop = {
+                text = {
+                    "{C:spectral}Spectral{} cards can",
+                    "appear in the shop",
+                },
+            },
+            celesta_purg_good_stamp_packs = {
+                text = {
+                    "{C:attention}Stamps{} can appear in",
+                    "{C:attention}Joker Packs{}",
+                },
+            },
+            celesta_purg_bad_no_planets = {
+                text = {
+                    "{C:planet}Planet{} cards can no longer",
+                    "appear in the shop",
+                },
+            },
+            celesta_purg_bad_no_tarots = {
+                text = {
+                    "{C:tarot}Tarot{} cards can no longer",
+                    "appear in the shop",
+                },
+            },
+            celesta_purg_bad_destroy_held = {
+                text = {
+                    "Cards held in hand at the end",
+                    "of the round are {C:attention}destroyed{}",
+                },
+            },
             celesta_stamp_mark_lucky = {
                 text = {
                     "{C:attention}Stamp:{} listed {C:green}odds{} are guaranteed",

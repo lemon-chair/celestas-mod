@@ -488,6 +488,10 @@ SMODS.ConsumableType {
     -- Answered here rather than from merge/bind.lua because this file owns the
     -- type, and it is loaded after that one; the pair is looked up by name.
     select_card = function(self, card, pack)
+        -- A Stamp that turned up in a Joker Pack (a Purgatory Deck boon) has no Joker to be put on
+        -- while the pack is open, so it is taken into the tray and used from there.
+        if pack and pack.kind == "Buffoon" then return "consumeables" end
+
         local Bind = CelestasMod.Bind
         if not (Bind and Bind.find_special) then return nil end
         local holder = Bind.find_special("dooby_nimi")
