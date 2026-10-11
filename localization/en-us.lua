@@ -6812,8 +6812,8 @@ return {
             -- The Purgatory Deck's box (items/purgatory.lua).
             celesta_purg_title = "Purgatory",
             celesta_purg_prompt = "Choose a modifier",
-            celesta_purg_good = "Boon",
-            celesta_purg_bad = "Curse",
+            celesta_purg_good = "Pro",
+            celesta_purg_bad = "Con",
             celesta_purg_reroll = "Reroll",
             celesta_purg_banned_hand = "You cannot play your least-played hand",
         },
