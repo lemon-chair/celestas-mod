@@ -4188,10 +4188,7 @@ LOC_TAIL = '''        },
             },
             celesta_purg_good_summon = {
                 text = {
-                    "Receive a {C:spectral}Summon{}. The {C:attention}Con{}",
-                    "is doubled, if it can be, and a",
-                    "{C:attention}Boss Blind{} upgrade is always",
-                    "the next {C:attention}Boss Blind{}",
+                    "Receive a {C:spectral}Summon{}",
                 },
             },
             celesta_purg_good_true_stars = {
