@@ -20,6 +20,8 @@ SMODS.current_mod.optional_features = {
 
 -- Load globals (custom colours + loc_colour hook)
 assert(SMODS.load_file("globals.lua"))()
+-- The Mythic rarity, before every Joker and before merge/bind.lua, which asks about it.
+assert(SMODS.load_file('items/mythic.lua'))()
 
 --------------------------------------------------------------------------------
 -- Shared atlases (the placeholder sheets + mod icon).
@@ -173,6 +175,8 @@ assert(SMODS.load_file('consumables/community.lua'))()
 -- The Lost Soul reaches into jokers/lost.lua, which has not loaded yet - but
 -- only from can_use and use, both of which need a run in progress.
 assert(SMODS.load_file('consumables/lost_soul.lua'))()
+-- Summon makes a Mythic Joker, which are all defined after this has loaded; only use needs them.
+assert(SMODS.load_file('consumables/summon.lua'))()
 -- Lifts vanilla's five-card ceiling on what a consumable may be used on, which
 -- this mod's raised selection limits and Haruka's doubling both run into.
 assert(SMODS.load_file('consumables/targets.lua'))()

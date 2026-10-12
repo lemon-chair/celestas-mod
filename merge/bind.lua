@@ -163,6 +163,18 @@ function Bind.can_bind(card)
     return true
 end
 
+--- Whether these cards may be merged as far as rarity goes: a Mythic Joker is merged only with
+--- other Mythic ones, and a plain one never with a Mythic one. All Mythic or none.
+function Bind.mythic_match(cards)
+    local is_mythic = CelestasMod.is_mythic
+    if not is_mythic then return true end
+    local first = is_mythic(cards[1]) and true or false
+    for i = 2, #cards do
+        if (is_mythic(cards[i]) and true or false) ~= first then return false end
+    end
+    return true
+end
+
 --- The two highlighted Jokers, or nil when the selection is not exactly two
 --- bindable ones.
 function Bind.selection()
@@ -175,13 +187,14 @@ function Bind.selection()
     -- Two loose Jokers is the ordinary merge, and always has been.
     if #picked == 2 and not Bind.is_merged(picked[1])
         and not Bind.is_merged(picked[2]) then
+        if not Bind.mythic_match(picked) then return nil end
         return picked
     end
 
     -- Anything else is a quad or it is nothing. Two pairs, a pair and two
     -- loose Jokers, or four loose ones: all three are just "the members add
     -- up to a registered group", so there is one test rather than three.
-    if #picked >= 2 and #picked <= 4
+    if #picked >= 2 and #picked <= 4 and Bind.mythic_match(picked)
         and Bind.quad_unlocked(Bind.quad_for(Bind.group_members(picked))) then
         return picked
     end
@@ -254,6 +267,7 @@ function Bind.merge_quad(cards)
     for _, card in ipairs(cards) do
         if not Bind.can_bind(card) then return false end
     end
+    if not Bind.mythic_match(cards) then return false end
 
     local host = cards[1]
     local abilities, edition = {}, host.edition
@@ -364,6 +378,7 @@ end
 ---     to animate away; its maker disposes of it.
 function Bind.merge(host, absorbed, fresh)
     if not (Bind.can_bind(host) and Bind.can_bind(absorbed)) then return false end
+    if not Bind.mythic_match({ host, absorbed }) then return false end
 
     -- Spelled out rather than folded into an `and`/`or`: resolve_edition
     -- answering nil is not a missing answer, it is the edition being lost, and
@@ -14270,9 +14285,7 @@ special("j_celesta_ironmouse", "j_celesta_saiiren", {
         local suit = CelestasMod.rotation_suit_at(suits, state.suit_index)
 
         if context.individual and context.cardarea == G.play then
-            if context.other_card ~= CelestasMod.saiiren_target(context, suit) then
-                return
-            end
+            if context.other_card ~= CelestasMod.saiiren_target(context, suit) then return end
             if not power_supported("ironmouse_saiiren_no_talisman",
                                    "Ironmouse + Saiiren", "Mult") then
                 return
@@ -14283,7 +14296,8 @@ special("j_celesta_ironmouse", "j_celesta_saiiren", {
         -- main_eval keeps the rotation to once per round rather than once per card the
         -- end-of-round pass looks at.
         if context.end_of_round and context.main_eval and not context.blueprint then
-            state.suit_index = CelestasMod.rotation_index(state.suit_index + 1, #suits)
+            local turned = CelestasMod.rotation_index(state.suit_index + 1, #suits)
+            state.suit_index = turned
             local next_suit = CelestasMod.rotation_suit_at(suits, state.suit_index)
             return { message = localize(next_suit, "suits_singular"),
                      colour = G.C.SUITS[next_suit], card = card }
@@ -14371,8 +14385,7 @@ special("j_celesta_kokonuts", "j_celesta_mooni", {
     end,
 
     calculate = function(def, card, context, state)
-        if context.setting_blind and not context.blueprint
-            and not (context.blueprint_card or card).getting_sliced then
+        if context.setting_blind and not context.blueprint and not (context.blueprint_card or card).getting_sliced then
             koko_sevens(card, 1, "celesta_bind_koko_mooni", false, nil, nil,
                 { suit = CelestasMod.STARS_SUIT, dollars = state.dollars })
             return nil, true

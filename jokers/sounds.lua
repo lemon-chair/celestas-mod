@@ -29,6 +29,7 @@
 SMODS.Sound { key = "arar_join",     path = "arar_join.ogg" }
 SMODS.Sound { key = "astrum_aureus_join", path = "astrum_aureus_join.wav" }
 SMODS.Sound { key = "ben_join",      path = "ben_join.mp3" }
+SMODS.Sound { key = "calamitas_join", path = "calamitas_join.ogg" }
 SMODS.Sound { key = "eidolonwyrm_join", path = "eidolonwyrm_join.wav" }
 SMODS.Sound { key = "kokonuts_join", path = "kokonuts_join.ogg" }
 SMODS.Sound { key = "kumi_join",     path = "kumi_join.ogg" }
@@ -42,6 +43,7 @@ CelestasMod.JOIN_SOUNDS = {
     j_celesta_arar     = "celesta_arar_join",
     j_celesta_astrum_aureus = "celesta_astrum_aureus_join",
     j_celesta_ben      = "celesta_ben_join",
+    j_celesta_calamitas = "celesta_calamitas_join",
     j_celesta_eidolonwyrm = "celesta_eidolonwyrm_join",
     j_celesta_kokonuts = "celesta_kokonuts_join",
     j_celesta_kumi     = "celesta_kumi_join",

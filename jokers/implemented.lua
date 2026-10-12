@@ -12487,7 +12487,7 @@ SMODS.Joker {
 
 
 --------------------------------------------------------------------------------
--- Calamitas [Legendary] - the row on its shorter side, over and over.
+-- Calamitas [Mythic] - the row on its shorter side, over and over.
 --------------------------------------------------------------------------------
 --
 -- Placement is the whole of it. Calamitas counts the Jokers to its left and
@@ -12542,13 +12542,21 @@ SMODS.Joker {
     key = "calamitas",
     atlas = "calamitas",
     pos = { x = 0, y = 0 },
-    rarity = 4, cost = 20,
+    rarity = "celesta_mythic", cost = 20,
     unlocked = true, discovered = false,
     -- A copy sits somewhere else in the row and so counts a different pair of
     -- sides; what it would retrigger is not what this does.
     blueprint_compat = true, eternal_compat = true,
 
     config = { extra = { max = CelestasMod.CALAMITAS_CAP } },
+
+    -- Not through `announces`, which is a local at the top of this file: the harnesses that run
+    -- the back half of it on its own do not have it.
+    add_to_deck = function(self, card, from_debuff)
+        if not from_debuff and CelestasMod.play_join_sound then
+            CelestasMod.play_join_sound("j_celesta_calamitas")
+        end
+    end,
 
     loc_vars = function(self, info_queue, card)
         return { vars = { CelestasMod.calamitas_cap(card.ability.extra),

@@ -11,6 +11,7 @@ G.C.CELESTA = {
     -- the loc hook below has one place to read from; suits/true_stars.lua
     -- samples the same value off the art.
     TRUE_STAR = HEX("D411D4"),
+    MYTHIC = HEX("E65CE6"),
 }
 
 --------------------------------------------------------------------------------
@@ -91,6 +92,7 @@ function loc_colour(_c, _default)
     G.ARGS.LOC_COLOURS.celesta_gold   = G.C.CELESTA.GOLD
     G.ARGS.LOC_COLOURS.celesta_white  = G.C.CELESTA.WHITE
     G.ARGS.LOC_COLOURS.celesta_true_star = G.C.CELESTA.TRUE_STAR
+    G.ARGS.LOC_COLOURS.celesta_mythic = G.C.CELESTA.MYTHIC
     return loc_colour_ref(_c, _default)
 end
 

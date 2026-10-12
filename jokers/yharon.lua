@@ -1,4 +1,4 @@
---- Yharon, Dragon of Rebirth [Legendary]
+--- Yharon, Dragon of Rebirth [Mythic]
 ---
 --- The Joker to Yharon's left has its Mult promoted one step up the
 --- hyperoperation ladder: +Mult becomes XMult, XMult becomes ^Mult, and ^Mult
@@ -192,7 +192,9 @@ SMODS.Joker {
     key = "yharon",
     atlas = "yharon",
     pos = { x = 0, y = 0 },
-    rarity = 4, cost = 20,
+    rarity = "celesta_mythic", cost = 20,
+    -- Mythic, and still only ever hatched from an egg: a Summon does not make one.
+    celesta_no_summon = true,
     -- Undiscovered until one is hatched in a run; phoenix_egg.lua's hatch
     -- discovers it, since the egg swaps in place and add_to_deck never runs.
     unlocked = true, discovered = false,

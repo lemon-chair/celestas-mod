@@ -21,6 +21,15 @@
 
 SMODS.Atlas { key = "occult", path = "occult.png", px = 71, py = 95 }
 
+--- The Spectral cards Occult cannot make, which are therefore not remembered: the way vanilla's
+--- Fool does not remember itself. Summon makes a Mythic Joker, and the Blessed Phoenix Egg and
+--- Plasma are cards that are pulled or that change the run rather than spent.
+CelestasMod.NO_OCCULT = {
+    c_celesta_summon = true,
+    c_celesta_blessed_phoenix_egg = true,
+    c_celesta_plasma = true,
+}
+
 --------------------------------------------------------------------------------
 -- Remembering the last one
 --------------------------------------------------------------------------------
@@ -33,7 +42,8 @@ function set_consumeable_usage(used, ...)
 
     local config = used and used.config
     local center = config and config.center
-    if center and center.set == "Spectral" and config.center_key and G.GAME then
+    if center and center.set == "Spectral" and config.center_key and G.GAME
+        and not CelestasMod.NO_OCCULT[config.center_key] then
         G.GAME.celesta_last_spectral = config.center_key
     end
 
@@ -47,7 +57,7 @@ end
 --- centre that is no longer there.
 local function last_spectral()
     local key = G.GAME and G.GAME.celesta_last_spectral
-    if key and G.P_CENTERS and G.P_CENTERS[key] then return key end
+    if key and G.P_CENTERS and G.P_CENTERS[key] and not CelestasMod.NO_OCCULT[key] then return key end
     return nil
 end
 

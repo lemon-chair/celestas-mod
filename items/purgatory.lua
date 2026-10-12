@@ -61,6 +61,10 @@ P.BLIND_UP = 1.5
 
 local SEED = "celesta_purgatory"
 
+--- What a Boss Blind's key of this mod starts with. Resolved here: SMODS.current_mod is only set while
+--- the mod is loading, and the Summon boon asks for a key long after.
+local BOSS_PREFIX = "bl_" .. SMODS.current_mod.prefix .. "_"
+
 --- What the warning over a forbidden hand reads (set into SMODS.debuff_text while one is selected).
 P.BANNED_TEXT = nil
 
@@ -632,6 +636,14 @@ add { kind = "good", key = "spectral_shop",
 add { kind = "good", key = "stamp_packs",
       apply = function(st) st.stamp_packs = true end }
 
+add { kind = "good", key = "summon", repeatable = true,
+      -- Only while there is a Mythic Joker to summon and somewhere to put the card. Its curse is
+      -- doubled, if it can be: see P.double.
+      available = function()
+          return #CelestasMod.summonable() > 0 and limit(G.consumeables) > #(G.consumeables.cards or {})
+      end,
+      apply = function() give("c_celesta_summon", G.consumeables) end }
+
 -- ---------------------------------------------------------------- curses
 
 add { kind = "bad", key = "rerolls",
@@ -945,6 +957,33 @@ function P.rerolls_left(st)
     return math.max(0, P.max_rerolls(st) - (st.rerolls_used or 0))
 end
 
+--- The curses a second helping would not change: a standing rule is either on or off, and what is
+--- idempotent is already as bad as it gets.
+P.NOT_DOUBLED = {
+    no_pay = true, boss_big = true, boss_repeat = true, tatter_fast = true, super_boss = true,
+    least_hand = true, reroll_two = true, no_planets = true, no_tarots = true, destroy_held = true,
+    lose_editions = true, lose_consumables = true,
+}
+
+--- The Summon boon's price: the curse that came with it, twice - when twice means anything, and
+--- while there is anything left for the second to take (every curse that has a limit asks again
+--- whether it still may, as if it were being offered). A curse that upgrades a Boss Blind cannot be
+--- doubled and is made certain instead: that Blind is the next Boss Blind there is.
+function P.double(st, bad, arg)
+    local name = bad.key:match("^buff_(.+)$")
+    if name then
+        st.next_boss = BOSS_PREFIX .. name
+        return
+    end
+    if P.NOT_DOUBLED[bad.key] then return end
+    if bad.available and not bad.available(st) then return end
+    local ok, err = pcall(bad.apply, st, arg)
+    if not ok then
+        CelestasMod.warn_once("purgatory_double_" .. bad.id,
+            ("Purgatory could not double %s: %s"):format(bad.id, tostring(err)))
+    end
+end
+
 --- Takes one: the pair at `index` goes into effect, and the choice is over.
 function P.choose(index)
     local st = P.state()
@@ -960,13 +999,17 @@ function P.choose(index)
     st.taken[bad.id] = (st.taken[bad.id] or 0) + 1
     if G.OVERLAY_MENU then G.FUNCS.exit_overlay_menu() end
 
-    for _, entry in ipairs({ good, bad }) do
+    -- The Summon boon after its curse rather than before: a curse that empties the consumable row
+    -- must not take the card it came with.
+    local summoning = good.key == "summon"
+    for _, entry in ipairs(summoning and { bad, good } or { good, bad }) do
         local ok, err = pcall(entry.apply, st, entry == bad and offer.bad_arg or offer.good_arg)
         if not ok then
             CelestasMod.warn_once("purgatory_" .. entry.id,
                 ("Purgatory could not apply %s: %s"):format(entry.id, tostring(err)))
         end
     end
+    if summoning then P.double(st, bad, offer.bad_arg) end
     return true
 end
 
@@ -1234,6 +1277,15 @@ local celesta_purg_boss_ref = get_new_boss
 function get_new_boss(...)
     local st = live()
     if not st then return celesta_purg_boss_ref(...) end
+
+    -- A Boss Blind that was made certain (the Summon boon with a Boss Blind curse): this one, once.
+    if st.next_boss and G.P_BLINDS and G.P_BLINDS[st.next_boss] then
+        local key = st.next_boss
+        st.next_boss = nil
+        G.GAME.bosses_used = G.GAME.bosses_used or {}
+        G.GAME.bosses_used[key] = (G.GAME.bosses_used[key] or 0) + 1
+        return key
+    end
 
     -- Every Boss Blind eligible again, as though none had been used.
     if st.boss_repeat and type(G.GAME.bosses_used) == "table" then

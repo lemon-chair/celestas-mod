@@ -240,6 +240,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "celesta",
+    path = "celesta.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "cerbervt",
     path = "cerbervt.png",
     px = 71,
@@ -375,6 +382,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "doodle_kumi",
     path = "doodle_kumi.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "drago",
+    path = "drago.png",
     px = 71,
     py = 95,
 }
@@ -529,6 +543,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "geega",
     path = "geega.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "gg",
+    path = "gg.png",
     px = 71,
     py = 95,
 }
@@ -1367,6 +1388,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "sox",
+    path = "sox.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "spite",
     path = "spite.png",
     px = 71,
@@ -1439,6 +1467,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "torioriane",
     path = "torioriane.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "treemore",
+    path = "treemore.png",
     px = 71,
     py = 95,
 }

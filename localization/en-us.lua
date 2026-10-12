@@ -355,6 +355,15 @@ return {
                     "{C:inactive}(Currently {C:attention}#1#{C:inactive} retained)",
                 },
             },
+            j_celesta_celesta = {
+                name = "Celesta",
+                text = {
+                    "When a {C:attention}Blind{} is defeated, create",
+                    "a {C:dark_edition}Negative{} copy of your",
+                    "leftmost {C:attention}Joker{}",
+                    "{C:inactive}(Not counting this Joker)",
+                },
+            },
             j_celesta_cerbervt = {
                 name = "Cerber",
                 text = {
@@ -536,6 +545,15 @@ return {
                 unlock = {
                     "Use a {C:spectral}Lost Soul{} on",
                     "{C:attention}Kumi{}",
+                },
+            },
+            j_celesta_drago = {
+                name = "Drago",
+                text = {
+                    "This Joker permanently gains {C:chips}+Chips{}",
+                    "equal to {C:attention}X#1#{} the sum of the stored",
+                    "{C:chips}Chips{} of the cards in played hand",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
                 },
             },
             j_celesta_ebiko = {
@@ -766,6 +784,16 @@ return {
                 text = {
                     "Jokers that become {C:attention}debuffed{}",
                     "turn {C:dark_edition}Negative{}",
+                },
+            },
+            j_celesta_gg = {
+                name = "GG",
+                text = {
+                    "{C:attention}Jokers{} and {C:attention}consumables{} have a",
+                    "{C:green}#1# in #2#{} chance to be {C:dark_edition}Negative{}",
+                    "At the start of the round, gain a random",
+                    "{C:dark_edition}Negative{} Joker and {C:attention}#3#{} random",
+                    "{C:dark_edition}Negative{} consumables",
                 },
             },
             j_celesta_girldm = {
@@ -1811,6 +1839,18 @@ return {
                     "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
                 },
             },
+            j_celesta_sox = {
+                name = "Sox",
+                text = {
+                    "After scoring, add a permanent copy of",
+                    "each scoring card to your deck",
+                    "{C:green}#1# in #2#{} chance for copies to be {C:dark_edition}Polychrome{}",
+                    "{C:green}#1# in #2#{} chance for copied {C:attention}Steel{} and",
+                    "{C:attention}Gold{} cards to gain a {C:red}Red Seal{}",
+                    "Copies with a Red Seal gain a",
+                    "{C:attention}Foppy Seal{} in its place",
+                },
+            },
             j_celesta_spite = {
                 name = "Spite",
                 text = {
@@ -1908,6 +1948,14 @@ return {
                 text = {
                     "Scored {C:celesta_true_star}True Star{} cards give",
                     "{C:mult}+#1#{} Mult and {C:chips}+#2#{} Chips",
+                },
+            },
+            j_celesta_treemore = {
+                name = "Treemore",
+                text = {
+                    "When a {C:attention}Blind{} is defeated with over",
+                    "{C:attention}double{} the required score, double your",
+                    "{C:money}money{}. Always after a {C:attention}Boss Blind{}",
                 },
             },
             j_celesta_trickywi = {
@@ -2207,6 +2255,14 @@ return {
                     "{C:attention}Pull{} into an empty",
                     "{C:attention}Joker{} slot, where it",
                     "hatches after {C:attention}#1#{} rounds",
+                },
+            },
+            c_celesta_summon = {
+                name = "Summon",
+                text = {
+                    "Creates a random",
+                    "{C:celesta_mythic}Mythic{} Joker",
+                    "{C:inactive}(Must have room)",
                 },
             },
             c_celesta_lost_soul = {
@@ -5754,6 +5810,14 @@ return {
                     "of the Blind",
                 },
             },
+            celesta_purg_good_summon = {
+                text = {
+                    "Receive a {C:spectral}Summon{}. The {C:attention}Con{}",
+                    "is doubled, if it can be, and a",
+                    "{C:attention}Boss Blind{} upgrade is always",
+                    "the next {C:attention}Boss Blind{}",
+                },
+            },
             celesta_purg_good_true_stars = {
                 text = {
                     "Add {C:attention}3{} True Star cards",
@@ -6772,6 +6836,7 @@ return {
             -- localize("k_"..rarity:lower()) (SMODS.Rarity:get_rarity_badge),
             -- so it is wanted in labels and in the dictionary both.
             k_celesta_lost = "...",
+            k_celesta_mythic = "Mythic",
             celesta_ectoplast_seal = "Ectoplast Seal",
             celesta_foppy_seal = "Foppy Seal",
             celesta_gene_seal = "Gene Seal",
@@ -6780,6 +6845,9 @@ return {
         },
         dictionary = {
             k_celesta_lost = "...",
+            k_celesta_mythic = "Mythic",
+            celesta_negatives = "Negatives!",
+            celesta_doubled = "Doubled!",
             celesta_cfg_animation = "Arena weather animation (off = tint only)",
             celesta_cfg_verbose = "Verbose logging",
             celesta_cfg_downpour = "Force Downpour (debug)",

@@ -36,6 +36,8 @@ SHARED = {"jokers", "consumables", "decks", "sleeves", "icon", "seals", "driftwo
           # the Tarots that hand out this mod's enhancements, Occult, and Gene
           # (which hands out a seal rather than an enhancement)
           "citrus", "miracle_matter", "knife", "polish", "occult", "gene",
+          # Summon, which makes a Mythic Joker
+          "summon",
           # ...and The Community, which hands out Tags
           "community",
           # Cryogen's ring and Thanatos's landscape art: overlays drawn
@@ -127,6 +129,11 @@ DISPLAY_NAMES = {
     "hestia": "Hestia",
     "ekkomori": "Ekkomori",
     "bubi": "Bubi",
+    "celesta": "Celesta",
+    "drago": "Drago",
+    "gg": "GG",
+    "sox": "Sox",
+    "treemore": "Treemore",
     "cillia": "Cillia",
     "monster_kumi": "Monster Kumi",
     "radiation_ebiko": "Radiation Ebiko",
@@ -546,6 +553,14 @@ LOC_TAIL = '''        },
                     "{C:attention}Pull{} into an empty",
                     "{C:attention}Joker{} slot, where it",
                     "hatches after {C:attention}#1#{} rounds",
+                },
+            },
+            c_celesta_summon = {
+                name = "Summon",
+                text = {
+                    "Creates a random",
+                    "{C:celesta_mythic}Mythic{} Joker",
+                    "{C:inactive}(Must have room)",
                 },
             },
             c_celesta_lost_soul = {
@@ -4093,6 +4108,14 @@ LOC_TAIL = '''        },
                     "of the Blind",
                 },
             },
+            celesta_purg_good_summon = {
+                text = {
+                    "Receive a {C:spectral}Summon{}. The {C:attention}Con{}",
+                    "is doubled, if it can be, and a",
+                    "{C:attention}Boss Blind{} upgrade is always",
+                    "the next {C:attention}Boss Blind{}",
+                },
+            },
             celesta_purg_good_true_stars = {
                 text = {
                     "Add {C:attention}3{} True Star cards",
@@ -5111,6 +5134,7 @@ LOC_TAIL = '''        },
             -- localize("k_"..rarity:lower()) (SMODS.Rarity:get_rarity_badge),
             -- so it is wanted in labels and in the dictionary both.
             k_celesta_lost = "...",
+            k_celesta_mythic = "Mythic",
             celesta_ectoplast_seal = "Ectoplast Seal",
             celesta_foppy_seal = "Foppy Seal",
             celesta_gene_seal = "Gene Seal",
@@ -5119,6 +5143,9 @@ LOC_TAIL = '''        },
         },
         dictionary = {
             k_celesta_lost = "...",
+            k_celesta_mythic = "Mythic",
+            celesta_negatives = "Negatives!",
+            celesta_doubled = "Doubled!",
             celesta_cfg_animation = "Arena weather animation (off = tint only)",
             celesta_cfg_verbose = "Verbose logging",
             celesta_cfg_downpour = "Force Downpour (debug)",
