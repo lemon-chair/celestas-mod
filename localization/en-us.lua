@@ -4713,6 +4713,52 @@ return {
                     "hand is played {C:inactive}(Must have room)",
                 },
             },
+            celesta_bind_ironmouse_saiiren = {
+                name = "Ironmouse + Saiiren",
+                text = {
+                    "The {C:attention}last{} scored {V:1}#2#{} card",
+                    "gives {X:mult,C:white}^#1#{} Mult",
+                    "{C:inactive}(suit changes each round)",
+                },
+            },
+            celesta_bind_ironmouse_kourra = {
+                name = "Ironmouse + Kourra",
+                text = {
+                    "{X:mult,C:white}^#1#{} Mult for every",
+                    "{C:chips}#2#{} Chips scored so far",
+                },
+            },
+            celesta_bind_ironmouse_ironmouse = {
+                name = "Ironmouse + Ironmouse",
+                text = {
+                    "{X:mult,C:white}^#1#{} Mult, and {X:mult,C:white}^^#2#{} Mult",
+                    "after Ante {C:attention}#3#{}",
+                },
+            },
+            celesta_bind_koko_mooni = {
+                name = "KokoNuts + Mooni",
+                text = {
+                    "At the start of each round, add a",
+                    "{C:attention}Lucky{} {C:attention}7{} of {V:1}#1#{} to your deck",
+                    "and earn {C:money}$#2#{} when one is added",
+                },
+            },
+            celesta_bind_crelly_zentreya = {
+                name = "Crelly + Zentreya",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult every",
+                    "time a {C:attention}Steel Card{} is triggered",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_shoomimi_camila = {
+                name = "Shoomimi + Camila",
+                text = {
+                    "If the first hand played holds one card,",
+                    "{C:attention}destroy{} it and gain",
+                    "{C:attention}+#1#{} consumable slot",
+                },
+            },
             celesta_bind_onigiri_girldm = {
                 name = "OniGiri + GirlDM",
                 text = {

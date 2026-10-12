@@ -2077,7 +2077,7 @@ special("j_celesta_zentreya", "j_celesta_boosfer", {
 -- card arrives wearing, which is KokoNuts' own Lucky unless a pair says
 -- otherwise - Eros + KokoNuts makes Bonus ones, because Bonus is what Eros
 -- eats.
-local function koko_sevens(card, count, seed, editioned, seal, enhancement)
+local function koko_sevens(card, count, seed, editioned, seal, enhancement, extra)
     if count <= 0 then return end
     G.E_MANAGER:add_event(Event {
         func = function()
@@ -2087,6 +2087,9 @@ local function koko_sevens(card, count, seed, editioned, seal, enhancement)
                     { front = G.P_CARDS.S_7,
                       center = enhancement or G.P_CENTERS.m_lucky },
                     G.play, nil, nil, { G.C.SECONDARY_SET.Enhanced })
+                -- `extra.suit`: a seven of another suit, which a pair names. `extra.dollars`: what
+                -- each one that arrives pays, below.
+                if extra and extra.suit then SMODS.change_base(seven, extra.suit) end
                 if type(editioned) == "table" then
                     seven:set_edition(editioned, true)
                 elseif editioned then
@@ -2104,6 +2107,9 @@ local function koko_sevens(card, count, seed, editioned, seal, enhancement)
                 message = localize("celesta_plus_seven"),
                 colour = G.C.SECONDARY_SET.Enhanced,
             }, card)
+            if extra and extra.dollars and extra.dollars ~= 0 then
+                SMODS.calculate_effect({ dollars = extra.dollars * count }, card)
+            end
 
             G.E_MANAGER:add_event(Event {
                 func = function()
@@ -14237,6 +14243,212 @@ special("j_celesta_onigiri", "j_celesta_girldm", {
         }
     end,
 })
+end
+
+-- Six more pairs.
+do
+
+-- Ironmouse + Saiiren: Saiiren's rotating suit, paid in ^Mult.
+--
+-- ObKatieKat + Saiiren's shape: the rotation is Saiiren's own, walked on the pair's index through
+-- the helpers jokers/implemented.lua exports, so a Yoclesh pins this to Hearts exactly as it pins
+-- Saiiren, and the two cannot come to disagree about which suit the round is on.
+special("j_celesta_ironmouse", "j_celesta_saiiren", {
+    key = "ironmouse_saiiren",
+    config = { e_mult = 1.2, suit_index = 1 },
+
+    loc_vars = function(def, card, state)
+        local suits = CelestasMod.rotation_suits()
+        local suit = CelestasMod.rotation_suit_at(suits, state.suit_index)
+        -- Singular, because the name qualifies "card" - Saiiren's own reason.
+        return { vars = { state.e_mult, localize(suit, "suits_singular"),
+                          colours = { G.C.SUITS[suit] } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        local suits = CelestasMod.rotation_suits()
+        local suit = CelestasMod.rotation_suit_at(suits, state.suit_index)
+
+        if context.individual and context.cardarea == G.play then
+            if context.other_card ~= CelestasMod.saiiren_target(context, suit) then
+                return
+            end
+            if not power_supported("ironmouse_saiiren_no_talisman",
+                                   "Ironmouse + Saiiren", "Mult") then
+                return
+            end
+            return { e_mult = state.e_mult, card = context.other_card }
+        end
+
+        -- main_eval keeps the rotation to once per round rather than once per card the
+        -- end-of-round pass looks at.
+        if context.end_of_round and context.main_eval and not context.blueprint then
+            state.suit_index = CelestasMod.rotation_index(state.suit_index + 1, #suits)
+            local next_suit = CelestasMod.rotation_suit_at(suits, state.suit_index)
+            return { message = localize(next_suit, "suits_singular"),
+                     colour = G.C.SUITS[next_suit], card = card }
+        end
+    end,
+})
+
+-- Ironmouse + Kourra: Kourra's count of the Chips on the board, paid in ^Mult for every fifty.
+--
+-- Birdyovo + Kourra's shape, and for the same reason: every step is applied on top of the last, so
+-- the exponent is the rate raised to the number of steps. With Talisman - a declared dependency -
+-- that climbs into Talisman's own numbers and stays exact; without it the steps are held where a Lua
+-- number still is one.
+special("j_celesta_ironmouse", "j_celesta_kourra", {
+    key = "ironmouse_kourra",
+    config = { e_mult = 1.02, per_chips = 50 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.e_mult, state.per_chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+
+        local e_mult
+        local chips = chips_so_far()
+        if chips then
+            local steps = math.floor(chips / state.per_chips)
+            if steps <= 0 then return end
+            if to_big then
+                e_mult = to_big(state.e_mult) ^ steps
+            else
+                e_mult = state.e_mult ^ math.min(steps, KOURRA_SAFE_STEPS)
+            end
+        elseif to_big then
+            -- Past a Lua number entirely, which only Talisman can have made.
+            e_mult = to_big(state.e_mult) ^ (to_big(hand_chips) / state.per_chips)
+        else
+            return
+        end
+        return ironmouse_pays("ironmouse_kourra", "Ironmouse + Kourra", e_mult)
+    end,
+})
+
+-- Ironmouse + Ironmouse: ^4 Mult, and past Ante 8, ^^4 - four tetrated.
+--
+-- Talisman's own `ee_mult` is the tetration, so there is nothing to build: it asks for Talisman
+-- like every ^Mult here does.
+special("j_celesta_ironmouse", "j_celesta_ironmouse", {
+    key = "ironmouse_ironmouse",
+    config = { e_mult = 4, ee_mult = 4, ante = 8 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.e_mult, state.ee_mult, state.ante } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+
+        local ante = (G.GAME and G.GAME.round_resets and G.GAME.round_resets.ante) or 1
+        if ante > state.ante then
+            if Card.get_chip_ee_mult == nil then
+                CelestasMod.warn_once("ironmouse_ironmouse_no_talisman",
+                    "Ironmouse + Ironmouse scores ^^Mult, which needs Talisman; without it the pair does nothing")
+                return
+            end
+            return { ee_mult = state.ee_mult, colour = G.C.DARK_EDITION, card = card }
+        end
+
+        return ironmouse_pays("ironmouse_ironmouse", "Ironmouse + Ironmouse", state.e_mult)
+    end,
+})
+
+-- KokoNuts + Mooni: KokoNuts's seven, a Lucky one of Stars instead of Spades, and a dollar for each
+-- one that arrives.
+special("j_celesta_kokonuts", "j_celesta_mooni", {
+    key = "koko_mooni",
+    config = { dollars = 1 },
+
+    loc_vars = function(def, card, state)
+        -- Plural: "a seven of Stars". The third argument asks for singular.
+        local name, colour = CelestasMod.suit_name_and_colour(
+            CelestasMod.STARS_SUIT, CelestasMod.STARS_COLOUR, false)
+        return { vars = { name, state.dollars, colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.setting_blind and not context.blueprint
+            and not (context.blueprint_card or card).getting_sliced then
+            koko_sevens(card, 1, "celesta_bind_koko_mooni", false, nil, nil,
+                { suit = CelestasMod.STARS_SUIT, dollars = state.dollars })
+            return nil, true
+        end
+    end,
+})
+
+-- Crelly + Zentreya: Crelly's growth, off Zentreya's Steel Cards. Every time one is triggered - in
+-- the played hand or held in hand, as Zentreya + Zentreya counts them, and not at the cash-out where
+-- the held pass is raised again and nothing is being scored.
+special("j_celesta_crelly", "j_celesta_zentreya", {
+    key = "crelly_zentreya",
+    config = { x_mult = 1, x_mult_gain = 0.2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.individual and context.other_card
+            and not context.end_of_round and not context.blueprint
+            and (context.cardarea == G.play or context.cardarea == G.hand)
+            and not context.other_card.debuff
+            and SMODS.has_enhancement(context.other_card, "m_steel") then
+            Bind.grow(card, state, "x_mult", state.x_mult_gain,
+                      function(initial, modifier) return tidy(initial + modifier) end)
+            return {
+                message = localize { type = "variable", key = "a_xmult",
+                                     vars = { state.x_mult } },
+                colour = G.C.MULT, card = card,
+            }
+        end
+
+        if context.joker_main and CelestasMod.more_than(state.x_mult, 1) then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+-- Shoomimi + Camila: Camila's single first card is destroyed, and a consumable slot is Shoomimi's
+-- to give for it. The card is not stored and does not come back.
+--
+-- Camila's own conditions, on the pass that removes scored cards: the first hand of the round (a
+-- Favor Stamp makes every hand the first), a single card, and one that can be destroyed - an Eternal
+-- one cannot, and a slot is not paid for a card that stayed. The slot goes the way Shoomimi's does,
+-- straight onto the tray, and only from the card itself: a copy shares the destruction and not the slot.
+special("j_celesta_shoomimi", "j_celesta_camila", {
+    key = "shoomimi_camila",
+    config = { slots = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.slots } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.destroying_card and context.cardarea == G.play
+                and (G.GAME.current_round.hands_played == 0
+                     or (CelestasMod.favored and CelestasMod.favored(card)))
+                and context.full_hand and #context.full_hand == 1
+                and context.destroying_card == context.full_hand[1]) then
+            return
+        end
+        if SMODS.is_eternal and SMODS.is_eternal(context.destroying_card) then return end
+
+        if not context.blueprint then
+            G.consumeables.config.card_limit = G.consumeables.config.card_limit + state.slots
+        end
+        return {
+            remove = true,
+            message = localize("celesta_plus_slot"),
+            colour = G.C.FILTER,
+            card = card,
+        }
+    end,
+})
+
 end
 
 --------------------------------------------------------------------------------
