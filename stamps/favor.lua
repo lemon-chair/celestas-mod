@@ -400,15 +400,19 @@ V.j_ride_the_bus = function(self, context, ref, ...)
 end
 V.j_obelisk = function(self, context, ref, ...)
     if not (context.before and not context.blueprint) then return ref(self, context, ...) end
+    -- The base game's own question, asked the way it asks it: the streak is broken by the hand that
+    -- is played more than any other, and by no other.
     local hands = G.GAME.hands
     local played = (hands[context.scoring_name] and hands[context.scoring_name].played) or 0
+    local would_reset = true
     for key, hand in pairs(hands) do
         if key ~= context.scoring_name and (hand.played or 0) >= played
             and SMODS.is_poker_hand_visible(key) then
-            -- Not the most played hand: it would have been reset. It is left as it is.
-            return nil
+            would_reset = false
         end
     end
+    -- The most played hand would have reset it. It is left as it is, and does not grow either.
+    if would_reset then return nil end
     SMODS.scale_card(self, { ref_table = self.ability, ref_value = "x_mult",
                              scalar_value = "extra", no_message = true })
     return nil, true
