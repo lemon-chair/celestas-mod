@@ -14464,6 +14464,330 @@ special("j_celesta_shoomimi", "j_celesta_camila", {
 
 end
 
+-- Ten more pairs.
+do
+
+--- Whether a card is a Star, asked through is_suit like every Star Joker here: a Wild Card is one.
+local function is_star_card(card)
+    return card ~= nil and card.is_suit ~= nil and card:is_suit(CelestasMod.STARS_SUIT)
+end
+
+-- Kumi + Jax: Kumi's meal, of Stone and Limestone instead of Gold.
+--
+-- Arar + Kumi's shape: destroying_card is only raised for cards that are both in G.play and part of
+-- the scoring hand, `remove` and `dollars` are both keys SMODS acts on, and an Eternal card is
+-- guarded here because calculate_destroying_cards does not.
+special("j_celesta_kumi", "j_celesta_jaxvtuber", {
+    key = "kumi_jax",
+    config = { odds = 4, dollars = 20 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(card, 1, state.odds, "celesta_bind_kumi_jax")
+        return { vars = { n, d, state.dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.destroying_card and context.cardarea == G.play) then return end
+        local target = context.destroying_card
+        if not (SMODS.has_enhancement(target, "m_stone")
+                or SMODS.has_enhancement(target, CelestasMod.ENHANCEMENT_KEYS.Limestone)) then
+            return
+        end
+        if SMODS.is_eternal(target) then return end
+
+        local effect = { remove = true }
+        if SMODS.pseudorandom_probability(card, "celesta_bind_kumi_jax",
+                1, state.odds, "celesta_bind_kumi_jax") then
+            effect.dollars = state.dollars
+        end
+        return effect
+    end,
+})
+
+-- Ironmouse + PiapiUFO: PiapiUFO's Stars, in ^Mult, and True Stars a little better.
+special("j_celesta_ironmouse", "j_celesta_piapiufo", {
+    key = "ironmouse_piapiufo",
+    config = { e_mult = 1.15, e_mult_true = 1.3 },
+
+    loc_vars = function(def, card, state)
+        local name, colour = CelestasMod.suit_name_and_colour(
+            CelestasMod.STARS_SUIT, CelestasMod.STARS_COLOUR)
+        return { vars = { state.e_mult, state.e_mult_true, name, colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play and context.other_card) then return end
+        local other = context.other_card
+        local power
+        if CelestasMod.is_true_star(other) then
+            power = state.e_mult_true
+        elseif is_star_card(other) then
+            power = state.e_mult
+        else
+            return
+        end
+        if not power_supported("ironmouse_piapiufo_no_talisman", "Ironmouse + PiapiUFO", "Mult") then
+            return
+        end
+        return { e_mult = power, card = other }
+    end,
+})
+
+-- Ironmouse + Henya: Henya's retriggers, paid in ^Mult for each.
+--
+-- ObKatieKat + Henya's shape: the count is kept by Henya's eval_card wrapper, and a scoring card
+-- that has been counted more than once has been retriggered.
+special("j_celesta_ironmouse", "j_celesta_henya", {
+    key = "ironmouse_henya",
+    config = { e_mult = 1.1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.e_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play
+                and context.other_card and not context.end_of_round) then return end
+        local times = CelestasMod.trigger_count(context.other_card)
+        if times <= 1 then return end
+        if not power_supported("ironmouse_henya_no_talisman", "Ironmouse + Henya", "Mult") then
+            return
+        end
+        return { e_mult = state.e_mult, card = context.other_card }
+    end,
+})
+
+-- KokoNuts + Vedal: every Lucky 7 of Spades that scores forces every scaling Joker of this mod up
+-- one step.
+--
+-- The Jokers that scale, and the two fields each one scales: the number and what it grows by.
+-- Written out because "a Joker that scales" is not something that can be read off one, and a
+-- listed one that has changed is caught by test_ten_pairs.py. A Joker on this list scales the way
+-- it does for itself, through SMODS.scale_card. Drago is not on it: he gains as much as the hand's
+-- stored Chips come to, so there is no one step to force.
+CelestasMod.SCALERS = {
+    crelly = { "x_mult", "x_mult_gain" }, laynalazar = { "mult", "mult_gain" },
+    megalodon = { "mult", "mult_gain" }, demenishki = { "x_mult", "x_mult_gain" },
+    cweamcat = { "chips", "chip_gain" }, baddaboom = { "x_chips", "x_chips_gain" },
+    jaws = { "chips", "chip_gain" }, aicandii = { "mult", "mult_gain" },
+    kyaree = { "chips", "chip_mod" }, rtgame = { "x_mult", "x_mult_gain" },
+    spongeybuns = { "chips", "chip_mod" }, eros = { "chips", "chip_gain" },
+    ariesakana = { "chips", "chip_mod" }, sonneflower = { "x_mult", "x_mult_gain" },
+    fenari = { "x_mult", "x_mult_gain" }, projektmelody = { "dollars", "skip_gain" },
+    slimegod = { "x_mult", "x_mult_gain" }, boosfer = { "x_mult", "x_mult_gain" },
+    juniperactias = { "x_chips", "x_chip_gain" }, snapscube = { "mult", "gain" },
+    moopybuns = { "x_chips", "gain" }, blue_card = { "chips", "gain" },
+    fuchsia_card = { "x_mult", "gain" }, astrum_aureus = { "x_mult", "gain" },
+    dooby = { "x_mult", "x_mult_gain" }, xm05_thanatos = { "e_mult", "e_mult_gain" },
+    -- These three grow by plain arithmetic of their own rather than through SMODS.scale_card, and
+    -- bank the same way, so one step of theirs is forced the same way.
+    rinpenrose = { "mult", "mult_gain" }, monolith = { "x_mult", "x_mult_gain" },
+    red_boosfer = { "e_mult", "e_mult_gain" },
+}
+
+--- Forces every scaling Joker in the row up one step, a merged one's bound half included.
+--- Returns how many scaled.
+function CelestasMod.force_scale_all()
+    local scaled = 0
+    for _, joker in ipairs((G.jokers and G.jokers.cards) or {}) do
+        local halves = {}
+        local center = joker.config and joker.config.center
+        if center and center.key then halves[#halves + 1] = { center.key, joker.ability } end
+        local bound = joker.ability and joker.ability.celesta_bind
+        if type(bound) == "table" and bound.key then halves[#halves + 1] = { bound.key, bound.ability } end
+
+        for _, half in ipairs(halves) do
+            local spec = CelestasMod.SCALERS[(half[1]:gsub("^j_celesta_", ""))]
+            local extra = spec and half[2] and half[2].extra
+            if type(extra) == "table" and extra[spec[1]] ~= nil and extra[spec[2]] ~= nil then
+                SMODS.scale_card(joker, {
+                    ref_table = extra, ref_value = spec[1],
+                    scalar_table = extra, scalar_value = spec[2],
+                })
+                scaled = scaled + 1
+            end
+        end
+    end
+    return scaled
+end
+
+special("j_celesta_kokonuts", "j_celesta_vedal", {
+    key = "koko_vedal",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play and context.other_card
+                and not context.blueprint) then
+            return
+        end
+        local other = context.other_card
+        if not (SMODS.has_enhancement(other, "m_lucky") and other.base and other.base.suit == "Spades"
+                and other:get_id() == 7) then
+            return
+        end
+        if CelestasMod.force_scale_all() > 0 then
+            return { message = localize("k_upgrade_ex"), colour = G.C.MULT, card = card }
+        end
+    end,
+})
+
+-- Dejavudea + Moo Merrily: a card that holds Chips of its own - what a Milk Bottle puts on a card -
+-- does not wear out. Wear is counted where a card crosses its threshold, which has no context to
+-- answer in, so wear/tattered.lua asks for this pair by name, as it does for Kumi + Dejavudea.
+special("j_celesta_dejavudea", "j_celesta_moomerrily", {
+    key = "deja_moo",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+-- Kumi + Moo Merrily: a Milk Bottle used is a chance at $20.
+special("j_celesta_kumi", "j_celesta_moomerrily", {
+    key = "kumi_moo",
+    config = { odds = 4, dollars = 20 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(card, 1, state.odds, "celesta_bind_kumi_moo")
+        return { vars = { n, d, state.dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        local used = context.using_consumeable and context.consumeable
+        if not (used and used.config and used.config.center
+                and used.config.center.key == CelestasMod.MILK_BOTTLE_KEY) then
+            return
+        end
+        if SMODS.pseudorandom_probability(card, "celesta_bind_kumi_moo",
+                1, state.odds, "celesta_bind_kumi_moo") then
+            return { dollars = state.dollars, card = card }
+        end
+    end,
+})
+
+-- Arar + Moo Merrily: at the start of the round, a Negative Milk Bottle for every card of hand size.
+-- Negative, so there is no room to ask for, and each brings the slot it takes.
+special("j_celesta_arar", "j_celesta_moomerrily", {
+    key = "arar_moo",
+
+    loc_vars = function(def, card, state)
+        return { vars = { (G.hand and G.hand.config and G.hand.config.card_limit) or 0 } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.setting_blind and not (context.blueprint_card or card).getting_sliced) then
+            return
+        end
+        local count = (G.hand and G.hand.config and G.hand.config.card_limit) or 0
+        if count <= 0 then return end
+
+        G.E_MANAGER:add_event(Event {
+            trigger = "before",
+            delay = 0.0,
+            func = function()
+                for _ = 1, count do
+                    SMODS.add_card {
+                        set = "Spectral", key = CelestasMod.MILK_BOTTLE_KEY, area = G.consumeables,
+                        edition = "e_negative", key_append = "celesta_bind_arar_moo",
+                    }
+                end
+                return true
+            end,
+        })
+        return {
+            message = localize("k_plus_spectral"),
+            colour = G.C.SECONDARY_SET.Spectral,
+            card = context.blueprint_card or card,
+        }
+    end,
+})
+
+-- Arielle + Cy Yu: Exo cards retriggered once for each suit in the full deck. Counted as the deck
+-- has them (Fufu's count), not as Arielle would call them: a pair stands in for both halves.
+special("j_celesta_arielle", "j_celesta_cyyuvtuber", {
+    key = "arielle_cyyu",
+
+    loc_vars = function(def, card, state)
+        return { vars = { CelestasMod.unique_suits_in_deck() } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.repetition and context.cardarea == G.play and context.other_card) then return end
+        if not SMODS.has_enhancement(context.other_card, CelestasMod.ENHANCEMENT_KEYS.Exo) then return end
+        local suits = CelestasMod.unique_suits_in_deck()
+        if suits <= 0 then return end
+        return { message = localize("k_again_ex"), repetitions = suits, card = card }
+    end,
+})
+
+-- Ironmouse + Haruka: ^Mult that grows by a tenth for every Tarot card used.
+special("j_celesta_ironmouse", "j_celesta_harukakaribu", {
+    key = "ironmouse_haruka",
+    config = { e_mult = 1, e_mult_gain = 0.1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.e_mult_gain, state.e_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        local used = context.using_consumeable and context.consumeable
+        if used and used.ability and used.ability.set == "Tarot" and not context.blueprint then
+            Bind.grow(card, state, "e_mult", state.e_mult_gain, pow_after)
+            return {
+                message = localize { type = "variable", key = "celesta_powmult", vars = { state.e_mult } },
+                colour = G.C.MULT, card = card,
+            }
+        end
+
+        if context.joker_main then
+            return ironmouse_pays("ironmouse_haruka", "Ironmouse + Haruka", state.e_mult)
+        end
+    end,
+})
+
+-- Birdyovo + Arar: Arar, whole, and Birdyovo's own count given up for a different one: X1 Mult for
+-- every seven cards Arar has enhanced.
+--
+-- Additive, so Arar's own calculate still does the enhancing - and Birdyovo is muted, which is what
+-- "retains the abilities of Arar" leaves out. Arar says what it did through a context of its own
+-- (celesta_arar_enhanced, raised from jokers/implemented.lua as each card is changed), and this
+-- counts the ones that are its own.
+special("j_celesta_birdyovo", "j_celesta_arar", {
+    key = "birdyovo_arar",
+    additive = true,
+    mutes = { j_celesta_birdyovo = true },
+    config = { x_mult = 1, x_mult_gain = 1, per = 7, enhanced = 0 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, state.per, state.enhanced % state.per, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.celesta_arar_enhanced and context.arar == card and not context.blueprint then
+            state.enhanced = state.enhanced + 1
+            if state.enhanced % state.per == 0 then
+                Bind.grow(card, state, "x_mult", state.x_mult_gain)
+                return {
+                    message = localize { type = "variable", key = "a_xmult", vars = { state.x_mult } },
+                    colour = G.C.MULT, card = card,
+                }
+            end
+            return
+        end
+
+        if context.joker_main and CelestasMod.more_than(state.x_mult, 1) then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+end
+
 --------------------------------------------------------------------------------
 -- Art: the two faces split corner to corner
 --------------------------------------------------------------------------------

@@ -129,6 +129,16 @@ function Tattered.purgatory(rule)
     return (state and state[rule]) and true or false
 end
 
+--- True for a card a Dejavudea + Moo Merrily keeps from wearing: one that holds Chips of its own, as
+--- a Milk Bottle leaves on it. The pair is asked for by name, like Kumi + Dejavudea above.
+function Tattered.milk_shielded(card)
+    local Bind = CelestasMod.Bind
+    if not (Bind and Bind.find_special and card and card.ability) then return false end
+    local holder = Bind.find_special("deja_moo")
+    if not (holder and not holder.debuff) then return false end
+    return CelestasMod.more_than(card.ability.perma_bonus or 0, 0)
+end
+
 --- True for a card Dejavudea has protected. Stored on the card, so the
 --- protection lasts the rest of the run and survives a save.
 function Tattered.is_immune(card)
@@ -188,6 +198,7 @@ end
 function Tattered.record_score(card)
     if not is_playing_card(card) or Tattered.is_tattered(card) then return false end
     if Tattered.is_immune(card) then return false end
+    if Tattered.milk_shielded(card) then return false end
     -- The Purgatory Deck's boon: no card wears out any more.
     if Tattered.purgatory("no_tatter") then return false end
     local count = (card.ability.celesta_scored or 0) + 1

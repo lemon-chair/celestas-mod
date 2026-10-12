@@ -3113,6 +3113,84 @@ LOC_TAIL = '''        },
                     "{C:attention}+#1#{} consumable slot",
                 },
             },
+            celesta_bind_kumi_jax = {
+                name = "Kumi + Jax",
+                text = {
+                    "Scoring {C:attention}Stone{} and {C:attention}Limestone{} cards",
+                    "are destroyed, {C:green}#1# in #2#{} chance to",
+                    "earn {C:money}$#3#{} per card destroyed",
+                },
+            },
+            celesta_bind_ironmouse_piapiufo = {
+                name = "Ironmouse + PiapiUFO",
+                text = {
+                    "Each played {V:1}#3#{} card gives",
+                    "{X:mult,C:white}^#1#{} Mult. {C:celesta_true_star}True Star{} cards",
+                    "give {X:mult,C:white}^#2#{} Mult when scored",
+                },
+            },
+            celesta_bind_ironmouse_henya = {
+                name = "Ironmouse + Henya",
+                text = {
+                    "{X:mult,C:white}^#1#{} Mult every time a",
+                    "scoring card is {C:attention}retriggered{}",
+                },
+            },
+            celesta_bind_koko_vedal = {
+                name = "KokoNuts + Vedal",
+                text = {
+                    "Every time a {C:attention}Lucky 7{} of {C:spades}Spades{} scores,",
+                    "forcibly scale up each scaling",
+                    "{C:attention}Joker{} from this mod",
+                },
+            },
+            celesta_bind_deja_moo = {
+                name = "Dejavudea + Moo Merrily",
+                text = {
+                    "Cards with extra stored {C:chips}Chips{}",
+                    "cannot become {C:attention}Tattered{}",
+                },
+            },
+            celesta_bind_kumi_moo = {
+                name = "Kumi + Moo Merrily",
+                text = {
+                    "{C:green}#1# in #2#{} chance to gain",
+                    "{C:money}$#3#{} when a {C:spectral}Milk Bottle{} is used",
+                },
+            },
+            celesta_bind_arar_moo = {
+                name = "Arar + Moo Merrily",
+                text = {
+                    "At the start of the round, gain",
+                    "{C:dark_edition}Negative{} {C:spectral}Milk Bottles{} equal",
+                    "to your hand size {C:inactive}(Now {C:attention}#1#{C:inactive})",
+                },
+            },
+            celesta_bind_arielle_cyyu = {
+                name = "Arielle + Cy Yu",
+                text = {
+                    "Retriggers {C:attention}Exo{} cards once for each",
+                    "suit in your full deck",
+                    "{C:inactive}(Currently {C:attention}#1#{C:inactive})",
+                },
+            },
+            celesta_bind_ironmouse_haruka = {
+                name = "Ironmouse + Haruka",
+                text = {
+                    "This Joker gains {X:mult,C:white}^#1#{} Mult every",
+                    "time a {C:tarot}Tarot{} card is used",
+                    "{C:inactive}(Currently {X:mult,C:white}^#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_birdyovo_arar = {
+                name = "Birdyovo + Arar",
+                text = {
+                    "Retains the abilities of {C:attention}Arar{}",
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult for every",
+                    "{C:attention}#2#{} cards it enhances",
+                    "{C:inactive}({C:attention}#3#{C:inactive}/#2#, Currently {X:mult,C:white}X#4#{C:inactive} Mult)",
+                },
+            },
             celesta_bind_onigiri_girldm = {
                 name = "OniGiri + GirlDM",
                 text = {

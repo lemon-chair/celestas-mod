@@ -137,6 +137,10 @@ SMODS.Joker {
                     target:set_ability(G.P_CENTERS[enhancement])
                     target:juice_up(0.3, 0.5)
                     target.celesta_arar_claimed = nil
+                    -- Said to anything that counts what Arar enhances (Birdyovo + Arar).
+                    if SMODS.calculate_context then
+                        SMODS.calculate_context({ celesta_arar_enhanced = true, arar = card, target = target })
+                    end
                     return true
                 end
             })
