@@ -2977,11 +2977,16 @@ function Card:add_to_deck(from_debuff)
     celesta_liffeh_add_to_deck_ref(self, from_debuff)
 
     if not first_time or liffeh_creating then return end
-    if not (self.ability and self.ability.set == "Tarot") then return end
+    local set = self.ability and self.ability.set
+    if not set then return end
+    -- A Tarot always; any other consumable only for a Liffeh wearing a Favor Stamp.
+    local is_tarot = set == "Tarot"
+    if not (is_tarot or self.ability.consumeable or set == "Planet" or set == "Spectral") then return end
     if not (G.GAME and G.consumeables and G.consumeables.config) then return end
 
     local liffeh = liffeh_active()
     if not liffeh then return end
+    if not is_tarot and not (CelestasMod.favored and CelestasMod.favored(liffeh)) then return end
 
     -- The copy is Negative, and a Negative consumable brings its own slot, so
     -- there is no room to run out of and no consumeable_buffer to reserve.
@@ -3009,8 +3014,13 @@ function Card:add_to_deck(from_debuff)
             return true
         end,
     })
+    -- Named for what was copied: a Planet card is a "+Planet", and a kind of consumable with no word
+    -- of its own in the base game is a plain "+Consumable".
+    local plus = ({ Tarot = "k_plus_tarot", Planet = "k_plus_planet", Spectral = "k_plus_spectral" })[set]
+        or "celesta_plus_consumable"
     card_eval_status_text(liffeh, "extra", nil, nil, nil,
-        { message = localize("k_plus_tarot"), colour = G.C.PURPLE })
+        { message = localize(plus),
+          colour = is_tarot and G.C.PURPLE or (G.C.SECONDARY_SET and G.C.SECONDARY_SET[set]) or G.C.FILTER })
 end
 
 SMODS.Joker {

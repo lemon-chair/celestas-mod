@@ -4662,6 +4662,12 @@ LOC_TAIL = '''        },
                     "Always counts as a {C:blue}Downpour{}",
                 },
             },
+            celesta_stamp_favor_j_celesta_liffeh = {
+                text = {
+                    "Copies any {C:attention}consumable{} you gain,",
+                    "not just {C:tarot}Tarot{} cards",
+                },
+            },
         },
 
         Tag = {
@@ -5172,6 +5178,7 @@ LOC_TAIL = '''        },
             celesta_plus_limestone = "+Limestone",
             celesta_plus_hand_size = "+1 Hand Size",
             celesta_plus_slot = "+1 Consumable Slot",
+            celesta_plus_consumable = "+Consumable",
             celesta_plus_tag = "+1 Tag",
             celesta_unmerged = "Unmerged!",
             celesta_raised = "Raised!",

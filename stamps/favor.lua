@@ -52,6 +52,7 @@ Favor.KEYS = {
     ours("pandabearlily"),
     ours("monolith"), ours("demenishki"),
     ours("bao"), ours("monikacinnyroll"), ours("rainhoe"),
+    ours("liffeh"),
 }
 
 Favor.SET = {}
