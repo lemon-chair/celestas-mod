@@ -96,6 +96,9 @@ end
 --   tier     1 common, 2 uncommon, 3 rare. Also the tier of downside it is
 --            offered against.
 --   effect   the key its payout is returned under, or "retrigger"
+--   also_in  further tiers whose pool it is in, besides its own: a roll of one of those can
+--            come up with it, and it is still of `tier` - its badge and the downside it is
+--            offered against are its own
 --   min/max  the range its number is rolled in, in whole steps
 --   div      what that number is divided by afterwards, so the multipliers
 --            and exponents roll 11..15 and pay X1.1..X1.5
@@ -112,9 +115,9 @@ Stamps.KINDS = {
     -- Favor is the Joker-specific one: it changes how a listed Joker works, so it pays nothing
     -- per trigger (`passive`), can only be put on a Joker it has an effect for (`needs`), and only
     -- turns up in a pack while there is one to put it on. What it does to each is in
-    -- stamps/favor.lua.
+    -- stamps/favor.lua. It is uncommon, and in the rare pool as well.
     { key = "favor", art = "favor", tier = 2, effect = "favor", min = 1, max = 1,
-      passive = true, needs = "favor" },
+      passive = true, needs = "favor", also_in = { 3 } },
     { key = "x_mult_uncommon",  art = "x_mult",    tier = 2, effect = "x_mult",    min = 16, max = 20, div = 10 },
     { key = "x_chips_uncommon", art = "x_chips",   tier = 2, effect = "x_chips",   min = 16, max = 20, div = 10 },
     { key = "money_uncommon",   art = "money",     tier = 2, effect = "dollars",   min = 3,  max = 4 },
@@ -146,6 +149,10 @@ for _, kind in ipairs(Stamps.KINDS) do
     Stamps.BY_KEY[kind.key] = kind
     local tier = Stamps.BY_TIER[kind.tier]
     tier[#tier + 1] = kind
+    for _, also in ipairs(kind.also_in or {}) do
+        local pool = Stamps.BY_TIER[also]
+        pool[#pool + 1] = kind
+    end
 end
 
 -- Resolved at load, for the same reason MARK_ATLAS is.
