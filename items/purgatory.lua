@@ -1026,13 +1026,30 @@ end
 -- The prompt
 --------------------------------------------------------------------------------
 
+--- Whether this offer's curse comes doubled: the Summon boon is paid for with it twice (P.double).
+function P.doubles_its_curse(offer)
+    return offer ~= nil and offer.good == "summon"
+end
+
+--- The localization key a modifier's text is under. A curse that is being doubled has a second
+--- entry, `_double`, that says what twice is - "-2 Hands", not "-1 Hand" with a note. One that
+--- cannot be doubled has none and reads as it always does, which is what happens to it.
+local function text_key(kind, key, doubled)
+    local base = "celesta_purg_" .. kind .. "_" .. key
+    if not (doubled and kind == "bad") then return base end
+    local other = G.localization and G.localization.descriptions
+        and G.localization.descriptions.Other
+    local twice = base .. "_double"
+    return (other and other[twice]) and twice or base
+end
+
 --- The lines of one modifier's text, each as the parts a row is made of.
-local function text_lines(kind, key, arg)
+local function text_lines(kind, key, arg, doubled)
     local entry = P.find(kind, key)
     local lines = {}
     local ok = pcall(localize, {
         type = "descriptions", set = "Other",
-        key = "celesta_purg_" .. kind .. "_" .. key,
+        key = text_key(kind, key, doubled),
         vars = entry and entry.vars and entry.vars(arg) or {},
         nodes = lines,
     })
@@ -1041,9 +1058,9 @@ end
 P.text_lines = text_lines
 
 --- One modifier's text, in the white box a card's own text sits in.
-local function text_box(kind, key, arg)
+local function text_box(kind, key, arg, doubled)
     local rows = {}
-    for _, line in ipairs(text_lines(kind, key, arg)) do
+    for _, line in ipairs(text_lines(kind, key, arg, doubled)) do
         rows[#rows + 1] = { n = G.UIT.R, config = { align = "cm" }, nodes = line }
     end
     return { n = G.UIT.R, config = { align = "cm", padding = 0.06, r = 0.1, minw = 3.3, minh = 1.0,
@@ -1067,7 +1084,7 @@ local function offer_panel(index, offer)
                  label(localize("celesta_purg_good"), G.C.GREEN),
                  text_box("good", offer.good, offer.good_arg),
                  label(localize("celesta_purg_bad"), G.C.RED),
-                 text_box("bad", offer.bad, offer.bad_arg),
+                 text_box("bad", offer.bad, offer.bad_arg, P.doubles_its_curse(offer)),
              } }
 end
 

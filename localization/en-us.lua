@@ -6236,6 +6236,198 @@ return {
                     "time, not {C:money}$1{}",
                 },
             },
+            celesta_purg_bad_rerolls_double = {
+                text = {
+                    "{C:red}-2{} modifier rerolls",
+                },
+            },
+            celesta_purg_bad_lose_20_double = {
+                text = {
+                    "Lose {C:money}$40{}",
+                },
+            },
+            celesta_purg_bad_destroy_joker_double = {
+                text = {
+                    "Destroy two random Jokers,",
+                    "they can never return",
+                    "{C:inactive}(ignores Eternal){}",
+                },
+            },
+            celesta_purg_bad_hand_double = {
+                text = {
+                    "{C:red}-2{} Hands each round",
+                },
+            },
+            celesta_purg_bad_discard_double = {
+                text = {
+                    "{C:red}-2{} Discards each round",
+                },
+            },
+            celesta_purg_bad_joker_slot_double = {
+                text = {
+                    "{C:red}-2{} Joker slots",
+                },
+            },
+            celesta_purg_bad_hand_size_double = {
+                text = {
+                    "{C:red}-2{} hand size",
+                },
+            },
+            celesta_purg_bad_consumable_slot_double = {
+                text = {
+                    "{C:red}-2{} consumable slots",
+                },
+            },
+            celesta_purg_bad_lose_negative_double = {
+                text = {
+                    "Remove {C:dark_edition}Negative{} from",
+                    "two random owned Jokers",
+                },
+            },
+            celesta_purg_bad_cull_quarter_double = {
+                text = {
+                    "Destroy {C:attention}25%{} of the",
+                    "cards in your full deck, twice",
+                },
+            },
+            celesta_purg_bad_blind_size_double = {
+                text = {
+                    "Blinds are {C:attention}125%{} larger",
+                },
+            },
+            celesta_purg_bad_sticker_double = {
+                text = {
+                    "Add a random {C:attention}sticker{}",
+                    "to a random owned Joker, twice",
+                },
+            },
+            celesta_purg_bad_prices_up_double = {
+                text = {
+                    "Shop prices are",
+                    "{C:attention}125%{} higher",
+                },
+            },
+            celesta_purg_bad_shop_slot_double = {
+                text = {
+                    "{C:red}-2{} shop slots",
+                },
+            },
+            celesta_purg_bad_booster_slot_double = {
+                text = {
+                    "{C:red}-2{} booster pack slots",
+                },
+            },
+            celesta_purg_bad_odds_half_double = {
+                text = {
+                    "All {C:green}odds{} are quartered",
+                },
+            },
+            celesta_purg_bad_level_all_double = {
+                text = {
+                    "Every poker hand",
+                    "loses {C:attention}2{} levels",
+                },
+            },
+            celesta_purg_bad_level_top_double = {
+                text = {
+                    "Your most played hand",
+                    "loses {C:attention}6{} levels",
+                },
+            },
+            celesta_purg_bad_lose_voucher_double = {
+                text = {
+                    "Lose two random",
+                    "redeemed {C:attention}Vouchers{}",
+                },
+            },
+            celesta_purg_bad_cull_faces_double = {
+                text = {
+                    "Destroy {C:attention}75%{} of the",
+                    "face cards in your deck, twice",
+                },
+            },
+            celesta_purg_bad_cull_suit_double = {
+                text = {
+                    "Destroy {C:attention}50%{} of the",
+                    "{C:attention}#1#{} in your deck, twice",
+                },
+            },
+            celesta_purg_bad_obelisk_double = {
+                text = {
+                    "Gain two {C:attention}Eternal{}",
+                    "{C:attention}Obelisks{}",
+                },
+            },
+            celesta_purg_bad_eternal_perishable_double = {
+                text = {
+                    "Two random Jokers become",
+                    "{C:attention}Eternal{} and {C:attention}Perishable{}",
+                },
+            },
+            celesta_purg_bad_buff_clover_double = {
+                text = {
+                    "{C:attention}The Clover{}: its odds",
+                    "are now {C:green}1 in 4{}",
+                    "It is the next {C:attention}Boss Blind{}",
+                },
+            },
+            celesta_purg_bad_buff_flower_double = {
+                text = {
+                    "{C:attention}The Flower{} also destroys",
+                    "debuffed Jokers",
+                    "It is the next {C:attention}Boss Blind{}",
+                },
+            },
+            celesta_purg_bad_buff_wyrm_double = {
+                text = {
+                    "{C:attention}The Wyrm{} also destroys",
+                    "held consumables",
+                    "It is the next {C:attention}Boss Blind{}",
+                },
+            },
+            celesta_purg_bad_buff_robot_double = {
+                text = {
+                    "{C:attention}The Robot{} also destroys",
+                    "sealed cards held in hand",
+                    "It is the next {C:attention}Boss Blind{}",
+                },
+            },
+            celesta_purg_bad_buff_brick_double = {
+                text = {
+                    "{C:attention}The Brick{} also takes",
+                    "hand size on each discard",
+                    "It is the next {C:attention}Boss Blind{}",
+                },
+            },
+            celesta_purg_bad_buff_goat_double = {
+                text = {
+                    "{C:attention}The Goat{} also destroys",
+                    "unenhanced played cards",
+                    "It is the next {C:attention}Boss Blind{}",
+                },
+            },
+            celesta_purg_bad_buff_frog_double = {
+                text = {
+                    "{C:attention}The Frog{} also destroys",
+                    "cards it strips",
+                    "enhancements from",
+                    "It is the next {C:attention}Boss Blind{}",
+                },
+            },
+            celesta_purg_bad_buff_horn_double = {
+                text = {
+                    "{C:attention}The Horn{} also locks",
+                    "the cards in your hand",
+                    "It is the next {C:attention}Boss Blind{}",
+                },
+            },
+            celesta_purg_bad_buff_gem_double = {
+                text = {
+                    "{C:attention}The Gem{} also destroys",
+                    "Jokers with an edition",
+                    "It is the next {C:attention}Boss Blind{}",
+                },
+            },
             celesta_purg_bad_buff_gem = {
                 text = {
                     "{C:attention}The Gem{} also destroys",
