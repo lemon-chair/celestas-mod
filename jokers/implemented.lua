@@ -2751,6 +2751,20 @@ SMODS.Joker {
 
 local VEDAL_KEY = "j_celesta_vedal"
 
+--- Whether a Vedal is acting: one in the row, or Ellie Minibot + Vedal, which is a Vedal that
+--- scales twice as fast.
+---
+--- The pair has to be asked for by name. It replaces both its halves, so the lookups that find a
+--- Joker in the row no longer find the Vedal inside it - and with nothing to find, nothing was
+--- accelerated at all, which is the one thing the pair is for. A debuffed pair does nothing, as a
+--- debuffed Vedal does not.
+local function vedal_acting()
+    if next(CelestasMod.find_joker(VEDAL_KEY)) then return true end
+    local Bind = CelestasMod.Bind
+    local holder = Bind and Bind.find_special and Bind.find_special("ellie_vedal")
+    return (holder and not holder.debuff) and true or false
+end
+
 --- How much x goes up by after each scale, before anything widens it.
 CelestasMod.VEDAL_EXPONENT_STEP = 1
 
@@ -2831,7 +2845,7 @@ local function vedal_rewrite(card, args)
     -- debuffed included: a debuffed Vedal does no work, but it is still not
     -- something the other one should be accelerating.
     if CelestasMod.card_is_joker(card, VEDAL_KEY, true) then return end
-    if not next(CelestasMod.find_joker(VEDAL_KEY)) then return end
+    if not vedal_acting() then return end
 
     -- ...nor a special merge that has a Vedal for one of its halves. The pair stands in for
     -- both, so the lookup above no longer finds the Vedal in it and cannot say so.
@@ -2895,7 +2909,7 @@ function CelestasMod.vedal_counted(card, gain, count)
     if card and CelestasMod.card_is_joker(card, VEDAL_KEY, true) then
         return gain * count
     end
-    if not next(CelestasMod.find_joker(VEDAL_KEY)) then return gain * count end
+    if not vedal_acting() then return gain * count end
 
     local steps = math.min(math.floor(count), CelestasMod.VEDAL_COUNT_STEPS)
     local total = type(to_big) == "function" and to_big(0) or 0
