@@ -163,9 +163,40 @@ function Bind.can_bind(card)
     return true
 end
 
+--- The ten Jokers Broo may be merged with, and the only ones.
+Bind.BROO_KEY = "j_celesta_broo"
+Bind.BROO_PARTNERS = {
+    j_celesta_kumi = true, j_celesta_mooni = true, j_celesta_ray = true,
+    j_celesta_spongeybuns = true, j_celesta_yuzu = true, j_celesta_moopybuns = true,
+    j_celesta_aquwa = true, j_celesta_arielle = true, j_celesta_camila = true,
+    j_celesta_nagzz = true,
+}
+
+--- Whether two loose Jokers, by centre key, break Broo's one rule. Nothing to say about a pair
+--- that does not hold a Broo; a Broo is merged with one of the ten and with nothing else.
+function Bind.broo_allows(key_a, key_b)
+    local broo_a, broo_b = key_a == Bind.BROO_KEY, key_b == Bind.BROO_KEY
+    if not (broo_a or broo_b) then return true end
+    return Bind.BROO_PARTNERS[broo_a and key_b or key_a] == true
+end
+
 --- Whether these cards may be merged as far as rarity goes: a Mythic Joker is merged only with
 --- other Mythic ones, and a plain one never with a Mythic one. All Mythic or none.
+---
+--- Broo is the exception, and the exception is all there is to it: a Mythic that is merged with ten
+--- plain Jokers and with nothing else, Mythic or not. It is never part of a quad.
 function Bind.mythic_match(cards)
+    local broos = 0
+    for _, key in ipairs(Bind.group_members(cards)) do
+        if key == Bind.BROO_KEY then broos = broos + 1 end
+    end
+    if broos > 0 then
+        if broos ~= 1 or #cards ~= 2 then return false end
+        local first, second = Bind.members_of(cards[1]), Bind.members_of(cards[2])
+        if #first ~= 1 or #second ~= 1 then return false end
+        return Bind.broo_allows(first[1], second[1])
+    end
+
     local is_mythic = CelestasMod.is_mythic
     if not is_mythic then return true end
     local first = is_mythic(cards[1]) and true or false
@@ -215,7 +246,15 @@ function Bind.swap_selection()
         picked[#picked + 1] = joker
     end
     if #picked ~= 2 then return nil end
+    if not Bind.swap_allowed(picked[1], picked[2]) then return nil end
     return picked
+end
+
+--- Whether two pairs may trade second halves as far as Broo is concerned: each card is handed the
+--- other's second half, and one of those may be a Broo's partner going to a Joker it cannot have.
+function Bind.swap_allowed(a, b)
+    local first, second = Bind.members_of(a), Bind.members_of(b)
+    return Bind.broo_allows(first[1], second[2]) and Bind.broo_allows(second[1], first[2])
 end
 
 --------------------------------------------------------------------------------
@@ -6868,6 +6907,8 @@ function Bind.swap(a, b)
     for _, card in ipairs({ a, b }) do
         if not (Bind.is_merged(card) and not Bind.is_quad(card)) then return false end
     end
+
+    if not Bind.swap_allowed(a, b) then return false end
 
     local bound_a = a.ability.celesta_bind
     local bound_b = b.ability.celesta_bind
@@ -14891,6 +14932,287 @@ special("j_celesta_arielle", "j_celesta_michi", {
 
 end
 
+-- Broo and ten other Jokers.
+--
+-- Broo does nothing alone, and each of these is a pair of its own: a replacing one, so neither half's
+-- ability runs and the pair's stands in for both - and each wears a face of its own, a square, which
+-- is what `art` is (merge/bind.lua build_art draws it in place of the two halves).
+do
+
+local BROO = "j_celesta_broo"
+
+--- True for a playing card that is debuffed.
+local function benched(played)
+    return played and played.debuff and true or false
+end
+
+-- Broomi (Kumi): a Gold card pays $20 when it scores and when it is held in hand, in the hand played.
+--
+-- The held pass is the one at the end of the round too, and not what is wanted there: nothing is
+-- being scored and the cash-out would pay a second time. See Yuzu.
+special(BROO, "j_celesta_kumi", {
+    key = "broo_kumi",
+    art = "pair_broomi",
+    config = { dollars = 20 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.other_card) then return end
+        local gold = context.other_card
+        if not SMODS.has_enhancement(gold, "m_gold") or benched(gold) then return end
+        local scored = context.cardarea == G.play
+        local held = context.cardarea == G.hand and not context.end_of_round
+        if not (scored or held) then return end
+        return { dollars = state.dollars, card = gold }
+    end,
+})
+
+-- Brooni (Mooni): $10 for each Star card discarded. Mooni's own reading, with no copier answering.
+special(BROO, "j_celesta_mooni", {
+    key = "broo_mooni",
+    art = "pair_brooni",
+    config = { dollars = 10 },
+
+    loc_vars = function(def, card, state)
+        -- Singular: "a Star card". The third argument asks for it.
+        local name, colour = CelestasMod.suit_name_and_colour(
+            CelestasMod.STARS_SUIT, CelestasMod.STARS_COLOUR, true)
+        return { vars = { state.dollars, name, colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.discard and not context.blueprint and bind_is_star(context.other_card) then
+            return { dollars = state.dollars, card = card }
+        end
+    end,
+})
+
+-- Raybroo (Ray): every Common Joker is retriggered, not the four Ray names.
+--
+-- Zentreya + Bluto's guard, for the same reason: without `not context.retrigger_joker` a retrigger
+-- would retrigger, and what is asked of another Joker is read off its centre, which for a merge is
+-- its host's. The pair is Mythic and so never answers for itself.
+special(BROO, "j_celesta_ray", {
+    key = "broo_ray",
+    art = "pair_raybroo",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.retrigger_joker_check or context.retrigger_joker then return end
+        local other = context.other_card
+        local center = other and other.config and other.config.center
+        if not (center and other ~= card and center.rarity == 1) then return end
+        return { message = localize("k_again_ex"), repetitions = 1, card = card }
+    end,
+})
+
+-- Spongey Broos (Spongey Buns): Spongey's counter, fed by a playing card's trigger as well as a Joker's.
+--
+-- Spongey's reading of post_trigger, filter and all: a probability lookup runs a full evaluation pass
+-- that arrives here looking exactly like a trigger, and this must not pay itself for its own scoring.
+-- What is let through is a Joker or a playing card; other_card is also whatever else triggers.
+special(BROO, "j_celesta_spongeybuns", {
+    key = "broo_spongeybuns",
+    art = "pair_spongey_broos",
+    config = { chips = 0, chip_gain = 10 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.chip_gain, state.chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.post_trigger and not context.blueprint then
+            local trigger = context.other_card
+            local inner = context.other_context
+            if inner and (inner.mod_probability or inner.fix_probability
+                or inner.fixed_probability or inner.retrigger_joker_check) then
+                return
+            end
+            if not (trigger and trigger.ability
+                and (trigger.ability.set == "Joker" or trigger.playing_card)) then return end
+            if trigger == card then return end
+
+            Bind.grow(card, state, "chips", state.chip_gain)
+            return {
+                message = localize { type = "variable", key = "a_chips", vars = { state.chips } },
+                colour = G.C.CHIPS,
+                card = card,
+            }
+        end
+
+        if context.joker_main and CelestasMod.more_than(state.chips, 0) then
+            return { chips = state.chips }
+        end
+    end,
+})
+
+-- Broozu (Yuzu): a Limestone card gives +100 Mult when it scores and when it is held in hand, in the
+-- hand played. Broomi's two passes, and for the same reason not the cash-out's.
+special(BROO, "j_celesta_yuzu", {
+    key = "broo_yuzu",
+    art = "pair_broozu",
+    config = { mult = 100 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.other_card) then return end
+        local limestone = context.other_card
+        if not SMODS.has_enhancement(limestone, CelestasMod.ENHANCEMENT_KEYS.Limestone)
+            or benched(limestone) then return end
+        local scored = context.cardarea == G.play
+        local held = context.cardarea == G.hand and not context.end_of_round
+        if not (scored or held) then return end
+        return { mult = state.mult, card = limestone }
+    end,
+})
+
+-- MoopyBroos (MoopyBuns): MoopyBuns' growth, X1 for each thing bought rather than a tenth.
+special(BROO, "j_celesta_moopybuns", {
+    key = "broo_moopybuns",
+    art = "pair_moopybroos",
+    config = { x_chips = 1, x_chips_gain = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_chips_gain, state.x_chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.blueprint and context.buying_card then
+            Bind.grow(card, state, "x_chips", state.x_chips_gain)
+            return {
+                message = localize { type = "variable", key = "a_xchips", vars = { state.x_chips } },
+                colour = G.C.CHIPS, card = card,
+            }
+        end
+
+        -- X1 is no multiplier at all; returning it would put a flourish over the Joker for nothing.
+        if context.joker_main and CelestasMod.more_than(state.x_chips, 1) then
+            local total = state.x_chips
+            return { x_chips = total }
+        end
+    end,
+})
+
+-- Brooquwa (Aquwa): a Downpour that does not wait for a round, and does not end with one.
+--
+-- Not a calculate at all: the Arena asks, as it asks the deck's own weather, and a pair that
+-- replaces Aquwa is not an Aquwa in play to start one. Read before the deck's weather.
+special(BROO, "j_celesta_aquwa", {
+    key = "broo_aquwa",
+    art = "pair_brooquwa",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+if CelestasMod.Arena then
+    CelestasMod.Arena.ALWAYS_RULES = CelestasMod.Arena.ALWAYS_RULES or {}
+    CelestasMod.Arena.ALWAYS_RULES[#CelestasMod.Arena.ALWAYS_RULES + 1] = function()
+        return specials_held("broo_aquwa")[1] ~= nil and "downpour" or nil
+    end
+end
+
+-- Aribroo (Arielle): Arielle's one suit, and every card a True Star as well.
+--
+-- Both are questions asked long before any Joker is consulted, and the Arielle inside a pair is not
+-- in play as itself: SAME_SUIT_RULES is the Baulder Gang's seam for the first, and TRUE_STAR_RULES
+-- (suits/true_stars.lua) is the second.
+special(BROO, "j_celesta_arielle", {
+    key = "broo_arielle",
+    art = "pair_aribroo",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+CelestasMod.SAME_SUIT_RULES = CelestasMod.SAME_SUIT_RULES or {}
+CelestasMod.SAME_SUIT_RULES[#CelestasMod.SAME_SUIT_RULES + 1] = function()
+    return specials_held("broo_arielle")[1] ~= nil
+end
+
+CelestasMod.TRUE_STAR_RULES = CelestasMod.TRUE_STAR_RULES or {}
+CelestasMod.TRUE_STAR_RULES[#CelestasMod.TRUE_STAR_RULES + 1] = function()
+    return specials_held("broo_arielle")[1] ~= nil
+end
+
+-- Broomila (Camila): every played card goes up one edition, as Camila's cards come back: none to
+-- Foil to Holographic to Polychrome, and no further. An edition not on that ladder is left alone.
+--
+-- Before scoring, the way Midas Mask changes what it plays, so the hand is scored with it.
+special(BROO, "j_celesta_camila", {
+    key = "broo_camila",
+    art = "pair_broomila",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.before then return end
+        local upgraded = 0
+        for _, played in ipairs(context.full_hand or {}) do
+            local now = played.edition and played.edition.key or "none"
+            local next_up = CelestasMod.EDITION_LADDER[now]
+            if next_up and next_up ~= now then
+                played:set_edition(next_up, true, true)
+                upgraded = upgraded + 1
+            end
+        end
+        if upgraded > 0 then
+            return { message = localize("k_upgrade_ex"), colour = G.C.DARK_EDITION, card = card }
+        end
+    end,
+})
+
+-- Broogzz (Nagzz): a chance that has missed n - 1 times in a row is certain the nth, n being its
+-- denominator. Each chance is counted on its own, by what it is rolled as, and a hit - certain or
+-- not - starts it over.
+--
+-- fix_probability is what makes a roll certain (a numerator equal to the denominator), and only
+-- asked of a roll, not of a description of one. The count is taken from the result the roll reports.
+special(BROO, "j_celesta_nagzz", {
+    key = "broo_nagzz",
+    art = "pair_broogzz",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.fix_probability and context.from_roll then
+            local denominator = context.denominator
+            -- Only a number, or a Talisman number's own comparison is not to be trusted with.
+            if type(denominator) ~= "number" or denominator <= 1 then return end
+            local missed = state.missed and state.missed[tostring(context.identifier)] or 0
+            if missed >= denominator - 1 then return { numerator = denominator } end
+            return
+        end
+
+        if context.pseudorandom_result and context.identifier ~= nil then
+            state.missed = state.missed or {}
+            local id = tostring(context.identifier)
+            state.missed[id] = context.result and 0 or ((state.missed[id] or 0) + 1)
+        end
+    end,
+})
+
+end
+
 --------------------------------------------------------------------------------
 -- Art: the two faces split corner to corner
 --------------------------------------------------------------------------------
@@ -14978,6 +15300,16 @@ local function quad_wedges(w, h)
 end
 
 local function build_art(card)
+    -- A pair with a face of its own wears that and nothing else: one picture, not two halves cut
+    -- corner to corner, and no glow along a split there is not.
+    local own = not Bind.is_quad(card) and Bind.special_of(card)
+    if own and own.art then
+        local atlas = G.ASSET_ATLAS[PREFIX .. "_" .. own.art]
+        if atlas and atlas.image then
+            return { image = atlas.image, px = atlas.px or CORNER_W, py = atlas.py or CORNER_H }
+        end
+    end
+
     local members = Bind.members_of(card)
     local faces = {}
     -- The host draws from its own centre, which may have been swapped; the

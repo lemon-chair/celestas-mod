@@ -30,14 +30,21 @@ local function offset_for(card, sticker)
     local ability = card and card.ability
     if not ability then return 0, 0 end
 
+    local dx, dy = 0, 0
     if sticker == "perishable" then
         -- The next place down, and in the column Rental's icon sits in.
-        if ability.eternal then return LEFT, DOWN end
+        if ability.eternal then dx, dy = LEFT, DOWN end
     elseif sticker == "rental" then
         -- Rental's own place is the second; with the first two both taken it is the third.
-        if ability.eternal and ability.perishable then return 0, DOWN end
+        if ability.eternal and ability.perishable then dy = DOWN end
     end
-    return 0, 0
+
+    -- A square Joker's picture starts 12 rows below the top of the card's cell, so every icon goes
+    -- down by that much: the same distance in from the picture's own corner as on any other card.
+    if CelestasMod.is_square_joker and CelestasMod.is_square_joker(card) then
+        dy = dy + (CelestasMod.SQUARE_SHIFT or 0)
+    end
+    return dx, dy
 end
 
 CelestasMod.sticker_offset = offset_for
@@ -59,8 +66,9 @@ local function place(sticker)
     end
 end
 
---- The two that can be moved. Eternal holds the corner and is never drawn anywhere else.
-local MOVABLE = { "perishable", "rental" }
+--- The three that can be moved. Eternal holds the corner on every card but a square one, whose
+--- picture does not start at the top of the cell.
+local MOVABLE = { "eternal", "perishable", "rental" }
 
 local function place_all()
     for _, sticker in ipairs(MOVABLE) do place(sticker) end

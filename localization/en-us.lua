@@ -298,6 +298,13 @@ return {
                     "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
                 },
             },
+            j_celesta_broo = {
+                name = "Broo",
+                text = {
+                    "Does nothing... for now",
+                    "{C:inactive}(Must be merged with certain Jokers)",
+                },
+            },
             j_celesta_bubi = {
                 name = "Bubi",
                 text = {
@@ -4915,6 +4922,75 @@ return {
                     "If a discarded selection holds cards of",
                     "{C:attention}#1#{} different suits, create {C:attention}#2#{}",
                     "random {C:tarot}Tarot{} cards {C:inactive}(Must have room)",
+                },
+            },
+            celesta_bind_broo_kumi = {
+                name = "Broomi",
+                text = {
+                    "When a hand is played, {C:attention}Gold{} cards",
+                    "held in hand and scoring each give {C:money}$#1#{}",
+                },
+            },
+            celesta_bind_broo_mooni = {
+                name = "Brooni",
+                text = {
+                    "Earn {C:money}$#1#{} every time a",
+                    "{V:1}#2#{} card is discarded",
+                },
+            },
+            celesta_bind_broo_ray = {
+                name = "Raybroo",
+                text = {
+                    "Retriggers all {C:attention}Common{} Jokers",
+                },
+            },
+            celesta_bind_broo_spongeybuns = {
+                name = "Spongey Broos",
+                text = {
+                    "This Joker gains {C:chips}+#1#{} Chips every time",
+                    "a {C:attention}Joker{} or {C:attention}card{} triggers",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_broo_yuzu = {
+                name = "Broozu",
+                text = {
+                    "When a hand is played, {C:attention}Limestone{} cards",
+                    "give {C:mult}+#1#{} Mult when scored or held in hand",
+                },
+            },
+            celesta_bind_broo_moopybuns = {
+                name = "MoopyBroos",
+                text = {
+                    "This Joker gains {X:chips,C:white}X#1#{} Chips",
+                    "for each item {C:attention}bought{} from the shop",
+                    "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_broo_aquwa = {
+                name = "Brooquwa",
+                text = {
+                    "{C:blue}Downpour{} is active even outside of rounds",
+                },
+            },
+            celesta_bind_broo_arielle = {
+                name = "Aribroo",
+                text = {
+                    "All cards are considered to be the {C:attention}same suit{},",
+                    "including as {C:attention}True Stars{}",
+                },
+            },
+            celesta_bind_broo_camila = {
+                name = "Broomila",
+                text = {
+                    "Upgrades the {C:dark_edition}edition{} of played cards by one level",
+                },
+            },
+            celesta_bind_broo_nagzz = {
+                name = "Broogzz",
+                text = {
+                    "{C:green}Odds{} are guaranteed to happen every {C:attention}n{} times,",
+                    "where {C:attention}n{} is equal to the odds denominator",
                 },
             },
             celesta_bind_onigiri_girldm = {

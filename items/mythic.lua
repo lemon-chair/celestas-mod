@@ -6,7 +6,8 @@
 --- and has a pool, and no ordinary roll ever lands on it.
 ---
 --- A Mythic Joker may only be merged with another Mythic Joker, and a Mythic one with a plain one
---- not at all: merge/bind.lua asks CelestasMod.is_mythic.
+--- not at all: merge/bind.lua asks CelestasMod.is_mythic. Broo is the one exception, and it is a narrow
+--- one: it is merged with ten named plain Jokers and with nothing else (Bind.BROO_PARTNERS).
 ---
 --- Loaded before the Jokers and before merge/bind.lua, so the key exists wherever it is asked for.
 --- The Jokers name it by its prefixed key, which is what a Joker's `rarity` is.

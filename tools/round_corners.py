@@ -100,6 +100,35 @@ def build_mask(scale):
 #: of a shape that is already round would take bites out of it.
 BLOCK_ROUNDED = {"vgn"}
 
+#: Broo and the ten faces it makes with other Jokers are 71x71 squares, centred in the card's 71x95
+#: cell. They are rounded as the SQUARE they are: the block is the square itself, at a fixed place
+#: in the cell, and the card's own silhouette is not applied at all - its rows 0..11 and 83..94 hold
+#: nothing of theirs and its 1px side inset would shave the square's edge.
+#:
+#: A fixed block rather than block_mask's measure of the opaque pixels, because these are cut-outs
+#: of a face on transparency: where the picture happens not to reach a corner, the box measured off
+#: it is smaller than the square and the corners would be cut in the wrong place.
+SQUARE_ROUNDED = {"broo", "pair_broomi", "pair_brooni", "pair_raybroo", "pair_spongey_broos",
+                   "pair_broozu", "pair_moopybroos", "pair_brooquwa", "pair_aribroo",
+                   "pair_broomila", "pair_broogzz"}
+SQUARE = 71
+
+
+def square_mask(scale):
+    """The 71x95 cell at `scale`, opaque over the centred 71x71 square less its four corners."""
+    m = Image.new("L", (CARD_W, CARD_H), 0)
+    top = (CARD_H - SQUARE) // 2
+    block = Image.new("L", (SQUARE, SQUARE), 255)
+    px = block.load()
+    for y, run in enumerate(block_profile(SQUARE)):
+        for x in range(min(run, SQUARE)):
+            px[x, y] = 0
+            px[SQUARE - 1 - x, y] = 0
+    m.paste(block, (0, top))
+    if scale != 1:
+        m = m.resize((CARD_W * scale, CARD_H * scale), Image.NEAREST)
+    return m
+
 
 def block_profile(height):
     """PROFILE's corner over a block of `height` rows rather than a whole card.
@@ -188,6 +217,7 @@ def main(check=False, quiet=False):
     total = changed = skipped = 0
     for scale in (1, 2):
         mask = build_mask(scale)
+        square = square_mask(scale)
         size = mask.size
         for p in targets(scale):
             total += 1
@@ -196,7 +226,9 @@ def main(check=False, quiet=False):
                 sys.exit("%s is %s, expected %s" % (p, im.size, size))
             old = im.split()[3]
             # mask wins where it is 0; existing transparency is otherwise kept
-            new = Image.composite(old, Image.new("L", size, 0), mask)
+            stem = os.path.splitext(os.path.basename(p))[0]
+            new = Image.composite(old, Image.new("L", size, 0),
+                                  square if stem in SQUARE_ROUNDED else mask)
             # ...and art that never reaches those corners is rounded at its own.
             if os.path.splitext(os.path.basename(p))[0] in BLOCK_ROUNDED:
                 new = Image.composite(new, Image.new("L", size, 0),

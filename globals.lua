@@ -43,6 +43,36 @@ function CelestasMod.is_round_joker(card)
 end
 
 --------------------------------------------------------------------------------
+-- Jokers whose art is a square
+--------------------------------------------------------------------------------
+--
+-- Broo, and the ten faces it makes when it is merged, are 71x71 squares, centred in the card's
+-- 71x95 cell: 12 rows of nothing above and below, the way Boosfer's circle sits.
+--
+-- Anything laid over a card at a fixed place in the cell - a Sticker in the top-left corner, a
+-- Stamp's mark in the bottom-right - is laid over the empty rows, not over the picture, unless it is
+-- moved the 12 rows the picture is. A square Joker asks here so it can be.
+CelestasMod.SQUARE_JOKERS = {
+    j_celesta_broo = true,
+}
+
+--- How far the square's art is in from the cell's top and bottom edges, as a share of the card's
+--- height: (95 - 71) / 2 rows of 95.
+CelestasMod.SQUARE_SHIFT = (95 - 71) / 2 / 95
+
+--- True for a card whose art is a square rather than a card: Broo, and any merge that wears a face
+--- of its own (merge/bind.lua `art`), which is a square whichever half is hosting it.
+function CelestasMod.is_square_joker(card)
+    local config = card and card.config
+    local key = config and (config.center_key or (config.center and config.center.key))
+    if key and CelestasMod.SQUARE_JOKERS[key] then return true end
+    local Bind = CelestasMod.Bind
+    if not (Bind and Bind.is_merged and Bind.is_merged(card)) then return false end
+    local def = Bind.special_of(card)
+    return (def and def.art) and true or false
+end
+
+--------------------------------------------------------------------------------
 -- Rewriting a card that is being played
 --------------------------------------------------------------------------------
 
@@ -513,6 +543,12 @@ CelestasMod.CARD_RANK_RULES = {}
 --- the card then IS that suit and is not its own - which is what CARD_RANK_RULES
 --- does for ranks, one level over.
 CelestasMod.CARD_SUIT_RULES = {}
+
+--- Anything that makes every card with a suit count as a True Star, each a function answering true.
+--- suits/true_stars.lua asks it of a card (is_true_star), of the deck's count and of whether it
+--- holds one at all. A merge is here for the SAME_SUIT_RULES reason: a replacing pair speaks for
+--- both halves, so the half that said so is not in play as itself.
+CelestasMod.TRUE_STAR_RULES = {}
 
 --- Anything that makes a card answer to a suit as well as its own, each a
 --- function (card, suit, flush_calc) returning true when it does. Widening

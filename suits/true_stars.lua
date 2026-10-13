@@ -74,12 +74,22 @@ CelestasMod.register_conversion_suit(CelestasMod.TRUE_STARS_SUIT)
 --- Star, and Arielle - which widens is_suit, not base.suit - does not make one
 --- either.
 function CelestasMod.true_stars_in_deck()
-    return CelestasMod.count_suit_in_deck(CelestasMod.TRUE_STARS_SUIT)
+    if not CelestasMod.every_card_is_true_star() then
+        return CelestasMod.count_suit_in_deck(CelestasMod.TRUE_STARS_SUIT)
+    end
+    local count = 0
+    for _, held in ipairs(G.playing_cards or {}) do
+        if CelestasMod.has_a_suit(held) then count = count + 1 end
+    end
+    return count
 end
 
 --- True when the run's deck holds at least one.
 function CelestasMod.has_true_star()
-    return CelestasMod.suit_in_deck(CelestasMod.TRUE_STARS_SUIT)
+    if not CelestasMod.every_card_is_true_star() then
+        return CelestasMod.suit_in_deck(CelestasMod.TRUE_STARS_SUIT)
+    end
+    return CelestasMod.true_stars_in_deck() > 0
 end
 
 --- X0.25 a card, counted live off the deck the way Buffpup counts its Leaves:
@@ -176,8 +186,25 @@ end
 --- Arielle's to overrule it, and suits/ loads before jokers/ - so it would
 --- have ended up inside, and Arielle would have had the last word.
 function CelestasMod.is_true_star(card)
-    return (card and card.base and card.base.suit == CelestasMod.TRUE_STARS_SUIT)
-        and true or false
+    if card and card.base and card.base.suit == CelestasMod.TRUE_STARS_SUIT then return true end
+    return (CelestasMod.every_card_is_true_star() and CelestasMod.has_a_suit(card)) and true or false
+end
+
+--- Whether something says every card counts as a True Star: CelestasMod.TRUE_STAR_RULES, the first
+--- that answers yes. The one thing that makes a card one without it being printed one.
+function CelestasMod.every_card_is_true_star()
+    for _, rule in ipairs(CelestasMod.TRUE_STAR_RULES or {}) do
+        local ok, yes = pcall(rule)
+        if ok and yes then return true end
+    end
+    return false
+end
+
+--- True for a playing card that has a suit to be a True Star of. A Stone card is scenery, not a
+--- suit, and is not made a True Star of anything.
+function CelestasMod.has_a_suit(card)
+    return (card and card.base and card.base.suit ~= nil
+        and not (SMODS.has_no_suit and SMODS.has_no_suit(card))) and true or false
 end
 
 --------------------------------------------------------------------------------

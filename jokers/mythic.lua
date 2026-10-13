@@ -2,6 +2,7 @@
 ---
 --- Celesta, Drago, GG, Sox and Treemore. Their art and their names came from the Legends mod,
 --- whose code for them did not work and is not used: every one of them is written again here.
+--- Broo is the odd one out: its own, and it does nothing until it is merged.
 ---
 --- All Mythic (items/mythic.lua), so none is ever in the shop, and a Summon (consumables/summon.lua)
 --- is how one arrives. Calamitas and Yharon are Mythic too and live where they always have.
@@ -367,5 +368,27 @@ SMODS.Joker {
             colour = G.C.MONEY,
             card = context.blueprint_card or card,
         }
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Broo - does nothing, for now.
+--------------------------------------------------------------------------------
+--
+-- Nothing in it at all: no calculate, no config. What it is for is the ten Jokers it can be merged
+-- with and nothing else (merge/bind.lua, Bind.BROO_PARTNERS), each of which it makes into something
+-- of its own. Its art is a square, centred in the card's cell - see CelestasMod.SQUARE_JOKERS.
+
+SMODS.Joker {
+    key = "broo",
+    atlas = "broo",
+    pos = { x = 0, y = 0 },
+    rarity = MYTHIC, cost = 20,
+    unlocked = true, discovered = false,
+    blueprint_compat = false, eternal_compat = true,
+    in_pool = function() return false end,
+
+    loc_vars = function(self, info_queue, card)
+        return {}
     end,
 }

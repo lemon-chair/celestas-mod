@@ -101,6 +101,20 @@ function Arena.set_permanent(key)
     G.GAME.celesta_arena_always = key
 end
 
+--- Weather that holds whatever the round is doing: a function answering the weather's key, or nil.
+--- A merge is here (merge/bind.lua) - Brooquwa's Downpour does not wait for a round. Read before
+--- the deck's own, and after the round's, as the deck's is.
+Arena.ALWAYS_RULES = {}
+
+--- The weather one of those rules holds up right now, if any.
+function Arena.always()
+    for _, rule in ipairs(Arena.ALWAYS_RULES) do
+        local ok, key = pcall(rule)
+        if ok and key and Arena.definitions[key] then return key end
+    end
+    return nil
+end
+
 function Arena.active()
     -- Debug toggle in the mod's Config tab: forces the effect on without
     -- needing to actually draw Aquwa. Still only draws in-round.
@@ -119,7 +133,7 @@ function Arena.active()
     -- A round's own weather wins while it lasts, which keeps "one at a time"
     -- true: a Joker that starts a Downpour on the Blizzard Deck really does
     -- get a Downpour, and the deck's own comes back when the round ends.
-    return Arena.permanent()
+    return Arena.always() or Arena.permanent()
 end
 
 function Arena.is_active(key)
@@ -273,7 +287,9 @@ function Game:draw()
 
     local key = Arena.active()
     if not key then return Arena.trace("no arena active") end
-    if not drawable_state() then
+    -- ...and the weather something holds up through the rounds is seen between them too.
+    local between = G.STATE == G.STATES.SHOP or G.STATE == G.STATES.BLIND_SELECT
+    if not (drawable_state() or (between and Arena.always() == key)) then
         return Arena.trace("arena '" .. key .. "' active but state " ..
             tostring(G.STATE) .. " is not drawable")
     end

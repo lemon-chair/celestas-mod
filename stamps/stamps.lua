@@ -899,6 +899,13 @@ function Card:draw(layer)
 
     if self.facing == "back" or layer == "shadow" then return end
 
+    -- A square Joker's picture ends 12 rows above the bottom of the card's cell, where the mark sits
+    -- on any other card, so the mark is lifted by that much to sit in the picture's own corner.
+    local lift = 0
+    if CelestasMod.is_square_joker and CelestasMod.is_square_joker(self) then
+        lift = -(CelestasMod.SQUARE_SHIFT or 0) * G.CARD_H
+    end
+
     -- The first in the corner, and the second to its left, one mark's width over.
     for place, stamp in ipairs(Stamps.all(self)) do
         local kind = Stamps.kind(stamp)
@@ -906,7 +913,7 @@ function Card:draw(layer)
         if sprite then
             sprite.role.draw_major = self
             sprite:draw_shader("dissolve", nil, nil, nil, self.children.center,
-                               nil, nil, (1 - place) * Stamps.MARK_STEP * G.CARD_W, 0)
+                               nil, nil, (1 - place) * Stamps.MARK_STEP * G.CARD_W, lift)
         end
     end
 end

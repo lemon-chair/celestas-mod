@@ -106,6 +106,19 @@ SMODS.Atlas { key = 'frozen', path = 'frozen.png', px = 71, py = 95 }
 -- CelestasMod.ROUND_JOKERS in globals.lua.
 SMODS.Atlas { key = 'frozen_round', path = 'frozen_round.png', px = 71, py = 95 }
 
+-- The ten faces Broo makes when it is merged: a square each, centred in the card's cell. They are not
+-- Jokers - a pair draws one in place of splitting its two halves corner to corner (merge/bind.lua).
+SMODS.Atlas { key = 'pair_broomi', path = 'pair_broomi.png', px = 71, py = 95 }
+SMODS.Atlas { key = 'pair_brooni', path = 'pair_brooni.png', px = 71, py = 95 }
+SMODS.Atlas { key = 'pair_raybroo', path = 'pair_raybroo.png', px = 71, py = 95 }
+SMODS.Atlas { key = 'pair_spongey_broos', path = 'pair_spongey_broos.png', px = 71, py = 95 }
+SMODS.Atlas { key = 'pair_broozu', path = 'pair_broozu.png', px = 71, py = 95 }
+SMODS.Atlas { key = 'pair_moopybroos', path = 'pair_moopybroos.png', px = 71, py = 95 }
+SMODS.Atlas { key = 'pair_brooquwa', path = 'pair_brooquwa.png', px = 71, py = 95 }
+SMODS.Atlas { key = 'pair_aribroo', path = 'pair_aribroo.png', px = 71, py = 95 }
+SMODS.Atlas { key = 'pair_broomila', path = 'pair_broomila.png', px = 71, py = 95 }
+SMODS.Atlas { key = 'pair_broogzz', path = 'pair_broogzz.png', px = 71, py = 95 }
+
 --------------------------------------------------------------------------------
 -- The suits this mod adds. Loaded before everything that reads suits, and
 -- before the Jokers, so CelestasMod.STARS_SUIT and CelestasMod.LEAF_SUIT are
