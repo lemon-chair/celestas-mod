@@ -1968,7 +1968,10 @@ SMODS.Joker {
     end,
 
     calculate = function(self, card, context)
-        if context.ending_shop and not context.blueprint then
+        -- A copy makes one too: this is a Joker with a flag saying Blueprint may copy it, and a
+        -- Blueprint pointed at it had nothing to answer with when this refused context.blueprint.
+        -- Each one that answers makes its own, and it is Negative, so none of them needs room.
+        if context.ending_shop then
             if not G.jokers then return end
             -- No room check and no joker_buffer: what this makes is Negative,
             -- and a Negative Joker brings its own slot with it (its edition's
@@ -2012,7 +2015,7 @@ SMODS.Joker {
             return {
                 message = localize("k_plus_joker"),
                 colour = G.C.BLUE,
-                card = card,
+                card = context.blueprint_card or card,
             }
         end
     end,
