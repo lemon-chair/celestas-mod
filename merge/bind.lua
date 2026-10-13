@@ -14788,6 +14788,109 @@ special("j_celesta_birdyovo", "j_celesta_arar", {
 
 end
 
+-- Three more pairs.
+do
+
+-- Megalodon + El XoX: Megalodon's growth, a Mult for every card played, and kept: nothing resets it.
+special("j_celesta_megalodon", "j_celesta_el_xox", {
+    key = "megalodon_elxox",
+    config = { mult = 0, mult_gain = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.mult_gain, state.mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- `before` is where full_hand is every card played, and it lands ahead of scoring, so the
+        -- Mult gained counts for the hand that earned it - Megalodon's own moment.
+        if not context.blueprint and context.before then
+            local played = #(context.full_hand or {})
+            if played > 0 then
+                Bind.grow(card, state, "mult", state.mult_gain * played)
+                return {
+                    message = localize { type = "variable", key = "a_mult", vars = { state.mult } },
+                    colour = G.C.MULT, card = card,
+                }
+            end
+        end
+
+        if context.joker_main and CelestasMod.more_than(state.mult, 0) then
+            return { mult = state.mult }
+        end
+    end,
+})
+
+-- Zentreya + Jax: Zentreya's multiplier, on Stone and Limestone cards instead of Steel.
+special("j_celesta_zentreya", "j_celesta_jaxvtuber", {
+    key = "zentreya_jax",
+    config = { x_mult = 1.75 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play and context.other_card) then return end
+        local scored = context.other_card
+        if SMODS.has_enhancement(scored, "m_stone")
+            or SMODS.has_enhancement(scored, CelestasMod.ENHANCEMENT_KEYS.Limestone) then
+            return { x_mult = state.x_mult, card = scored }
+        end
+    end,
+})
+
+-- Arielle + Michi: a discarded selection that holds four different suits makes two Tarot cards.
+--
+-- pre_discard rather than discard, which is once per discarded CARD and could not see the selection
+-- whole. `hook` marks the discards a Joker forces, which are not a selection anyone made. A card with
+-- no suit - Stone - is not one of the suits. As many Tarots as there is room for, the buffer counted,
+-- the way every Tarot a Joker makes is asked.
+special("j_celesta_arielle", "j_celesta_michi", {
+    key = "arielle_michi",
+    config = { suits = 4, tarots = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.suits, state.tarots } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.pre_discard and not context.hook) then return end
+
+        local seen, kinds = {}, 0
+        for _, held in ipairs(context.full_hand or {}) do
+            local suit = held.base and held.base.suit
+            if suit and not seen[suit] and not SMODS.has_no_suit(held) then
+                seen[suit] = true
+                kinds = kinds + 1
+            end
+        end
+        if kinds < state.suits then return end
+
+        if not (G.consumeables and G.consumeables.config) then return end
+        local free = G.consumeables.config.card_limit
+            - (#G.consumeables.cards + (G.GAME.consumeable_buffer or 0))
+        local make = math.min(state.tarots, free)
+        if make <= 0 then return end
+
+        G.GAME.consumeable_buffer = (G.GAME.consumeable_buffer or 0) + make
+        G.E_MANAGER:add_event(Event {
+            trigger = "before",
+            delay = 0.0,
+            func = function()
+                for _ = 1, make do
+                    local tarot = SMODS.add_card { set = "Tarot", key_append = "celesta_bind_arielle_michi" }
+                    if tarot then tarot:juice_up(0.3, 0.5) end
+                end
+                G.GAME.consumeable_buffer = math.max(0, (G.GAME.consumeable_buffer or 0) - make)
+                return true
+            end,
+        })
+        return { message = localize("k_plus_tarot"), colour = G.C.PURPLE, card = card }
+    end,
+})
+
+end
+
 --------------------------------------------------------------------------------
 -- Art: the two faces split corner to corner
 --------------------------------------------------------------------------------

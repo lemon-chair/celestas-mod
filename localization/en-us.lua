@@ -4893,6 +4893,30 @@ return {
                     "{C:inactive}({C:attention}#3#{C:inactive}/#2#, Currently {X:mult,C:white}X#4#{C:inactive} Mult)",
                 },
             },
+            celesta_bind_megalodon_elxox = {
+                name = "Megalodon + El XoX",
+                text = {
+                    "This Joker gains {C:mult}+#1#{} Mult",
+                    "for each card played",
+                    "{C:inactive}(Currently {C:mult}+#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_zentreya_jax = {
+                name = "Zentreya + Jax",
+                text = {
+                    "{C:attention}Stone{} and {C:attention}Limestone{} cards in",
+                    "played hand give {X:mult,C:white}X#1#{} Mult",
+                    "when scored",
+                },
+            },
+            celesta_bind_arielle_michi = {
+                name = "Arielle + Michi",
+                text = {
+                    "If a discarded selection holds cards of",
+                    "{C:attention}#1#{} different suits, create {C:attention}#2#{}",
+                    "random {C:tarot}Tarot{} cards {C:inactive}(Must have room)",
+                },
+            },
             celesta_bind_onigiri_girldm = {
                 name = "OniGiri + GirlDM",
                 text = {
