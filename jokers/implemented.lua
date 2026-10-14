@@ -6644,8 +6644,10 @@ SMODS.Joker {
     end,
 
     calculate = function(self, card, context)
-        -- main_eval is the once-per-round Joker pass.
-        if context.end_of_round and context.main_eval and not context.blueprint then
+        -- main_eval is the once-per-round Joker pass. A copy answers it too: it peels a sticker of its
+        -- own, and what it gains lands on this Fenari, whose ability `card` is - so a Blueprint is a
+        -- second sticker a round and a second step of the multiplier, announced over the Blueprint.
+        if context.end_of_round and context.main_eval then
             local wearing = {}
             for _, joker in ipairs(G.jokers and G.jokers.cards or {}) do
                 if #stickers_on(joker) > 0 then wearing[#wearing + 1] = joker end
@@ -6674,7 +6676,7 @@ SMODS.Joker {
                 message = localize { type = "variable", key = "a_xmult",
                                      vars = { card.ability.extra.x_mult } },
                 colour = G.C.MULT,
-                card = card,
+                card = context.blueprint_card or card,
             }
         end
 
