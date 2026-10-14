@@ -2423,6 +2423,24 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
+-- Four Fingers, as half of a merge
+--------------------------------------------------------------------------------
+
+-- Flushes and straights ask SMODS.four_fingers, which asks SMODS.find_card('j_four_fingers'): that
+-- reads a card's centre, so it sees the host of a merge and nothing absorbed into it. A Four Fingers
+-- bound in as the second half was in the row, said what it does, and did nothing. find_joker sees
+-- both halves, debuffed ones left out as find_card leaves them.
+--
+-- In a block of its own: this file's main chunk is at Lua's limit of 200 locals.
+do
+    local four_fingers_ref = SMODS.four_fingers
+    function SMODS.four_fingers(...)
+        if next(CelestasMod.find_joker("j_four_fingers")) then return 4 end
+        return four_fingers_ref(...)
+    end
+end
+
+--------------------------------------------------------------------------------
 -- Meicha [Common] - straights wrap around.
 --------------------------------------------------------------------------------
 
