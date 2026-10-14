@@ -409,8 +409,19 @@ SMODS.Joker {
 -- extra uses, as two of Cryptid's Quantum Computing vouchers would be. Counted through find_joker,
 -- which sees one merged into another Joker and leaves out a debuffed one.
 --
--- Only a card in the consumable row is kept. One used from a pack is not (Cryptid's patch says
--- the same), and one bought and used from the shop is not in the row to be kept in.
+-- Wherever it is used from, a card that is kept ends up in the consumable row, and uses what is
+-- left there:
+--
+--   the row     it stays where it is.
+--   a pack      it goes to the row when the use is done. Steamodded does that itself for any card
+--               that is kept (button_callbacks.lua, "nc and area == G.pack_cards"), which is what
+--               makes this the one place a pack's card is kept; Cryptid's own patch leaves packs
+--               out, and this does not.
+--   the shop    bought and used in one go, it has already left the shop and is in no area when it
+--               is used, so it is put in the row here, before the use.
+--
+-- A card that has no room to go to is used up instead: a pack's card or a shop's is not in the row
+-- yet, and keeping it would overfill it.
 
 local DOUGDOUG_KEY = "j_" .. PREFIX .. "_dougdoug"
 
@@ -423,9 +434,31 @@ function CelestasMod.dougdoug_extra_uses()
     return extra
 end
 
+--- Where a consumable that is being used is being used from: "row", "pack" or "shop", or nil for
+--- anywhere else. Asked in that order, as every guard is against nil - a card with no area at all
+--- and a run with no pack open are both nil, and nil equals nil.
+local function dougdoug_source(card)
+    if G.consumeables and card.area == G.consumeables then return "row" end
+    if G.pack_cards and card.area == G.pack_cards then return "pack" end
+    -- Bought and used from the shop: taken out of it first, so in no area, and remembered where from.
+    if card.area == nil and G.shop_jokers and card.from_area == G.shop_jokers then return "shop" end
+    return nil
+end
+
+--- Whether the consumable row has a place for `card`, which is not in it. The shop's own test for a
+--- card it is about to sell.
+local function dougdoug_has_room(card)
+    local row = G.consumeables
+    return #row.cards + 1 + (card.ability.extra_slots_used or 0)
+        <= row.config.card_limit + (card.ability.card_limit or 0)
+end
+
 --- Whether `card`, which is being used, is kept for another go. Called as the use starts.
 function CelestasMod.dougdoug_keeps(card)
-    if not (card and card.ability and G.consumeables and card.area == G.consumeables) then return false end
+    if not (card and card.ability and G.consumeables) then return false end
+    local source = dougdoug_source(card)
+    if not source then return false end
+    if source ~= "row" and not dougdoug_has_room(card) then return false end
 
     local allowed = 1 + CelestasMod.dougdoug_extra_uses()
     local taken = (card.ability.celesta_uses_taken or 0) + 1
@@ -433,6 +466,8 @@ function CelestasMod.dougdoug_keeps(card)
     if taken >= allowed then return false end
 
     card.ability.celesta_uses_taken = taken
+    -- A shop's card is in no area; a pack's is taken to the row by the game once it is used.
+    if source == "shop" then G.consumeables:emplace(card) end
     -- What is left, over the card, as Cryptid says it.
     if type(attention_text) == "function" then
         attention_text({
