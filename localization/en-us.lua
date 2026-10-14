@@ -6824,7 +6824,7 @@ return {
                 name = "Iron Stake IV",
                 text = {
                     "Choose {C:attention}2{} modifiers after",
-                    "{C:attention}every{} Blind, not only Boss Blinds",
+                    "{C:attention}every{} Blind, not just Boss Blinds",
                 },
             },
         },
