@@ -5625,6 +5625,8 @@ LOC_TAIL = '''        },
             celesta_purg_good = "Pro",
             celesta_purg_bad = "Con",
             celesta_purg_reroll = "Reroll",
+            celesta_purg_modifiers = "Modifiers",
+            celesta_purg_none = "None yet",
             celesta_purg_banned_hand = "You cannot play your least-played hand",
         },
         -- Substituted messages. localize hands back the literal 'ERROR' for a

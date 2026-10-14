@@ -162,6 +162,17 @@ function Tattered.repair(card)
     return false
 end
 
+--- Takes the wear off a card WITHOUT protecting it, which is what repair() also does. For a rule
+--- that stops cards wearing from now on and has no business making any of them immune: the Purgatory
+--- Deck's boon, which mends what is already worn the moment it is taken. Returns true only when
+--- there was wear to take off.
+function Tattered.mend(card)
+    if not (is_playing_card(card) and card.ability.celesta_tattered) then return false end
+    card.ability.celesta_tattered = nil
+    card.ability.celesta_scored = 0
+    return true
+end
+
 --- True while a merge that turns wear into Gold is in the Joker row.
 ---
 --- Asked here rather than answered by a calculate, because wear is not a

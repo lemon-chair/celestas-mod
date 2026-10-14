@@ -438,7 +438,14 @@ add { kind = "good", key = "prices_half",
       end }
 
 add { kind = "good", key = "no_tatter",
-      apply = function(st) st.no_tatter = true end }
+      apply = function(st)
+          st.no_tatter = true
+          -- "No longer become tattered" is not only for the cards that are not yet: the ones already
+          -- worn are mended, wherever in the run's deck they are.
+          local Tattered = CelestasMod.Tattered
+          if not Tattered then return end
+          for _, card in ipairs(G.playing_cards or {}) do Tattered.mend(card) end
+      end }
 
 add { kind = "good", key = "shop_slot", repeatable = true,
       apply = function() change_shop_size(1) end }
@@ -997,6 +1004,13 @@ function P.choose(index)
     st.offers, st.owed, st.rerolls_used = nil, false, 0
     st.taken[good.id] = (st.taken[good.id] or 0) + 1
     st.taken[bad.id] = (st.taken[bad.id] or 0) + 1
+    -- ...and the pair itself, in order, with what each half was rolled with and whether the curse was
+    -- doubled: `taken` counts, and a list of what is in effect has to say which suit and which quad.
+    st.history = st.history or {}
+    st.history[#st.history + 1] = {
+        good = good.key, bad = bad.key, good_arg = offer.good_arg, bad_arg = offer.bad_arg,
+        doubled = P.doubles_its_curse(offer) or nil,
+    }
     if G.OVERLAY_MENU then G.FUNCS.exit_overlay_menu() end
 
     -- The Summon boon after its curse rather than before: a curse that empties the consumable row
@@ -1043,6 +1057,15 @@ local function text_key(kind, key, doubled)
     return (other and other[twice]) and twice or base
 end
 
+--- The numbers a modifier's text prints. A modifier that names something rolled with it (a suit, a
+--- quad) cannot be asked without it, and a list of what was taken in a run begun before that was
+--- kept has no roll to give: the text is then built without, rather than the screen not at all.
+local function vars_of(entry, arg)
+    if not (entry and entry.vars) then return {} end
+    local ok, vars = pcall(entry.vars, arg)
+    return ok and vars or {}
+end
+
 --- The lines of one modifier's text, each as the parts a row is made of.
 local function text_lines(kind, key, arg, doubled)
     local entry = P.find(kind, key)
@@ -1050,7 +1073,7 @@ local function text_lines(kind, key, arg, doubled)
     local ok = pcall(localize, {
         type = "descriptions", set = "Other",
         key = text_key(kind, key, doubled),
-        vars = entry and entry.vars and entry.vars(arg) or {},
+        vars = vars_of(entry, arg),
         nodes = lines,
     })
     return ok and lines or {}
@@ -1181,6 +1204,165 @@ function Game:update_round_eval(dt)
         return
     end
     return celesta_purg_eval_ref(self, dt)
+end
+
+--------------------------------------------------------------------------------
+-- What has been taken
+--------------------------------------------------------------------------------
+--
+-- A button in the run's pause menu opens a list of every modifier taken so far, the boons on the
+-- left and the curses on the right, as many to a page as fit. Every one that was taken is listed,
+-- the ones that happened once as well as the ones that stay: a list that left out "$15" would also
+-- leave out a choice, and which is which is not a line the deck draws anywhere else.
+
+P.LIST_PER_PAGE = 5
+
+--- Every modifier of `kind` taken, as rows { key, arg, doubled, count } in the order first taken.
+--- The same modifier taken twice is one row counting two; with a different suit, or doubled by a
+--- Summon, it is a row of its own - unless doubling changes nothing about how it reads, and then it
+--- is the same row, which is what is on the screen.
+function P.taken_rows(kind, st)
+    st = st or P.state()
+    local picks = {}
+    if st.history then
+        for _, entry in ipairs(st.history) do
+            if kind == "good" then
+                picks[#picks + 1] = { key = entry.good, arg = entry.good_arg }
+            else
+                picks[#picks + 1] = { key = entry.bad, arg = entry.bad_arg, doubled = entry.doubled }
+            end
+        end
+    else
+        -- A run from before the record was kept: what was taken and how often, in a fixed order, but
+        -- not what each was rolled with.
+        local ids = {}
+        for id in pairs(st.taken or {}) do
+            if id:sub(1, #kind + 1) == kind .. ":" then ids[#ids + 1] = id end
+        end
+        table.sort(ids)
+        for _, id in ipairs(ids) do
+            for _ = 1, st.taken[id] do picks[#picks + 1] = { key = id:sub(#kind + 2) } end
+        end
+    end
+
+    local rows, seen = {}, {}
+    for _, pick in ipairs(picks) do
+        local base = "celesta_purg_" .. kind .. "_" .. pick.key
+        local doubled = text_key(kind, pick.key, pick.doubled) ~= base
+        local id = pick.key .. "|" .. tostring(pick.arg) .. "|" .. tostring(doubled)
+        local row = seen[id]
+        if not row then
+            row = { key = pick.key, arg = pick.arg, doubled = doubled, count = 0 }
+            seen[id] = row
+            rows[#rows + 1] = row
+        end
+        row.count = row.count + 1
+    end
+    return rows
+end
+
+--- One row of the list: how many times, if more than once, and the modifier's text.
+local function list_row(kind, row)
+    local count = { n = G.UIT.T, config = { text = row.count > 1 and ("x" .. row.count) or "", scale = 0.45,
+        colour = kind == "good" and G.C.GREEN or G.C.RED, shadow = true } }
+    return { n = G.UIT.R, config = { align = "cm", padding = 0.04 }, nodes = {
+        { n = G.UIT.C, config = { align = "cm", minw = 0.8 }, nodes = { count } },
+        { n = G.UIT.C, config = { align = "cm" }, nodes = { text_box(kind, row.key, row.arg, row.doubled) } },
+    } }
+end
+
+--- One column: its label, then this page's rows of it.
+local function list_column(kind, rows, page)
+    local nodes = { label(localize("celesta_purg_" .. kind), kind == "good" and G.C.GREEN or G.C.RED) }
+    if #rows == 0 then
+        nodes[#nodes + 1] = { n = G.UIT.R, config = { align = "cm", padding = 0.1 }, nodes = {
+            { n = G.UIT.T, config = { text = localize("celesta_purg_none"), scale = 0.4,
+                                      colour = G.C.UI.TEXT_INACTIVE } } } }
+    end
+    for i = (page - 1) * P.LIST_PER_PAGE + 1, math.min(#rows, page * P.LIST_PER_PAGE) do
+        nodes[#nodes + 1] = list_row(kind, rows[i])
+    end
+    return { n = G.UIT.C, config = { align = "tm", padding = 0.1, minw = 4.6 }, nodes = nodes }
+end
+
+--- The list's screen, at a page of it.
+function P.list_definition(page)
+    local st = P.state()
+    local good, bad = P.taken_rows("good", st), P.taken_rows("bad", st)
+    local pages = math.max(1, math.ceil(math.max(#good, #bad) / P.LIST_PER_PAGE))
+    page = math.min(math.max(page or 1, 1), pages)
+
+    local contents = {
+        { n = G.UIT.R, config = { align = "cm", padding = 0.05 }, nodes = {
+            { n = G.UIT.T, config = { text = localize("celesta_purg_modifiers"), scale = 0.7,
+                                      colour = G.C.ORANGE, shadow = true } } } },
+        { n = G.UIT.R, config = { align = "tm", padding = 0.1 }, nodes = {
+            list_column("good", good, page),
+            { n = G.UIT.C, config = { minw = 0.15 } },
+            list_column("bad", bad, page),
+        } },
+    }
+    if pages > 1 then
+        local function turn(text, to, on)
+            return UIBox_button {
+                col = true, label = { text }, button = on and "celesta_purg_list_page" or "nil",
+                ref_table = { page = to }, minw = 0.9, minh = 0.6, scale = 0.45,
+                colour = on and G.C.ORANGE or G.C.UI.BACKGROUND_INACTIVE,
+            }
+        end
+        contents[#contents + 1] = { n = G.UIT.R, config = { align = "cm", padding = 0.05 }, nodes = {
+            turn("<", page - 1, page > 1),
+            { n = G.UIT.C, config = { align = "cm", minw = 2.4 }, nodes = {
+                { n = G.UIT.T, config = { text = localize("k_page") .. " " .. page .. "/" .. pages,
+                                          scale = 0.4, colour = G.C.UI.TEXT_LIGHT } } } },
+            turn(">", page + 1, page < pages),
+        } }
+    end
+    return create_UIBox_generic_options { back_func = "options", minw = 10, contents = contents }
+end
+
+G.FUNCS.celesta_purg_list = function()
+    G.FUNCS.overlay_menu { definition = P.list_definition(1) }
+end
+
+G.FUNCS.celesta_purg_list_page = function(e)
+    local ref = e and e.config and e.config.ref_table
+    if not ref then return end
+    -- Flat, as the reroll is: the same screen with other rows is not a new one to fly in.
+    G.FUNCS.overlay_menu { definition = P.list_definition(ref.page), config = { offset = { x = 0, y = 0 } } }
+end
+
+--- Whether a node, or anything under it, is the button named `name`.
+local function holds_button(node, name)
+    if type(node) ~= "table" then return false end
+    if node.config and node.config.button == name then return true end
+    for _, child in ipairs(node.nodes or {}) do
+        if holds_button(child, name) then return true end
+    end
+    return false
+end
+
+-- The pause menu gets a button on a Purgatory run, under Settings. Found by looking for Settings
+-- rather than by counting down the boxes, so another mod's button added above or below it - Talisman
+-- appends its own to the same list - does not move it.
+local celesta_purg_options_ref = create_UIBox_options
+function create_UIBox_options(...)
+    local menu = celesta_purg_options_ref(...)
+    if not (G.STAGE == G.STAGES.RUN and P.active()) then return menu end
+
+    local ok, list = pcall(function() return menu.nodes[1].nodes[1].nodes[1].nodes end)
+    if not (ok and type(list) == "table") then return menu end
+
+    local button = UIBox_button {
+        label = { localize("celesta_purg_modifiers") }, button = "celesta_purg_list", minw = 5,
+        colour = G.C.ORANGE,
+    }
+    local at = #list + 1
+    for i, node in ipairs(list) do
+        if holds_button(node, "settings") then at = i + 1 break end
+    end
+    table.insert(list, at, button)
+    return menu
 end
 
 --------------------------------------------------------------------------------
