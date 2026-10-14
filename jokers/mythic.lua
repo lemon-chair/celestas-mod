@@ -418,7 +418,10 @@ SMODS.Joker {
 --               makes this the one place a pack's card is kept; Cryptid's own patch leaves packs
 --               out, and this does not.
 --   the shop    bought and used in one go, it has already left the shop and is in no area when it
---               is used, so it is put in the row here, before the use.
+--               is used, and the game puts a kept card that is in no area into the row once the use
+--               is done (button_callbacks.lua, "nc and not area"). So that is the one thing this
+--               must NOT do itself: put it there first and it is in the row twice, one of them with
+--               nothing to draw - a slot taken by nothing.
 --
 -- A card that has no room to go to is used up instead: a pack's card or a shop's is not in the row
 -- yet, and keeping it would overfill it.
@@ -466,8 +469,7 @@ function CelestasMod.dougdoug_keeps(card)
     if taken >= allowed then return false end
 
     card.ability.celesta_uses_taken = taken
-    -- A shop's card is in no area; a pack's is taken to the row by the game once it is used.
-    if source == "shop" then G.consumeables:emplace(card) end
+    -- Neither a pack's card nor a shop's is put in the row here: the game does that once it is used.
     -- What is left, over the card, as Cryptid says it.
     if type(attention_text) == "function" then
         attention_text({
