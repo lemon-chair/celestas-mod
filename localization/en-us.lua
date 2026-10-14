@@ -6771,6 +6771,48 @@ return {
                 },
             },
         },
+        Stake = {
+            stake_celesta_iron_1 = {
+                name = "Iron Stake I",
+                text = {
+                    "Jokers can be {C:attention}Eternal{}, {C:attention}Perishable{}",
+                    "and {C:attention}Rental{} all at once",
+                },
+            },
+            stake_celesta_iron_1_purgatory = {
+                name = "Iron Stake I",
+                text = {
+                    "Choose {C:attention}2{} modifiers after each",
+                    "{C:attention}Boss Blind{}, not 1",
+                },
+            },
+            stake_celesta_iron_2 = {
+                name = "Iron Stake II",
+                text = {
+                    "Required score scales",
+                    "faster for each Ante",
+                },
+            },
+            stake_celesta_iron_3 = {
+                name = "Iron Stake III",
+                text = {
+                    "{C:attention}-1{} Joker slot",
+                },
+            },
+            stake_celesta_iron_4 = {
+                name = "Iron Stake IV",
+                text = {
+                    "Ante {C:attention}12{} is the final Ante",
+                },
+            },
+            stake_celesta_iron_4_purgatory = {
+                name = "Iron Stake IV",
+                text = {
+                    "Choose {C:attention}2{} modifiers after",
+                    "{C:attention}every{} Blind, not only Boss Blinds",
+                },
+            },
+        },
         Back = {
             b_celesta_ecstasy = {
                 name = "Ecstasy Deck",

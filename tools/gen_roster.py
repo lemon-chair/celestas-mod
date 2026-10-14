@@ -59,6 +59,8 @@ SHARED = {"jokers", "consumables", "decks", "sleeves", "icon", "seals", "driftwo
           "stamp_retrigger", "stamp_lucky", "stamp_favor", "stamp_pack",
           # The Stamp Tag's icon: a 34x34 tag sprite, not a card.
           "tag_stamp",
+          # The Iron Stake's four chips, one sheet: stakes, not Jokers.
+          "stake_iron",
 }   # not per-joker art
 
 # Auto title-casing cannot know how a creator styles their own name.
@@ -5060,6 +5062,48 @@ LOC_TAIL = '''        },
                 text = {
                     "Gives a free",
                     "{C:attention}Stamp Pack{}",
+                },
+            },
+        },
+        Stake = {
+            stake_celesta_iron_1 = {
+                name = "Iron Stake I",
+                text = {
+                    "Jokers can be {C:attention}Eternal{}, {C:attention}Perishable{}",
+                    "and {C:attention}Rental{} all at once",
+                },
+            },
+            stake_celesta_iron_1_purgatory = {
+                name = "Iron Stake I",
+                text = {
+                    "Choose {C:attention}2{} modifiers after each",
+                    "{C:attention}Boss Blind{}, not 1",
+                },
+            },
+            stake_celesta_iron_2 = {
+                name = "Iron Stake II",
+                text = {
+                    "Required score scales",
+                    "faster for each Ante",
+                },
+            },
+            stake_celesta_iron_3 = {
+                name = "Iron Stake III",
+                text = {
+                    "{C:attention}-1{} Joker slot",
+                },
+            },
+            stake_celesta_iron_4 = {
+                name = "Iron Stake IV",
+                text = {
+                    "Ante {C:attention}12{} is the final Ante",
+                },
+            },
+            stake_celesta_iron_4_purgatory = {
+                name = "Iron Stake IV",
+                text = {
+                    "Choose {C:attention}2{} modifiers after",
+                    "{C:attention}every{} Blind, not only Boss Blinds",
                 },
             },
         },

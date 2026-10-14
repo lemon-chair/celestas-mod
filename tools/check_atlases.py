@@ -41,6 +41,7 @@ NON_CARD = {
     "blind_brick": "34x34 animated blind chip",
     "blind_wyrm": "34x34 animated blind chip",
     "tag_stamp": "34x34 Stamp Tag icon",
+    "stake_iron": "71x71 Iron Stake chips, four in a row",
     "blind_horn": "34x34 animated blind chip",
     "blind_gem": "34x34 animated blind chip",
     "blind_flower": "34x34 animated blind chip",

@@ -67,6 +67,8 @@ SHARED = {"jokers", "consumables", "decks", "sleeves", "icon", "seals", "driftwo
           "stamp_retrigger", "stamp_lucky", "stamp_favor", "stamp_pack",
           # The Stamp Tag's icon: a 34x34 tag sprite, not a card.
           "tag_stamp",
+          # The Iron Stake's four chips, one sheet: round, and four of them in a row.
+          "stake_iron",
 }
 CARD_W, CARD_H = 71, 95
 

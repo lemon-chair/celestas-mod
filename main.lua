@@ -238,6 +238,9 @@ for _, file in ipairs({ 'seals/seals.lua', 'items/decks.lua',
                         'items/purgatory.lua',
                         -- Eternal and Perishable stop sharing a corner.
                         'items/stickers.lua',
+                        -- The Iron Stake. After the stickers, whose placing it stacks on, and after
+                        -- decks.lua, whose Purgatory Deck it is asked about.
+                        'items/stakes.lua',
                         -- After decks.lua: each sleeve is built from its
                         -- deck. Does nothing without Card Sleeves.
                         'items/sleeves.lua',

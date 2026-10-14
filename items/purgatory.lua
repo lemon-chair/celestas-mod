@@ -1001,7 +1001,17 @@ function P.choose(index)
 
     -- Closed first, and the choice written down before anything happens: an effect that fails
     -- must not leave the same three on the table to be taken again.
-    st.offers, st.owed, st.rerolls_used = nil, false, 0
+    --
+    -- With another still owed, the box stays owed, the rerolls are not given back (the second choice
+    -- is made with what the first left of them), and a fresh three are dealt once this one is done.
+    local more = (st.pick_left or 1) > 1
+    if more then
+        st.pick_left = st.pick_left - 1
+        st.offers = nil
+    else
+        st.offers, st.owed, st.rerolls_used = nil, false, 0
+        st.pick_left, st.pick_total = nil, nil
+    end
     st.taken[good.id] = (st.taken[good.id] or 0) + 1
     st.taken[bad.id] = (st.taken[bad.id] or 0) + 1
     -- ...and the pair itself, in order, with what each half was rolled with and whether the curse was
@@ -1024,7 +1034,19 @@ function P.choose(index)
         end
     end
     if summoning then P.double(st, bad, offer.bad_arg) end
+    if more then P.deal_next(st) end
     return true
+end
+
+--- Deals the next three of two owed. Dealt after the first choice has been made, so what it took
+--- is no longer offered; and when there is nothing left to choose between the debt is cancelled, as
+--- an empty box is when the first is dealt.
+function P.deal_next(st)
+    st.offers = P.roll_offers(st)
+    if #st.offers == 0 then
+        st.offers, st.owed, st.rerolls_used = nil, false, 0
+        st.pick_left, st.pick_total = nil, nil
+    end
 end
 
 --- Throws the three back and deals three more, if there is a reroll left.
@@ -1111,6 +1133,16 @@ local function offer_panel(index, offer)
              } }
 end
 
+--- What the box asks: to choose a modifier, and which of two it is when two are owed.
+local function prompt_text(st)
+    local text = localize("celesta_purg_prompt")
+    local total = st.pick_total or 1
+    if total > 1 then
+        text = text .. " (" .. (total - (st.pick_left or total) + 1) .. "/" .. total .. ")"
+    end
+    return text
+end
+
 --- The whole screen. Built from the state, so a reroll is a fresh call and a reload is too.
 function P.definition()
     local st = P.state()
@@ -1126,7 +1158,7 @@ function P.definition()
             { n = G.UIT.T, config = { text = localize("celesta_purg_title"), scale = 0.7,
                                       colour = G.C.ORANGE, shadow = true } } } },
         { n = G.UIT.R, config = { align = "cm", padding = 0.05 }, nodes = {
-            { n = G.UIT.T, config = { text = localize("celesta_purg_prompt"), scale = 0.4,
+            { n = G.UIT.T, config = { text = prompt_text(st), scale = 0.4,
                                       colour = G.C.UI.TEXT_LIGHT } } } },
         { n = G.UIT.R, config = { align = "cm", padding = 0.15 }, nodes = panels },
         { n = G.UIT.R, config = { align = "cm", padding = 0.05 }, nodes = {
@@ -1376,6 +1408,21 @@ local function ends_the_run()
     return G.GAME.round_resets.ante == G.GAME.win_ante and blind and blind:get_type() == "Boss"
 end
 
+--- How many modifiers the Blind that has just ended is owed: none, one, or two.
+---
+--- A Boss Blind owes one, and two on the Iron Stake (the first tier, and so every one above it); the
+--- final Boss owes none, as it ends the run. Any other Blind owes nothing - except on the fourth tier,
+--- where every Blind owes two: Small, Big and Boss alike. A Blind that was lost owes nothing.
+function P.owed_count(context)
+    local modifiers = G.GAME.modifiers or {}
+    if context.beat_boss then
+        if ends_the_run() then return 0 end
+        return modifiers.celesta_iron_1 and 2 or 1
+    end
+    if modifiers.celesta_iron_4 and not context.game_over then return 2 end
+    return 0
+end
+
 function P.calculate(context)
     if not (context.end_of_round or context.setting_blind) then return end
     local st = live()
@@ -1412,7 +1459,11 @@ function P.calculate(context)
     -- end_of_round: the per-card passes share this flag.
     if context.individual or context.repetition then return end
 
-    st.owed = (context.beat_boss and not ends_the_run()) and true or false
+    local owed = P.owed_count(context)
+    st.owed = owed > 0
+    -- How many this Blind is owed, and how many of them are still to be chosen.
+    st.pick_total = owed > 0 and owed or nil
+    st.pick_left = st.pick_total
     if (st.income or 0) > 0 and not context.game_over then
         return { dollars = st.income }
     end
