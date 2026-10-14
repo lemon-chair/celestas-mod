@@ -8298,6 +8298,10 @@ special("j_celesta_moopybuns", "j_celesta_berrycrepe", {
     calculate = function(def, card, context, state)
         -- context.buying_card is raised once for each thing bought - a Joker,
         -- a consumable, a voucher, a pack - which is what MoopyBuns counts.
+        -- Bought itself, it is not one of the things it counts. Buying a Joker raises this for it
+        -- twice: once to the card as it arrives (buying_self), and once to every Joker in the row,
+        -- itself now among them - so it was starting out at X1.2 for being sold to the player.
+        if context.buying_card and context.card == card then return end
         if context.buying_card and not context.blueprint then
             Bind.grow(card, state, "mult", state.mult_gain)
             return {
@@ -15088,6 +15092,10 @@ special(BROO, "j_celesta_moopybuns", {
     end,
 
     calculate = function(def, card, context, state)
+        -- Bought itself, it is not one of the things it counts. Buying a Joker raises this for it
+        -- twice: once to the card as it arrives (buying_self), and once to every Joker in the row,
+        -- itself now among them - so it was starting out at X1.2 for being sold to the player.
+        if context.card == card and context.buying_card then return end
         if not context.blueprint and context.buying_card then
             Bind.grow(card, state, "x_chips", state.x_chips_gain)
             return {

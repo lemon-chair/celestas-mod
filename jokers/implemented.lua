@@ -9472,6 +9472,10 @@ SMODS.Joker {
     end,
 
     calculate = function(self, card, context)
+        -- Bought itself, it is not one of the things it counts. Buying a Joker raises this for it
+        -- twice: once to the card as it arrives (buying_self), and once to every Joker in the row,
+        -- itself now among them - so it was starting out at X1.2 for being sold to the player.
+        if context.buying_card and context.card == card then return end
         if context.buying_card and not context.blueprint then
             SMODS.scale_card(card, {
                 ref_table = card.ability.extra,
