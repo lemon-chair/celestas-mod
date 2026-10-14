@@ -27,7 +27,11 @@ local CDAWG_KEY = "j_" .. SMODS.current_mod.prefix .. "_cdawg"
 -- worth of ability - the second would score twice off one card - and the orbit
 -- would show the same face twice with nothing to tell them apart.
 
---- The rarities CDawg is retaining right now.
+--- The rarities the CDawg `card` is retaining right now.
+---
+--- Of that card, and of no other: a merge widens the CDawg it is bound into. This used to be one
+--- answer for the whole row, so a Blue Card merged into one CDawg widened every CDawg the player
+--- owned, and each of them kept what the one was keeping.
 ---
 --- Common always, and the rest are merges: CDawg + Blue Card adds Uncommon,
 --- CDawg + Green Card adds Rare, CDawg + Fuchsia Card adds Legendary, and
@@ -38,10 +42,10 @@ local CDAWG_KEY = "j_" .. SMODS.current_mod.prefix .. "_cdawg"
 --- the pair can be made, sold or debuffed between one sale and the next reading
 --- of the list, and the list is what the orbit and the description are drawn
 --- from.
-function CelestasMod.cdawg_rarities()
+function CelestasMod.cdawg_rarities(card)
     local out = { [1] = true }
     for _, rule in ipairs(CelestasMod.CDAWG_RARITY_RULES or {}) do
-        local ok, rarities = pcall(rule)
+        local ok, rarities = pcall(rule, card)
         if ok and type(rarities) == "table" then
             for _, rarity in ipairs(rarities) do out[rarity] = true end
         end
@@ -67,9 +71,9 @@ end
 --- the shape it has always been and a save written before any of this reads
 --- back unchanged. An unknown centre counts as Common AND as one of ours, which
 --- between them are the only thing such a save could have held.
-function CelestasMod.commons_sold_keys()
+function CelestasMod.commons_sold_keys(card)
     local sold = (G.GAME and G.GAME.celesta_commons_sold) or {}
-    local retained = CelestasMod.cdawg_rarities()
+    local retained = CelestasMod.cdawg_rarities(card)
     local out = {}
     for _, key in ipairs(sold) do
         local center = G.P_CENTERS and G.P_CENTERS[key]
@@ -83,11 +87,11 @@ function CelestasMod.commons_sold_keys()
 end
 
 --- ...and how many there are. Read by CDawg + Ironmouse as well.
-function CelestasMod.commons_sold()
-    return #CelestasMod.commons_sold_keys()
+function CelestasMod.commons_sold(card)
+    return #CelestasMod.commons_sold_keys(card)
 end
 
---- The CDawg that is running `key`, if one is.
+--- The CDawg that is running `key`, if one is: the first in the row that is retaining it.
 ---
 --- For the Jokers whose behaviour is NOT a calculate. CDawg runs a retained
 --- Common by lending its own card that centre and calling calculate, which
@@ -105,16 +109,15 @@ end
 function CelestasMod.cdawg_running(key)
     if not key then return nil end
 
-    local held = false
-    for _, sold in ipairs(CelestasMod.commons_sold_keys()) do
-        if sold == key then held = true break end
-    end
-    if not held then return nil end
-
     -- find_joker rather than a walk of G.jokers: it skips a debuffed CDawg
     -- and finds one bound into a merge, both of which this has to honour.
-    local found = CelestasMod.find_joker("j_celesta_cdawg")[1]
-    return found and found.card or nil
+    -- Each is asked for itself: one that has had a rarity added keeps more than one that has not.
+    for _, found in ipairs(CelestasMod.find_joker("j_celesta_cdawg")) do
+        for _, sold in ipairs(CelestasMod.commons_sold_keys(found.card)) do
+            if sold == key then return found.card end
+        end
+    end
+    return nil
 end
 
 --------------------------------------------------------------------------------
@@ -517,7 +520,7 @@ local function cdawg_passives(card, dt)
 
     local wanted, order = {}, {}
     if card.added_to_deck and not card.debuff and G.GAME then
-        for _, key in ipairs(CelestasMod.commons_sold_keys()) do
+        for _, key in ipairs(CelestasMod.commons_sold_keys(card)) do
             wanted[key] = true
             order[#order + 1] = key
         end
@@ -620,7 +623,7 @@ function CelestasMod.cdawg_holds(card, key)
     if not center or cdawg_never(center) then return nil end
 
     local retained = false
-    for _, kept in ipairs(CelestasMod.commons_sold_keys()) do
+    for _, kept in ipairs(CelestasMod.commons_sold_keys(card)) do
         if kept == key then retained = true break end
     end
     if not retained then return nil end
@@ -652,7 +655,7 @@ local function cdawg_banked_value(card)
     if type(held) ~= "table" then return 0 end
 
     local total = 0
-    for _, key in ipairs(CelestasMod.commons_sold_keys()) do
+    for _, key in ipairs(CelestasMod.commons_sold_keys(card)) do
         local ability = held[key]
         total = total + ((ability and ability.extra_value) or 0)
     end
@@ -699,7 +702,7 @@ function Card:draw(layer)
         return
     end
 
-    local keys = CelestasMod.commons_sold_keys()
+    local keys = CelestasMod.commons_sold_keys(self)
     local n = #keys
     if n == 0 then return end
 
@@ -856,7 +859,7 @@ end
 --- rather than as several rows.
 local function cdawg_totals(card)
     local rows = {}
-    for _, key in ipairs(CelestasMod.commons_sold_keys()) do
+    for _, key in ipairs(CelestasMod.commons_sold_keys(card)) do
         for _, row in ipairs(cdawg_total_rows(card, key) or {}) do
             rows[#rows + 1] = row
         end
@@ -895,13 +898,13 @@ SMODS.Joker {
 
     loc_vars = function(self, info_queue, card)
         return {
-            vars = { CelestasMod.commons_sold() },
+            vars = { CelestasMod.commons_sold(card) },
             main_end = cdawg_totals(card),
         }
     end,
 
     calculate = function(self, card, context)
-        local keys = CelestasMod.commons_sold_keys()
+        local keys = CelestasMod.commons_sold_keys(card)
         if #keys == 0 then return end
 
         local out = nil

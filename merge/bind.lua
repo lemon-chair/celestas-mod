@@ -7856,7 +7856,7 @@ special("j_celesta_cdawg", "j_celesta_ironmouse", {
     config = { e_mult_gain = 0.1 },
 
     loc_vars = function(def, card, state)
-        local sold = CelestasMod.commons_sold and CelestasMod.commons_sold() or 0
+        local sold = CelestasMod.commons_sold and CelestasMod.commons_sold(card) or 0
         return { vars = { state.e_mult_gain,
                           1 + (CelestasMod.vedal_counted
                               and CelestasMod.vedal_counted(card, state.e_mult_gain, sold)
@@ -7865,7 +7865,7 @@ special("j_celesta_cdawg", "j_celesta_ironmouse", {
 
     calculate = function(def, card, context, state)
         if not context.joker_main then return end
-        local sold = CelestasMod.commons_sold and CelestasMod.commons_sold() or 0
+        local sold = CelestasMod.commons_sold and CelestasMod.commons_sold(card) or 0
         local e_mult = 1 + (CelestasMod.vedal_counted
             and CelestasMod.vedal_counted(card, state.e_mult_gain, sold)
             or state.e_mult_gain * sold)
@@ -13468,7 +13468,7 @@ local function cdawg_pair(other, key, rarities, silences_other)
         loc_vars = function(def, card, state)
             return {
                 vars = { CelestasMod.commons_sold and
-                         CelestasMod.commons_sold() or 0 },
+                         CelestasMod.commons_sold(card) or 0 },
                 -- What a plain CDawg lists: every retained Joker's own running
                 -- total. A merged one is still the CDawg holding them.
                 main_end = CelestasMod.cdawg_totals
@@ -13481,11 +13481,13 @@ local function cdawg_pair(other, key, rarities, silences_other)
         calculate = function(def, card, context, state) end,
     })
 
-    -- Answers the list while the pair is in the row, and nothing while it is
-    -- not - which is what makes selling the pair narrow CDawg back again.
+    -- Answers the list of the card that IS this pair, and of no other: a Blue Card bound into one
+    -- CDawg widens that CDawg, not every CDawg in the row. And nothing once the pair is gone, which
+    -- is what makes selling it narrow that CDawg back again.
     CelestasMod.CDAWG_RARITY_RULES[#CelestasMod.CDAWG_RARITY_RULES + 1] =
-        function()
-            if specials_held(key)[1] == nil then return nil end
+        function(card)
+            local def = card and Bind.special_of(card)
+            if not (def and def.key == key) or card.debuff then return nil end
             return rarities
         end
 end
