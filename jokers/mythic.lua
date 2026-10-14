@@ -3,6 +3,7 @@
 --- Celesta, Drago, GG, Sox and Treemore. Their art and their names came from the Legends mod,
 --- whose code for them did not work and is not used: every one of them is written again here.
 --- Broo is the odd one out: its own, and it does nothing until it is merged.
+--- DougDoug and ROX are this mod's own as well.
 ---
 --- All Mythic (items/mythic.lua), so none is ever in the shop, and a Summon (consumables/summon.lua)
 --- is how one arrives. Calamitas and Yharon are Mythic too and live where they always have.
@@ -392,3 +393,180 @@ SMODS.Joker {
         return {}
     end,
 }
+
+--------------------------------------------------------------------------------
+-- DougDoug - every consumable can be used again.
+--------------------------------------------------------------------------------
+--
+-- Cryptid's way: the card is not used up, it is kept and counted. `keep_on_use` is Steamodded's own
+-- hook for that - a centre that answers true is neither taken out of its area nor dissolved
+-- (button_callbacks.lua:2218) - where Cryptid has a Lovely patch of its own to hold the card back
+-- and put it in again afterwards. How many it has been used is kept on the card, as Cryptid keeps
+-- `cry_multiuse`; what it is allowed is read off the Jokers in play at the moment, so selling a
+-- DougDoug stops the extra uses and a card already used up goes on its next use.
+--
+-- One use more for every use a DougDoug gives, and every DougDoug gives them: two of them are four
+-- extra uses, as two of Cryptid's Quantum Computing vouchers would be. Counted through find_joker,
+-- which sees one merged into another Joker and leaves out a debuffed one.
+--
+-- Only a card in the consumable row is kept. One used from a pack is not (Cryptid's patch says
+-- the same), and one bought and used from the shop is not in the row to be kept in.
+
+local DOUGDOUG_KEY = "j_" .. PREFIX .. "_dougdoug"
+
+--- How many extra uses the Jokers in play give every consumable.
+function CelestasMod.dougdoug_extra_uses()
+    local extra = 0
+    for _, found in ipairs(CelestasMod.find_joker(DOUGDOUG_KEY)) do
+        extra = extra + (((found.ability or {}).extra or {}).uses or 0)
+    end
+    return extra
+end
+
+--- Whether `card`, which is being used, is kept for another go. Called as the use starts.
+function CelestasMod.dougdoug_keeps(card)
+    if not (card and card.ability and G.consumeables and card.area == G.consumeables) then return false end
+
+    local allowed = 1 + CelestasMod.dougdoug_extra_uses()
+    local taken = (card.ability.celesta_uses_taken or 0) + 1
+    -- The last of its uses, or a card that is only ever used the once: used up as it always is.
+    if taken >= allowed then return false end
+
+    card.ability.celesta_uses_taken = taken
+    -- What is left, over the card, as Cryptid says it.
+    if type(attention_text) == "function" then
+        attention_text({
+            text = tostring(allowed - taken), scale = 1.1, hold = 0.6, major = card,
+            backdrop_colour = (G.C.SET and G.C.SET[card.config.center.set]) or G.C.FILTER,
+            align = "bm", offset = { x = 0, y = 0.2 },
+        })
+    end
+    return true
+end
+
+local dougdoug_kept = {}
+
+--- Gives every consumable's centre the hook, ahead of whatever it already had.
+function CelestasMod.install_dougdoug_hook()
+    for _, center in pairs(G.P_CENTERS or {}) do
+        if type(center) == "table" and center.consumeable and not dougdoug_kept[center] then
+            dougdoug_kept[center] = true
+            local ref = center.keep_on_use
+            center.keep_on_use = function(self, card, ...)
+                if type(ref) == "function" and ref(self, card, ...) then return true end
+                return CelestasMod.dougdoug_keeps(card)
+            end
+        end
+    end
+end
+
+SMODS.Joker {
+    key = "dougdoug",
+    atlas = "dougdoug",
+    pos = { x = 0, y = 0 },
+    rarity = MYTHIC, cost = 20,
+    unlocked = true, discovered = false,
+    -- A passive the use of a consumable reads, not a trigger; there is nothing to copy.
+    blueprint_compat = true, eternal_compat = true,
+    in_pool = function() return false end,
+
+    config = { extra = { uses = 2 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.uses } }
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- ROX - Boss Blinds ask for a quarter, and a Showdown for a tenth.
+--------------------------------------------------------------------------------
+--
+-- A Blind's quota is the Ante's amount times the `mult` its prototype carries (blind.lua:118, and
+-- UI_definitions.lua:1682 for the number offered on the Blind select screen). Hooking the Ante's
+-- amount, as LucyPyre does, would take a share off every Blind and not only a Boss, so it is the
+-- Boss prototypes' `mult` that is scaled - which both of those read, so the number offered and the
+-- number required cannot disagree, as LucyPyre's note says of its own.
+--
+-- Scaled from the base the prototype started with, which is kept on it, so selling ROX gives the
+-- Blind back exactly and two of them are the share taken twice rather than twice the share. Synced
+-- as a Blind is set and as one is offered, which are the only two places a quota is made from it,
+-- rather than as ROX comes and goes - a loaded run has ROX and no moment it arrived.
+
+local ROX_KEY = "j_" .. PREFIX .. "_rox"
+
+--- What a Boss Blind's quota is multiplied by while ROX is held: a share off for each, taken of
+--- what is left. `showdown` for a Showdown Boss Blind, which is cut further.
+function CelestasMod.rox_scale(showdown)
+    local scale = 1
+    for _, found in ipairs(CelestasMod.find_joker(ROX_KEY)) do
+        local extra = (found.ability or {}).extra or {}
+        local percent = showdown and extra.showdown or extra.boss or 0
+        scale = scale * (1 - percent / 100)
+    end
+    return math.max(0, scale)
+end
+
+--- Puts every Boss Blind's `mult` where the Jokers in play say it should be.
+function CelestasMod.rox_sync()
+    for _, blind in pairs(G.P_BLINDS or {}) do
+        if type(blind) == "table" and blind.boss then
+            local base = blind.celesta_rox_base
+            if base == nil then
+                base = blind.mult
+                blind.celesta_rox_base = base
+            end
+            if type(base) == "number" then
+                blind.mult = base * CelestasMod.rox_scale(type(blind.boss) == "table" and blind.boss.showdown)
+            end
+        end
+    end
+end
+
+local rox_wrapped = {}
+
+--- Wraps `name` in the table `owner` so that every call syncs first. Once: a second run starting
+--- must not put a second wrapper over the first.
+local function rox_wrap(owner, name)
+    local ref = owner[name]
+    if type(ref) ~= "function" or rox_wrapped[ref] then return end
+    local function wrapper(...)
+        CelestasMod.rox_sync()
+        return ref(...)
+    end
+    rox_wrapped[wrapper] = true
+    owner[name] = wrapper
+end
+
+function CelestasMod.install_rox_hook()
+    rox_wrap(Blind, "set_blind")
+    rox_wrap(_G, "create_UIBox_blind_choice")
+end
+
+SMODS.Joker {
+    key = "rox",
+    atlas = "rox",
+    pos = { x = 0, y = 0 },
+    rarity = MYTHIC, cost = 20,
+    unlocked = true, discovered = false,
+    -- A passive the quota reads, not a trigger; there is nothing to copy.
+    blueprint_compat = true, eternal_compat = true,
+    in_pool = function() return false end,
+
+    config = { extra = { boss = 75, showdown = 90 } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.boss, card.ability.extra.showdown } }
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Both hooks go on when a run starts, for the reason LucyPyre's does: every other mod has loaded by
+-- then, so these sit outside whatever they left behind rather than under it.
+--------------------------------------------------------------------------------
+
+local celesta_mythic_start_ref = Game.start_run
+function Game:start_run(...)
+    CelestasMod.install_dougdoug_hook()
+    CelestasMod.install_rox_hook()
+    return celesta_mythic_start_ref(self, ...)
+end

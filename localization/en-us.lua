@@ -554,6 +554,13 @@ return {
                     "{C:attention}Kumi{}",
                 },
             },
+            j_celesta_dougdoug = {
+                name = "DougDoug",
+                text = {
+                    "All {C:attention}consumables{} have",
+                    "{C:attention}#1#{} extra uses",
+                },
+            },
             j_celesta_drago = {
                 name = "Drago",
                 text = {
@@ -1633,6 +1640,14 @@ return {
                     "{C:attention}Mult{} cards have a {C:green}#1# in #2#{}",
                     "chance to give {X:mult,C:white}X#3#{} Mult",
                     "when scored",
+                },
+            },
+            j_celesta_rox = {
+                name = "ROX",
+                text = {
+                    "{C:attention}Boss Blinds{} are {C:attention}#1#%{} smaller",
+                    "{C:attention}Showdown Boss Blinds{} are",
+                    "{C:attention}#2#%{} smaller",
                 },
             },
             j_celesta_royalty_card = {

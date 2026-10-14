@@ -136,6 +136,8 @@ DISPLAY_NAMES = {
     "gg": "GG",
     "sox": "Sox",
     "treemore": "Treemore",
+    "dougdoug": "DougDoug",
+    "rox": "ROX",
     "broo": "Broo",
     "cillia": "Cillia",
     "monster_kumi": "Monster Kumi",
