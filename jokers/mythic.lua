@@ -86,6 +86,10 @@ SMODS.Joker {
 --
 -- Gained at `before` so the hand that grows it is the first to be paid, and never by a copy:
 -- the cards were played once. A copy still pays what Drago has stored.
+--
+-- What it gains is a different size every hand, so it says so (celesta_amount): Vedal raises each
+-- hand's own gain to its power, where for a Joker with a rate it would raise the first gain it saw
+-- every time.
 
 CelestasMod.DRAGO_RATE = 10
 
@@ -117,6 +121,7 @@ SMODS.Joker {
                 ref_table = extra, ref_value = "chips",
                 scalar_table = { gain = sum * extra.rate }, scalar_value = "gain",
                 no_message = true,
+                celesta_amount = true,
             })
             return {
                 message = localize { type = "variable", key = "a_chips", vars = { extra.chips } },
