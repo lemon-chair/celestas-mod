@@ -59,8 +59,8 @@ SHARED = {"jokers", "consumables", "decks", "sleeves", "icon", "seals", "driftwo
           "stamp_retrigger", "stamp_lucky", "stamp_favor", "stamp_pack",
           # The Stamp Tag's icon: a 34x34 tag sprite, not a card.
           "tag_stamp",
-          # The Iron Stake's four chips, one sheet: stakes, not Jokers.
-          "stake_iron",
+          # The Iron, Brass and Rose Stakes' chips, a sheet of four each: stakes, not Jokers.
+          "stake_iron", "stake_brass", "stake_rose",
 }   # not per-joker art
 
 # Auto title-casing cannot know how a creator styles their own name.
@@ -5106,6 +5106,59 @@ LOC_TAIL = '''        },
                 text = {
                     "Choose {C:attention}2{} modifiers after",
                     "{C:attention}every{} Blind, not just Boss Blinds",
+                },
+            },
+            stake_celesta_brass_1 = {
+                name = "Brass Stake I",
+                text = {
+                    "{C:attention}-1{} hand size",
+                },
+            },
+            stake_celesta_brass_2 = {
+                name = "Brass Stake II",
+                text = {
+                    "Required score scales",
+                    "faster for each Ante",
+                },
+            },
+            stake_celesta_brass_3 = {
+                name = "Brass Stake III",
+                text = {
+                    "{C:attention}Uncommon{} and {C:attention}Rare{} Jokers",
+                    "appear less often",
+                },
+            },
+            stake_celesta_brass_4 = {
+                name = "Brass Stake IV",
+                text = {
+                    "Booster Packs have {C:attention}1{} less",
+                    "option to choose from",
+                },
+            },
+            stake_celesta_rose_1 = {
+                name = "Rose Stake I",
+                text = {
+                    "{C:attention}-1{} hand",
+                },
+            },
+            stake_celesta_rose_2 = {
+                name = "Rose Stake II",
+                text = {
+                    "Required score scales",
+                    "faster for each Ante",
+                },
+            },
+            stake_celesta_rose_3 = {
+                name = "Rose Stake III",
+                text = {
+                    "{C:attention}Vouchers{} restock",
+                    "every other Ante",
+                },
+            },
+            stake_celesta_rose_4 = {
+                name = "Rose Stake IV",
+                text = {
+                    "{C:attention}-1{} consumable slot",
                 },
             },
         },

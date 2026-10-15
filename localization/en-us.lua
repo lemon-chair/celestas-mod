@@ -6827,6 +6827,59 @@ return {
                     "{C:attention}every{} Blind, not just Boss Blinds",
                 },
             },
+            stake_celesta_brass_1 = {
+                name = "Brass Stake I",
+                text = {
+                    "{C:attention}-1{} hand size",
+                },
+            },
+            stake_celesta_brass_2 = {
+                name = "Brass Stake II",
+                text = {
+                    "Required score scales",
+                    "faster for each Ante",
+                },
+            },
+            stake_celesta_brass_3 = {
+                name = "Brass Stake III",
+                text = {
+                    "{C:attention}Uncommon{} and {C:attention}Rare{} Jokers",
+                    "appear less often",
+                },
+            },
+            stake_celesta_brass_4 = {
+                name = "Brass Stake IV",
+                text = {
+                    "Booster Packs have {C:attention}1{} less",
+                    "option to choose from",
+                },
+            },
+            stake_celesta_rose_1 = {
+                name = "Rose Stake I",
+                text = {
+                    "{C:attention}-1{} hand",
+                },
+            },
+            stake_celesta_rose_2 = {
+                name = "Rose Stake II",
+                text = {
+                    "Required score scales",
+                    "faster for each Ante",
+                },
+            },
+            stake_celesta_rose_3 = {
+                name = "Rose Stake III",
+                text = {
+                    "{C:attention}Vouchers{} restock",
+                    "every other Ante",
+                },
+            },
+            stake_celesta_rose_4 = {
+                name = "Rose Stake IV",
+                text = {
+                    "{C:attention}-1{} consumable slot",
+                },
+            },
         },
         Back = {
             b_celesta_ecstasy = {
