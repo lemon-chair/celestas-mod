@@ -3352,6 +3352,260 @@ LOC_TAIL = '''        },
                     "{C:inactive}(Currently {C:mult}+#3#{C:inactive} Mult)",
                 },
             },
+            celesta_bind_arielle_rosedoodle = {
+                name = "Arielle + Rosedoodle",
+                text = {
+                    "{C:attention}Scoring{} cards have a {C:green}#1# in #2#{} chance",
+                    "to give {X:mult,C:white}X#3#{} Mult when scored",
+                },
+            },
+            celesta_bind_idol_kirana = {
+                name = "The Idol + Kirana",
+                text = {
+                    "Each played {C:attention}#3#{} of {V:1}#2#{} gives",
+                    "{X:mult,C:white}X#1#{} Mult when scored",
+                    "{C:inactive}(Suit changes every round)",
+                },
+            },
+            celesta_bind_adfree_matador = {
+                name = "Adfree + Matador",
+                text = {
+                    "Earn {C:money}$#1#{} every time a hand",
+                    "is played during a {C:attention}Boss Blind{}",
+                },
+            },
+            celesta_bind_hitroad_kokonuts = {
+                name = "Hit the Road + KokoNuts",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult for every",
+                    "{C:attention}7 of Spades{} discarded this round",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                    "{C:inactive}(Resets at the end of the round)",
+                },
+            },
+            celesta_bind_beribug_8ball = {
+                name = "BeriBug + 8 Ball",
+                text = {
+                    "Gain a {C:tarot}Tarot{} card every time",
+                    "an {C:attention}8{} is scored",
+                    "{C:inactive}(Must have room)",
+                },
+            },
+            celesta_bind_shootmoon_giwi = {
+                name = "Shoot the Moon + Giwi",
+                text = {
+                    "{C:attention}Queens{} held in hand",
+                    "give {X:mult,C:white}X#1#{} Mult",
+                },
+            },
+            celesta_bind_momo_tribe = {
+                name = "Momo + The Tribe",
+                text = {
+                    "All played hands are considered {C:attention}Flushes{}",
+                    "and give {X:mult,C:white}X#1#{} Mult",
+                },
+            },
+            celesta_bind_kyaree_castle = {
+                name = "Kyaree + Castle",
+                text = {
+                    "This Joker gains {C:chips}+#1#{} Chips for",
+                    "every card discarded",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_seeingdouble_overez = {
+                name = "Seeing Double + OverEzEggs",
+                text = {
+                    "{X:mult,C:white}X#1#{} Mult if a card held in",
+                    "hand is of the {C:hearts}Hearts{} suit",
+                },
+            },
+            celesta_bind_flowerpot_mabel = {
+                name = "Flower Pot + Mellow Mabel",
+                text = {
+                    "{X:mult,C:white}X#1#{} Mult if poker hand contains",
+                    "a {V:1}#2#{} card and a {V:2}#3#{} card",
+                },
+            },
+            celesta_bind_bubi_perkeo = {
+                name = "Bubi + Perkeo",
+                text = {
+                    "At the end of the shop, create a",
+                    "random {C:dark_edition}Negative{} {C:attention}Stamp{} card",
+                },
+            },
+            celesta_bind_mariyume_brainstorm = {
+                name = "Mari Yume + Brainstorm",
+                text = {
+                    "Retriggers the {C:attention}leftmost{} and {C:attention}rightmost{}",
+                    "Jokers {C:attention}twice{}",
+                },
+            },
+            celesta_bind_chicot_arielle = {
+                name = "Chicot + Arielle",
+                text = {
+                    "Cards can no longer be {C:attention}debuffed{}",
+                    "by {C:attention}Boss Blinds{}",
+                },
+            },
+            celesta_bind_triboulet_ironmouse = {
+                name = "Triboulet + Ironmouse",
+                text = {
+                    "Played {C:attention}Kings{} and {C:attention}Queens{} give",
+                    "{E:1,C:mult}^#1#{} Mult when scored",
+                },
+            },
+            celesta_bind_yorick_vedal = {
+                name = "Yorick + Vedal",
+                text = {
+                    "At the end of the round, this Joker gains",
+                    "{X:mult,C:white}X(#1# * remaining discards + round number){} Mult",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_caino_silvervale = {
+                name = "Canio + Silvervale",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult for each {C:attention}face{}",
+                    "{C:attention}card{} destroyed or added to your full deck",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_bootstraps_clover = {
+                name = "Bootstraps + Moo Moo Clover",
+                text = {
+                    "{C:spectral}Milk Bottles{} can select up to as many",
+                    "cards as every {C:money}$#1#{} you have",
+                    "{C:inactive}(Currently {C:attention}#2#{C:inactive} cards)",
+                },
+            },
+            celesta_bind_astronomer_heavenly = {
+                name = "Astronomer + HeavenlyFather",
+                text = {
+                    "{C:attention}Booster Packs{} cost {C:money}$#1#{}",
+                },
+            },
+            celesta_bind_constellation_radical = {
+                name = "Constellation + Radical Mari",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult every time",
+                    "a {C:spectral}Spectral{} card is used",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_invisible_grimmi = {
+                name = "Invisible Joker + Grimmi",
+                text = {
+                    "When this Joker is sold, create a",
+                    "{C:dark_edition}Negative{} copy of {C:attention}#1#{} random owned Jokers",
+                },
+            },
+            celesta_bind_burnt_michi = {
+                name = "Burnt Joker + Michi",
+                text = {
+                    "Discarded cards with a {C:purple}Purple Seal{}",
+                    "give a random {C:spectral}Spectral{} card",
+                },
+            },
+            celesta_bind_cartomancer_arar = {
+                name = "Cartomancer + Arar",
+                text = {
+                    "At the start of the round, gain a",
+                    "random {C:attention}consumable{}",
+                    "{C:inactive}(Must have room)",
+                },
+            },
+            celesta_bind_drivers_nanaruru = {
+                name = "Driver's License + Nana & Ruru",
+                text = {
+                    "Retrigger {C:attention}merged{} Jokers if you have at",
+                    "least {C:attention}#1#{} enhanced cards in your full deck",
+                    "{C:inactive}(Currently {C:attention}#2#{C:inactive})",
+                },
+            },
+            celesta_bind_stuntman_megalodon = {
+                name = "Stuntman + Megalodon",
+                text = {
+                    "This Joker gains {C:chips}+#1#{} Chips for each",
+                    "card in played hand",
+                    "{C:inactive}(Resets at end of round)",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_blueprint_onigiri = {
+                name = "Blueprint + OniGiri",
+                text = {
+                    "Retriggers the Joker directly to the",
+                    "{C:attention}left{} of this Joker {C:attention}twice{}",
+                },
+            },
+            celesta_bind_baron_thanatos = {
+                name = "Baron + XM-05 Thanatos",
+                text = {
+                    "{C:attention}Kings{} held in hand",
+                    "give {E:1,C:mult}^#1#{} Mult",
+                },
+            },
+            celesta_bind_juggler_shiabun = {
+                name = "Juggler + Shiabun",
+                text = {
+                    "{C:attention}Hand size{} is increased equal to your",
+                    "current {C:attention}card selection limit{}",
+                    "{C:inactive}(Currently {C:attention}+#1#{C:inactive})",
+                },
+            },
+            celesta_bind_redcard_bluecard = {
+                name = "Red Card + Blue Card",
+                text = {
+                    "This Joker gains {C:mult}+#1#{} Mult for each",
+                    "{C:attention}Booster Pack{} skipped",
+                    "{C:inactive}(Currently {C:mult}+#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_throwback_green = {
+                name = "Throwback + Green Card",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult and {X:chips,C:white}X#1#{} Chips",
+                    "for each {C:attention}Blind{} skipped this run",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult and {X:chips,C:white}X#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_flash_fuchsia = {
+                name = "Flash Card + Fuchsia Card",
+                text = {
+                    "This Joker gains {C:mult}+#1#{} Mult per",
+                    "{C:attention}reroll{} used in the shop",
+                    "{C:inactive}(Currently {C:mult}+#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_vexoria_onyx = {
+                name = "Vexoria + Onyx Agate",
+                text = {
+                    "Played {C:spades}Spade{} cards give",
+                    "{C:mult}+#1#{} Mult when scored",
+                },
+            },
+            celesta_bind_nihmune_arrowhead = {
+                name = "Nihmune + Arrowhead",
+                text = {
+                    "Played {C:clubs}Club{} cards give",
+                    "{C:chips}+#1#{} Chips when scored",
+                },
+            },
+            celesta_bind_ebiko_bloodstone = {
+                name = "Ebiko + Bloodstone",
+                text = {
+                    "Played {C:diamonds}Diamond{} cards have a {C:green}#1# in #2#{}",
+                    "chance to give {X:mult,C:white}X#3#{} Mult when scored",
+                },
+            },
+            celesta_bind_fefe_roughgem = {
+                name = "FeFe + Rough Gem",
+                text = {
+                    "Played {C:hearts}Heart{} cards give",
+                    "{C:money}$#1#{} when scored",
+                },
+            },
             celesta_bind_onigiri_girldm = {
                 name = "OniGiri + GirlDM",
                 text = {

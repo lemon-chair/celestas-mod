@@ -4396,6 +4396,12 @@ local function clover_count(excluding)
     return n
 end
 
+--- Puts the Milk Bottle's selection back to what the Clovers in play make it: for a pair that has
+--- been widening it itself (Bootstraps + Moo Moo Clover) and has gone.
+function CelestasMod.clover_refresh()
+    clover_apply(clover_count(nil))
+end
+
 -- Loading a save never runs add_to_deck, so a reloaded run needs this
 -- recomputed once the row exists.
 local celesta_clover_start_run_ref = Game.start_run
