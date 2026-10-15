@@ -1746,13 +1746,30 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Bluto [Rare] - Blueprint and Brainstorm each trigger one extra time.
+-- Bluto [Rare] - every blueprint-like Joker triggers one extra time.
 --------------------------------------------------------------------------------
 
--- Shared with Zentreya + Bluto in merge/bind.lua, which retriggers the same
--- two: one list, so a third copier taught to one is taught to both.
+-- Blueprint and Brainstorm alone, which is what Bluto used to retrigger and what two of its
+-- pairs still name - Zentreya + Bluto retriggers these two and HeavenlyFather + Bluto shows
+-- them in the shop - so the pair texts stay true to the code.
 local BLUTO_TARGETS = { j_blueprint = true, j_brainstorm = true }
 CelestasMod.BLUTO_TARGETS = BLUTO_TARGETS
+
+--- Whether `card` is one of the Jokers that copy another Joker.
+---
+--- Read off CelestasMod.BLUEPRINT_LIKE (merge/bind.lua), the one list this mod keeps of them,
+--- when it is asked rather than when this file loads: that file is loaded first, but a list
+--- that is read late is a list a later copier can be added to. By the card's own centre, as
+--- Bluto always asked.
+function CelestasMod.is_blueprint_like(card)
+    local center = card and card.config and card.config.center
+    local key = center and center.key
+    if not key then return false end
+    for _, listed in ipairs(CelestasMod.BLUEPRINT_LIKE or {}) do
+        if listed == key then return true end
+    end
+    return false
+end
 
 SMODS.Joker {
     key = "bluto",
@@ -1775,8 +1792,7 @@ SMODS.Joker {
         -- from retriggering a retrigger, which would compound without bound.
         if context.retrigger_joker_check and not context.retrigger_joker then
             local other = context.other_card
-            if other and other ~= card and other.config and other.config.center
-                and BLUTO_TARGETS[other.config.center.key] then
+            if other and other ~= card and CelestasMod.is_blueprint_like(other) then
                 return { repetitions = card.ability.extra.repetitions }
             end
         end
@@ -6687,29 +6703,44 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Geega [Uncommon] - a debuffed Joker is worth something after all.
+-- Geega [Uncommon] - booster packs have one more option to choose from.
 --------------------------------------------------------------------------------
 --
--- Card:set_debuff is where every route in ends up: a Blind debuffing the row,
--- a Perishable running out - which has its own branch above the general one -
--- and anything a mod does through SMODS.debuff_card.
+-- A pack's size is read twice by Card:open (card.lua): once for how many cards may be taken and
+-- once, a moment later in an event, for how many are made - both off the pack's own
+-- `ability.extra`, plus the run's `booster_size_mod`. A Joker that widens packs cannot move the
+-- run's number and have it right at both moments, because what it counts can change between them
+-- (the pack is paid for in between). So it is added to the pack itself, once, as the pack is
+-- opened: the card is spent by being opened, and it is read the same both times.
+--
+-- Every Joker that widens packs is a rule in CelestasMod.PACK_OPTION_RULES, each given the pack
+-- and answering how many more options it shows. Geega's is one for each Geega in play - which
+-- counts the half of a merge, and leaves out one that is debuffed or that a pair has replaced.
+-- Geega + Henya (merge/bind.lua) adds its own.
 
-local celesta_geega_set_debuff_ref = Card.set_debuff
-function Card:set_debuff(should_debuff)
-    local was_debuffed = self.debuff
-    local ret = celesta_geega_set_debuff_ref(self, should_debuff)
+CelestasMod.GEEGA_OPTIONS = 1
 
-    if self.debuff and not was_debuffed
-        and self.ability and self.ability.set == "Joker"
-        and not (self.edition and self.edition.negative)
-        and joker_active("j_celesta_geega") then
-        -- Not the Geega doing the debuffing to itself: a Joker that debuffs
-        -- itself and turns Negative for it is fine, but it must not be the
-        -- reason it counts as active.
-        self:set_edition({ negative = true }, true, true)
+CelestasMod.PACK_OPTION_RULES = CelestasMod.PACK_OPTION_RULES or {}
+CelestasMod.PACK_OPTION_RULES[#CelestasMod.PACK_OPTION_RULES + 1] = function(pack)
+    return #CelestasMod.find_joker("j_celesta_geega") * CelestasMod.GEEGA_OPTIONS
+end
+
+local celesta_pack_open_ref = Card.open
+function Card:open(...)
+    local ability = self.ability
+    -- `extra` is the pack's card count. Once only: a pack that is somehow opened twice is widened
+    -- once, and a pack that is not a pack, or has no count, is left to the game.
+    if ability and ability.set == "Booster" and type(ability.extra) == "number"
+        and not ability.celesta_pack_widened then
+        local more = 0
+        for _, rule in ipairs(CelestasMod.PACK_OPTION_RULES or {}) do
+            local ok, options = pcall(rule, self)
+            if ok and type(options) == "number" then more = more + options end
+        end
+        ability.celesta_pack_widened = true
+        if more > 0 then ability.extra = ability.extra + more end
     end
-
-    return ret
+    return celesta_pack_open_ref(self, ...)
 end
 
 SMODS.Joker {
@@ -6718,11 +6749,11 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     rarity = 2, cost = 6,
     unlocked = true, discovered = false,
+    -- Nothing to copy: the pack is widened by the Joker's being owned, not by a trigger.
     blueprint_compat = false, eternal_compat = true,
 
     loc_vars = function(self, info_queue, card)
-        info_queue[#info_queue + 1] = G.P_CENTERS.e_negative
-        return {}
+        return { vars = { CelestasMod.GEEGA_OPTIONS } }
     end,
 }
 
@@ -7216,7 +7247,7 @@ SMODS.Joker {
     -- running that on is CDawg. See jokers/cdawg.lua.
     celesta_cdawg_never = true,
 
-    config = { extra = { stored = 0, payout_mult = 1.5 } },
+    config = { extra = { stored = 0, payout_mult = 2 } },
 
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.payout_mult,
@@ -7225,7 +7256,7 @@ SMODS.Joker {
 
     calculate = function(self, card, context)
         -- A Favor Stamp ends the savings account: nothing is stored and nothing dies. Each sale
-        -- pays X1.5 as it is made - the payout_mult of what was sold, floored the way the
+        -- pays X2 as it is made - the payout_mult of what was sold, floored the way the
         -- account's own payout is - which is the sale itself plus the rest.
         local favored = CelestasMod.favored and CelestasMod.favored(card)
         if favored and context.selling_card and context.card and not context.blueprint then

@@ -2382,8 +2382,8 @@ LOC_TAIL = '''        },
             celesta_bind_geega_henya = {
                 name = "Geega + Henya",
                 text = {
-                    "{C:attention}Debuffed{} Jokers sell for",
-                    "{C:attention}#1#X{} their normal amount",
+                    "Booster Packs have {C:attention}1{} extra option to",
+                    "choose from for every {C:attention}digit{} your money has",
                 },
             },
             celesta_bind_quad_beastiez = {
@@ -3287,6 +3287,69 @@ LOC_TAIL = '''        },
                 text = {
                     "{C:green}Odds{} are guaranteed to happen every {C:attention}n{} times,",
                     "where {C:attention}n{} is equal to the odds denominator",
+                },
+            },
+            celesta_bind_pwistine_panda = {
+                name = "Pwistine + PandaBearLily",
+                text = {
+                    "{X:mult,C:white}X#1#{} Mult if played hand",
+                    "contains only {C:attention}1{} card",
+                },
+            },
+            celesta_bind_pwistine_arar = {
+                name = "Pwistine + Arar",
+                text = {
+                    "At the start of each round, if you have",
+                    "exactly {C:money}$0{}, give every unenhanced card",
+                    "held in hand the same {C:attention}enhancement{}: the one",
+                    "made by any {C:tarot}Tarot{} you hold, or a random one",
+                },
+            },
+            celesta_bind_pwistine_kumi = {
+                name = "Pwistine + Kumi",
+                text = {
+                    "At the end of the round, if you have less",
+                    "than {C:money}$#1#{}, earn enough to have exactly {C:money}$#1#{}",
+                },
+            },
+            celesta_bind_kumi_panda = {
+                name = "Kumi + PandaBearLily",
+                text = {
+                    "If the {C:attention}first hand{} of a round is a single card,",
+                    "destroy it, with a {C:green}#1# in #2#{} chance to earn {C:money}$#3#{}",
+                },
+            },
+            celesta_bind_kyaree_kumi = {
+                name = "Kyaree + Kumi",
+                text = {
+                    "This Joker gains {C:money}$#1#{} to give at the end",
+                    "of the round for each {C:attention}Gold{} card discarded",
+                    "{C:inactive}(Currently {C:money}$#2#{C:inactive})",
+                },
+            },
+            celesta_bind_kyaree_arar = {
+                name = "Kyaree + Arar",
+                text = {
+                    "This Joker gains {C:chips}+#1#{} Chips for each",
+                    "{C:attention}enhanced{} card discarded",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_arar_bluto = {
+                name = "Arar + Bluto",
+                text = {
+                    "Retriggers {C:attention}blueprintlike{} Jokers additional",
+                    "times for every {C:attention}#1#{} enhanced cards in your full deck",
+                    "{C:inactive}(Currently {C:attention}#2#{C:inactive} times)",
+                },
+            },
+            celesta_bind_megalodon_cweam = {
+                name = "Megalodon + CweamCat",
+                text = {
+                    "This Joker gains {C:mult}+#1#{} Mult",
+                    "if played hand is a {C:attention}#2#{}",
+                    "{C:inactive}(hand changes after each hand played)",
+                    "{C:inactive}(Currently {C:mult}+#3#{C:inactive} Mult)",
                 },
             },
             celesta_bind_onigiri_girldm = {
@@ -4939,7 +5002,7 @@ LOC_TAIL = '''        },
             celesta_stamp_favor_j_celesta_matarakan = {
                 text = {
                     "No longer destroys itself. Gives",
-                    "{C:money}X1.5{} money for each thing sold",
+                    "{C:money}X2{} money for each thing sold",
                 },
             },
             celesta_stamp_favor_j_celesta_unnamed = {

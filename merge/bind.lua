@@ -5064,7 +5064,7 @@ special("j_celesta_ray", "j_celesta_cottontail", {
 
     -- Nothing to answer: a seal is not a Joker and is never asked a Joker's
     -- contexts. The behaviour is the hook below, the same way Geega + Henya's
-    -- is Card:set_cost.
+    -- is Card:open.
     calculate = function(def, card, context, state) end,
 })
 
@@ -5083,24 +5083,52 @@ end
 -- Geega
 --------------------------------------------------------------------------------
 
--- Geega + Henya: Geega turns a debuffed Joker Negative; Henya pays. Together
--- a debuffed Joker is worth twice as much on the way out.
+--- How many digits `amount` has, its sign and any fraction aside: 0 is one, 99 is two, 100 is
+--- three, and a debt of 250 is three.
+---
+--- A Talisman number is a table and may be past what a double holds, so it is counted by its
+--- logarithm; anything that cannot be read at all is one digit rather than an error, because
+--- this is asked as a pack is opened and a pack that cannot be opened is a run that stops.
+function CelestasMod.money_digits(amount)
+    if type(amount) == "number" then
+        local whole = math.floor(math.abs(amount))
+        if whole ~= whole or whole == math.huge then return 1 end
+        return #string.format("%.0f", whole)
+    end
+    if amount == nil then return 1 end
+    local ok, digits = pcall(function()
+        local size = to_big(amount):abs()
+        if size < to_big(1) then return 1 end
+        -- A logarithm of an exact power of ten can land a hair under it; the nudge is for that.
+        return math.floor(to_number(size:log10()) + 1e-9) + 1
+    end)
+    if ok and type(digits) == "number" and digits >= 1 then return digits end
+    return 1
+end
+
+-- Geega + Henya: every digit of the money held widens a pack by one more option.
+--
+-- Counted as the pack is opened, which is before it is paid for, so a pack bought for $5 with
+-- $12 in hand is opened as a two-digit hand of money. It goes through the same rule list
+-- Geega's own option does (jokers/implemented.lua, CelestasMod.PACK_OPTION_RULES), added to the
+-- pack itself so it is read the same at both moments the game reads a pack's size - and a pair
+-- stands in for both its halves, so Geega's own rule finds no Geega here and this is the whole of
+-- it. A debuffed pair widens nothing, as every pair does.
 special("j_celesta_geega", "j_celesta_henya", {
     key = "geega_henya",
-    config = { scale = 2 },
 
     loc_vars = function(def, card, state)
-        return { vars = { state.scale } }
+        return { vars = {} }
     end,
 
     calculate = function(def, card, context, state) end,
 })
 
---- The pair's multiplier, or nil when no such merge is able to act.
-local function geega_henya_scale()
-    local holder, def = Bind.find_special("geega_henya")
-    if not (holder and not holder.debuff) then return nil end
-    return Bind.special_state(holder, def).scale
+CelestasMod.PACK_OPTION_RULES = CelestasMod.PACK_OPTION_RULES or {}
+CelestasMod.PACK_OPTION_RULES[#CelestasMod.PACK_OPTION_RULES + 1] = function(pack)
+    local holder = Bind.find_special("geega_henya")
+    if not (holder and not holder.debuff) then return 0 end
+    return CelestasMod.money_digits(G.GAME and G.GAME.dollars)
 end
 
 -- What a merged Joker is worth: both halves, in what it sells for and - on the
@@ -5156,36 +5184,6 @@ function Card:set_cost(...)
         for _, key in ipairs(absorbed_keys(bound)) do
             self.cost = self.cost + own_cost(key)
         end
-    end
-    return ret
-end
-
--- sell_cost is worked out inside Card:set_cost, from the card's base cost
--- (card.lua:512). Doubling the ANSWER rather than the card means a second
--- call recomputes from base and cannot compound, and a Joker that stops being
--- debuffed goes back to its normal price without anything having to undo this.
-local celesta_geega_henya_cost_ref = Card.set_cost
-function Card:set_cost(...)
-    local ret = celesta_geega_henya_cost_ref(self, ...)
-    if self.debuff and self.ability and self.ability.set == "Joker" then
-        local scale = geega_henya_scale()
-        if scale and type(self.sell_cost) == "number" then
-            self.sell_cost = math.floor(self.sell_cost * scale)
-        end
-    end
-    return ret
-end
-
--- Nothing re-prices a card when it is debuffed - set_debuff does not call
--- set_cost - so without this the new price would not show until something
--- else happened to the card.
-local celesta_geega_henya_debuff_ref = Card.set_debuff
-function Card:set_debuff(should_debuff)
-    local was = self.debuff
-    local ret = celesta_geega_henya_debuff_ref(self, should_debuff)
-    if self.debuff ~= was and self.ability and self.ability.set == "Joker"
-        and type(self.set_cost) == "function" then
-        self:set_cost()
     end
     return ret
 end
@@ -15217,6 +15215,289 @@ special(BROO, "j_celesta_nagzz", {
             state.missed = state.missed or {}
             local id = tostring(context.identifier)
             state.missed[id] = context.result and 0 or ((state.missed[id] or 0) + 1)
+        end
+    end,
+})
+
+end
+
+-- Eight more pairs.
+do
+
+--- True for a card carrying any enhancement at all: against c_base, the unenhanced playing-card
+--- centre, which is the test this file makes everywhere it asks.
+local function enhanced(card)
+    local center = card and card.config and card.config.center
+    return center ~= nil and G.P_CENTERS ~= nil and center ~= G.P_CENTERS.c_base
+end
+
+--- Whether `amount` is exactly `target`, in Talisman's arithmetic where there is a table to
+--- compare: Lua 5.1 refuses to compare a table with a number at all.
+local function exactly(amount, target)
+    if type(amount) == "table" or type(target) == "table" then
+        return to_big(amount) == to_big(target)
+    end
+    return amount == target
+end
+
+--- The enhancement the first Tarot in the consumable slots that makes one makes, if the run still
+--- offers it, or nil.
+---
+--- Any Tarot held, which is not Arar's own rule: Arar reads the first slot and nothing else, so a
+--- Tarot that makes no enhancement there - The Fool - ends it. Here that one is passed over and
+--- the next is asked. Read through `mod_conv` as Arar reads it, so another mod's enhancement
+--- Tarot is understood without being named, and through the pool, so a Challenge or a Deck that
+--- has banned an enhancement is not overruled.
+local function persuading_tarot()
+    local offered = {}
+    for _, key in ipairs(get_current_pool("Enhanced") or {}) do offered[key] = true end
+    for _, held in ipairs((G.consumeables and G.consumeables.cards) or {}) do
+        local center = held.config and held.config.center
+        if center and center.set == "Tarot" then
+            local key = center.config and center.config.mod_conv
+            if key and G.P_CENTERS[key] and offered[key] then return key end
+        end
+    end
+    return nil
+end
+
+-- Pwistine + PandaBearLily: X3 Mult for a hand of one card. Pwistine's multiplier, with
+-- PandaBearLily's single card for the condition instead of an empty purse.
+special("j_celesta_pristinezero", "j_celesta_pandabearlily", {
+    key = "pwistine_panda",
+    config = { x_mult = 3 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- The played hand whole, scoring or not: "contains only 1 card" counts what was played.
+        if context.joker_main and #(context.full_hand or {}) == 1 then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+-- Pwistine + Arar: Arar's start-of-round enhancement, for every unenhanced card held in hand at
+-- once, and only with exactly $0.
+--
+-- All the same one: a Tarot held makes it (persuading_tarot), or a roll does, once for the lot.
+-- Unenhanced cards only, as every Arar pair is - a card that is already something is not turned
+-- into something else - and claimed the way Arar claims them, so a copy evaluating in the same
+-- pass does not take a card again before its event lands.
+special("j_celesta_pristinezero", "j_celesta_arar", {
+    key = "pwistine_arar",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.first_hand_drawn and G.hand and G.hand.cards) then return end
+        if not exactly(G.GAME and G.GAME.dollars or 0, 0) then return end
+
+        local targets = {}
+        for _, held in ipairs(G.hand.cards) do
+            if held.config.center == G.P_CENTERS.c_base and not held.celesta_arar_claimed then
+                targets[#targets + 1] = held
+            end
+        end
+        if #targets == 0 then return end
+
+        local enhancement = persuading_tarot() or SMODS.poll_enhancement {
+            key = "celesta_bind_pwistine_arar_enh",
+            guaranteed = true,
+        }
+        if not (enhancement and G.P_CENTERS[enhancement]) then return end
+
+        for _, target in ipairs(targets) do
+            target.celesta_arar_claimed = true
+            arar_enhance(target, G.P_CENTERS[enhancement])
+        end
+        return {
+            message = localize("k_upgrade_ex"),
+            colour = G.C.SECONDARY_SET.Enhanced,
+            card = card,
+        }
+    end,
+})
+
+-- Pwistine + Kumi: Kumi's twenty dollars as a floor. At the end of the round, with less than $20,
+-- earn what is missing.
+--
+-- The once-a-round Joker pass, which a lost round does not reach. Paid as `dollars`, so it is
+-- announced and eased the way every Joker's payout is; with $20 or more there is nothing to say.
+special("j_celesta_pristinezero", "j_celesta_kumi", {
+    key = "pwistine_kumi",
+    config = { dollars = 20 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.end_of_round and context.main_eval and not context.game_over) then return end
+        local have = G.GAME and G.GAME.dollars or 0
+        if not CelestasMod.more_than(state.dollars, have) then return end
+        return { dollars = state.dollars - have, card = card }
+    end,
+})
+
+-- Kumi + PandaBearLily: PandaBearLily's single card, Kumi's appetite. The first hand of a round,
+-- if it is one card, is destroyed, with a 1 in 4 chance of $20.
+--
+-- Kumi's own shape: destroying_card is asked of the cards in the played hand, `remove` destroys
+-- and `dollars` pays in one table, and an Eternal card is left alone - no destruction, no
+-- payout. hands_played is still 0 while the first hand scores; it counts it afterwards.
+special("j_celesta_kumi", "j_celesta_pandabearlily", {
+    key = "kumi_panda",
+    config = { dollars = 20, odds = 4 },
+
+    loc_vars = function(def, card, state)
+        local numerator, denominator = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_kumi_panda")
+        return { vars = { numerator, denominator, state.dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.destroying_card and context.cardarea == G.play) then return end
+        if G.GAME.current_round.hands_played ~= 0 then return end
+        if #(context.full_hand or {}) ~= 1 then return end
+        if SMODS.is_eternal(context.destroying_card) then return end
+
+        local effect = { remove = true }
+        if SMODS.pseudorandom_probability(card, "celesta_bind_kumi_panda",
+                1, state.odds, "celesta_bind_kumi_panda") then
+            effect.dollars = state.dollars
+        end
+        return effect
+    end,
+})
+
+-- Kyaree + Kumi: Kyaree's ledger, kept in dollars. Each Gold card discarded adds $2 to what this
+-- pays at the end of the round, for good.
+--
+-- Kyaree's shape: it counts once per discarded card, never for a copy, and never a debuffed card.
+-- Paid at the cash-out (calc_dollar_bonus) so it has a line of its own there.
+special("j_celesta_kyaree", "j_celesta_kumi", {
+    key = "kyaree_kumi",
+    config = { dollars = 0, dollar_gain = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollar_gain, state.dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.discard and context.other_card and not context.blueprint) then return end
+        local gold = context.other_card
+        if gold.debuff or not SMODS.has_enhancement(gold, "m_gold") then return end
+        Bind.grow(card, state, "dollars", state.dollar_gain)
+        return { message = localize("k_upgrade_ex"), colour = G.C.MONEY, card = card }
+    end,
+
+    calc_dollar_bonus = function(def, card, state)
+        local owed = state.dollars
+        -- A number the cash-out can add: Vedal can make the ledger one of Talisman's.
+        if type(owed) == "table" and to_number then owed = to_number(owed) end
+        if type(owed) ~= "number" or owed <= 0 then return end
+        return owed
+    end,
+})
+
+-- Kyaree + Arar: Kyaree's ledger of Chips, kept for every enhanced card discarded instead of every
+-- Spade. +6 each.
+special("j_celesta_kyaree", "j_celesta_arar", {
+    key = "kyaree_arar",
+    config = { chips = 0, chip_mod = 6 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.chip_mod, state.chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.discard and context.other_card and not context.blueprint then
+            local discarded = context.other_card
+            if discarded.debuff or not enhanced(discarded) then return end
+            Bind.grow(card, state, "chips", state.chip_mod)
+            return { message = localize("k_upgrade_ex"), colour = G.C.CHIPS, card = card }
+        end
+
+        if context.joker_main and CelestasMod.more_than(state.chips, 0) then
+            return { chips = state.chips }
+        end
+    end,
+})
+
+-- Arar + Bluto: Bluto's extra trigger, once more for every 5 enhanced cards in the full deck.
+--
+-- Counted when each is asked, so enhancing a card mid-round counts from the next. Bluto's own
+-- shape: the Joker-retrigger pass, never a retrigger of a retrigger (which would compound without
+-- bound), and never the pair itself. "Blueprint-like" is CelestasMod.is_blueprint_like, Bluto's.
+local function enhanced_in_full_deck()
+    local count = 0
+    for _, held in ipairs(G.playing_cards or {}) do
+        if enhanced(held) then count = count + 1 end
+    end
+    return count
+end
+
+special("j_celesta_arar", "j_celesta_bluto", {
+    key = "arar_bluto",
+    config = { per = 5 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.per, math.floor(enhanced_in_full_deck() / state.per) } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.retrigger_joker_check and not context.retrigger_joker) then return end
+        local other = context.other_card
+        if not (other and other ~= card and CelestasMod.is_blueprint_like(other)) then return end
+        local times = math.floor(enhanced_in_full_deck() / state.per)
+        if times <= 0 then return end
+        return { repetitions = times }
+    end,
+})
+
+-- Megalodon + CweamCat: CweamCat's moving target, paid in Mult that is kept. +5 Mult a time.
+--
+-- BerryCrepe + CweamCat's shape exactly - checked before scoring, rerolled after, so the hand shown
+-- when you play is the one that counts - with Megalodon's Mult. Megalodon's own reset at the end of
+-- the round is not part of it: what is gained is kept.
+special("j_celesta_megalodon", "j_celesta_cweamcat", {
+    key = "megalodon_cweam",
+    config = { mult = 0, mult_gain = 5, hand = "Pair" },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.mult_gain,
+                          localize(state.hand or "Pair", "poker_hands"),
+                          state.mult } }
+    end,
+
+    on_merge = function(def, card, state)
+        CelestasMod.cweamcat_repick(state)
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.before and not context.blueprint then
+            if context.scoring_name == state.hand then
+                Bind.grow(card, state, "mult", state.mult_gain)
+                return {
+                    message = localize { type = "variable", key = "a_mult",
+                                         vars = { state.mult } },
+                    colour = G.C.MULT, card = card,
+                }
+            end
+        end
+
+        if context.after and not context.blueprint then
+            CelestasMod.cweamcat_repick(state)
+            return
+        end
+
+        if context.joker_main and CelestasMod.more_than(state.mult, 0) then
+            return { mult = state.mult }
         end
     end,
 })
