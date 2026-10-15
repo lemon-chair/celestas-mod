@@ -87,11 +87,11 @@ name doesn't matter, only that the folder contains the mod's files).
 `Mods/Talisman/`.
 
 **5. Install this mod.** On the [Releases](../../releases) page, download
-`CelestasMod-1.1.1.zip` from under **Assets**, not "Source code (zip)", and
+`CelestasMod-1.2.0.zip` from under **Assets**, not "Source code (zip)", and
 unzip it into the Mods folder. It contains a single `CelestasMod/` folder, so
 you end up with `Mods/CelestasMod/`.
 
-The source ZIP works too; it just unpacks to `celestas-mod-1.1.1/` instead.
+The source ZIP works too; it just unpacks to `celestas-mod-1.2.0/` instead.
 Steamodded looks for the manifest rather than the folder name, so either is
 fine.
 
