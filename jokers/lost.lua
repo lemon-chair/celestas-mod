@@ -75,6 +75,7 @@ Lost.CONVERSIONS = {
     ["j_credit_card"] = joker("fraudulent_card"),
     [joker("obkatiekat")] = joker("obkhaoskat"),
     [joker("ebiko")] = joker("radiation_ebiko"),
+    [joker("arar")] = joker("arar_after_eating_3_clowns"),
     [joker("fufu")] = joker("black_hole_sun_fufu"),
     ["j_loyalty_card"] = joker("royalty_card"),
     -- Vanilla's own keys, which are not how either Joker reads: "To Do List"
@@ -1695,6 +1696,66 @@ SMODS.Joker {
                 card = card,
             }
         end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Arar After Eating 3 Clowns
+--------------------------------------------------------------------------------
+--
+-- Arar, corrupted. X1 for every enhanced card in the whole deck, counted from X1 the way every "for
+-- each" is: a deck with none is X1 and pays nothing. A card is enhanced when it is not the plain
+-- base card - the test Arar's own enhancing makes the other way round.
+
+--- How many cards in the run's whole deck wear an enhancement.
+local function enhanced_in_deck()
+    local count = 0
+    for _, held in ipairs(G.playing_cards or {}) do
+        local center = held.config and held.config.center
+        if center and G.P_CENTERS and center ~= G.P_CENTERS.c_base then count = count + 1 end
+    end
+    return count
+end
+
+SMODS.Joker {
+    key = "arar_after_eating_3_clowns",
+    atlas = "arar_after_eating_3_clowns",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    unlocked = false,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+    -- Whatever it used to be: a shop of Arars.
+    celesta_lost_shop = true,
+
+    config = { extra = { x_mult_gain = 1, joker_slots = Lost.SLOT_COST } },
+
+    loc_vars = function(self, info_queue, card)
+        local extra = card.ability.extra
+        return { vars = { extra.x_mult_gain, 1 + extra.x_mult_gain * enhanced_in_deck(), extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        Lost.sync_slots(nil, card)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        Lost.sync_slots(card)
+    end,
+
+    calculate = function(self, card, context)
+        if not context.joker_main then return end
+        local x_mult = 1 + card.ability.extra.x_mult_gain * enhanced_in_deck()
+        if x_mult > 1 then return { x_mult = x_mult } end
     end,
 }
 

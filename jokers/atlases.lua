@@ -51,6 +51,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "arar_after_eating_3_clowns",
+    path = "arar_after_eating_3_clowns.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "arielle",
     path = "arielle.png",
     px = 71,

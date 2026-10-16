@@ -1579,6 +1579,20 @@ return {
                     "{C:attention}Ebiko{}",
                 },
             },
+            j_celesta_arar_after_eating_3_clowns = {
+                name = "Arar After Eating 3 Clowns",
+                text = {
+                    "{X:mult,C:white}X#1#{} Mult for each {C:attention}enhanced{} card",
+                    "in your full deck",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                    "{C:red}-#3#{} Joker slots, cannot be sold",
+                    "All {C:attention}shop{} items become {C:attention}Arar{}",
+                },
+                unlock = {
+                    "Use a {C:spectral}Lost Soul{} on",
+                    "{C:attention}Arar{}",
+                },
+            },
             j_celesta_radicalmari = {
                 name = "Radical Mari",
                 text = {

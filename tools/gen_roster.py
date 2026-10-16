@@ -142,6 +142,7 @@ DISPLAY_NAMES = {
     "cillia": "Cillia",
     "monster_kumi": "Monster Kumi",
     "radiation_ebiko": "Radiation Ebiko",
+    "arar_after_eating_3_clowns": "Arar After Eating 3 Clowns",
     "geega": "Geega",
     "unnamed": "Unnamed",
     "cosmic": "Cosmic",
