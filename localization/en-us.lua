@@ -7276,6 +7276,55 @@ return {
                     "of the round are {C:attention}destroyed{}",
                 },
             },
+            celesta_purg_good_select_limit = {
+                text = {
+                    "{C:attention}+1{} card selection limit",
+                },
+            },
+            celesta_purg_good_negative_planets = {
+                text = {
+                    "Gain {C:attention}3{} {C:dark_edition}Negative{} {C:planet}Planet{} cards",
+                    "of your most played poker hand",
+                },
+            },
+            celesta_purg_good_ante_down = {
+                text = {
+                    "{C:attention}-1{} Ante",
+                },
+            },
+            celesta_purg_good_coupon_tag = {
+                text = {
+                    "Gain a {C:attention}Coupon Tag{}",
+                },
+            },
+            celesta_purg_good_purge = {
+                text = {
+                    "Remove {C:attention}half{} of your active boons",
+                    "and {C:attention}all{} of your active curses",
+                },
+            },
+            celesta_purg_bad_lost_soul = {
+                text = {
+                    "Gain an {C:attention}Eternal{} {C:spectral}Lost Soul{}",
+                    "(can't be sold)",
+                },
+            },
+            celesta_purg_bad_lost_soul_double = {
+                text = {
+                    "Gain two {C:attention}Eternal{} {C:spectral}Lost Souls{}",
+                    "(can't be sold)",
+                },
+            },
+            celesta_purg_bad_ante_jump = {
+                text = {
+                    "Jump straight to {C:attention}Ante 12{}",
+                },
+            },
+            celesta_purg_bad_ante_end = {
+                text = {
+                    "The run ends at {C:attention}Ante 16{}",
+                },
+            },
             celesta_stamp_mark_lucky = {
                 text = {
                     "{C:attention}Stamp:{} listed {C:green}odds{} are guaranteed",

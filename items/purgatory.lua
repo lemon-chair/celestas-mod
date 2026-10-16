@@ -668,6 +668,47 @@ add { kind = "good", key = "summon", repeatable = true,
       end,
       apply = function() give("c_celesta_summon", G.consumeables) end }
 
+add { kind = "good", key = "select_limit", repeatable = true,
+      -- Both limits by the same amount, the way Shiabun does (jokers/implemented.lua): one more card
+      -- to play is one more to discard, or six could be played and not discarded.
+      available = function() return SMODS.change_play_limit ~= nil and SMODS.change_discard_limit ~= nil end,
+      apply = function()
+          SMODS.change_play_limit(1)
+          SMODS.change_discard_limit(1)
+      end }
+
+--- The Planet card for a poker hand, or nil for a hand none belongs to.
+local function planet_of(hand)
+    for _, center in ipairs((G.P_CENTER_POOLS and G.P_CENTER_POOLS.Planet) or {}) do
+        if center.config and center.config.hand_type == hand then return center.key end
+    end
+    return nil
+end
+
+add { kind = "good", key = "negative_planets", repeatable = true,
+      available = function() return planet_of(most_played()) ~= nil end,
+      apply = function()
+          local key = planet_of(most_played())
+          if not key then return end
+          for _ = 1, 3 do give(key, G.consumeables, { negative = true }) end
+      end }
+
+add { kind = "good", key = "ante_down", repeatable = true,
+      available = function() return number(G.GAME.round_resets.ante) > 1 end,
+      apply = function() ease_ante(-1) end }
+
+add { kind = "good", key = "coupon_tag", repeatable = true,
+      apply = function() gain_tag("tag_coupon") end }
+
+--- How many modifiers must be in effect, boons and curses together, before the Purge is offered.
+P.PURGE_AT = 16
+
+add { kind = "good", key = "purge", repeatable = true,
+      available = function(st)
+          return #P.in_effect(st, "good") + #P.in_effect(st, "bad") >= P.PURGE_AT
+      end,
+      apply = function(st) P.purge(st) end }
+
 -- ---------------------------------------------------------------- curses
 
 add { kind = "bad", key = "rerolls",
@@ -921,6 +962,38 @@ for _, name in ipairs(BUFFS) do
           apply = function(st) st.buffs[name] = true end }
 end
 
+add { kind = "bad", key = "lost_soul",
+      -- Needs a place to sit: it takes a consumable slot for as long as it is kept.
+      available = function()
+          return limit(G.consumeables) > #(G.consumeables.cards or {})
+              and not G.GAME.banned_keys["c_celesta_lost_soul"]
+      end,
+      apply = function()
+          local card = give("c_celesta_lost_soul", G.consumeables)
+          if card then card.ability.celesta_unsellable = true end
+      end }
+
+-- "Cannot be sold", as jokers/lost.lua asks it of a Lost Joker: wrapped, not made Eternal, so it can still
+-- be used.
+local celesta_purg_can_sell_ref = Card.can_sell_card
+function Card:can_sell_card(context)
+    if self.ability and self.ability.celesta_unsellable then return false end
+    return celesta_purg_can_sell_ref(self, context)
+end
+
+--- The Ante a curse jumps the run to.
+P.JUMP_ANTE = 12
+--- The Ante the other one moves the end of the run to.
+P.LONG_ANTE = 16
+
+add { kind = "bad", key = "ante_jump",
+      available = function() return number(G.GAME.round_resets.ante) < P.JUMP_ANTE end,
+      apply = function() ease_ante(P.JUMP_ANTE - number(G.GAME.round_resets.ante)) end }
+
+add { kind = "bad", key = "ante_end",
+      available = function() return number(G.GAME.win_ante or P.WIN_ANTE) < P.LONG_ANTE end,
+      apply = function() G.GAME.win_ante = P.LONG_ANTE end }
+
 --- The modifier of this kind and key.
 local BY_ID = {}
 for _, entry in ipairs(P.MODIFIERS) do
@@ -931,6 +1004,189 @@ end
 function P.find(kind, key)
     return BY_ID[kind .. ":" .. tostring(key)]
 end
+
+--------------------------------------------------------------------------------
+-- Taking one back
+--------------------------------------------------------------------------------
+--
+-- The Purge removes modifiers that are still doing something. Which are those is this table: a modifier
+-- has an `undo` when what it did stays (a slot, a rule, a rate) and none when it was done once and is
+-- over (money, a card, a level, a tag). Each undo puts back what the modifier's own `apply` changed, by
+-- the same amount.
+
+--- The pair being chosen right now, which the Purge must leave alone: it is on the record before either
+--- half has happened.
+local choosing = nil
+
+--- Takes `by` off the Hands each round, never below the one a round needs.
+local function hands_change(by)
+    G.GAME.round_resets.hands = math.max(1, G.GAME.round_resets.hands + by)
+end
+
+local function discards_change(by)
+    G.GAME.round_resets.discards = math.max(0, G.GAME.round_resets.discards + by)
+end
+
+local function selection_change(by)
+    if not (SMODS.change_play_limit and SMODS.change_discard_limit) then return end
+    SMODS.change_play_limit(by)
+    SMODS.change_discard_limit(by)
+    if by < 0 and G.hand and G.hand.unhighlight_all then G.hand:unhighlight_all() end
+end
+
+local function reprice_by(factor)
+    return function(st)
+        st.price_mult = (st.price_mult or 1) / factor
+        reprice()
+    end
+end
+
+local UNDO = {
+    ["good:rerolls"] = function(st) st.reroll_bonus = (st.reroll_bonus or 0) - 2 end,
+    ["good:debt"] = function() G.GAME.bankrupt_at = (G.GAME.bankrupt_at or 0) + 10 end,
+    ["good:income"] = function(st) st.income = math.max(0, (st.income or 0) - 5) end,
+    ["good:hand"] = function() hands_change(-1) end,
+    ["good:discard"] = function() discards_change(-1) end,
+    ["good:joker_slot"] = function() G.jokers:change_size(-1) end,
+    ["good:consumable_slot"] = function() G.consumeables:change_size(-1) end,
+    ["good:hand_size"] = function() G.hand:change_size(-2) end,
+    ["good:select_limit"] = function() selection_change(-1) end,
+    ["good:skip_boss"] = function(st) st.disable_boss = math.max(0, (st.disable_boss or 0) - 1) end,
+    ["good:legendary_shop"] = function(st) st.legendary_shop = nil end,
+    ["good:odds_double"] = function()
+        G.GAME.probabilities.normal = (G.GAME.probabilities.normal or 1) / 2
+    end,
+    ["good:prices_half"] = reprice_by(P.PRICE_DOWN),
+    ["good:no_tatter"] = function(st) st.no_tatter = nil end,
+    ["good:shop_slot"] = function() change_shop_size(-1) end,
+    ["good:booster_slot"] = function() SMODS.change_booster_limit(-1) end,
+    ["good:voucher_slot"] = function() SMODS.change_voucher_limit(-1) end,
+    ["good:tarot_double"] = function()
+        G.GAME.celesta_tarot_scale = (G.GAME.celesta_tarot_scale or 1) / 2
+        if CelestasMod.haruka_refresh then CelestasMod.haruka_refresh(nil, false) end
+    end,
+    ["good:stamp_slots"] = function() G.GAME.celesta_stamp_slots = 1 end,
+    ["good:stamp_packs"] = function(st) st.stamp_packs = nil end,
+    ["good:spectral_shop"] = function(st) st.spectral_shop = nil end,
+    ["good:lost_slots"] = function(st)
+        st.lost_slots = nil
+        if CelestasMod.Lost then CelestasMod.Lost.sync_slots() end
+    end,
+    ["good:unlock_quad"] = function(st, arg)
+        if st.quads and arg then st.quads[arg] = nil end
+    end,
+    ["good:reroll_vouchers"] = function()
+        for _, key in ipairs({ "v_reroll_surplus", "v_reroll_glut" }) do
+            if G.GAME.used_vouchers[key] then
+                G.GAME.used_vouchers[key] = nil
+                VOUCHER_UNDO[key]()
+            end
+        end
+    end,
+
+    ["bad:rerolls"] = function(st) st.reroll_bonus = (st.reroll_bonus or 0) + 1 end,
+    ["bad:hand"] = function() hands_change(1) end,
+    ["bad:discard"] = function() discards_change(1) end,
+    ["bad:joker_slot"] = function() G.jokers:change_size(1) end,
+    ["bad:consumable_slot"] = function() G.consumeables:change_size(1) end,
+    ["bad:hand_size"] = function() G.hand:change_size(1) end,
+    ["bad:boss_big"] = function(st) st.boss_for_big = nil end,
+    ["bad:blind_size"] = function()
+        local params = G.GAME.starting_params
+        params.ante_scaling = (params.ante_scaling or 1) / P.BLIND_UP
+    end,
+    ["bad:boss_repeat"] = function(st) st.boss_repeat = nil end,
+    ["bad:prices_up"] = reprice_by(P.PRICE_UP),
+    ["bad:shop_slot"] = function() change_shop_size(1) end,
+    ["bad:booster_slot"] = function() SMODS.change_booster_limit(1) end,
+    ["bad:odds_half"] = function()
+        G.GAME.probabilities.normal = (G.GAME.probabilities.normal or 1) * 2
+    end,
+    ["bad:tatter_fast"] = function(st) st.fast_tatter = nil end,
+    ["bad:super_boss"] = function(st) st.super_boss = nil end,
+    ["bad:least_hand"] = function(st) st.no_least_hand = nil end,
+    ["bad:reroll_two"] = function(st) st.reroll_two = nil end,
+    ["bad:no_planets"] = function(st) st.no_planets = nil end,
+    ["bad:no_tarots"] = function(st) st.no_tarots = nil end,
+    ["bad:destroy_held"] = function(st) st.destroy_held = nil end,
+    ["bad:ante_end"] = function() G.GAME.win_ante = P.WIN_ANTE end,
+}
+
+for _, boon in ipairs(JOKER_BOONS) do
+    UNDO["good:" .. boon.key] = function(st)
+        st[boon.key] = nil
+        if boon.key == "heavenlyfather" then
+            -- ...and the two boosters it was handed on top, which are written on the card.
+            for _, found in ipairs(CelestasMod.find_joker(boon.joker, true)) do
+                local held = found.ability.celesta_hf_granted
+                if held and held >= 2 then
+                    SMODS.change_booster_limit(-2)
+                    found.ability.celesta_hf_granted = held - 2
+                end
+            end
+        end
+    end
+end
+
+for _, name in ipairs(BUFFS) do
+    UNDO["bad:buff_" .. name] = function(st) st.buffs[name] = nil end
+end
+
+--- Whether a Boss Blind upgrade is still on: one a boon has dropped is no longer in effect.
+local STANDING = {}
+for _, name in ipairs(BUFFS) do
+    STANDING["bad:buff_" .. name] = function(st) return st.buffs[name] and true or false end
+end
+
+for _, entry in ipairs(P.MODIFIERS) do
+    entry.undo = UNDO[entry.id]
+    entry.standing = STANDING[entry.id]
+end
+
+--- The modifiers of `kind` taken and still in effect, as { record, kind, entry }, in the order taken.
+--- `except` is a record to leave out.
+function P.in_effect(st, kind, except)
+    local out = {}
+    for _, record in ipairs(st.history or {}) do
+        local entry = record[kind] and P.find(kind, record[kind])
+        if entry and entry.undo and record ~= except and not record[kind .. "_removed"]
+            and (not entry.standing or entry.standing(st)) then
+            out[#out + 1] = { record = record, kind = kind, entry = entry }
+        end
+    end
+    return out
+end
+
+--- Takes one modifier back: what it changed is put back, it leaves the list, and one that could only be
+--- chosen once may be offered again.
+function P.take_back(st, item)
+    local record, entry = item.record, item.entry
+    record[item.kind .. "_removed"] = true
+    -- A curse a Summon doubled was applied twice.
+    local times = (item.kind == "bad" and record.twice) and 2 or 1
+    for _ = 1, times do
+        local ok, err = pcall(entry.undo, st, record[item.kind .. "_arg"])
+        if not ok then
+            CelestasMod.warn_once("purgatory_undo_" .. entry.id,
+                ("Purgatory could not take back %s: %s"):format(entry.id, tostring(err)))
+        end
+    end
+    st.taken[entry.id] = math.max(0, (st.taken[entry.id] or 0) - 1)
+end
+
+--- The Purge: half of the boons in effect (rounded as a cull is, at random) and every curse.
+function P.purge(st)
+    local boons = P.in_effect(st, "good", choosing)
+    local curses = P.in_effect(st, "bad", choosing)
+    for _ = 1, math.floor(#boons / 2 + 0.5) do
+        local item, index = pick(boons, "_purge")
+        if not item then break end
+        table.remove(boons, index)
+        P.take_back(st, item)
+    end
+    for _, item in ipairs(curses) do P.take_back(st, item) end
+end
+
 
 --------------------------------------------------------------------------------
 -- Offering them
@@ -990,6 +1246,7 @@ end
 P.NOT_DOUBLED = {
     no_pay = true, boss_big = true, boss_repeat = true, tatter_fast = true, super_boss = true,
     least_hand = true, reroll_two = true, no_planets = true, no_tarots = true, destroy_held = true,
+    ante_jump = true, ante_end = true,
     lose_editions = true, lose_consumables = true,
 }
 
@@ -1010,6 +1267,7 @@ function P.double(st, bad, arg)
         CelestasMod.warn_once("purgatory_double_" .. bad.id,
             ("Purgatory could not double %s: %s"):format(bad.id, tostring(err)))
     end
+    return ok
 end
 
 --- Takes one: the pair at `index` goes into effect, and the choice is over.
@@ -1038,10 +1296,12 @@ function P.choose(index)
     -- ...and the pair itself, in order, with what each half was rolled with and whether the curse was
     -- doubled: `taken` counts, and a list of what is in effect has to say which suit and which quad.
     st.history = st.history or {}
-    st.history[#st.history + 1] = {
+    local record = {
         good = good.key, bad = bad.key, good_arg = offer.good_arg, bad_arg = offer.bad_arg,
         doubled = P.doubles_its_curse(offer) or nil,
     }
+    st.history[#st.history + 1] = record
+    choosing = record
     if G.OVERLAY_MENU then G.FUNCS.exit_overlay_menu() end
 
     -- The Summon boon after its curse rather than before: a curse that empties the consumable row
@@ -1054,7 +1314,8 @@ function P.choose(index)
                 ("Purgatory could not apply %s: %s"):format(entry.id, tostring(err)))
         end
     end
-    if summoning then P.double(st, bad, offer.bad_arg) end
+    if summoning then record.twice = P.double(st, bad, offer.bad_arg) or nil end
+    choosing = nil
     if more then P.deal_next(st) end
     return true
 end
@@ -1143,42 +1404,58 @@ end
 -- Categories, and the chip beside each modifier
 --------------------------------------------------------------------------------
 --
--- Every modifier belongs to one category, and a Stake's chip stands on either side of it in the offer. The
--- chips are placeholders, Stakes for now: which Stake goes with which category is only this table.
+-- Every modifier belongs to one category, and the category's icon stands on either side of it in the offer.
+-- The icons are Stakes' chips for now, and a name that is no Stake's (the ones not drawn yet) is a blank: which
+-- icon goes with which category is only this table.
 
 P.CATEGORIES = {
-    { title = "Money and prices", stake = "ichor",
+    { title = "Money", icon = "ichor",
       good = { "debt", "income", "money_15", "money_30", "prices_half" },
       bad = { "lose_20", "broke", "no_pay", "prices_up", "reroll_two" } },
-    { title = "Hands, discards and hand size", stake = "crimson",
-      good = { "hand", "discard", "hand_size" },
-      bad = { "hand", "discard", "hand_size", "least_hand" } },
-    { title = "Poker hand levels", stake = "lavish",
+    { title = "Hands", icon = "soul",
+      good = { "hand" }, bad = { "hand", "least_hand" } },
+    { title = "Hand size and card selection limit", icon = "brass",
+      good = { "hand_size", "select_limit" }, bad = { "hand_size" } },
+    { title = "Discards", icon = "crimson",
+      good = { "discard" }, bad = { "discard" } },
+    { title = "Poker hand levels", icon = "lavish",
       good = { "level_all", "level_top" }, bad = { "level_all", "level_top" } },
-    { title = "Jokers", stake = "rose",
-      good = { "joker_slot", "rare_joker", "negative_joker", "unsticker", "lost_slots", "legendary_shop", "egg",
-               -- the twelve that change one Joker each (JOKER_BOONS)
-               "grimmi", "chacha", "crelly", "calamitas", "snuffy", "dokibird", "lucypyre", "aethal",
+    { title = "Jokers", icon = "lead",
+      good = { "joker_slot", "rare_joker", "negative_joker", "unsticker", "lost_slots" },
+      bad = { "joker_slot", "destroy_joker", "lose_negative", "sticker", "eternal_perishable", "lose_editions" } },
+    { title = "Specific Jokers", icon = "abyssal",
+      -- the twelve that change one Joker each (JOKER_BOONS)
+      good = { "grimmi", "chacha", "crelly", "calamitas", "snuffy", "dokibird", "lucypyre", "aethal",
                "heavenlyfather", "astrum", "seraph", "isaa" },
-      bad = { "joker_slot", "destroy_joker", "lose_negative", "sticker", "eternal_perishable", "obelisk",
-              "lose_editions" } },
-    { title = "Consumables", stake = "magical",
-      good = { "consumable_slot", "bind_swap", "soul", "summon", "tarot_double" },
-      bad = { "consumable_slot", "lose_consumables" } },
-    { title = "Shop and vouchers", stake = "herbium",
-      good = { "shop_slot", "booster_slot", "voucher_slot", "reroll_vouchers", "spectral_shop", "stamp_packs" },
-      bad = { "shop_slot", "booster_slot", "lose_voucher", "no_planets", "no_tarots" } },
-    { title = "The deck", stake = "iron",
-      good = { "no_tatter", "true_stars" },
-      bad = { "cull_quarter", "cull_faces", "cull_suit", "tatter_fast", "destroy_held" } },
-    { title = "Blinds and bosses", stake = "abyssal",
-      good = { "skip_boss", "drop_buff" },
-      bad = { "boss_big", "blind_size", "boss_repeat", "super_boss", "buff_clover", "buff_flower", "buff_wyrm",
-              "buff_robot", "buff_brick", "buff_goat", "buff_frog", "buff_horn", "buff_gem" } },
-    { title = "Odds", stake = "hedron", good = { "odds_double" }, bad = { "odds_half" } },
-    { title = "Tags, stamps and quads", stake = "glimmer",
-      good = { "d6_tag", "stamp_tag", "stamp_slots", "unlock_quad" }, bad = {} },
-    { title = "Modifier rerolls", stake = "celestial", good = { "rerolls" }, bad = { "rerolls" } },
+      bad = { "obelisk" } },
+    { title = "Blessed Phoenix Egg", icon = "burning", good = { "egg" }, bad = {} },
+    { title = "Spectral cards", icon = "spectral",
+      good = { "soul", "spectral_shop", "bind_swap" }, bad = { "lost_soul" } },
+    { title = "Tarot cards", icon = "tarot", good = { "tarot_double" }, bad = { "no_tarots" } },
+    { title = "Summon", icon = "summon", good = { "summon" }, bad = {} },
+    { title = "Consumables", icon = "magical",
+      good = { "consumable_slot" }, bad = { "consumable_slot", "lose_consumables" } },
+    { title = "Planet cards", icon = "heathen", good = { "negative_planets" }, bad = { "no_planets" } },
+    { title = "Shop and vouchers", icon = "herbium",
+      good = { "shop_slot", "booster_slot", "voucher_slot", "reroll_vouchers", "legendary_shop" },
+      bad = { "shop_slot", "booster_slot", "lose_voucher" } },
+    { title = "Stamps and tags", icon = "rose",
+      good = { "d6_tag", "stamp_tag", "stamp_slots", "stamp_packs", "coupon_tag" }, bad = {} },
+    { title = "True Stars", icon = "hedron", good = { "true_stars" }, bad = {} },
+    { title = "Tattered", icon = "sandstone", good = { "no_tatter" }, bad = { "tatter_fast" } },
+    { title = "Card destruction", icon = "iron",
+      good = {}, bad = { "cull_quarter", "cull_faces", "cull_suit", "destroy_held" } },
+    { title = "Boss Blinds", icon = "glimmer",
+      good = { "skip_boss" }, bad = { "boss_big", "blind_size", "boss_repeat", "super_boss" } },
+    { title = "Specific Boss Blinds", icon = "terra",
+      good = { "drop_buff" },
+      bad = { "buff_clover", "buff_flower", "buff_wyrm", "buff_robot", "buff_brick", "buff_goat", "buff_frog",
+              "buff_horn", "buff_gem" } },
+    { title = "Odds", icon = "lucky", good = { "odds_double" }, bad = { "odds_half" } },
+    { title = "Modifier rerolls", icon = "eryl", good = { "rerolls" }, bad = { "rerolls" } },
+    { title = "Antes", icon = "azure", good = { "ante_down" }, bad = { "ante_jump", "ante_end" } },
+    { title = "Quad merges", icon = "titanium", good = { "unlock_quad" }, bad = {} },
+    { title = "Purging", icon = "celestial", good = { "purge" }, bad = {} },
 }
 
 local CATEGORY_OF = {}
@@ -1202,7 +1479,7 @@ local CHIP_SIZE = 0.55
 --- the same size stands in for it, so the text does not move.
 local function chip_node(kind, key)
     local category = P.category_of(kind, key)
-    local at = category and CelestasMod.stake_chip_pos and CelestasMod.stake_chip_pos(category.stake)
+    local at = category and CelestasMod.stake_chip_pos and CelestasMod.stake_chip_pos(category.icon)
     local sheet = G.ASSET_ATLAS and G.ASSET_ATLAS[CHIP_ATLAS]
     if not (at and sheet) then return { n = G.UIT.B, config = { w = CHIP_SIZE, h = CHIP_SIZE } } end
     return { n = G.UIT.O, config = { object = Sprite(0, 0, CHIP_SIZE, CHIP_SIZE, sheet, at) } }
@@ -1357,9 +1634,10 @@ function P.taken_rows(kind, st)
     local picks = {}
     if st.history then
         for _, entry in ipairs(st.history) do
+            -- One the Purge took back is no longer in effect, and no longer on the list.
             if kind == "good" then
-                picks[#picks + 1] = { key = entry.good, arg = entry.good_arg }
-            else
+                if not entry.good_removed then picks[#picks + 1] = { key = entry.good, arg = entry.good_arg } end
+            elseif not entry.bad_removed then
                 picks[#picks + 1] = { key = entry.bad, arg = entry.bad_arg, doubled = entry.doubled }
             end
         end
