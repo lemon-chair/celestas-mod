@@ -973,7 +973,7 @@ SMODS.Joker {
         ------------------------------------------------------------------
         -- Everything becomes a Star
         ------------------------------------------------------------------
-        if context.before and not context.blueprint then
+        if context.before then
             local changed = 0
             for _, played in ipairs(context.full_hand or {}) do
                 if starify(played, true) then changed = changed + 1 end

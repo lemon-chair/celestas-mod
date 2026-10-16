@@ -711,7 +711,7 @@ SMODS.Joker {
         -- setting_blind is the moment the blind is chosen, before any cards
         -- are dealt, so the Downpour is already up for the whole round.
         -- The Arena clears itself on the return to BLIND_SELECT.
-        if context.setting_blind and not context.blueprint then
+        if context.setting_blind then
             if not CelestasMod.Arena.is_active("downpour") then
                 CelestasMod.Arena.start("downpour")
                 return {
@@ -1336,7 +1336,7 @@ SMODS.Joker {
     end,
 
     calculate = function(self, card, context)
-        if context.after and not context.blueprint then
+        if context.after then
             if not G.hand then return end
             local candidates = {}
             for _, held in ipairs(G.hand.cards) do
@@ -1464,7 +1464,7 @@ SMODS.Joker {
             if x_mult > 1 then return { x_mult = x_mult } end
         end
 
-        if context.reroll_shop and not context.blueprint then
+        if context.reroll_shop then
             if SMODS.pseudorandom_probability(card, "celesta_shoomimi", 1, card.ability.extra.odds) then
                 G.consumeables.config.card_limit = G.consumeables.config.card_limit + 1
                 return { message = localize("celesta_plus_slot"), colour = G.C.FILTER, card = card }
@@ -2357,7 +2357,7 @@ SMODS.Joker {
     end,
 
     calculate = function(self, card, context)
-        if context.after and not context.blueprint then
+        if context.after then
             if not G.hand then return end
 
             local target, lowest
@@ -2634,7 +2634,7 @@ SMODS.Joker {
     end,
 
     calculate = function(self, card, context)
-        if context.setting_blind and not context.blueprint then
+        if context.setting_blind then
             if not CelestasMod.Arena.is_active("snowstorm") then
                 CelestasMod.Arena.start("snowstorm")
                 return {
@@ -2647,7 +2647,7 @@ SMODS.Joker {
         end
 
         -- After each played hand, while the storm is up.
-        if context.after and not context.blueprint
+        if context.after
             and CelestasMod.Arena.is_active("snowstorm") then
             if not SMODS.pseudorandom_probability(
                     card, "celesta_amalee", 1, card.ability.extra.odds) then
@@ -5982,7 +5982,7 @@ SMODS.Joker {
     calculate = function(self, card, context)
         -- context.discard arrives once per discarded card, which is exactly
         -- the per-card payout this wants.
-        if context.discard and not context.blueprint
+        if context.discard
             and is_star(context.other_card) then
             return {
                 dollars = card.ability.extra.dollars,
@@ -6129,7 +6129,7 @@ SMODS.Joker {
     end,
 
     calculate = function(self, card, context)
-        if context.before and not context.blueprint then
+        if context.before then
             -- Every suit the game has, not a hardcoded five: another mod
             -- adding a suit should widen what this asks for rather than
             -- leaving it satisfiable while a suit goes unrepresented.
@@ -9273,7 +9273,7 @@ SMODS.Joker {
     end,
 
     calculate = function(self, card, context)
-        if not (context.setting_blind and not context.blueprint) then return end
+        if not context.setting_blind then return end
         -- Rolled only when there is something to start. A Downpour already up
         -- cannot be started twice, and rolling anyway would burn a pull from
         -- the stream for nothing.
