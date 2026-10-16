@@ -1845,6 +1845,7 @@ special("j_celesta_crelly", "j_celesta_vedal", {
 -- d_size is only ever applied when it is positive.
 special("j_drunkard", "j_juggler", {
     key = "drunkard_juggler",
+    field_passives = true,
     config = { h_size = 2, d_size = 2 },
 
     loc_vars = function(def, card, state)
@@ -1896,6 +1897,7 @@ special("j_drunkard", "j_juggler", {
 -- is already in the deck, which is what on_merge's change_size is for.
 special("j_celesta_maya", "j_celesta_ben", {
     key = "maya_ben",
+    field_passives = true,
     config = { h_size = 4, repetitions = 2 },
 
     loc_vars = function(def, card, state)
@@ -6722,11 +6724,39 @@ Bind.intrinsic_passive = intrinsic_passive
 -- Both guard their bodies with self.added_to_deck, so the flag is read BEFORE
 -- the ref runs and flips it - otherwise the partner's half of the passive
 -- would be applied every time the card was touched.
+--- Runs `fn` with the HOST's own passives hidden from vanilla, when a replacing pair stands in for it.
+---
+--- Bind.merge takes the host's passive off the moment the pair forms (Bind.intrinsic_passive), by
+--- calling for the effect directly - which never touches added_to_deck, so vanilla still believes it
+--- is on and takes it off a SECOND time when the card is sold or debuffed, and puts it on again when
+--- the debuff lifts. A Juggler hosting a pair left the hand one card short for the rest of the run; a
+--- Stuntman two too large; a Troubadour and an Oops! All 6s the same, by name.
+---
+--- Vanilla reads those from two places: the card's name, for the Jokers it special-cases, and the
+--- plain fields h_size and d_size. Both are hidden for the length of the call and put back, so
+--- nothing is lost from the card and the pair - which speaks for both halves - is the only thing the
+--- hooks below it apply. A pair that WANTS vanilla to apply a number of its own through those fields
+--- (Drunkard + Juggler, Maya + Ben) says so with `field_passives`, and is left alone.
+function Bind.with_host_passives_masked(card, fn)
+    local def = Bind.replacing_special(card)
+    local ability = card.ability
+    if not def or def.field_passives or type(ability) ~= "table" then return fn() end
+
+    local name, h_size, d_size = ability.name, ability.h_size, ability.d_size
+    ability.name, ability.h_size, ability.d_size = "celesta_replaced", 0, 0
+    local ok, a, b = pcall(fn)
+    ability.name, ability.h_size, ability.d_size = name, h_size, d_size
+    if not ok then error(a, 0) end
+    return a, b
+end
+
 local celesta_bind_add_ref = Card.add_to_deck
 function Card:add_to_deck(from_debuff)
     local first = not self.added_to_deck
     without_center_hook(self, "add_to_deck", function()
-        celesta_bind_add_ref(self, from_debuff)
+        Bind.with_host_passives_masked(self, function()
+            celesta_bind_add_ref(self, from_debuff)
+        end)
     end)
     if not first then return end
     special_passive(self, "add_to_deck", from_debuff)
@@ -6820,7 +6850,9 @@ local celesta_bind_remove_ref = Card.remove_from_deck
 function Card:remove_from_deck(from_debuff)
     local was_added = self.added_to_deck
     without_center_hook(self, "remove_from_deck", function()
-        celesta_bind_remove_ref(self, from_debuff)
+        Bind.with_host_passives_masked(self, function()
+            celesta_bind_remove_ref(self, from_debuff)
+        end)
     end)
     if not was_added then return end
     special_passive(self, "remove_from_deck", from_debuff)
@@ -16043,21 +16075,6 @@ special("j_stuntman", "j_celesta_megalodon", {
         return { vars = { state.chip_gain, state.chips } }
     end,
 
-    -- Stuntman's -2 hand size is taken off as the pair forms and its number left on the card, where
-    -- vanilla would give it back in remove_from_deck all the same: a sold pair would be two cards
-    -- larger for it. So the number is zeroed while the pair stands, and put back when Stuntman is
-    -- the half that survives an unmerge.
-    on_merge = function(def, card, state, fresh)
-        local center, extra = card.config.center, card.ability.extra
-        if center and center.key == "j_stuntman" and type(extra) == "table" then extra.h_size = 0 end
-    end,
-    on_unmerge = function(def, card, state, losing)
-        local center, extra = card.config.center, card.ability.extra
-        if losing ~= "host" and center and center.key == "j_stuntman" and type(extra) == "table" then
-            extra.h_size = (center.config and center.config.extra and center.config.extra.h_size) or 0
-        end
-    end,
-
     calculate = function(def, card, context, state)
         if context.before and not context.blueprint then
             local played = #(context.full_hand or {})
@@ -16498,22 +16515,13 @@ special("j_juggler", "j_celesta_shiabun", {
     remove_from_deck = function(def, card, state, from_debuff)
         juggler_release(state)
     end,
-    -- Juggler's own hand size is the field h_size, which vanilla applies in add_to_deck and takes
-    -- back in remove_from_deck. When Juggler is the HOST its effect is taken off as the pair forms
-    -- and the field is left on the card, so selling the pair would take it back a second time: it is
-    -- zeroed, and put back when the host is the half that survives an unmerge (Drunkard + Juggler's).
     on_merge = function(def, card, state, fresh)
-        if card.config.center and card.config.center.key == "j_juggler" then card.ability.h_size = 0 end
         state.granted = 0
         if fresh then return end
         juggler_sync(card, state)
     end,
-    on_unmerge = function(def, card, state, losing)
+    on_unmerge = function(def, card, state)
         juggler_release(state)
-        local center = card.config.center
-        if losing ~= "host" and center and center.key == "j_juggler" then
-            card.ability.h_size = (center.config and center.config.h_size) or 0
-        end
     end,
 })
 
@@ -16585,6 +16593,1106 @@ function Card:update(dt)
         juggler_sync(self, Bind.special_state(self, def))
     elseif def.key == "bootstraps_clover" then
         bootstraps_sync(Bind.special_state(self, def))
+    end
+end
+
+end
+
+-- Thirty-five more pairs: a vanilla Joker, and one of this mod's, each pair its own ability.
+do
+
+--- True for a card that is debuffed.
+local function benched(card)
+    return card and card.debuff and true or false
+end
+
+--- A card's rank is `id`. Not a Stone Card, which has no rank to be one.
+local function rank_is(card, id)
+    return card ~= nil and card.get_id ~= nil and not SMODS.has_no_rank(card) and card:get_id() == id
+end
+
+--- Room for one more consumable, the buffer counted.
+local function room_for_consumable()
+    if not (G.consumeables and G.consumeables.config) then return false end
+    return #G.consumeables.cards + (G.GAME.consumeable_buffer or 0) < G.consumeables.config.card_limit
+end
+
+--- Makes one consumable of `set` in the tray, in an event, with the room it takes held back until it
+--- lands - so two asked for in the same moment are not both given the last slot.
+local function add_consumable(set, seed)
+    G.GAME.consumeable_buffer = (G.GAME.consumeable_buffer or 0) + 1
+    G.E_MANAGER:add_event(Event {
+        trigger = "before",
+        delay = 0.0,
+        func = function()
+            local made = SMODS.add_card { set = set, key_append = seed }
+            if made then made:juice_up(0.3, 0.5) end
+            G.GAME.consumeable_buffer = math.max(0, (G.GAME.consumeable_buffer or 0) - 1)
+            return true
+        end,
+    })
+end
+
+--- The Joker row's own cards, however it is asked for.
+local function jokers_owned()
+    return (G.jokers and G.jokers.cards) or {}
+end
+
+--- How many cards in the run's whole deck satisfy `test`.
+local function count_in_deck(test)
+    local count = 0
+    for _, held in ipairs(G.playing_cards or {}) do
+        if test(held) then count = count + 1 end
+    end
+    return count
+end
+
+--- Gros Michel's exit, beat for beat: what a Joker that ends itself does.
+---
+--- The card leaves the row by the same two calls vanilla's does, which is the route merge/bind.lua
+--- watches - a merge that asks to die unmerges and leaves its other half behind - and it is asked
+--- ONCE: a second request reaches a card that has already gone.
+local function end_itself(card)
+    G.E_MANAGER:add_event(Event {
+        func = function()
+            play_sound("tarot1")
+            card.T.r = -0.2
+            card:juice_up(0.3, 0.4)
+            card.states.drag.is = true
+            card.children.center.pinch.x = true
+            G.E_MANAGER:add_event(Event {
+                trigger = "after", delay = 0.3, blockable = false,
+                func = function()
+                    G.jokers:remove_card(card)
+                    card:remove()
+                    return true
+                end,
+            })
+            return true
+        end,
+    })
+end
+
+--- Smeared Joker's whole effect is a name lookup (find_joker("Smeared Joker"), in Steamodded's
+--- smeared_check), and a lookup by name finds the HOST whatever it has become - so a Smeared Joker
+--- that a pair replaced would go on blurring the suits. It is asked not to find it.
+local celesta_smeared_seraph_find_ref = find_joker
+function find_joker(name, non_debuff)
+    local found = celesta_smeared_seraph_find_ref(name, non_debuff)
+    if name ~= "Smeared Joker" then return found end
+    local kept = {}
+    for _, card in ipairs(found) do
+        local def = Bind.replacing_special(card)
+        if not (def and def.key == "smeared_seraph") then kept[#kept + 1] = card end
+    end
+    return kept
+end
+
+--------------------------------------------------------------------------------
+-- The rules of the run
+--------------------------------------------------------------------------------
+
+-- Showman + Blank Joker: Showman, for Jokers alone.
+--
+-- Whether a card may turn up again is SMODS.showman, asked by key. Showman's own answer is yes to
+-- everything; with this pair in the row it is yes to a Joker, and no to a Tarot, a Planet or a
+-- Spectral, unless something else - a loose Showman, the allow-duplicates flag - says yes for it.
+local celesta_showman_blank_ref = SMODS.showman
+if celesta_showman_blank_ref then
+    function SMODS.showman(card_key)
+        local held = specials_held("showman_blank")[1]
+        if not held then return celesta_showman_blank_ref(card_key) end
+        if SMODS.create_card_allow_duplicates then return true end
+        for _, found in ipairs(SMODS.find_card("j_ring_master")) do
+            if found ~= held.card then return true end
+        end
+        local center = G.P_CENTERS[card_key]
+        return (center and center.set == "Joker") and true or false
+    end
+end
+
+special("j_ring_master", "j_celesta_blank_joker", {
+    key = "showman_blank",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+-- Oops! All 6s + Ellie Minibot: every chance on a Joker or a card is certain.
+--
+-- Ellie's own answer, at SMODS.get_probability_vars - the funnel every roll and every description of
+-- one goes through - and for every Joker and card, not only this mod's. A chance that is not about a
+-- card (a Blind's) is left alone. Oops! All 6s as the HOST is still counted by Steamodded's own
+-- halving of the odds (it counts the Jokers called j_oops, and a pair hosted by one is such a card),
+-- which is put back for the chances this does not answer.
+local celesta_oops_ellie_probability_ref = SMODS.get_probability_vars
+function SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator,
+                                    identifier, from_roll, no_mod, ...)
+    local numerator, denominator = celesta_oops_ellie_probability_ref(
+        trigger_obj, base_numerator, base_denominator, identifier, from_roll, no_mod, ...)
+    if no_mod then return numerator, denominator end
+    local held = specials_held("oops_ellie")[1]
+    if not held then return numerator, denominator end
+
+    local center = held.card.config and held.card.config.center
+    local hosted_by_oops = center and center.key == "j_oops"
+    local about_a_card = type(trigger_obj) == "table" and type(trigger_obj.ability) == "table"
+    local answerable = type(denominator) == "number"
+        or (type(denominator) == "table" and getmetatable(denominator) ~= nil)
+    if about_a_card and answerable then return denominator, denominator end
+    if hosted_by_oops and type(numerator) == "number" then numerator = numerator * 2 end
+    return numerator, denominator
+end
+
+special("j_oops", "j_celesta_ellie_minibot", {
+    key = "oops_ellie",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+--------------------------------------------------------------------------------
+-- Growing
+--------------------------------------------------------------------------------
+
+-- The Order + Cryogen: The Order's Straight, paid for in what Cryogen grows: X0.75 each time.
+special("j_order", "j_celesta_cryogen", {
+    key = "order_cryogen",
+    config = { x_mult = 1, x_mult_gain = 0.75 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.before and not context.blueprint then
+            if not (context.poker_hands and next(context.poker_hands["Straight"] or {})) then return end
+            Bind.grow(card, state, "x_mult", state.x_mult_gain)
+            return {
+                message = localize { type = "variable", key = "a_xmult", vars = { state.x_mult } },
+                colour = G.C.MULT, card = card,
+            }
+        end
+
+        if context.joker_main and CelestasMod.more_than(state.x_mult, 1) then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+-- Wee Joker + Boosfer: Wee Joker's Chips, from the Star cards Boosfer is about. +8 each.
+special("j_wee", "j_celesta_boosfer", {
+    key = "wee_boosfer",
+    config = { chips = 0, chip_gain = 8 },
+
+    loc_vars = function(def, card, state)
+        local name, colour = CelestasMod.suit_name_and_colour(CelestasMod.STARS_SUIT, CelestasMod.STARS_COLOUR, true)
+        return { vars = { state.chip_gain, state.chips, name, colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.individual and context.cardarea == G.play and context.other_card
+            and not context.blueprint and context.other_card:is_suit(CelestasMod.STARS_SUIT) then
+            Bind.grow(card, state, "chips", state.chip_gain)
+            return {
+                message = localize { type = "variable", key = "a_chips", vars = { state.chips } },
+                colour = G.C.CHIPS, card = card,
+            }
+        end
+
+        if context.joker_main and CelestasMod.more_than(state.chips, 0) then
+            return { chips = state.chips }
+        end
+    end,
+})
+
+-- Spare Trousers + Mooni: Spare Trousers' Mult, from the Star cards that score. +2 each.
+special("j_trousers", "j_celesta_mooni", {
+    key = "trousers_mooni",
+    config = { mult = 0, mult_gain = 2 },
+
+    loc_vars = function(def, card, state)
+        local name, colour = CelestasMod.suit_name_and_colour(CelestasMod.STARS_SUIT, CelestasMod.STARS_COLOUR, true)
+        return { vars = { state.mult_gain, state.mult, name, colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.individual and context.cardarea == G.play and context.other_card
+            and not context.blueprint and context.other_card:is_suit(CelestasMod.STARS_SUIT) then
+            Bind.grow(card, state, "mult", state.mult_gain)
+            return {
+                message = localize { type = "variable", key = "a_mult", vars = { state.mult } },
+                colour = G.C.MULT, card = card,
+            }
+        end
+
+        if context.joker_main and CelestasMod.more_than(state.mult, 0) then
+            return { mult = state.mult }
+        end
+    end,
+})
+
+-- Campfire + Unnamed: Campfire's multiplier, from the cards Unnamed scores for being face down. X0.25 each.
+--
+-- Whether a played card arrived face down is the flag Unnamed's own hook on CardArea:emplace writes
+-- (jokers/implemented.lua), whether or not an Unnamed is in the row to read it.
+special("j_campfire", "j_celesta_unnamed", {
+    key = "campfire_unnamed",
+    config = { x_mult = 1, x_mult_gain = 0.25 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.individual and context.cardarea == G.play and context.other_card
+            and not context.blueprint and context.other_card.celesta_played_flipped then
+            Bind.grow(card, state, "x_mult", state.x_mult_gain)
+            return {
+                message = localize { type = "variable", key = "a_xmult", vars = { state.x_mult } },
+                colour = G.C.MULT, card = card,
+            }
+        end
+
+        if context.joker_main and CelestasMod.more_than(state.x_mult, 1) then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+-- Lucky Cat + Maya: Lucky Cat's multiplier, from the Steel cards held in hand that trigger. X0.25 each.
+special("j_lucky_cat", "j_celesta_maya", {
+    key = "luckycat_maya",
+    config = { x_mult = 1, x_mult_gain = 0.25 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        -- A Steel card triggers where it is HELD, so that is where it is counted; not at the cash-out.
+        if context.individual and context.cardarea == G.hand and not context.end_of_round
+            and context.other_card and not context.blueprint
+            and not benched(context.other_card) and SMODS.has_enhancement(context.other_card, "m_steel") then
+            Bind.grow(card, state, "x_mult", state.x_mult_gain)
+            return {
+                message = localize { type = "variable", key = "a_xmult", vars = { state.x_mult } },
+                colour = G.C.MULT, card = card,
+            }
+        end
+
+        if context.joker_main and CelestasMod.more_than(state.x_mult, 1) then
+            return { x_mult = state.x_mult }
+        end
+    end,
+})
+
+-- Satellite + August Anomoly: Satellite's money, banked a dollar at a time from the Blue Seals that
+-- trigger - which they do held in hand at the end of the round - and paid at the cash-out, round after round.
+special("j_satellite", "j_celesta_augustanomoly", {
+    key = "satellite_august",
+    config = { dollars = 0, dollar_gain = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollar_gain, state.dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.hand and context.end_of_round
+                and context.other_card and not context.blueprint) then return end
+        if benched(context.other_card) or context.other_card.seal ~= "Blue" then return end
+        Bind.grow(card, state, "dollars", state.dollar_gain)
+        return { message = localize("k_upgrade_ex"), colour = G.C.MONEY, card = card }
+    end,
+
+    calc_dollar_bonus = function(def, card, state)
+        local owed = state.dollars
+        if type(owed) == "table" and to_number then owed = to_number(owed) end
+        if type(owed) ~= "number" or owed <= 0 then return end
+        return owed
+    end,
+})
+
+-- Popcorn + MataraKan: Popcorn's slow loss, in dollars. $20 at the end of the round, and then $4 less.
+--
+-- Paid as it is made, not at the cash-out: the loss comes straight after the payout, and the
+-- cash-out can be asked for more than once. It goes on at $0 and pays nothing; it does not end itself.
+special("j_popcorn", "j_celesta_matarakan", {
+    key = "popcorn_matara",
+    config = { dollars = 20, loss = 4 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars, state.loss } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.end_of_round and context.main_eval and not context.game_over) then return end
+        local pay = state.dollars
+        -- A copy pays what there is; only the card itself loses it.
+        if not context.blueprint then state.dollars = math.max(0, state.dollars - state.loss) end
+        if pay <= 0 then return end
+        return { dollars = pay, card = card }
+    end,
+})
+
+-- Ramen + Hidden Tech: Ramen's multiplier, and a chance it breaks that grows with every card discarded.
+--
+-- 1 in 200 to begin with, and a place more for every card discarded, for good. Rolled once at the end
+-- of the round, as a listed chance, so Oops! All 6s and the rest count.
+special("j_ramen", "j_celesta_hidden_tech", {
+    key = "ramen_hiddentech",
+    config = { x_mult = 2.5, odds = 200, discarded = 0 },
+
+    loc_vars = function(def, card, state)
+        local numerator, denominator = SMODS.get_probability_vars(
+            card, 1 + state.discarded, state.odds, "celesta_bind_ramen_hiddentech")
+        return { vars = { state.x_mult, numerator, denominator } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.discard and context.other_card and not context.blueprint then
+            state.discarded = state.discarded + 1
+            return
+        end
+
+        if context.end_of_round and context.main_eval and not context.blueprint and not context.game_over then
+            if SMODS.pseudorandom_probability(card, "celesta_bind_ramen_hiddentech",
+                    1 + state.discarded, state.odds, "celesta_bind_ramen_hiddentech") then
+                end_itself(card)
+                return { message = localize("k_extinct_ex"), colour = G.C.RED, card = card }
+            end
+            return
+        end
+
+        if context.joker_main then return { x_mult = state.x_mult } end
+    end,
+})
+
+-- Seltzer + Isaa: Seltzer's retriggers, as many as there are hands left, for ten rounds.
+--
+-- The hands that remain AFTER the one being scored, which is what the game counts down. The rounds
+-- are counted at the end of each and the pair ends itself on the last.
+special("j_selzer", "j_celesta_isaa", {
+    key = "seltzer_isaa",
+    config = { rounds = 10 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.rounds } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.repetition and context.cardarea == G.play then
+            local left = (G.GAME.current_round and G.GAME.current_round.hands_left) or 0
+            if left <= 0 then return end
+            return { message = localize("k_again_ex"), repetitions = left, card = card }
+        end
+
+        if context.end_of_round and context.main_eval and not context.blueprint and not context.game_over then
+            state.rounds = state.rounds - 1
+            if state.rounds <= 0 then
+                end_itself(card)
+                return { message = localize("k_extinct_ex"), colour = G.C.RED, card = card }
+            end
+            return { message = state.rounds .. "", colour = G.C.FILTER, card = card }
+        end
+    end,
+})
+
+--------------------------------------------------------------------------------
+-- Scoring cards
+--------------------------------------------------------------------------------
+
+-- The Family + Eidolon Wyrm: The Family's rank, counted from X1 as the Wyrm counts: X1 more for each
+-- scoring card that shares its rank with the most others.
+--
+-- The biggest group of one rank among the cards that score, and only when there is a group at all: a
+-- lone card is not of the same rank as anything. Four of a Kind is X5; a Pair X3.
+special("j_family", "j_celesta_eidolonwyrm", {
+    key = "family_eidolon",
+    config = { x_mult_gain = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local counts, most = {}, 0
+        for _, played in ipairs(context.scoring_hand or {}) do
+            if not SMODS.has_no_rank(played) then
+                local id = played:get_id()
+                counts[id] = (counts[id] or 0) + 1
+                if counts[id] > most then most = counts[id] end
+            end
+        end
+        if most < 2 then return end
+        return { x_mult = 1 + state.x_mult_gain * most }
+    end,
+})
+
+-- The Trio + PapaMutt: The Trio's multiplier, counted from X1 as the Wyrm counts: X3 more for each Tarot
+-- card held. PapaMutt's Tarot, held, is what it is paid for.
+special("j_trio", "j_celesta_papamutt", {
+    key = "trio_papamutt",
+    config = { x_mult_gain = 3 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local tarots = 0
+        for _, held in ipairs((G.consumeables and G.consumeables.cards) or {}) do
+            if held.ability and held.ability.set == "Tarot" then tarots = tarots + 1 end
+        end
+        if tarots <= 0 then return end
+        return { x_mult = 1 + state.x_mult_gain * tarots }
+    end,
+})
+
+-- The Duo + Pipi: Pipi's two cards, scored, retriggered twice, and X2 for it.
+special("j_duo", "j_celesta_pipi", {
+    key = "duo_pipi",
+    config = { cards = 2, repetitions = 2, x_mult = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.cards, state.repetitions, state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        local hand = context.full_hand or (G.play and G.play.cards)
+        if not (hand and #hand == state.cards) then return end
+
+        -- Both are scored whatever the hand: a High Card scores one and leaves the other sitting there.
+        if context.modify_scoring_hand and context.other_card and CelestasMod.hand_is_being_played() then
+            return { add_to_hand = true }
+        end
+
+        if context.repetition and context.cardarea == G.play then
+            return { message = localize("k_again_ex"), repetitions = state.repetitions, card = card }
+        end
+
+        if context.joker_main then return { x_mult = state.x_mult } end
+    end,
+})
+
+-- Glass Joker + Zentreya: Zentreya's multiplier, on Glass cards.
+special("j_glass", "j_celesta_zentreya", {
+    key = "glass_zentreya",
+    config = { x_mult = 3 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play and context.other_card) then return end
+        if SMODS.has_enhancement(context.other_card, "m_glass") then
+            return { x_mult = state.x_mult, card = context.other_card }
+        end
+    end,
+})
+
+-- Hanging Chad + ShyLily: every scoring card, twice, where Hanging Chad has the first and ShyLily the last.
+special("j_hanging_chad", "j_celesta_shylily", {
+    key = "chad_shylily",
+    config = { repetitions = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.repetition and context.cardarea == G.play then
+            return { message = localize("k_again_ex"), repetitions = state.repetitions, card = card }
+        end
+    end,
+})
+
+-- Sock and Buskin + FroggyLoch: every played card, once, for certain.
+special("j_sock_and_buskin", "j_celesta_froggyloch", {
+    key = "sock_froggy",
+    config = { repetitions = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.repetition and context.cardarea == G.play then
+            return { message = localize("k_again_ex"), repetitions = state.repetitions, card = card }
+        end
+    end,
+})
+
+-- Golden Ticket + Kumi: Golden Ticket's dollars on every Gold card that scores, as three chances of
+-- their own: 1 in 2 for $10, 1 in 4 for $20 and 1 in 8 for $40. Each is rolled separately, so a card can pay
+-- all three.
+special("j_ticket", "j_celesta_kumi", {
+    key = "ticket_kumi",
+    config = { odds_a = 2, dollars_a = 10, odds_b = 4, dollars_b = 20, odds_c = 8, dollars_c = 40 },
+
+    loc_vars = function(def, card, state)
+        local na, da = SMODS.get_probability_vars(card, 1, state.odds_a, "celesta_bind_ticket_kumi_a")
+        local nb, db = SMODS.get_probability_vars(card, 1, state.odds_b, "celesta_bind_ticket_kumi_b")
+        local nc, dc = SMODS.get_probability_vars(card, 1, state.odds_c, "celesta_bind_ticket_kumi_c")
+        return { vars = { na, da, state.dollars_a, nb, db, state.dollars_b, nc, dc, state.dollars_c } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play and context.other_card) then return end
+        local gold = context.other_card
+        if not SMODS.has_enhancement(gold, "m_gold") then return end
+
+        local owed = 0
+        for _, tier in ipairs({ "a", "b", "c" }) do
+            local seed = "celesta_bind_ticket_kumi_" .. tier
+            if SMODS.pseudorandom_probability(card, seed, 1, state["odds_" .. tier], seed) then
+                owed = owed + state["dollars_" .. tier]
+            end
+        end
+        if owed <= 0 then return end
+        return { dollars = owed, card = gold }
+    end,
+})
+
+-- Smiley Face + Auteru: Smiley Face's Mult, on Leaf cards.
+special("j_smiley", "j_celesta_auteru", {
+    key = "smiley_auteru",
+    config = { mult = 5 },
+
+    loc_vars = function(def, card, state)
+        local name, colour = CelestasMod.suit_name_and_colour(CelestasMod.LEAF_SUIT, CelestasMod.LEAF_COLOUR, true)
+        return { vars = { state.mult, name, colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play and context.other_card) then return end
+        if context.other_card:is_suit(CelestasMod.LEAF_SUIT) then
+            return { mult = state.mult, card = context.other_card }
+        end
+    end,
+})
+
+-- Scary Face + Buffpup: Scary Face's Chips, on Leaf cards.
+special("j_scary_face", "j_celesta_buffpup", {
+    key = "scary_buffpup",
+    config = { chips = 16 },
+
+    loc_vars = function(def, card, state)
+        local name, colour = CelestasMod.suit_name_and_colour(CelestasMod.LEAF_SUIT, CelestasMod.LEAF_COLOUR, true)
+        return { vars = { state.chips, name, colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play and context.other_card) then return end
+        if context.other_card:is_suit(CelestasMod.LEAF_SUIT) then
+            return { chips = state.chips, card = context.other_card }
+        end
+    end,
+})
+
+-- Walkie Talkie + Cosmic: Walkie Talkie's Chips and Mult, on Star cards.
+special("j_walkie_talkie", "j_celesta_cosmic", {
+    key = "walkie_cosmic",
+    config = { chips = 10, mult = 4 },
+
+    loc_vars = function(def, card, state)
+        local name, colour = CelestasMod.suit_name_and_colour(CelestasMod.STARS_SUIT, CelestasMod.STARS_COLOUR, true)
+        return { vars = { state.chips, state.mult, name, colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play and context.other_card) then return end
+        if context.other_card:is_suit(CelestasMod.STARS_SUIT) then
+            return { chips = state.chips, mult = state.mult, card = context.other_card }
+        end
+    end,
+})
+
+-- Ancient Joker + PiaPiUFO: Ancient Joker's multiplier, on every card played, whatever its suit.
+special("j_ancient", "j_celesta_piapiufo", {
+    key = "ancient_piapiufo",
+    config = { x_mult = 1.5 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.individual and context.cardarea == G.play and context.other_card then
+            return { x_mult = state.x_mult, card = context.other_card }
+        end
+    end,
+})
+
+-- Acrobat + Hannah Hyrule: Acrobat's final hand, in Hannah's two multipliers.
+special("j_acrobat", "j_celesta_hannahhyrule", {
+    key = "acrobat_hannah",
+    config = { x_mult = 3 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.joker_main and (G.GAME.current_round.hands_left or 1) == 0 then
+            return { x_mult = state.x_mult, x_chips = state.x_mult }
+        end
+    end,
+})
+
+--------------------------------------------------------------------------------
+-- Money and cards
+--------------------------------------------------------------------------------
+
+-- Diet Cola + Ekkomori: Ekkomori's Double Tag, for every round and not only a Boss Blind.
+special("j_diet_cola", "j_celesta_ekkomori", {
+    key = "dietcola_ekkomori",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.end_of_round and context.main_eval and not context.game_over) then return end
+        G.E_MANAGER:add_event(Event {
+            func = function()
+                add_tag(Tag("tag_double"))
+                play_sound("generic1")
+                return true
+            end,
+        })
+        return {
+            message = localize { type = "name_text", set = "Tag", key = "tag_double" },
+            colour = G.C.FILTER,
+            card = context.blueprint_card or card,
+        }
+    end,
+})
+
+-- Bull + Milky: Bull's money, for every Milk Bottle used. $8 each.
+special("j_bull", "j_celesta_milky", {
+    key = "bull_milky",
+    config = { dollars = 8 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.using_consumeable then return end
+        local used = context.consumeable
+        local center = used and used.config and used.config.center
+        if center and center.key == CelestasMod.MILK_BOTTLE_KEY then
+            return { dollars = state.dollars, card = card }
+        end
+    end,
+})
+
+-- Superposition + Meicha: Superposition's Tarot, for any Straight and no Ace needed.
+special("j_superposition", "j_celesta_meicha", {
+    key = "superposition_meicha",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.before and context.poker_hands) then return end
+        if not next(context.poker_hands["Straight"] or {}) then return end
+        if not room_for_consumable() then return end
+        add_consumable("Tarot", "celesta_bind_superposition_meicha")
+        return { message = localize("k_plus_tarot"), colour = G.C.PURPLE, card = card }
+    end,
+})
+
+-- Riff-Raff + Cillia: Riff-Raff's start of the round, for one Rare Joker.
+special("j_riff_raff", "j_celesta_cillia", {
+    key = "riffraff_cillia",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.setting_blind and not (context.blueprint_card or card).getting_sliced) then return end
+        if not (G.jokers and G.jokers.config) then return end
+        local free = (G.jokers.config.card_limit or 0) - (#G.jokers.cards + (G.GAME.joker_buffer or 0))
+        if free <= 0 then return end
+
+        G.GAME.joker_buffer = (G.GAME.joker_buffer or 0) + 1
+        G.E_MANAGER:add_event(Event {
+            trigger = "before", delay = 0.0,
+            func = function()
+                local made = SMODS.add_card { set = "Joker", rarity = "Rare", key_append = "celesta_bind_riffraff_cillia" }
+                if made then made:start_materialize() end
+                G.GAME.joker_buffer = math.max(0, (G.GAME.joker_buffer or 1) - 1)
+                return true
+            end,
+        })
+        return { message = localize("k_plus_joker"), colour = G.C.SECONDARY_SET.Joker,
+                 card = context.blueprint_card or card }
+    end,
+})
+
+-- Certificate + Spite: Certificate's card, as Spite's seal.
+--
+-- Certificate's own shape: a random playing card made in the hand once the first hand is drawn.
+special("j_certificate", "j_celesta_spite", {
+    key = "certificate_spite",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.first_hand_drawn then return end
+        local seal = (CelestasMod.SEAL_KEYS or {}).Ectoplast
+        if not seal then return end
+        G.E_MANAGER:add_event(Event {
+            func = function()
+                local made = create_playing_card({
+                    front = pseudorandom_element(G.P_CARDS, pseudoseed("celesta_bind_certificate_spite")),
+                    center = G.P_CENTERS.c_base }, G.hand, nil, nil, { G.C.SECONDARY_SET.Enhanced })
+                made:set_seal(seal, nil, true)
+                G.GAME.blind:debuff_card(made)
+                G.hand:sort()
+                card:juice_up()
+                playing_card_joker_effects({ made })
+                return true
+            end,
+        })
+        return { message = localize("k_upgrade_ex"), colour = G.C.SECONDARY_SET.Enhanced, card = card }
+    end,
+})
+
+-- Merry Andy + FireOniRei: FireOniRei's stickers, one at a time, off whichever Joker has them, with
+-- every discard Merry Andy makes room for.
+--
+-- Once per discard and not once per card: pre_discard is raised for the action. A discard a Joker forces
+-- is not one that was made.
+special("j_merry_andy", "j_celesta_fireonirei", {
+    key = "merryandy_fireonirei",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.pre_discard and not context.hook and not context.blueprint) then return end
+        local wearing = {}
+        for _, joker in ipairs(jokers_owned()) do
+            if #CelestasMod.stickers_on(joker) > 0 then wearing[#wearing + 1] = joker end
+        end
+        if #wearing == 0 then return end
+
+        local target = pseudorandom_element(wearing, pseudoseed("celesta_bind_merryandy_fireonirei"))
+        local sticker = pseudorandom_element(CelestasMod.stickers_on(target),
+            pseudoseed("celesta_bind_merryandy_fireonirei_which"))
+        if not (target and sticker) then return end
+
+        -- Through the sticker's own apply, as FireOniRei does it, so one that granted something takes it back.
+        local object = SMODS.Stickers and SMODS.Stickers[sticker]
+        if object and object.apply then object:apply(target, false) end
+        target.ability[sticker] = nil
+        target[sticker] = nil
+        if sticker == "perishable" then
+            target.ability.perish_tally = nil
+        end
+        target:juice_up(0.3, 0.4)
+        return { message = localize("k_reset"), colour = G.C.FILTER, card = card }
+    end,
+})
+
+-- Trading Card + Camila: Trading Card's lone first discard, destroyed, and Camila's way back: it
+-- returns when the next Blind is chosen, one edition better.
+--
+-- Camila's own ledger of what was taken and her ladder of editions (jokers/implemented.lua), so a card
+-- keeps its rank, suit, enhancement, seal and what it has earned. The first discard of the round, and
+-- one card in it.
+special("j_trading", "j_celesta_camila", {
+    key = "trading_camila",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.discard and context.other_card and not context.blueprint then
+            if (G.GAME.current_round.discards_used or 0) > 0 then return end
+            if not (context.full_hand and #context.full_hand == 1) then return end
+            local doomed = context.other_card
+            -- An Eternal card refuses to be destroyed, and taking it would strand what was kept.
+            if SMODS.is_eternal and SMODS.is_eternal(doomed) then return end
+            state.stored = CelestasMod.store_snapshot(state.stored, CelestasMod.snapshot_card(doomed))
+            return { remove = true, message = localize("celesta_taken"), colour = G.C.PURPLE, card = card }
+        end
+
+        if context.setting_blind and state.stored and not (context.blueprint_card or card).getting_sliced then
+            local held = CelestasMod.stored_list(state.stored)
+            state.stored = nil
+            for _, stored in ipairs(held) do
+                G.E_MANAGER:add_event(Event {
+                    func = function()
+                        local front
+                        for _, candidate in pairs(G.P_CARDS or {}) do
+                            if candidate.suit == stored.suit and candidate.value == stored.value then
+                                front = candidate
+                                break
+                            end
+                        end
+                        if not front then return true end
+                        local center = G.P_CENTERS[stored.center] or G.P_CENTERS.c_base
+                        local restored = create_playing_card({ front = front, center = center },
+                            G.play, nil, nil, { G.C.SECONDARY_SET.Enhanced })
+                        -- One rung up Camila's ladder, and no further than Polychrome; anything the
+                        -- ladder does not know keeps what it had.
+                        local upgraded = CelestasMod.EDITION_LADDER[stored.edition or "none"] or stored.edition
+                        if upgraded then restored:set_edition(upgraded, true, true) end
+                        if stored.seal then restored:set_seal(stored.seal, true) end
+                        for key, value in pairs(stored.perma or {}) do restored.ability[key] = value end
+                        SMODS.calculate_effect({ message = localize("celesta_returned"), colour = G.C.DARK_EDITION },
+                            context.blueprint_card or card)
+                        G.E_MANAGER:add_event(Event {
+                            func = function()
+                                draw_card(G.play, G.deck, 90, "up", nil)
+                                return true
+                            end,
+                        })
+                        playing_card_joker_effects({ restored })
+                        return true
+                    end,
+                })
+            end
+        end
+    end,
+})
+
+-- Mr. Bones + LucyPyre: Mr. Bones's second chance, taken at the moment of choosing: sell it to win the Blind.
+--
+-- Only while a Blind is being played and the hand is waiting to be picked; sold at any other moment it is
+-- only sold. The score is raised to the Blind's and the round ended by the way the game ends one.
+special("j_mr_bones", "j_celesta_lucypyre", {
+    key = "mrbones_lucypyre",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.selling_self and not context.blueprint) then return end
+        local blind = G.GAME and G.GAME.blind
+        if not (blind and blind.in_blind and G.STATE == G.STATES.SELECTING_HAND) then return end
+        G.E_MANAGER:add_event(Event {
+            func = function()
+                if not (G.GAME.blind and G.GAME.blind.in_blind) then return true end
+                G.GAME.chips = G.GAME.blind.chips
+                G.STATE = G.STATES.NEW_ROUND
+                G.STATE_COMPLETE = false
+                return true
+            end,
+        })
+    end,
+})
+
+--------------------------------------------------------------------------------
+-- The rules that follow a number
+--------------------------------------------------------------------------------
+
+--- How many different suits the run's whole deck holds. A card with no suit is not one of them.
+local function unique_suits_in_deck()
+    local seen, count = {}, 0
+    for _, held in ipairs(G.playing_cards or {}) do
+        local suit = held.base and held.base.suit
+        if suit and not SMODS.has_no_suit(held) and not seen[suit] then
+            seen[suit] = true
+            count = count + 1
+        end
+    end
+    return count
+end
+
+--- Brings a ledger of what a pair has handed the run in line with what it should be handing it.
+--- `apply(delta)` moves the run by that much. The ledger is the pair's own state, which is saved with
+--- it, and is cleared as the pair arrives so a copy starts owing nothing.
+local function follow(state, field, want, apply)
+    local held = state[field] or 0
+    if want == held then return end
+    apply(want - held)
+    state[field] = want
+end
+
+local function give_back(state, field, apply)
+    local held = state[field] or 0
+    if held ~= 0 then apply(-held) end
+    state[field] = 0
+end
+
+--- Joker slots, through the one function this mod moves them by.
+local function bump_jokers(delta)
+    if CelestasMod.bump_limit and G.jokers then CelestasMod.bump_limit(G.jokers, delta) end
+end
+
+-- Smeared Joker + Smitten Seraph: Smitten Seraph's Joker slots, one for each different suit in the deck.
+-- Smeared Joker's own blurring of the suits is not part of it: the pair stands in for it.
+special("j_smeared", "j_celesta_smittenseraph", {
+    key = "smeared_seraph",
+    config = { granted = 0 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { unique_suits_in_deck() } }
+    end,
+
+    calculate = function(def, card, context, state) end,
+
+    add_to_deck = function(def, card, state, from_debuff)
+        state.granted = 0
+        follow(state, "granted", unique_suits_in_deck(), bump_jokers)
+    end,
+    remove_from_deck = function(def, card, state, from_debuff)
+        give_back(state, "granted", bump_jokers)
+    end,
+    on_merge = function(def, card, state, fresh)
+        state.granted = 0
+        if fresh then return end
+        follow(state, "granted", unique_suits_in_deck(), bump_jokers)
+    end,
+    on_unmerge = function(def, card, state)
+        give_back(state, "granted", bump_jokers)
+    end,
+})
+
+--- Aces of Spades in the whole deck, by the way a card answers to a suit.
+local function aces_of_spades()
+    return count_in_deck(function(held)
+        return rank_is(held, 14) and held:is_suit("Spades")
+    end)
+end
+
+local function bump_hands(delta)
+    if G.GAME and G.GAME.round_resets then G.GAME.round_resets.hands = G.GAME.round_resets.hands + delta end
+end
+
+-- Troubadour + Occi: Troubadour's hands, for every Ace of Spades in the deck instead of the one it gave
+-- and the hand size it took. Granted from the next round on, as Troubadour's own is.
+special("j_troubadour", "j_celesta_occi", {
+    key = "troubadour_occi",
+    config = { granted = 0 },
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state) end,
+
+    add_to_deck = function(def, card, state, from_debuff)
+        state.granted = 0
+        follow(state, "granted", aces_of_spades(), bump_hands)
+    end,
+    remove_from_deck = function(def, card, state, from_debuff)
+        give_back(state, "granted", bump_hands)
+    end,
+    on_merge = function(def, card, state, fresh)
+        state.granted = 0
+        if fresh then return end
+        follow(state, "granted", aces_of_spades(), bump_hands)
+    end,
+    on_unmerge = function(def, card, state)
+        give_back(state, "granted", bump_hands)
+    end,
+})
+
+--- How many Uncommon Jokers the row holds: the pair's own card too, if it is one.
+local function uncommon_jokers_owned()
+    local count = 0
+    for _, held in ipairs(jokers_owned()) do
+        local center = held.config and held.config.center
+        if center and center.rarity == 2 then count = count + 1 end
+    end
+    return count
+end
+
+local function bump_hand_size(delta)
+    if G.hand and G.hand.change_size then G.hand:change_size(delta) end
+end
+
+-- Baseball Card + Ben: Baseball Card's Uncommon Jokers, as hand size: one card for each.
+special("j_baseball", "j_celesta_ben", {
+    key = "baseball_ben",
+    config = { granted = 0 },
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state) end,
+
+    add_to_deck = function(def, card, state, from_debuff)
+        state.granted = 0
+        follow(state, "granted", uncommon_jokers_owned(), bump_hand_size)
+    end,
+    remove_from_deck = function(def, card, state, from_debuff)
+        give_back(state, "granted", bump_hand_size)
+    end,
+    on_merge = function(def, card, state, fresh)
+        state.granted = 0
+        if fresh then return end
+        follow(state, "granted", uncommon_jokers_owned(), bump_hand_size)
+    end,
+    on_unmerge = function(def, card, state)
+        give_back(state, "granted", bump_hand_size)
+    end,
+})
+
+--- The sell value of every other Joker owned, twice.
+local function swashbuckler_kourra_mult(card)
+    local total = 0
+    for _, held in ipairs(jokers_owned()) do
+        if held ~= card and type(held.sell_cost) == "number" then total = total + held.sell_cost end
+    end
+    return total * 2
+end
+
+-- Swashbuckler + Kourra: Swashbuckler's Mult, from the sell value of every other Joker, doubled.
+special("j_swashbuckler", "j_celesta_kourra", {
+    key = "swashbuckler_kourra",
+
+    loc_vars = function(def, card, state)
+        return { vars = { swashbuckler_kourra_mult(card) } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local mult = swashbuckler_kourra_mult(card)
+        if mult > 0 then return { mult = mult } end
+    end,
+})
+
+-- The upkeep those need every frame: slots, hands and hand size follow the numbers they are made of, and
+-- a pack priced again when it changes is not asked for by the pairs above, only by the ones before them.
+local celesta_pairs35_update_ref = Card.update
+function Card:update(dt)
+    celesta_pairs35_update_ref(self, dt)
+    if not (self.ability and self.ability.celesta_bind and self.added_to_deck and not self.debuff) then return end
+    local def = Bind.replacing_special(self)
+    if not def then return end
+    if def.key == "smeared_seraph" then
+        local state = Bind.special_state(self, def)
+        follow(state, "granted", unique_suits_in_deck(), bump_jokers)
+    elseif def.key == "troubadour_occi" then
+        local state = Bind.special_state(self, def)
+        follow(state, "granted", aces_of_spades(), bump_hands)
+    elseif def.key == "baseball_ben" then
+        local state = Bind.special_state(self, def)
+        follow(state, "granted", uncommon_jokers_owned(), bump_hand_size)
     end
 end
 

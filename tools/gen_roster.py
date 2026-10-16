@@ -3606,6 +3606,264 @@ LOC_TAIL = '''        },
                     "{C:money}$#1#{} when scored",
                 },
             },
+            celesta_bind_showman_blank = {
+                name = "Showman + Blank Joker",
+                text = {
+                    "Only {C:attention}Jokers{} can appear",
+                    "multiple times",
+                },
+            },
+            celesta_bind_oops_ellie = {
+                name = "Oops! All 6s + Ellie Minibot",
+                text = {
+                    "{C:green}Odds{} on Jokers and cards",
+                    "are all {C:green}guaranteed{}",
+                },
+            },
+            celesta_bind_order_cryogen = {
+                name = "The Order + Cryogen",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult every time a",
+                    "hand containing a {C:attention}Straight{} is played",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_family_eidolon = {
+                name = "The Family + Eidolon Wyrm",
+                text = {
+                    "This Joker gives {X:mult,C:white}X#1#{} Mult for each",
+                    "scored card of the {C:attention}same rank{}",
+                },
+            },
+            celesta_bind_trio_papamutt = {
+                name = "The Trio + PapaMutt",
+                text = {
+                    "This Joker gives {X:mult,C:white}X#1#{} Mult for each",
+                    "{C:tarot}Tarot{} card held",
+                },
+            },
+            celesta_bind_duo_pipi = {
+                name = "The Duo + Pipi",
+                text = {
+                    "If hand contains exactly {C:attention}#1#{} cards, score both,",
+                    "retrigger both {C:attention}#2#{} times, and give {X:mult,C:white}X#3#{} Mult",
+                },
+            },
+            celesta_bind_merryandy_fireonirei = {
+                name = "Merry Andy + FireOniRei",
+                text = {
+                    "Remove a random {C:attention}sticker{} off a random Joker",
+                    "every time a {C:attention}discard{} is used",
+                },
+            },
+            celesta_bind_wee_boosfer = {
+                name = "Wee Joker + Boosfer",
+                text = {
+                    "This Joker gains {C:chips}+#1#{} Chips every time",
+                    "a {V:1}#3#{} card is scored",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_glass_zentreya = {
+                name = "Glass Joker + Zentreya",
+                text = {
+                    "{C:attention}Glass{} cards give",
+                    "{X:mult,C:white}X#1#{} Mult when scored",
+                },
+            },
+            celesta_bind_chad_shylily = {
+                name = "Hanging Chad + ShyLily",
+                text = {
+                    "Retrigger each {C:attention}scoring{} card",
+                    "{C:attention}twice{}",
+                },
+            },
+            celesta_bind_smeared_seraph = {
+                name = "Smeared Joker + Smitten Seraph",
+                text = {
+                    "This Joker gives extra {C:attention}Joker slots{} equal to",
+                    "the number of unique {C:attention}suits{} in your {C:attention}full deck{}",
+                    "{C:inactive}(Currently {C:attention}+#1#{C:inactive})",
+                },
+            },
+            celesta_bind_swashbuckler_kourra = {
+                name = "Swashbuckler + Kourra",
+                text = {
+                    "This Joker gives double the {C:attention}sell value{} of each",
+                    "owned Joker in {C:mult}Mult{}",
+                    "{C:inactive}(Currently {C:mult}+#1#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_sock_froggy = {
+                name = "Sock and Buskin + FroggyLoch",
+                text = {
+                    "Retrigger each played card",
+                    "{C:attention}1{} time",
+                },
+            },
+            celesta_bind_acrobat_hannah = {
+                name = "Acrobat + Hannah Hyrule",
+                text = {
+                    "{X:mult,C:white}X#1#{} Mult and {X:chips,C:white}X#1#{} Chips",
+                    "on the {C:attention}final hand{} of the round",
+                },
+            },
+            celesta_bind_troubadour_occi = {
+                name = "Troubadour + Occi",
+                text = {
+                    "Gain extra {C:blue}hands{} equal to the number of",
+                    "{C:attention}Aces of Spades{} in your {C:attention}full deck{}",
+                },
+            },
+            celesta_bind_ticket_kumi = {
+                name = "Golden Ticket + Kumi",
+                text = {
+                    "{C:attention}Gold{} cards when scored have a {C:green}#1# in #2#{} chance",
+                    "to give {C:money}$#3#{}, a {C:green}#4# in #5#{} chance to give {C:money}$#6#{},",
+                    "and a {C:green}#7# in #8#{} chance to give {C:money}$#9#{}",
+                },
+            },
+            celesta_bind_certificate_spite = {
+                name = "Certificate + Spite",
+                text = {
+                    "When the round begins, add a random playing",
+                    "card with an {C:attention}Ectoplast Seal{} to your hand",
+                },
+            },
+            celesta_bind_mrbones_lucypyre = {
+                name = "Mr. Bones + LucyPyre",
+                text = {
+                    "{C:attention}Sell{} this Joker to instantly",
+                    "win a {C:attention}Blind{}",
+                },
+            },
+            celesta_bind_smiley_auteru = {
+                name = "Smiley Face + Auteru",
+                text = {
+                    "Played {V:1}#2#{} cards give",
+                    "{C:mult}+#1#{} Mult when scored",
+                },
+            },
+            celesta_bind_campfire_unnamed = {
+                name = "Campfire + Unnamed",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult for each scoring",
+                    "card that was {C:attention}flipped over{}",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_scary_buffpup = {
+                name = "Scary Face + Buffpup",
+                text = {
+                    "Played {V:1}#2#{} cards give",
+                    "{C:chips}+#1#{} Chips when scored",
+                },
+            },
+            celesta_bind_seltzer_isaa = {
+                name = "Seltzer + Isaa",
+                text = {
+                    "Retrigger scoring cards equal to the",
+                    "number of {C:attention}hands{} remaining",
+                    "Self-destructs in {C:attention}#1#{} rounds",
+                },
+            },
+            celesta_bind_ramen_hiddentech = {
+                name = "Ramen + Hidden Tech",
+                text = {
+                    "{X:mult,C:white}X#1#{} Mult. {C:green}#2# in #3#{} chance to break",
+                    "at the end of the round. Chance increases by",
+                    "{C:attention}1{} for each card discarded",
+                },
+            },
+            celesta_bind_ancient_piapiufo = {
+                name = "Ancient Joker + PiaPiUFO",
+                text = {
+                    "Played cards give {X:mult,C:white}X#1#{} Mult",
+                    "when scored",
+                },
+            },
+            celesta_bind_trousers_mooni = {
+                name = "Spare Trousers + Mooni",
+                text = {
+                    "This Joker gains {C:mult}+#1#{} Mult for each scoring",
+                    "{V:1}#3#{} card",
+                    "{C:inactive}(Currently {C:mult}+#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_dietcola_ekkomori = {
+                name = "Diet Cola + Ekkomori",
+                text = {
+                    "Receive a {C:attention}Double Tag{} at the",
+                    "end of each round",
+                },
+            },
+            celesta_bind_trading_camila = {
+                name = "Trading Card + Camila",
+                text = {
+                    "If the first-used {C:attention}discard{} contains only {C:attention}1{} card, destroy",
+                    "it and receive it back with its {C:dark_edition}edition{} upgraded",
+                    "the following round {C:inactive}(caps at Polychrome){}",
+                },
+            },
+            celesta_bind_bull_milky = {
+                name = "Bull + Milky",
+                text = {
+                    "Gain {C:money}$#1#{} every time a",
+                    "{C:spectral}Milk Bottle{} is used",
+                },
+            },
+            celesta_bind_superposition_meicha = {
+                name = "Superposition + Meicha",
+                text = {
+                    "If played hand is a {C:attention}Straight{},",
+                    "gain a random {C:tarot}Tarot{} card",
+                },
+            },
+            celesta_bind_popcorn_matara = {
+                name = "Popcorn + MataraKan",
+                text = {
+                    "This Joker gives {C:money}$#1#{} at the end of the round,",
+                    "and then loses {C:money}$#2#{}",
+                },
+            },
+            celesta_bind_luckycat_maya = {
+                name = "Lucky Cat + Maya",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult every time a",
+                    "{C:attention}Steel{} card is triggered",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_baseball_ben = {
+                name = "Baseball Card + Ben",
+                text = {
+                    "This Joker gives extra {C:attention}hand size{} equal to",
+                    "the amount of {C:green}Uncommon{} Jokers owned",
+                },
+            },
+            celesta_bind_satellite_august = {
+                name = "Satellite + August Anomoly",
+                text = {
+                    "This Joker gains {C:money}$#1#{} every time a",
+                    "{C:blue}Blue Seal{} card triggers",
+                    "{C:inactive}(Currently {C:money}$#2#{C:inactive})",
+                },
+            },
+            celesta_bind_walkie_cosmic = {
+                name = "Walkie Talkie + Cosmic",
+                text = {
+                    "Scoring {V:1}#3#{} cards give",
+                    "{C:chips}+#1#{} Chips and {C:mult}+#2#{} Mult",
+                },
+            },
+            celesta_bind_riffraff_cillia = {
+                name = "Riff-Raff + Cillia",
+                text = {
+                    "At the start of the round, create a",
+                    "random {C:rare}Rare{} Joker",
+                    "{C:inactive}(Must have room)",
+                },
+            },
             celesta_bind_onigiri_girldm = {
                 name = "OniGiri + GirlDM",
                 text = {
