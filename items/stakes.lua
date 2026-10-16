@@ -165,13 +165,21 @@ local STAKES = {
     { key = "celestial", name = "Celestial", effect = standing_rule("super_boss") },
 }
 
---- Where a stake's chip is on the sheet, as the position an atlas cell is asked for by - or nil for a
---- name that is no stake. What the Purgatory Deck's offer draws beside each modifier.
+--- The chips on the sheet after the stakes' own: pictures that are not a stake's, drawn in the same style
+--- for the Purgatory Deck's categories. They follow the last stake, so no stake's cell moves.
+local EXTRA_CHIPS = { "spectral", "tarot", "summon", "sandstone", "lucky" }
+
+--- Where a chip is on the sheet, as the position an atlas cell is asked for by - or nil for a name that is
+--- no stake's and no extra's. What the Purgatory Deck's offer draws beside each modifier.
 function CelestasMod.stake_chip_pos(key)
+    local function at(index)
+        return { x = (index - 1) % COLUMNS, y = math.floor((index - 1) / COLUMNS) }
+    end
     for index, stake in ipairs(STAKES) do
-        if stake.key == key then
-            return { x = (index - 1) % COLUMNS, y = math.floor((index - 1) / COLUMNS) }
-        end
+        if stake.key == key then return at(index) end
+    end
+    for index, name in ipairs(EXTRA_CHIPS) do
+        if name == key then return at(#STAKES + index) end
     end
     return nil
 end

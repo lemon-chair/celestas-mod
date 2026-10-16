@@ -2,8 +2,9 @@
 
     python tools/gen_stakes.py <folder holding the exports>
 
-The folder holds one 54x54 picture a stake, named for the stake - iron.png, lead.png, brass.png and so
-on, in the order items/stakes.lua chains them (STAKES below says which). They are laid out five to a
+The folder holds one 54x54 picture a stake, named for the stake - iron_stake.png (or iron.png), lead_stake.png,
+brass_stake.png and so on, in the order items/stakes.lua chains them (STAKES below says which), and then the five
+chips that are no stake's (EXTRA). They are laid out five to a
 row on one sheet, the way the base game keeps its stake chips on one sheet: the first stake is the
 first cell, and items/stakes.lua picks a cell by the stake's place in the list.
 
@@ -26,18 +27,24 @@ STAKES = [
     "herbium", "magical", "abyssal", "heathen", "soul", "titanium", "hedron", "burning", "terra",
     "celestial",
 ]
+#: The chips after them, which belong to no stake: the Purgatory Deck's categories that are not a stake's
+#: (items/stakes.lua, EXTRA_CHIPS). They follow the stakes, so no stake's cell moves.
+EXTRA = ["spectral", "tarot", "summon", "sandstone", "lucky"]
 CELL = 54
 COLUMNS = 5
 
 
 def build(folder):
-    rows = (len(STAKES) + COLUMNS - 1) // COLUMNS
+    keys = STAKES + EXTRA
+    rows = (len(keys) + COLUMNS - 1) // COLUMNS
     sheet = Image.new("RGBA", (CELL * COLUMNS, CELL * rows), (0, 0, 0, 0))
     seen = {}
-    for index, key in enumerate(STAKES):
-        path = os.path.join(folder, key + ".png")
-        if not os.path.exists(path):
-            sys.exit("no such file: " + path)
+    for index, key in enumerate(keys):
+        # <key>_stake.png as the artist's own folder names them, or <key>.png
+        path = next((p for p in (os.path.join(folder, key + "_stake.png"), os.path.join(folder, key + ".png"))
+                     if os.path.exists(p)), None)
+        if not path:
+            sys.exit("no such file: %s.png or %s_stake.png in %s" % (key, key, folder))
         img = Image.open(path).convert("RGBA")
         if img.size != (CELL, CELL):
             sys.exit("%s is %dx%d, and a stake chip is %dx%d" % (path, img.size[0], img.size[1], CELL, CELL))
