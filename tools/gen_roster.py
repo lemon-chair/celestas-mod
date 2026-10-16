@@ -4052,6 +4052,27 @@ LOC_TAIL = '''        },
                     "{C:inactive}(Currently {X:chips,C:white}^#2#{C:inactive} Chips)",
                 },
             },
+            celesta_bind_oddtodd_shoto = {
+                name = "Odd Todd + Shoto",
+                text = {
+                    "{C:attention}Gash{} cards give an additional",
+                    "{C:chips}+#1#{} Chips when scored",
+                },
+            },
+            celesta_bind_evensteven_saruei = {
+                name = "Even Steven + Saruei",
+                text = {
+                    "{C:attention}Gash{} cards give an additional",
+                    "{C:mult}+#1#{} Mult when scored",
+                },
+            },
+            celesta_bind_photograph_alluux = {
+                name = "Photograph + Alluux",
+                text = {
+                    "The {C:attention}first{} played {C:attention}face card{}",
+                    "gives {X:chips,C:white}X#1#{} Chips when scored",
+                },
+            },
             celesta_bind_onigiri_girldm = {
                 name = "OniGiri + GirlDM",
                 text = {

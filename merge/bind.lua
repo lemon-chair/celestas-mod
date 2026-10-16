@@ -18209,6 +18209,63 @@ special("j_stencil", "j_celesta_obkatiekat", {
     end,
 })
 
+-- Odd Todd + Shoto: a scoring Gash card gives +50 Chips on top of its own.
+special("j_odd_todd", "j_celesta_shoto", {
+    key = "oddtodd_shoto",
+    config = { chips = 50 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play and context.other_card) then return end
+        if P.benched(context.other_card) or not P.is_enh(context.other_card, "Gash") then return end
+        return { chips = state.chips, card = context.other_card }
+    end,
+})
+
+-- Even Steven + Saruei: a scoring Gash card gives +10 Mult on top of its own.
+special("j_even_steven", "j_celesta_saruei", {
+    key = "evensteven_saruei",
+    config = { mult = 10 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play and context.other_card) then return end
+        if P.benched(context.other_card) or not P.is_enh(context.other_card, "Gash") then return end
+        return { mult = state.mult, card = context.other_card }
+    end,
+})
+
+-- Photograph + Alluux: the first face card to score gives X2.5 Chips.
+--
+-- Photograph's own test: the first face card among the scoring cards, in the order they score.
+special("j_photograph", "j_celesta_alluux", {
+    key = "photograph_alluux",
+    config = { x_chips = 2.5 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_chips } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play and context.other_card) then return end
+        local first
+        for _, scoring in ipairs(context.scoring_hand or {}) do
+            if scoring:is_face() then
+                first = scoring
+                break
+            end
+        end
+        if context.other_card ~= first then return end
+        return { x_chips = state.x_chips, card = context.other_card }
+    end,
+})
+
 -- ================================================================== Money
 
 -- Faceless Joker + MOTHERv3: $5 every time a discard holds at least two Exo cards.
