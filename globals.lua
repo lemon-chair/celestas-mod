@@ -136,6 +136,35 @@ function CelestasMod.warn_once(key, message)
     sendWarnMessage(message, "CelestasMod")
 end
 
+--- The hand's size, watched. A run that ends the moment a Blind starts, with nothing drawn, is a hand
+--- whose size went below 1 - and which Joker took it there is not something the screen says. So a change
+--- to the hand's size that is not a small one, or that leaves it below 1, is written to the log with
+--- the stack that made it. Nothing about the size itself is changed. Quiet after twenty of them.
+if CardArea and CardArea.change_size then
+    local celesta_hand_trace_ref = CardArea.change_size
+    local reported = 0
+    function CardArea:change_size(delta, ...)
+        local ret = celesta_hand_trace_ref(self, delta, ...)
+        if self == G.hand and reported < 20 and G.hand.config then
+            -- Steamodded keeps the size as a base and a running `mod`; the card_limit it derives is only as
+            -- fresh as the last frame, so the two are read as they stand.
+            local limits = G.hand.config.card_limits
+            local limit = G.hand.config.card_limit
+            if limits and type(limits.base) == "number" and type(limits.mod) == "number" then
+                limit = limits.base + limits.mod
+            end
+            local odd_delta = type(delta) ~= "number" or math.abs(delta) >= 50
+            local odd_limit = type(limit) ~= "number" or limit < 1
+            if odd_delta or odd_limit then
+                reported = reported + 1
+                sendWarnMessage(("The hand's size moved by %s and is now %s\n%s")
+                    :format(tostring(delta), tostring(limit), debug.traceback("", 2)), "CelestasMod")
+            end
+        end
+        return ret
+    end
+end
+
 --- a > b, whichever kind of number either side is.
 ---
 --- Lua 5.1 will not compare a table with a number: it does not reach the
