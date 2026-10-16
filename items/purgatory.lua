@@ -1139,6 +1139,84 @@ local function label(text, colour)
         { n = G.UIT.T, config = { text = text, scale = 0.38, colour = colour, shadow = true } } } }
 end
 
+--------------------------------------------------------------------------------
+-- Categories, and the chip beside each modifier
+--------------------------------------------------------------------------------
+--
+-- Every modifier belongs to one category, and a Stake's chip stands on either side of it in the offer. The
+-- chips are placeholders, Stakes for now: which Stake goes with which category is only this table.
+
+P.CATEGORIES = {
+    { title = "Money and prices", stake = "ichor",
+      good = { "debt", "income", "money_15", "money_30", "prices_half" },
+      bad = { "lose_20", "broke", "no_pay", "prices_up", "reroll_two" } },
+    { title = "Hands, discards and hand size", stake = "crimson",
+      good = { "hand", "discard", "hand_size" },
+      bad = { "hand", "discard", "hand_size", "least_hand" } },
+    { title = "Poker hand levels", stake = "lavish",
+      good = { "level_all", "level_top" }, bad = { "level_all", "level_top" } },
+    { title = "Jokers", stake = "rose",
+      good = { "joker_slot", "rare_joker", "negative_joker", "unsticker", "lost_slots", "legendary_shop", "egg",
+               -- the twelve that change one Joker each (JOKER_BOONS)
+               "grimmi", "chacha", "crelly", "calamitas", "snuffy", "dokibird", "lucypyre", "aethal",
+               "heavenlyfather", "astrum", "seraph", "isaa" },
+      bad = { "joker_slot", "destroy_joker", "lose_negative", "sticker", "eternal_perishable", "obelisk",
+              "lose_editions" } },
+    { title = "Consumables", stake = "magical",
+      good = { "consumable_slot", "bind_swap", "soul", "summon", "tarot_double" },
+      bad = { "consumable_slot", "lose_consumables" } },
+    { title = "Shop and vouchers", stake = "herbium",
+      good = { "shop_slot", "booster_slot", "voucher_slot", "reroll_vouchers", "spectral_shop", "stamp_packs" },
+      bad = { "shop_slot", "booster_slot", "lose_voucher", "no_planets", "no_tarots" } },
+    { title = "The deck", stake = "iron",
+      good = { "no_tatter", "true_stars" },
+      bad = { "cull_quarter", "cull_faces", "cull_suit", "tatter_fast", "destroy_held" } },
+    { title = "Blinds and bosses", stake = "abyssal",
+      good = { "skip_boss", "drop_buff" },
+      bad = { "boss_big", "blind_size", "boss_repeat", "super_boss", "buff_clover", "buff_flower", "buff_wyrm",
+              "buff_robot", "buff_brick", "buff_goat", "buff_frog", "buff_horn", "buff_gem" } },
+    { title = "Odds", stake = "hedron", good = { "odds_double" }, bad = { "odds_half" } },
+    { title = "Tags, stamps and quads", stake = "glimmer",
+      good = { "d6_tag", "stamp_tag", "stamp_slots", "unlock_quad" }, bad = {} },
+    { title = "Modifier rerolls", stake = "celestial", good = { "rerolls" }, bad = { "rerolls" } },
+}
+
+local CATEGORY_OF = {}
+for _, category in ipairs(P.CATEGORIES) do
+    for _, kind in ipairs({ "good", "bad" }) do
+        for _, key in ipairs(category[kind]) do CATEGORY_OF[kind .. ":" .. key] = category end
+    end
+end
+
+--- The category a modifier is in, or nil for one that has none.
+function P.category_of(kind, key)
+    return CATEGORY_OF[kind .. ":" .. tostring(key)]
+end
+
+--- The atlas the Stakes' chips are on, named once: the prefix is only known while the mod loads.
+local CHIP_ATLAS = SMODS.current_mod.prefix .. "_stake_chips"
+--- How big a chip is drawn beside a modifier.
+local CHIP_SIZE = 0.55
+
+--- The chip beside a modifier, as a UI node. Where it cannot be drawn (no category, no sheet) an empty box of
+--- the same size stands in for it, so the text does not move.
+local function chip_node(kind, key)
+    local category = P.category_of(kind, key)
+    local at = category and CelestasMod.stake_chip_pos and CelestasMod.stake_chip_pos(category.stake)
+    local sheet = G.ASSET_ATLAS and G.ASSET_ATLAS[CHIP_ATLAS]
+    if not (at and sheet) then return { n = G.UIT.B, config = { w = CHIP_SIZE, h = CHIP_SIZE } } end
+    return { n = G.UIT.O, config = { object = Sprite(0, 0, CHIP_SIZE, CHIP_SIZE, sheet, at) } }
+end
+
+--- A label and its text box, a chip standing on either side of them.
+local function flanked(kind, key, heading, box)
+    return { n = G.UIT.R, config = { align = "cm" }, nodes = {
+        { n = G.UIT.C, config = { align = "cm", padding = 0.04 }, nodes = { chip_node(kind, key) } },
+        { n = G.UIT.C, config = { align = "cm" }, nodes = { heading, box } },
+        { n = G.UIT.C, config = { align = "cm", padding = 0.04 }, nodes = { chip_node(kind, key) } },
+    } }
+end
+
 --- One of the three: the boon over the curse, all of it one button.
 local function offer_panel(index, offer)
     return { n = G.UIT.C,
@@ -1147,10 +1225,10 @@ local function offer_panel(index, offer)
                         button = "celesta_purg_pick", ref_table = { index = index },
                         focus_args = { nav = "wide" } },
              nodes = {
-                 label(localize("celesta_purg_good"), G.C.GREEN),
-                 text_box("good", offer.good, offer.good_arg),
-                 label(localize("celesta_purg_bad"), G.C.RED),
-                 text_box("bad", offer.bad, offer.bad_arg, P.doubles_its_curse(offer)),
+                 flanked("good", offer.good, label(localize("celesta_purg_good"), G.C.GREEN),
+                         text_box("good", offer.good, offer.good_arg)),
+                 flanked("bad", offer.bad, label(localize("celesta_purg_bad"), G.C.RED),
+                         text_box("bad", offer.bad, offer.bad_arg, P.doubles_its_curse(offer))),
              } }
 end
 

@@ -165,6 +165,17 @@ local STAKES = {
     { key = "celestial", name = "Celestial", effect = standing_rule("super_boss") },
 }
 
+--- Where a stake's chip is on the sheet, as the position an atlas cell is asked for by - or nil for a
+--- name that is no stake. What the Purgatory Deck's offer draws beside each modifier.
+function CelestasMod.stake_chip_pos(key)
+    for index, stake in ipairs(STAKES) do
+        if stake.key == key then
+            return { x = (index - 1) % COLUMNS, y = math.floor((index - 1) / COLUMNS) }
+        end
+    end
+    return nil
+end
+
 --- The stakes whose text is different on the Purgatory Deck: the first two that pay it a cost of their
 --- own, and the four whose curse is no longer offered there.
 local PURGATORY_TEXT = {
