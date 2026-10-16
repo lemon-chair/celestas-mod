@@ -1714,8 +1714,9 @@ SMODS.Joker {
     calculate = function(self, card, context)
         -- hands_played == 0 during context.before means this IS the first hand
         -- of the round; the counter only increments afterwards.
-        -- A Favor Stamp makes every hand the first one.
-        if context.before and not context.blueprint
+        -- A Favor Stamp makes every hand the first one. A copy adds its own two: nothing here is kept
+        -- on the card, so there is nothing for it to refuse.
+        if context.before
             and (G.GAME.current_round.hands_played == 0
                  or (CelestasMod.favored and CelestasMod.favored(card)))
             and #context.full_hand == 1 then
@@ -1742,7 +1743,7 @@ SMODS.Joker {
             return {
                 message = localize("k_copied_ex"),
                 colour = G.C.SUITS[suit] or G.C.CHIPS,
-                card = card,
+                card = context.blueprint_card or card,
             }
         end
     end,
