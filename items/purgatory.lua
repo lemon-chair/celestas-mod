@@ -97,6 +97,23 @@ local function live()
     return P.state()
 end
 
+--- True when a Stake has made this a rule of the run (items/stakes.lua sets one flag a Stake). The curse
+--- of the same name is then not offered: it would be asking for what is already so.
+local function stake_rule(flag)
+    return G.GAME and G.GAME.modifiers and G.GAME.modifiers[flag] and true or false
+end
+
+--- The state the standing rules are read from. On this deck, its own; on any deck, the one a Stake
+--- made when it set one of them (items/stakes.lua: four of the Stakes are four of the curses below,
+--- as a rule of the run from the start). The hooks that carry those rules ask this, and the rest of
+--- the deck keeps asking `live`.
+local function rules()
+    local st = live()
+    if st then return st end
+    if G.GAME and G.GAME.modifiers and G.GAME.modifiers.celesta_standing_rules then return P.state() end
+    return nil
+end
+
 --- Called as the run starts: the final Ante moves.
 function P.start()
     if not G.GAME then return end
@@ -708,6 +725,7 @@ add { kind = "bad", key = "cull_quarter",
       apply = function() cull(function() return true end, 0.25, "_cull_quarter") end }
 
 add { kind = "bad", key = "boss_big",
+      available = function() return not stake_rule("celesta_abyssal") end,
       apply = function(st) st.boss_for_big = true end }
 
 add { kind = "bad", key = "blind_size",
@@ -796,6 +814,7 @@ add { kind = "bad", key = "lose_voucher",
       apply = take_back_voucher }
 
 add { kind = "bad", key = "super_boss",
+      available = function() return not stake_rule("celesta_celestial") end,
       apply = function(st) st.super_boss = true end }
 
 add { kind = "bad", key = "cull_faces",
@@ -878,9 +897,11 @@ add { kind = "bad", key = "reroll_two",
       apply = function(st) st.reroll_two = true end }
 
 add { kind = "bad", key = "no_planets",
+      available = function() return not stake_rule("celesta_titanium") end,
       apply = function(st) st.no_planets = true end }
 
 add { kind = "bad", key = "no_tarots",
+      available = function() return not stake_rule("celesta_terra") end,
       apply = function(st) st.no_tarots = true end }
 
 add { kind = "bad", key = "destroy_held",
@@ -1410,22 +1431,22 @@ end
 
 --- How many modifiers the Blind that has just ended is owed: none, one, or two.
 ---
---- A Boss Blind owes one, and two on the Iron Stake (the first tier, and so every one above it); the
---- final Boss owes none, as it ends the run. Any other Blind owes nothing - except on the fourth tier,
---- where every Blind owes two: Small, Big and Boss alike. A Blind that was lost owes nothing.
+--- A Boss Blind owes one, and two on the Iron Stake (and so every Stake above it); the final Boss
+--- owes none, as it ends the run. Any other Blind owes nothing - except on the Rose Stake, where every
+--- Blind owes two: Small, Big and Boss alike. A Blind that was lost owes nothing.
 function P.owed_count(context)
     local modifiers = G.GAME.modifiers or {}
     if context.beat_boss then
         if ends_the_run() then return 0 end
-        return modifiers.celesta_iron_1 and 2 or 1
+        return modifiers.celesta_iron and 2 or 1
     end
-    if modifiers.celesta_iron_4 and not context.game_over then return 2 end
+    if modifiers.celesta_rose and not context.game_over then return 2 end
     return 0
 end
 
-function P.calculate(context)
+function P.calculate(context, from_stake)
     if not (context.end_of_round or context.setting_blind) then return end
-    local st = live()
+    local st = live() or (from_stake and rules())
     if not st then return end
 
     if context.setting_blind then
@@ -1456,7 +1477,9 @@ function P.calculate(context)
         return
     end
 
-    -- end_of_round: the per-card passes share this flag.
+    -- end_of_round: the per-card passes share this flag. Only the deck owes a modifier; a Stake that
+    -- reaches this on another deck came for the Blind above.
+    if not live() then return end
     if context.individual or context.repetition then return end
 
     local owed = P.owed_count(context)
@@ -1475,7 +1498,7 @@ end
 
 --- True once the Boss Blind curse has been taken, in a run on this deck.
 local function big_may_be_boss()
-    local st = live()
+    local st = rules()
     return st and st.boss_for_big
 end
 
@@ -1501,7 +1524,7 @@ end
 -- last Boss was beaten and the Ante moved on, and before any Blind of the new one is chosen.
 local celesta_purg_select_ref = create_UIBox_blind_select
 function create_UIBox_blind_select(...)
-    local st = live()
+    local st = rules()
     local choices = G.GAME and G.GAME.round_resets and G.GAME.round_resets.blind_choices
     if st and st.boss_for_big and choices and choices.Big == "bl_big"
         and st.big_rolled ~= G.GAME.round_resets.ante and not is_showdown_ante() then
@@ -1519,13 +1542,13 @@ function reset_blinds(...)
     local states = G.GAME and G.GAME.round_resets and G.GAME.round_resets.blind_states
     local turning = states and states.Boss == "Defeated"
     local out = celesta_purg_reset_ref(...)
-    if turning and live() then G.GAME.round_resets.blind_choices.Big = "bl_big" end
+    if turning and rules() then G.GAME.round_resets.blind_choices.Big = "bl_big" end
     return out
 end
 
 local celesta_purg_boss_ref = get_new_boss
 function get_new_boss(...)
-    local st = live()
+    local st = rules()
     if not st then return celesta_purg_boss_ref(...) end
 
     -- A Boss Blind that was made certain (the Summon boon with a Boss Blind curse): this one, once.
@@ -1567,7 +1590,7 @@ end
 -- have changed.
 local celesta_purg_cost_ref = Card.set_cost
 function Card:set_cost(...)
-    local st = live()
+    local st = rules()
     local scale = st and st.price_mult
     if not scale or scale == 1 then return celesta_purg_cost_ref(self, ...) end
 
@@ -1611,7 +1634,7 @@ P.SPECTRAL_SHOP_RATE = 2
 
 local celesta_purg_shop_ref = create_card_for_shop
 function create_card_for_shop(...)
-    local st = live()
+    local st = rules()
     if not (st and (st.no_tarots or st.no_planets or st.spectral_shop)) then
         return celesta_purg_shop_ref(...)
     end

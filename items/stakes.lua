@@ -1,46 +1,48 @@
---- THE IRON, BRASS AND ROSE STAKES
+--- THE STAKES
 ---
---- Twelve stakes in one chain, one above the other, that sit on top of the Gold Stake:
+--- Twenty stakes in one chain, one above the other, that sit on top of the Gold Stake:
 ---
----   Iron Stake I     Jokers can have Eternal, Perishable and Rental all at once
----   Iron Stake II    Blinds scale faster after each Ante
----   Iron Stake III   -1 Joker slot
----   Iron Stake IV    Ante 12 is the final Ante
----   Brass Stake I    -1 hand size
----   Brass Stake II   Blinds scale faster after each Ante
----   Brass Stake III  Uncommon and Rare Jokers appear less often
----   Brass Stake IV   Booster Packs have 1 less option to choose from
----   Rose Stake I     -1 hand
----   Rose Stake II    Blinds scale faster after each Ante
----   Rose Stake III   Vouchers restock every other Ante
----   Rose Stake IV    -1 consumable slot
+---   Iron       Jokers can have Eternal, Perishable and Rental all at once
+---   Lead       Blinds scale faster after each Ante
+---   Brass      -1 Joker slot
+---   Rose       Ante 12 is the final Ante
+---   Lavish     -1 hand size
+---   Eryl       Blinds scale faster after each Ante
+---   Azure      Uncommon and Rare Jokers appear less often
+---   Crimson    Booster Packs have 1 less option to choose from
+---   Glimmer    -1 hand
+---   Ichor      Blinds scale faster after each Ante
+---   Herbium    Vouchers restock every other Ante
+---   Magical    -1 consumable slot
+---   Abyssal    Boss Blinds can replace Big Blinds
+---   Heathen    Shop prices are X1.5 higher; Blinds scale faster after each Ante
+---   Soul       Played cards have a 1 in 6 chance to be destroyed after scoring
+---   Titanium   Planet cards no longer appear in the shop
+---   Hedron     Probabilities are halved (the Soul Stake's own is not)
+---   Burning    -1 hand; Blinds scale faster after each Ante
+---   Terra      Tarot cards no longer appear in the shop
+---   Celestial  Showdown Boss Blinds can replace regular Boss Blinds
 ---
 --- Each applies the one below it, and the first applies Gold. Which is also what unlocks it: Steamodded
 --- offers a stake once everything it applies has been won, so winning Gold is what opens this, and it
 --- opens it beside Cryptid's Pink Stake - which applies Gold too - rather than behind it. Winning
---- either only carries on up its own chain: Iron Stake II needs Iron Stake I, Cryptid's Brown Stake
---- needs Pink, and neither needs the other. Brass Stake I sits on Iron Stake IV and Rose Stake I on
---- Brass Stake IV, so each metal opens once the one before it has been won.
+--- either only carries on up its own chain: Lead needs Iron, Cryptid's Brown Stake needs Pink, and
+--- neither needs the other.
 ---
---- On the Purgatory Deck the first and last Iron are different - that deck has its own cost to pay -
---- and the stake's description says which it is for the deck being looked at. See items/purgatory.lua
---- (`P.owed_count`) for what they do there.
+--- On the Purgatory Deck Iron and Rose are different - that deck has its own cost to pay - and the
+--- stake's description says which it is for the deck being looked at. See items/purgatory.lua
+--- (`P.owed_count`) for what they do there. Four of the Stakes are four of that deck's curses made a
+--- rule of the run from the start (Abyssal, Titanium, Terra and Celestial), and on that deck the curse
+--- of the same name is not offered: it would be asking for what is already so.
 ---
 --- How the stickers stack is Cryptid's Brown Stake: Eternal and Perishable stop excluding each
 --- other, and each is rolled of its own rather than from one shared roll. Done here without Cryptid.
 
 local PREFIX = SMODS.current_mod.prefix
 
--- One sheet of chips a metal, four in a row. The Iron art is 71x71 and the others 54x54: a chip is
--- drawn at the same size whatever the sheet's cells are.
-SMODS.Atlas { key = "stake_iron", path = "stake_iron.png", px = 71, py = 71 }
-SMODS.Atlas { key = "stake_brass", path = "stake_brass.png", px = 54, py = 54 }
-SMODS.Atlas { key = "stake_rose", path = "stake_rose.png", px = 54, py = 54 }
-
---- The colour each metal's chips are made of.
-local IRON = HEX("8f9a9c")
-local BRASS = HEX("c9993f")
-local ROSE = HEX("ff4f7b")
+-- One sheet of chips, five to a row, in the order of the chain below.
+SMODS.Atlas { key = "stake_chips", path = "stake_chips.png", px = 54, py = 54 }
+local COLUMNS = 5
 
 --- The Purgatory Deck's key, and its sleeve's: what the stake is looked at under.
 local PURGATORY_DECK = "b_" .. PREFIX .. "_purgatory"
@@ -67,106 +69,190 @@ local function faster_blinds()
     G.GAME.modifiers.scaling = (G.GAME.modifiers.scaling or 1) + 1
 end
 
---- What each tier does to the run, once. The flags are what the rest of the mod reads.
----
---- The first and last Iron only set one: what they do depends on the deck, and the deck is not
---- chosen until after the stake is applied, so it is asked where it is used and not here.
-local METALS = {
-    {
-        key = "iron", name = "Iron", atlas = "stake_iron", colour = IRON,
-        tiers = {
-            function() G.GAME.modifiers.celesta_iron_1 = true end,
-            function()
-                faster_blinds()
-                G.GAME.modifiers.celesta_iron_2 = true
-            end,
-            function()
-                G.GAME.starting_params.joker_slots = G.GAME.starting_params.joker_slots - 1
-                G.GAME.modifiers.celesta_iron_3 = true
-            end,
-            function()
-                G.GAME.win_ante = 12
-                G.GAME.modifiers.celesta_iron_4 = true
-            end,
-        },
-    },
-    {
-        key = "brass", name = "Brass", atlas = "stake_brass", colour = BRASS,
-        tiers = {
-            function() G.GAME.starting_params.hand_size = G.GAME.starting_params.hand_size - 1 end,
-            faster_blinds,
-            -- Half as likely each: SMODS.poll_rarity multiplies a rarity's weight by
-            -- G.GAME.<rarity>_mod (utils.lua), the way this mod's Sins do (sins/effects.lua).
-            -- Whatever the two lose, Common gains - the weights are shares of a total.
-            function()
-                G.GAME.uncommon_mod = (G.GAME.uncommon_mod or 1) * 0.5
-                G.GAME.rare_mod = (G.GAME.rare_mod or 1) * 0.5
-            end,
-            -- Card:open reads the size of every pack through this (card.lua), never below 1 card.
-            function()
-                G.GAME.modifiers.booster_size_mod = (G.GAME.modifiers.booster_size_mod or 0) - 1
-            end,
-        },
-    },
-    {
-        key = "rose", name = "Rose", atlas = "stake_rose", colour = ROSE,
-        tiers = {
-            function() G.GAME.starting_params.hands = G.GAME.starting_params.hands - 1 end,
-            faster_blinds,
-            -- Read by the shop (see below), which is where a voucher is put on the shelf.
-            function() G.GAME.modifiers.celesta_rose_3 = true end,
-            function() G.GAME.starting_params.consumable_slots = G.GAME.starting_params.consumable_slots - 1 end,
-        },
-    },
+--- Makes one of the rules items/purgatory.lua's hooks stand on a rule of the run, for any deck: the
+--- flag is what those hooks ask, and `name` is the one the deck's own curse of that name would set.
+local function standing_rule(name)
+    return function()
+        CelestasMod.Purgatory.state()[name] = true
+        G.GAME.modifiers.celesta_standing_rules = true
+    end
+end
+
+--- The chance Soul destroys a played card, as 1 in this.
+CelestasMod.SOUL_ODDS = 6
+--- What the shop's prices are made higher by on the Heathen Stake.
+CelestasMod.HEATHEN_PRICE = 1.5
+
+--- Whether Soul destroys this card. It is an ordinary listed chance in every way but one: it is
+--- rolled after the additive pass alone, so what changes the odds by being an odds-changer - Oops!
+--- All 6s, Dice, a guarantee, the Hedron Stake's halving - is not asked, and Nagzz, which is the
+--- additive pass, is.
+function CelestasMod.soul_roll(card)
+    local identifier = "celesta_soul"
+    local denominator = CelestasMod.SOUL_ODDS
+    local passed = SMODS.calculate_context({
+        mod_probability = true, from_roll = true, trigger_obj = card, identifier = identifier,
+        numerator = 1, denominator = denominator,
+    }, nil, false)
+    if type(passed) == "table" and passed.denominator ~= nil then denominator = passed.denominator end
+    local ante = G.GAME and G.GAME.round_resets and G.GAME.round_resets.ante or 0
+    return SMODS.pseudorandom_probability(card, identifier .. ante, 1, denominator, identifier, true)
+end
+
+--- The colour each stake's chip is made of: the middle of the chip.
+local COLOURS = {
+    iron = "6f776f", lead = "465d8c", brass = "daa255", rose = "ff4774", lavish = "6a60c1",
+    eryl = "4791d8", azure = "1111a6", crimson = "bf0000", glimmer = "238a6f", ichor = "cdae20",
+    herbium = "167d16", magical = "d9a3c7", abyssal = "1e3763", heathen = "32557f", soul = "16adfe",
+    titanium = "a6a1b6", hedron = "9b008e", burning = "f6830e", terra = "35d4c6", celestial = "ff6778",
 }
 
---- The tiers whose text is different on the Purgatory Deck: the first and last Iron.
-local PURGATORY_TEXT = { iron = { [1] = true, [4] = true } }
+--- Every stake, in the order it is chained, and what it does to the run once. Each also sets a flag of
+--- its own - celesta_<key> - which is what the rest of the mod reads.
+---
+--- Iron and Rose only set theirs: what they do depends on the deck, and the deck is not chosen until
+--- after the stake is applied, so it is asked where it is used and not here.
+local STAKES = {
+    { key = "iron", name = "Iron" },
+    { key = "lead", name = "Lead", effect = faster_blinds },
+    { key = "brass", name = "Brass", effect = function()
+        G.GAME.starting_params.joker_slots = G.GAME.starting_params.joker_slots - 1
+    end },
+    { key = "rose", name = "Rose", effect = function() G.GAME.win_ante = 12 end },
+    { key = "lavish", name = "Lavish", effect = function()
+        G.GAME.starting_params.hand_size = G.GAME.starting_params.hand_size - 1
+    end },
+    { key = "eryl", name = "Eryl", effect = faster_blinds },
+    -- Half as likely each: SMODS.poll_rarity multiplies a rarity's weight by G.GAME.<rarity>_mod
+    -- (utils.lua), the way this mod's Sins do (sins/effects.lua). Whatever the two lose, Common gains -
+    -- the weights are shares of a total.
+    { key = "azure", name = "Azure", effect = function()
+        G.GAME.uncommon_mod = (G.GAME.uncommon_mod or 1) * 0.5
+        G.GAME.rare_mod = (G.GAME.rare_mod or 1) * 0.5
+    end },
+    -- Card:open reads the size of every pack through this (card.lua), never below 1 card.
+    { key = "crimson", name = "Crimson", effect = function()
+        G.GAME.modifiers.booster_size_mod = (G.GAME.modifiers.booster_size_mod or 0) - 1
+    end },
+    { key = "glimmer", name = "Glimmer", effect = function()
+        G.GAME.starting_params.hands = G.GAME.starting_params.hands - 1
+    end },
+    { key = "ichor", name = "Ichor", effect = faster_blinds },
+    -- Read by the shop (see below), which is where a voucher is put on the shelf.
+    { key = "herbium", name = "Herbium" },
+    { key = "magical", name = "Magical", effect = function()
+        G.GAME.starting_params.consumable_slots = G.GAME.starting_params.consumable_slots - 1
+    end },
+    { key = "abyssal", name = "Abyssal", effect = standing_rule("boss_for_big") },
+    -- A price is made of its own discount; Purgatory's price modifiers scale it the same way, so this
+    -- is the same number in the same place.
+    { key = "heathen", name = "Heathen", effect = function()
+        faster_blinds()
+        local state = CelestasMod.Purgatory.state()
+        state.price_mult = (state.price_mult or 1) * CelestasMod.HEATHEN_PRICE
+        G.GAME.modifiers.celesta_standing_rules = true
+    end },
+    -- The destruction is the stake's own `calculate`, below.
+    { key = "soul", name = "Soul" },
+    { key = "titanium", name = "Titanium", effect = standing_rule("no_planets") },
+    -- Read by the wrap on SMODS.get_probability_vars, below.
+    { key = "hedron", name = "Hedron" },
+    { key = "burning", name = "Burning", effect = function()
+        G.GAME.starting_params.hands = G.GAME.starting_params.hands - 1
+        faster_blinds()
+    end },
+    { key = "terra", name = "Terra", effect = standing_rule("no_tarots") },
+    { key = "celestial", name = "Celestial", effect = standing_rule("super_boss") },
+}
 
-local NUMERALS = { "I", "II", "III", "IV" }
+--- The stakes whose text is different on the Purgatory Deck: the first two that pay it a cost of their
+--- own, and the four whose curse is no longer offered there.
+local PURGATORY_TEXT = {
+    iron = true, rose = true, abyssal = true, titanium = true, terra = true, celestial = true,
+}
 
--- One chain: each applies the one below it, and the first of a metal applies the last of the one
--- before - Iron's applies Gold.
+-- One chain: each applies the one below it, and the first applies Gold.
 local below_key = "gold"
-for _, metal in ipairs(METALS) do
-    for tier = 1, #metal.tiers do
-        local below = below_key
-        below_key = metal.key .. "_" .. tier
-        -- Only Gold is the base game's, and so not given this mod's prefix.
-        local on_base_game = below == "gold"
-        SMODS.Stake {
-            name = metal.name .. " Stake " .. NUMERALS[tier],
-            key = metal.key .. "_" .. tier,
-            atlas = metal.atlas,
-            pos = { x = tier - 1, y = 0 },
-            applied_stakes = { below },
-            above_stake = below,
-            prefix_config = on_base_game and {
-                applied_stakes = { mod = false },
-                above_stake = { mod = false },
-            } or nil,
-            modifiers = metal.tiers[tier],
-            colour = metal.colour,
+for index, stake in ipairs(STAKES) do
+    local below = below_key
+    below_key = stake.key
+    -- Only Gold is the base game's, and so not given this mod's prefix.
+    local on_base_game = below == "gold"
+    SMODS.Stake {
+        name = stake.name .. " Stake",
+        key = stake.key,
+        atlas = "stake_chips",
+        pos = { x = (index - 1) % COLUMNS, y = math.floor((index - 1) / COLUMNS) },
+        applied_stakes = { below },
+        above_stake = below,
+        prefix_config = on_base_game and {
+            applied_stakes = { mod = false },
+            above_stake = { mod = false },
+        } or nil,
+        modifiers = function()
+            G.GAME.modifiers["celesta_" .. stake.key] = true
+            if stake.effect then stake.effect() end
+        end,
+        colour = HEX(COLOURS[stake.key]),
 
-            loc_vars = function(self)
-                if PURGATORY_TEXT[metal.key] and PURGATORY_TEXT[metal.key][tier] and on_purgatory() then
-                    return { key = self.key .. "_purgatory" }
-                end
-                return {}
-            end,
-        }
+        loc_vars = function(self)
+            if PURGATORY_TEXT[stake.key] and on_purgatory() then
+                return { key = self.key .. "_purgatory" }
+            end
+            return {}
+        end,
+
+        -- Soul: each card that scored may be destroyed afterwards. A stake is asked as an individual,
+        -- once for each card, in the same pass the Jokers' own `destroying_card` is.
+        calculate = stake.key == "soul" and function(self, context)
+            if context.destroying_card and context.cardarea == G.play
+                and G.GAME.modifiers.celesta_soul and CelestasMod.soul_roll(context.destroying_card) then
+                return { remove = true }
+            end
+        end or nil,
+    }
+end
+
+-- Whatever a stake that has set a standing rule asks of the blinds being set: the Big Blind a Boss Blind
+-- stood in for is still the Big Blind. The deck does the same for its own curse (items/purgatory.lua).
+local celesta_stake_mod_calculate = SMODS.current_mod.calculate
+SMODS.current_mod.calculate = function(self, context)
+    if context.setting_blind and G.GAME and G.GAME.modifiers and G.GAME.modifiers.celesta_abyssal
+        and CelestasMod.Purgatory and not CelestasMod.Purgatory.active() then
+        CelestasMod.Purgatory.calculate(context, true)
     end
+    if celesta_stake_mod_calculate then return celesta_stake_mod_calculate(self, context) end
+end
+
+--- Hedron: every listed chance is half as likely, the way Nagzz's is - the denominator doubled, so a
+--- 1 in 4 reads 1 in 8. Wrapped after the reference for the Dice's reason: it lands after every
+--- additive change, and Ellie Minibot's wrap, which loads later and goes outside it, has the last word.
+--- Soul's own chance never comes through here (it is asked with nothing to apply).
+local celesta_hedron_probability_ref = SMODS.get_probability_vars
+function SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator,
+                                    identifier, from_roll, no_mod, ...)
+    local numerator, denominator = celesta_hedron_probability_ref(
+        trigger_obj, base_numerator, base_denominator, identifier, from_roll, no_mod, ...)
+    if no_mod then return numerator, denominator end
+    if not (G.GAME and G.GAME.modifiers and G.GAME.modifiers.celesta_hedron) then
+        return numerator, denominator
+    end
+    -- Only a number, or a Talisman number that doubles through its own metamethod: the denominator is
+    -- whatever the card asking passed in (Cryptid's RNJoker hands over a sentence).
+    local meta = type(denominator) == "table" and getmetatable(denominator)
+    if type(denominator) ~= "number" and not (meta and meta.__mul) then return numerator, denominator end
+    return numerator, denominator * 2
 end
 
 --------------------------------------------------------------------------------
 -- Stacking stickers
 --------------------------------------------------------------------------------
 
---- Whether Eternal, Perishable and Rental may all be on one Joker: the first Iron Stake, on any
+--- Whether Eternal, Perishable and Rental may all be on one Joker: the Iron Stake, on any
 --- deck but the Purgatory Deck, whose version of it is a different cost.
 function CelestasMod.iron_stacks_stickers()
     local modifiers = G.GAME and G.GAME.modifiers
-    if not (modifiers and modifiers.celesta_iron_1) then return false end
+    if not (modifiers and modifiers.celesta_iron) then return false end
     local Purgatory = CelestasMod.Purgatory
     return not (Purgatory and Purgatory.active and Purgatory.active())
 end
@@ -231,7 +317,7 @@ local function install()
         create_card = create
     end
 
-    -- Rose Stake III. The shop puts its vouchers on the shelf one by one, by key, from the list the
+    -- Herbium Stake. The shop puts its vouchers on the shelf one by one, by key, from the list the
     -- last Boss Blind drew (game.lua, SMODS.add_voucher_to_shop). On the Antes the shelf is to be
     -- empty that is where they are held back, as Cryptid's Blank Deck does for all of them: the
     -- list is left as drawn, so a Voucher Tag, which makes its own, and everything else that
@@ -250,11 +336,11 @@ local function install()
     end
 end
 
---- Whether the shop is not to be stocked with vouchers: the Rose Stake's third tier, on every other
+--- Whether the shop is not to be stocked with vouchers: the Herbium Stake, on every other
 --- Ante - the odd ones are stocked, so the first shop is.
 function CelestasMod.vouchers_are_held_back()
     local modifiers = G.GAME and G.GAME.modifiers
-    if not (modifiers and modifiers.celesta_rose_3) then return false end
+    if not (modifiers and modifiers.celesta_herbium) then return false end
     return G.GAME.round_resets.ante % 2 == 0
 end
 
@@ -270,9 +356,9 @@ end
 --
 -- Steamodded lists what a stake applies under its description, and finds each one by its
 -- stake_level - how many stakes are in ITS chain - as though that were its place in the list. They
--- are the same only while the stakes form one line. Pink Stake and Iron Stake I both sit on Gold,
+-- are the same only while the stakes form one line. Pink Stake and the Iron Stake both sit on Gold,
 -- so both have the same level, and whichever one the list found at that place was shown for the
--- other: Iron Stake II said it applied Pink Stake's rule, and Cryptid's Brown Stake said it applied
+-- other: Lead Stake said it applied Pink Stake's rule, and Cryptid's Brown Stake said it applied
 -- Iron's.
 --
 -- Rewritten, with the one change: the place is looked up by key.

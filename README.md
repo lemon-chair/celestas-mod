@@ -43,7 +43,7 @@ made it.
 - **9 new enhancements**
 - **5 new seals**
 - **11 new decks**
-- **12 new stakes**: Iron, Brass and Rose, four tiers each in one chain above Gold
+- **20 new stakes** in one chain above Gold, from Iron to Celestial
 - **12 new Boss Blinds**
 - **18 new consumables**, plus a new type of consumable with 13 cards and its
   own booster pack

@@ -59,8 +59,8 @@ SHARED = {"jokers", "consumables", "decks", "sleeves", "icon", "seals", "driftwo
           "stamp_retrigger", "stamp_lucky", "stamp_favor", "stamp_pack",
           # The Stamp Tag's icon: a 34x34 tag sprite, not a card.
           "tag_stamp",
-          # The Iron, Brass and Rose Stakes' chips, a sheet of four each: stakes, not Jokers.
-          "stake_iron", "stake_brass", "stake_rose",
+          # The Stakes' chips, one sheet of them: stakes, not Jokers.
+          "stake_chips",
 }   # not per-joker art
 
 # Auto title-casing cannot know how a creator styles their own name.
@@ -5830,97 +5830,191 @@ LOC_TAIL = '''        },
             },
         },
         Stake = {
-            stake_celesta_iron_1 = {
-                name = "Iron Stake I",
+            stake_celesta_iron = {
+                name = "Iron Stake",
                 text = {
                     "Jokers can be {C:attention}Eternal{}, {C:attention}Perishable{}",
                     "and {C:attention}Rental{} all at once",
                 },
             },
-            stake_celesta_iron_1_purgatory = {
-                name = "Iron Stake I",
+            stake_celesta_iron_purgatory = {
+                name = "Iron Stake",
                 text = {
                     "Choose {C:attention}2{} modifiers after each",
                     "{C:attention}Boss Blind{}, not 1",
                 },
             },
-            stake_celesta_iron_2 = {
-                name = "Iron Stake II",
+            stake_celesta_lead = {
+                name = "Lead Stake",
                 text = {
                     "Required score scales",
                     "faster for each Ante",
                 },
             },
-            stake_celesta_iron_3 = {
-                name = "Iron Stake III",
+            stake_celesta_brass = {
+                name = "Brass Stake",
                 text = {
                     "{C:attention}-1{} Joker slot",
                 },
             },
-            stake_celesta_iron_4 = {
-                name = "Iron Stake IV",
+            stake_celesta_rose = {
+                name = "Rose Stake",
                 text = {
                     "Ante {C:attention}12{} is the final Ante",
                 },
             },
-            stake_celesta_iron_4_purgatory = {
-                name = "Iron Stake IV",
+            stake_celesta_rose_purgatory = {
+                name = "Rose Stake",
                 text = {
                     "Choose {C:attention}2{} modifiers after",
                     "{C:attention}every{} Blind, not just Boss Blinds",
                 },
             },
-            stake_celesta_brass_1 = {
-                name = "Brass Stake I",
+            stake_celesta_lavish = {
+                name = "Lavish Stake",
                 text = {
                     "{C:attention}-1{} hand size",
                 },
             },
-            stake_celesta_brass_2 = {
-                name = "Brass Stake II",
+            stake_celesta_eryl = {
+                name = "Eryl Stake",
                 text = {
                     "Required score scales",
                     "faster for each Ante",
                 },
             },
-            stake_celesta_brass_3 = {
-                name = "Brass Stake III",
+            stake_celesta_azure = {
+                name = "Azure Stake",
                 text = {
                     "{C:attention}Uncommon{} and {C:attention}Rare{} Jokers",
                     "appear less often",
                 },
             },
-            stake_celesta_brass_4 = {
-                name = "Brass Stake IV",
+            stake_celesta_crimson = {
+                name = "Crimson Stake",
                 text = {
                     "Booster Packs have {C:attention}1{} less",
                     "option to choose from",
                 },
             },
-            stake_celesta_rose_1 = {
-                name = "Rose Stake I",
+            stake_celesta_glimmer = {
+                name = "Glimmer Stake",
                 text = {
                     "{C:attention}-1{} hand",
                 },
             },
-            stake_celesta_rose_2 = {
-                name = "Rose Stake II",
+            stake_celesta_ichor = {
+                name = "Ichor Stake",
                 text = {
                     "Required score scales",
                     "faster for each Ante",
                 },
             },
-            stake_celesta_rose_3 = {
-                name = "Rose Stake III",
+            stake_celesta_herbium = {
+                name = "Herbium Stake",
                 text = {
                     "{C:attention}Vouchers{} restock",
                     "every other Ante",
                 },
             },
-            stake_celesta_rose_4 = {
-                name = "Rose Stake IV",
+            stake_celesta_magical = {
+                name = "Magical Stake",
                 text = {
                     "{C:attention}-1{} consumable slot",
+                },
+            },
+            stake_celesta_abyssal = {
+                name = "Abyssal Stake",
+                text = {
+                    "{C:attention}Boss Blinds{} can replace",
+                    "{C:attention}Big Blinds{}",
+                },
+            },
+            stake_celesta_abyssal_purgatory = {
+                name = "Abyssal Stake",
+                text = {
+                    "{C:attention}Boss Blinds{} can replace",
+                    "{C:attention}Big Blinds{}",
+                    "{C:inactive}(This negative modifier",
+                    "{C:inactive}no longer appears)",
+                },
+            },
+            stake_celesta_heathen = {
+                name = "Heathen Stake",
+                text = {
+                    "Shop prices are {C:attention}X1.5{} higher",
+                    "Required score scales",
+                    "faster for each Ante",
+                },
+            },
+            stake_celesta_soul = {
+                name = "Soul Stake",
+                text = {
+                    "Played cards have a {C:green}1 in 6{} chance",
+                    "to be {C:attention}destroyed{} after scoring",
+                },
+            },
+            stake_celesta_titanium = {
+                name = "Titanium Stake",
+                text = {
+                    "{C:planet}Planet{} cards can no longer",
+                    "appear in the shop",
+                },
+            },
+            stake_celesta_titanium_purgatory = {
+                name = "Titanium Stake",
+                text = {
+                    "{C:planet}Planet{} cards can no longer",
+                    "appear in the shop",
+                    "{C:inactive}(This negative modifier",
+                    "{C:inactive}no longer appears)",
+                },
+            },
+            stake_celesta_hedron = {
+                name = "Hedron Stake",
+                text = {
+                    "{C:green}Probabilities{} are halved",
+                    "{C:inactive}(except for the Soul Stake)",
+                },
+            },
+            stake_celesta_burning = {
+                name = "Burning Stake",
+                text = {
+                    "{C:attention}-1{} hand",
+                    "Required score scales",
+                    "faster for each Ante",
+                },
+            },
+            stake_celesta_terra = {
+                name = "Terra Stake",
+                text = {
+                    "{C:tarot}Tarot{} cards can no longer",
+                    "appear in the shop",
+                },
+            },
+            stake_celesta_terra_purgatory = {
+                name = "Terra Stake",
+                text = {
+                    "{C:tarot}Tarot{} cards can no longer",
+                    "appear in the shop",
+                    "{C:inactive}(This negative modifier",
+                    "{C:inactive}no longer appears)",
+                },
+            },
+            stake_celesta_celestial = {
+                name = "Celestial Stake",
+                text = {
+                    "{C:attention}Showdown Boss Blinds{} can",
+                    "replace regular {C:attention}Boss Blinds{}",
+                },
+            },
+            stake_celesta_celestial_purgatory = {
+                name = "Celestial Stake",
+                text = {
+                    "{C:attention}Showdown Boss Blinds{} can",
+                    "replace regular {C:attention}Boss Blinds{}",
+                    "{C:inactive}(This negative modifier",
+                    "{C:inactive}no longer appears)",
                 },
             },
         },
