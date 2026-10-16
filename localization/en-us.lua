@@ -7325,6 +7325,11 @@ return {
                     "The run ends at {C:attention}Ante 16{}",
                 },
             },
+            celesta_purg_hidden = {
+                text = {
+                    "{C:inactive}???{}",
+                },
+            },
             celesta_stamp_mark_lucky = {
                 text = {
                     "{C:attention}Stamp:{} listed {C:green}odds{} are guaranteed",
@@ -7706,6 +7711,12 @@ return {
                     "{C:attention}-1{} hand",
                 },
             },
+            stake_celesta_glimmer_hell = {
+                name = "Glimmer Stake",
+                text = {
+                    "{C:attention}-1{} discard",
+                },
+            },
             stake_celesta_ichor = {
                 name = "Ichor Stake",
                 text = {
@@ -7814,10 +7825,9 @@ return {
             stake_celesta_celestial_purgatory = {
                 name = "Celestial Stake",
                 text = {
-                    "{C:attention}Showdown Boss Blinds{} can",
-                    "replace regular {C:attention}Boss Blinds{}",
-                    "{C:inactive}(This negative modifier",
-                    "{C:inactive}no longer appears)",
+                    "{C:green}Positive{} and {C:red}negative{} modifiers",
+                    "have a {C:green}1 in 6{} chance to be",
+                    "{C:attention}hidden{} when selecting",
                 },
             },
         },

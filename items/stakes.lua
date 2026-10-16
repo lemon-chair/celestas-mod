@@ -21,7 +21,8 @@
 ---   Hedron     Probabilities are halved (the Soul Stake's own is not)
 ---   Burning    -1 hand; Blinds scale faster after each Ante
 ---   Terra      Tarot cards no longer appear in the shop
----   Celestial  Showdown Boss Blinds can replace regular Boss Blinds
+---   Celestial  Showdown Boss Blinds can replace regular Boss Blinds (on the Purgatory Deck:
+---              the modifiers in an offer each have a 1 in 6 chance to be hidden)
 ---
 --- Each applies the one below it, and the first applies Gold. Which is also what unlocks it: Steamodded
 --- offers a stake once everything it applies has been won, so winning Gold is what opens this, and it
@@ -32,8 +33,11 @@
 --- On the Purgatory Deck Iron and Rose are different - that deck has its own cost to pay - and the
 --- stake's description says which it is for the deck being looked at. See items/purgatory.lua
 --- (`P.owed_count`) for what they do there. Four of the Stakes are four of that deck's curses made a
---- rule of the run from the start (Abyssal, Titanium, Terra and Celestial), and on that deck the curse
---- of the same name is not offered: it would be asking for what is already so.
+--- rule of the run from the start (Abyssal, Titanium and Terra), and on that deck the curse of the same
+--- name is not offered: it would be asking for what is already so. Celestial's rule is the same one on
+--- any other deck, and on this one it is something else: see `P.roll_offers`.
+---
+--- Glimmer takes a hand, and the Hell Deck has one: there it takes a discard.
 ---
 --- How the stickers stack is Cryptid's Brown Stake: Eternal and Perishable stop excluding each
 --- other, and each is rolled of its own rather than from one shared roll. Done here without Cryptid.
@@ -44,23 +48,22 @@ local PREFIX = SMODS.current_mod.prefix
 SMODS.Atlas { key = "stake_chips", path = "stake_chips.png", px = 54, py = 54 }
 local COLUMNS = 5
 
---- The Purgatory Deck's key, and its sleeve's: what the stake is looked at under.
-local PURGATORY_DECK = "b_" .. PREFIX .. "_purgatory"
-local PURGATORY_SLEEVE = "sleeve_" .. PREFIX .. "_purgatory"
-
---- True when the run being set up or played is on the Purgatory Deck, or its sleeve.
+--- True when the run being set up or played is on this deck (by name, as run_has_deck has it), or its
+--- sleeve.
 ---
 --- Two places to ask, because there are two moments: in the menu the run is being CHOSEN, and the
 --- deck is the one being viewed; in a run it has been chosen, and the deck is the one selected.
-local function on_purgatory()
+local function on_deck(name)
     if G.STAGE == G.STAGES.RUN then
-        return (CelestasMod.run_has_deck and CelestasMod.run_has_deck("purgatory")) and true or false
+        return (CelestasMod.run_has_deck and CelestasMod.run_has_deck(name)) and true or false
     end
     local viewed = G.GAME and G.GAME.viewed_back and G.GAME.viewed_back.effect
         and G.GAME.viewed_back.effect.center
-    if viewed and viewed.key == PURGATORY_DECK then return true end
-    return G.viewed_sleeve == PURGATORY_SLEEVE
+    if viewed and viewed.key == "b_" .. PREFIX .. "_" .. name then return true end
+    return G.viewed_sleeve == "sleeve_" .. PREFIX .. "_" .. name
 end
+
+local function on_purgatory() return on_deck("purgatory") end
 
 --- Blinds are bigger from the second Ante on: the base game's own `scaling`, one step up. Vanilla
 --- has three of them and Steamodded reads any (utils.lua, SMODS.get_blind_amount), so a stake that
@@ -134,8 +137,14 @@ local STAKES = {
     { key = "crimson", name = "Crimson", effect = function()
         G.GAME.modifiers.booster_size_mod = (G.GAME.modifiers.booster_size_mod or 0) - 1
     end },
+    -- The Hell Deck starts with one hand, and one less is none: it takes a discard there instead. Asked of
+    -- the deck chosen (run_has_deck) rather than of the stage, which is not yet a run's while this is applied.
     { key = "glimmer", name = "Glimmer", effect = function()
-        G.GAME.starting_params.hands = G.GAME.starting_params.hands - 1
+        if CelestasMod.run_has_deck and CelestasMod.run_has_deck("hell") then
+            G.GAME.starting_params.discards = G.GAME.starting_params.discards - 1
+        else
+            G.GAME.starting_params.hands = G.GAME.starting_params.hands - 1
+        end
     end },
     { key = "ichor", name = "Ichor", effect = faster_blinds },
     -- Read by the shop (see below), which is where a voucher is put on the shelf.
@@ -162,7 +171,11 @@ local STAKES = {
         faster_blinds()
     end },
     { key = "terra", name = "Terra", effect = standing_rule("no_tarots") },
-    { key = "celestial", name = "Celestial", effect = standing_rule("super_boss") },
+    -- On any deck but the Purgatory Deck this is the Boss Blind rule (items/purgatory.lua asks for it); on
+    -- that deck it is the offer's chance to hide a modifier, which is read off the flag.
+    { key = "celestial", name = "Celestial", effect = function()
+        G.GAME.modifiers.celesta_standing_rules = true
+    end },
 }
 
 --- The chips on the sheet after the stakes' own: pictures that are not a stake's, drawn in the same style
@@ -217,6 +230,9 @@ for index, stake in ipairs(STAKES) do
         loc_vars = function(self)
             if PURGATORY_TEXT[stake.key] and on_purgatory() then
                 return { key = self.key .. "_purgatory" }
+            end
+            if stake.key == "glimmer" and on_deck("hell") then
+                return { key = self.key .. "_hell" }
             end
             return {}
         end,

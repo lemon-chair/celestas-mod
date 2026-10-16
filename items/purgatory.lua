@@ -54,6 +54,8 @@ P.REROLLS = 2
 P.LEGENDARY_SHOP_RATE = 0.02
 --- "A chance" in the Boss modifiers, as 1 in this.
 P.BOSS_ODDS = 3
+--- The chance, on the Celestial Stake, that a modifier in an offer is hidden: 1 in this.
+P.HIDDEN_ODDS = 6
 --- What the two price modifiers scale the shop by.
 P.PRICE_DOWN, P.PRICE_UP = 0.5, 1.5
 --- What the blind size modifier scales every Blind by.
@@ -855,7 +857,6 @@ add { kind = "bad", key = "lose_voucher",
       apply = take_back_voucher }
 
 add { kind = "bad", key = "super_boss",
-      available = function() return not stake_rule("celesta_celestial") end,
       apply = function(st) st.super_boss = true end }
 
 add { kind = "bad", key = "cull_faces",
@@ -1208,10 +1209,16 @@ local function offerable_of(kind, st)
     return out
 end
 
+--- Whether one modifier of an offer is hidden: a listed chance, 1 in P.HIDDEN_ODDS.
+function P.hidden_roll(seed)
+    return SMODS.pseudorandom_probability({}, SEED .. seed, 1, P.HIDDEN_ODDS) and true or nil
+end
+
 --- Three offers, each a boon and a curse, no boon and no curse twice. Fewer when the pools run
 --- short, and none when either is empty - in which case there is nothing to choose between.
 function P.roll_offers(st)
     local goods, bads = offerable_of("good", st), offerable_of("bad", st)
+    local hides = stake_rule("celesta_celestial")
     local offers = {}
     while #offers < P.OFFERS and #goods > 0 and #bads > 0 do
         local good, gi = pick(goods, "_offer_good")
@@ -1221,6 +1228,10 @@ function P.roll_offers(st)
         offers[#offers + 1] = {
             good = good.key,
             bad = bad.key,
+            -- On the Celestial Stake each one may be hidden from the choice, and stays so for as long as the
+            -- offer does: a reroll is a new offer, and a reload is not.
+            good_hidden = hides and P.hidden_roll("_hide_good") or nil,
+            bad_hidden = hides and P.hidden_roll("_hide_bad") or nil,
             -- What each one rolled with the offer (the quad merge a boon unlocks, the suit a curse
             -- removes), kept so the text names it and the choice applies that very thing.
             good_arg = good.roll and good.roll(st) or nil,
@@ -1384,15 +1395,29 @@ local function text_lines(kind, key, arg, doubled)
 end
 P.text_lines = text_lines
 
---- One modifier's text, in the white box a card's own text sits in.
-local function text_box(kind, key, arg, doubled)
+--- Lines of text, in the white box a card's own text sits in.
+local function box_of(lines)
     local rows = {}
-    for _, line in ipairs(text_lines(kind, key, arg, doubled)) do
+    for _, line in ipairs(lines) do
         rows[#rows + 1] = { n = G.UIT.R, config = { align = "cm" }, nodes = line }
     end
     return { n = G.UIT.R, config = { align = "cm", padding = 0.06, r = 0.1, minw = 3.3, minh = 1.0,
                                      colour = G.C.WHITE },
              nodes = { { n = G.UIT.C, config = { align = "cm" }, nodes = rows } } }
+end
+
+--- One modifier's text, in that box.
+local function text_box(kind, key, arg, doubled)
+    return box_of(text_lines(kind, key, arg, doubled))
+end
+
+--- The box of a modifier that is hidden from the choice.
+local function hidden_box()
+    local lines = {}
+    local ok = pcall(localize, {
+        type = "descriptions", set = "Other", key = "celesta_purg_hidden", nodes = lines,
+    })
+    return box_of(ok and lines or {})
 end
 
 local function label(text, colour)
@@ -1503,9 +1528,10 @@ local function offer_panel(index, offer)
                         focus_args = { nav = "wide" } },
              nodes = {
                  flanked("good", offer.good, label(localize("celesta_purg_good"), G.C.GREEN),
-                         text_box("good", offer.good, offer.good_arg)),
+                         offer.good_hidden and hidden_box() or text_box("good", offer.good, offer.good_arg)),
                  flanked("bad", offer.bad, label(localize("celesta_purg_bad"), G.C.RED),
-                         text_box("bad", offer.bad, offer.bad_arg, P.doubles_its_curse(offer))),
+                         offer.bad_hidden and hidden_box()
+                             or text_box("bad", offer.bad, offer.bad_arg, P.doubles_its_curse(offer))),
              } }
 end
 
@@ -1923,7 +1949,9 @@ function get_new_boss(...)
 
     -- A showdown Blind in a plain Boss's place. get_new_boss asks whether the Ante is the winning
     -- one by `ante % win_ante`, so for the length of the call it is.
-    if st.super_boss and not is_showdown_ante() and G.GAME.round_resets.ante >= 2
+    -- ...whether by the curse, or by the Celestial Stake on a deck that is not this one.
+    local super = st.super_boss or (stake_rule("celesta_celestial") and not P.active())
+    if super and not is_showdown_ante() and G.GAME.round_resets.ante >= 2
         and SMODS.pseudorandom_probability({}, SEED .. "_super", 1, P.BOSS_ODDS) then
         local saved = G.GAME.win_ante
         G.GAME.win_ante = G.GAME.round_resets.ante
