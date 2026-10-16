@@ -1585,7 +1585,9 @@ SMODS.Joker {
         -- Contains, not is: a Full House or a Four of a Kind holds a Three of
         -- a Kind too, and context.poker_hands lists every hand the played one
         -- contains - the question vanilla's own "contains" Jokers ask.
-        if context.before and not context.blueprint
+        -- A copy makes its own Tarot, as it does for every Joker that is copyable: nothing here
+        -- is counted on the card, so there is no reason for it to refuse one.
+        if context.before
             and context.poker_hands
             and next(context.poker_hands["Three of a Kind"] or {}) then
             if #G.consumeables.cards + (G.GAME.consumeable_buffer or 0)
@@ -1599,11 +1601,12 @@ SMODS.Joker {
                 func = function()
                     local made = SMODS.add_card { set = "Tarot", key_append = "celesta_papamutt" }
                     if made then made:juice_up(0.3, 0.5) end
-                    G.GAME.consumeable_buffer = 0
+                    -- Given back one at a time: a copy may have claimed a slot of its own.
+                    G.GAME.consumeable_buffer = math.max(0, (G.GAME.consumeable_buffer or 1) - 1)
                     return true
                 end
             })
-            return { message = localize("k_plus_tarot"), colour = G.C.PURPLE, card = card }
+            return { message = localize("k_plus_tarot"), colour = G.C.PURPLE, card = context.blueprint_card or card }
         end
     end,
 }
