@@ -5434,7 +5434,7 @@ function Card:get_id()
     -- get_id, so there is no loop here.
     if not SMODS.has_no_rank(self) then
         for _, rule in ipairs(CelestasMod.CARD_RANK_RULES or {}) do
-            local ok, rank = pcall(rule)
+            local ok, rank = pcall(rule, self, id)
             if ok and type(rank) == "number" then return rank end
         end
     end

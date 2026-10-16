@@ -529,7 +529,8 @@ CelestasMod.SAME_SUIT_RULES = {}
 
 --- Anything that makes every card count as ONE rank, each a function returning
 --- that rank's id or nil. jokers/implemented.lua takes the first that answers,
---- inside the Card:get_id wrap Kael already needs.
+--- inside the Card:get_id wrap Kael already needs. Each is given the card and the
+--- rank it has printed, for a rule that is about some of the cards only.
 ---
 --- Kael's own rule is not here: it covers face cards only, and it is the
 --- narrower answer these override. Its merges are, for the SAME_SUIT_RULES

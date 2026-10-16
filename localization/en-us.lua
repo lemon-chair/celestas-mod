@@ -5583,6 +5583,193 @@ return {
                     "{C:inactive}(Must have room)",
                 },
             },
+            celesta_bind_square_snapscube = {
+                name = "Square Joker + Snapscube",
+                text = {
+                    "This Joker gains {C:mult}+#1#{} Mult and {C:chips}+#1#{} Chips",
+                    "if played hand has exactly {C:attention}#2#{} cards",
+                    "{C:inactive}(Currently {C:mult}+#3#{C:inactive} Mult and {C:chips}+#4#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_cardsharp_deme = {
+                name = "Card Sharp + Deme",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult if played",
+                    "{C:attention}poker hand{} has already been played this round",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_faceless_mother = {
+                name = "Faceless Joker + MOTHERv3",
+                text = {
+                    "Gain {C:money}$#1#{} every time at least",
+                    "{C:attention}#2# Exo{} cards are discarded",
+                },
+            },
+            celesta_bind_egg_nagzz = {
+                name = "Egg + Nagzz",
+                text = {
+                    "This Joker gains {C:money}$#1#{} of sell value every",
+                    "time {C:green}odds{} successfully trigger",
+                    "{C:inactive}(Currently {C:money}$#2#{C:inactive})",
+                },
+            },
+            celesta_bind_space_pomatomaster = {
+                name = "Space Joker + Pomatomaster",
+                text = {
+                    "{C:attention}Eutrophic{} cards have a {C:green}#1# in #2#{} chance",
+                    "to level up the played {C:attention}poker hand{} when scored",
+                },
+            },
+            celesta_bind_delayedgrat_laimu = {
+                name = "Delayed Gratification + Laimu",
+                text = {
+                    "Gain {C:money}$#1#{} at the end of the round for",
+                    "each {C:attention}Limestone{} card held in hand",
+                },
+            },
+            celesta_bind_bus_jaws = {
+                name = "Ride the Bus + Jaws",
+                text = {
+                    "This Joker gains {C:chips}+#1#{} Chips if played hand",
+                    "contains no {C:attention}face cards{}",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_supernova_panda = {
+                name = "Supernova + PandaBearLily",
+                text = {
+                    "This Joker gains {C:mult}+#1#{} Mult if played hand",
+                    "contains at least {C:attention}#2#{} cards of the same suit",
+                    "{C:inactive}(Currently {C:mult}+#3#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_steel_jowol = {
+                name = "Steel Joker + Jowol",
+                text = {
+                    "{C:attention}Scoria{} cards held in hand give {C:mult}+#1#{} Mult,",
+                    "{C:attention}Sandstone{} cards held in hand give {C:chips}+#2#{} Chips",
+                },
+            },
+            celesta_bind_fibonacci_baddaboom = {
+                name = "Fibonacci + Baddaboom",
+                text = {
+                    "{C:attention}2s{}, {C:attention}3s{}, {C:attention}5s{}, {C:attention}8s{}, and {C:attention}Aces{}",
+                    "give {X:chips,C:white}X#1#{} Chips when scored",
+                },
+            },
+            celesta_bind_pareidolia_kael = {
+                name = "Pareidolia + Kael",
+                text = {
+                    "All {C:attention}number{} cards are",
+                    "considered {C:attention}10s{}",
+                },
+            },
+            celesta_bind_hack_bricky = {
+                name = "Hack + Bricky",
+                text = {
+                    "Retrigger all {C:attention}stone card{} variants",
+                    "{C:attention}#1#{} time",
+                },
+            },
+            celesta_bind_scholar_aicandii = {
+                name = "Scholar + AiCandii",
+                text = {
+                    "This Joker gains {C:mult}+#1#{} Mult every time",
+                    "an {C:attention}Ace{} is discarded",
+                    "{C:inactive}(Currently {C:mult}+#2#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_chaos_mogu = {
+                name = "Chaos the Clown + Mogu",
+                text = {
+                    "{C:green}#1# in #2#{} chance for the",
+                    "{C:attention}reroll{} price to cost nothing",
+                },
+            },
+            celesta_bind_raisedfist_axialmatt = {
+                name = "Raised Fist + AxialMatt",
+                text = {
+                    "Adds {C:attention}double{} the Chips of the card held in",
+                    "hand with the {C:attention}most{} Chips to {C:mult}Mult{}",
+                },
+            },
+            celesta_bind_dusk_froot = {
+                name = "Dusk + Froot",
+                text = {
+                    "Retrigger {C:attention}Wild Cards{} on the {C:attention}final hand{}",
+                    "of the round, each giving {X:mult,C:white}X#1#{} Mult when scored",
+                },
+            },
+            celesta_bind_loyalty_birdyovo = {
+                name = "Loyalty Card + Birdyovo",
+                text = {
+                    "{X:mult,C:white}X#1#{} Mult every {C:attention}#2#{} cards scored",
+                    "{C:inactive}(#3# remaining)",
+                },
+            },
+            celesta_bind_marble_jax = {
+                name = "Marble Joker + Jax",
+                text = {
+                    "At the start of the round, add a",
+                    "{C:attention}Sandstone{} card to your full deck",
+                },
+            },
+            celesta_bind_creditcard_minikomew = {
+                name = "Credit Card + Minikomew",
+                text = {
+                    "Go into {C:red}debt{} equal to double",
+                    "the round number",
+                    "{C:inactive}(Currently {C:red}-$#1#{C:inactive})",
+                },
+            },
+            celesta_bind_mime_mint = {
+                name = "Mime + Mint Fantôme",
+                text = {
+                    "When the played hand finishes scoring,",
+                    "score the {C:attention}leftmost{} card held in hand twice",
+                    "as if it were a {C:attention}Steel{} card",
+                },
+            },
+            celesta_bind_fourfingers_aethal = {
+                name = "Four Fingers + Aethal",
+                text = {
+                    "{C:attention}+X{} shop slots, where X is equal to",
+                    "the current {C:attention}card selection limit{}",
+                    "{C:inactive}(Currently {C:attention}+#1#{C:inactive})",
+                },
+            },
+            celesta_bind_misprint_dooby = {
+                name = "Misprint + Dooby",
+                text = {
+                    "This Joker gains between {C:mult}+#1#{} and {C:mult}+#2#{}",
+                    "Mult after the shop",
+                    "{C:inactive}(Currently {C:mult}+#3#{C:inactive} Mult)",
+                },
+            },
+            celesta_bind_mysticsummit_cyyu = {
+                name = "Mystic Summit + Cy Yu",
+                text = {
+                    "Retrigger {C:attention}Exo{} cards equal to the",
+                    "amount of {C:red}discards{} used this round",
+                },
+            },
+            celesta_bind_banner_kairyu = {
+                name = "Banner + Kairyu",
+                text = {
+                    "Gives {C:chips}+#1#{} Chips for each {C:red}discard{} used",
+                    "and each card of current {C:attention}hand size{}",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_stencil_katie = {
+                name = "Joker Stencil + ObKatieKat",
+                text = {
+                    "{X:chips,C:white}^#1#{} Chips for each empty {C:attention}Joker{} slot",
+                    "{C:inactive}(this Joker included)",
+                    "{C:inactive}(Currently {X:chips,C:white}^#2#{C:inactive} Chips)",
+                },
+            },
             celesta_bind_onigiri_girldm = {
                 name = "OniGiri + GirlDM",
                 text = {
@@ -7957,6 +8144,7 @@ return {
             celesta_failed = "Failed!",
             celesta_cleared = "Cleared!",
             celesta_plus_limestone = "+Limestone",
+            celesta_plus_sandstone = "+Sandstone",
             celesta_plus_hand_size = "+1 Hand Size",
             celesta_plus_slot = "+1 Consumable Slot",
             celesta_plus_consumable = "+Consumable",
