@@ -777,7 +777,11 @@ end
 --- test_misprint.py asserts this against Cryptid's real traversal, so if
 --- Cryptid ever descends further this is found rather than discovered.
 function Bind.special_state(card, def)
-    local bound = card.ability.celesta_bind
+    local bound = card.ability and card.ability.celesta_bind
+    -- A card with its ability lent out for a call is not bound into anything for that moment, but a pair
+    -- can still be asked about it (a description built while it is lent): it has no state to keep, and
+    -- is given the pair's own numbers to read rather than a crash.
+    if type(bound) ~= "table" then return copy_table(def.config or {}) end
     if type(bound.special) ~= "table" then
         bound.special = copy_table(def.config or {})
     end
