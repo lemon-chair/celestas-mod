@@ -187,6 +187,56 @@ function CelestasMod.more_than(a, b)
     return a > b
 end
 
+--- The fields of a Joker's ability that the base game's own chain of checks (card.lua, Card:calculate_joker)
+--- compares with a plain number, each with the number it stands for when it is empty. `self.ability.x_mult > 1`
+--- is the one that raised: Lua 5.1 does not reach a metamethod to compare a number with a table, so a Talisman
+--- number in one of these takes the run down mid-hand.
+CelestasMod.PLAIN_FIELDS = {
+    x_mult = 1, x_chips = 1, h_x_chips = 1, h_x_mult = 0,
+    mult = 0, h_mult = 0, t_mult = 0, t_chips = 0, h_chips = 0, p_dollars = 0, h_dollars = 0,
+}
+
+--- Runs `fn` with every one of those fields in `card.ability` that is a table made a plain number for the
+--- length of the call, and put back after - unless the call changed it, in which case what it made is kept.
+--- Says which Joker and field the first time one is found, because something put it there.
+function CelestasMod.with_plain_numbers(card, fn, ...)
+    local ability = card and card.ability
+    if type(ability) ~= "table" then return fn(...) end
+    local swapped
+    for field, empty in pairs(CelestasMod.PLAIN_FIELDS) do
+        local held = ability[field]
+        if type(held) == "table" then
+            local plain = type(to_number) == "function" and to_number(held) or nil
+            if type(plain) ~= "number" then plain = empty end
+            swapped = swapped or {}
+            swapped[field] = { held = held, plain = plain }
+            ability[field] = plain
+            local center = card.config and card.config.center
+            CelestasMod.warn_once("table_ability_" .. tostring(center and center.key) .. "_" .. field,
+                ("%s has a number made of a table in ability.%s; it is compared as a plain one"):format(
+                    tostring(center and center.key), field))
+        end
+    end
+    if not swapped then return fn(...) end
+    -- Two returns, because calculate_joker answers with (effect, post).
+    local ok, a, b = pcall(fn, ...)
+    for field, was in pairs(swapped) do
+        if ability[field] == was.plain then ability[field] = was.held end
+    end
+    if not ok then error(a, 0) end
+    return a, b
+end
+
+-- Wrapped here, first, so it is the one nearest the base game's own chain: every wrapper that lends a card
+-- another ability (a merge's absorbed half, CDawg's retained Jokers) calls down through it with that ability
+-- in place.
+if Card and Card.calculate_joker then
+    local celesta_plain_calculate_ref = Card.calculate_joker
+    function Card:calculate_joker(...)
+        return CelestasMod.with_plain_numbers(self, celesta_plain_calculate_ref, self, ...)
+    end
+end
+
 --- True while a played hand is actually being scored, rather than previewed.
 ---
 --- modify_scoring_hand - the context a Joker answers to widen the scoring hand,
