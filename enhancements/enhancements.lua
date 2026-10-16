@@ -987,9 +987,23 @@ local function hand_index(results)
     if not results then return math.huge end
     for i, name in ipairs(G.handlist) do
         local made = results[name]
-        if made and next(made) then return i end
+        if made and next(made) then return i, made end
     end
     return math.huge
+end
+
+--- How many of these cards are among the ones that score in the hand a set of results made.
+---
+--- The game scores the first group of the best hand (G.FUNCS.get_poker_hand_info reads `[1]`), so that
+--- is the group counted. A Driftwood that is not in it is a card played and not scored.
+local function scoring_among(made, cards)
+    local count = 0
+    for _, scoring in ipairs((made and made[1]) or {}) do
+        for _, card in ipairs(cards) do
+            if scoring == card then count = count + 1 break end
+        end
+    end
+    return count
 end
 
 local evaluate_poker_hand_ref = evaluate_poker_hand
@@ -1012,16 +1026,20 @@ function evaluate_poker_hand(hand)
         end
     end
 
-    local best_rank, best_index = nil, math.huge
+    -- The best hand wins; among ranks that make the same best hand, the one that puts the most
+    -- Driftwoods into the cards that score. Without that the first rank tried won every tie, and
+    -- a Driftwood played with seven Aces was a Two, which no Five of a Kind scores.
+    local best_rank, best_index, best_scoring = nil, math.huge, -1
     for _, rank_key in ipairs(SMODS.Rank.obj_buffer) do
         local rank = SMODS.Ranks[rank_key]
         if rank and rank.id then
             for _, card in ipairs(wilds) do
                 card.base.id, card.base.value = rank.id, rank_key
             end
-            local index = hand_index(evaluate_poker_hand_ref(hand))
-            if index < best_index then
-                best_index, best_rank = index, rank_key
+            local index, made = hand_index(evaluate_poker_hand_ref(hand))
+            local scoring = scoring_among(made, wilds)
+            if index < best_index or (index == best_index and scoring > best_scoring) then
+                best_index, best_rank, best_scoring = index, rank_key, scoring
             end
         end
     end
