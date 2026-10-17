@@ -1734,7 +1734,13 @@ local function shop_panel(index, offer)
              } }
 end
 
---- The Ichor Stake's shop: the six, three to a row, and the way to reroll them and to leave.
+--- The run's money as the box prints it, with the sign.
+function P.money_text()
+    local dollars = G.GAME and G.GAME.dollars or 0
+    return "$" .. (number_format and number_format(dollars) or tostring(number(dollars)))
+end
+
+--- The Ichor Stake's shop: the six, three to a row, the run's money, and the way to reroll them and to leave.
 function P.shop_definition(st)
     local rows = {}
     for first = 1, #(st.offers or {}), 3 do
@@ -1757,7 +1763,13 @@ function P.shop_definition(st)
                                       colour = G.C.UI.TEXT_LIGHT } } } },
     }
     for _, row in ipairs(rows) do contents[#contents + 1] = row end
+    -- The run's money sits in the bottom left corner of the box, where the HUD's own is covered by it; an
+    -- empty column of the same width on the right keeps the two buttons in the middle.
+    local money = { n = G.UIT.C, config = { align = "bl", minw = 3.0 }, nodes = {
+        { n = G.UIT.R, config = { align = "cm", padding = 0.08, r = 0.1, colour = G.C.BLACK, emboss = 0.05 }, nodes = {
+            { n = G.UIT.T, config = { text = P.money_text(), scale = 0.5, colour = G.C.MONEY, shadow = true } } } } } }
     contents[#contents + 1] = { n = G.UIT.R, config = { align = "cm", padding = 0.05 }, nodes = {
+        money,
         { n = G.UIT.C, config = { align = "cm", padding = 0.05 }, nodes = {
             UIBox_button {
                 label = { localize("celesta_purg_reroll") .. " (" .. left .. ")" },
@@ -1773,6 +1785,7 @@ function P.shop_definition(st)
                 colour = G.C.ORANGE,
                 minw = 3.6, minh = 0.7, scale = 0.45,
             } } },
+        { n = G.UIT.C, config = { minw = 3.0 } },
     } }
     return create_UIBox_generic_options { no_back = true, no_esc = true, minw = 12, contents = contents }
 end
