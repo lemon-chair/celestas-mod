@@ -5158,6 +5158,11 @@ LOC_TAIL = '''        },
                     "{C:attention}Big Blinds{}",
                 },
             },
+            celesta_purg_good_blind_size = {
+                text = {
+                    "Blinds are {C:attention}25%{} smaller",
+                },
+            },
             celesta_purg_bad_blind_size = {
                 text = {
                     "Blinds are {C:attention}50%{} larger",

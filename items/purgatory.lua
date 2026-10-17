@@ -60,6 +60,8 @@ P.HIDDEN_ODDS = 6
 P.PRICE_DOWN, P.PRICE_UP = 0.5, 1.5
 --- What the blind size modifier scales every Blind by.
 P.BLIND_UP = 1.5
+--- What the blind size pro scales every Blind by.
+P.BLIND_DOWN = 0.75
 
 local SEED = "celesta_purgatory"
 
@@ -720,6 +722,12 @@ add { kind = "good", key = "purge", repeatable = true,
       end,
       apply = function(st) P.purge(st) end }
 
+add { kind = "good", key = "blind_size",
+      apply = function()
+          local params = G.GAME.starting_params
+          params.ante_scaling = (params.ante_scaling or 1) * P.BLIND_DOWN
+      end }
+
 -- ---------------------------------------------------------------- cons
 
 add { kind = "bad", key = "rerolls",
@@ -1103,6 +1111,10 @@ local UNDO = {
     ["bad:consumable_slot"] = function() G.consumeables:change_size(1) end,
     ["bad:hand_size"] = function() G.hand:change_size(1) end,
     ["bad:boss_big"] = function(st) st.boss_for_big = nil end,
+    ["good:blind_size"] = function()
+        local params = G.GAME.starting_params
+        params.ante_scaling = (params.ante_scaling or 1) / P.BLIND_DOWN
+    end,
     ["bad:blind_size"] = function()
         local params = G.GAME.starting_params
         params.ante_scaling = (params.ante_scaling or 1) / P.BLIND_UP
@@ -1483,7 +1495,7 @@ P.CATEGORIES = {
     { title = "Card destruction", icon = "iron",
       good = {}, bad = { "cull_quarter", "cull_faces", "cull_suit", "destroy_held" } },
     { title = "Boss Blinds", icon = "glimmer",
-      good = { "skip_boss" }, bad = { "boss_big", "blind_size", "boss_repeat", "super_boss" } },
+      good = { "skip_boss", "blind_size" }, bad = { "boss_big", "blind_size", "boss_repeat", "super_boss" } },
     { title = "Specific Boss Blinds", icon = "terra",
       good = { "drop_buff" },
       bad = { "buff_clover", "buff_flower", "buff_wyrm", "buff_robot", "buff_brick", "buff_goat", "buff_frog",
