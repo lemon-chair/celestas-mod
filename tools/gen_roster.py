@@ -5119,8 +5119,8 @@ LOC_TAIL = '''        },
             celesta_purg_good_snuffy = {
                 name = "Snuffy",
                 text = {
-                    "Snuffy counts every Hand of",
-                    "the round: used and remaining",
+                    "Snuffy counts every Hand of the",
+                    "round, not just those remaining",
                 },
             },
             celesta_purg_good_dokibird = {
