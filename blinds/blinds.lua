@@ -12,7 +12,7 @@ CelestasMod.CLOVER_ODDS = 2
 --- The odds The Clover rolls against once its buff is on, as 1 in this.
 CelestasMod.CLOVER_ODDS_BUFFED = 4
 
---- True when the Purgatory Deck's curse for this Blind has been taken (items/purgatory.lua keeps
+--- True when the Purgatory Deck's con for this Blind has been taken (items/purgatory.lua keeps
 --- them, one flag per Blind, in the run's own state). A Blind asks for its own and nothing else.
 function CelestasMod.boss_buffed(name)
     local state = G.GAME and G.GAME.celesta_purgatory

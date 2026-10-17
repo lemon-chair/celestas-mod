@@ -32,8 +32,8 @@
 ---
 --- On the Purgatory Deck Iron and Rose are different - that deck has its own cost to pay - and the
 --- stake's description says which it is for the deck being looked at. See items/purgatory.lua
---- (`P.owed_count`) for what they do there. Four of the Stakes are four of that deck's curses made a
---- rule of the run from the start (Abyssal, Titanium and Terra), and on that deck the curse of the same
+--- (`P.owed_count`) for what they do there. Four of the Stakes are four of that deck's cons made a
+--- rule of the run from the start (Abyssal, Titanium and Terra), and on that deck the con of the same
 --- name is not offered: it would be asking for what is already so. Celestial's rule is the same one on
 --- any other deck, and on this one it is something else: see `P.roll_offers`.
 ---
@@ -73,7 +73,7 @@ local function faster_blinds()
 end
 
 --- Makes one of the rules items/purgatory.lua's hooks stand on a rule of the run, for any deck: the
---- flag is what those hooks ask, and `name` is the one the deck's own curse of that name would set.
+--- flag is what those hooks ask, and `name` is the one the deck's own con of that name would set.
 local function standing_rule(name)
     return function()
         CelestasMod.Purgatory.state()[name] = true
@@ -198,7 +198,7 @@ function CelestasMod.stake_chip_pos(key)
 end
 
 --- The stakes whose text is different on the Purgatory Deck: the first two that pay it a cost of their
---- own, and the four whose curse is no longer offered there.
+--- own, and the four whose con is no longer offered there.
 local PURGATORY_TEXT = {
     iron = true, rose = true, abyssal = true, titanium = true, terra = true, celestial = true,
 }
@@ -249,7 +249,7 @@ for index, stake in ipairs(STAKES) do
 end
 
 -- Whatever a stake that has set a standing rule asks of the blinds being set: the Big Blind a Boss Blind
--- stood in for is still the Big Blind. The deck does the same for its own curse (items/purgatory.lua).
+-- stood in for is still the Big Blind. The deck does the same for its own con (items/purgatory.lua).
 local celesta_stake_mod_calculate = SMODS.current_mod.calculate
 SMODS.current_mod.calculate = function(self, context)
     if context.setting_blind and G.GAME and G.GAME.modifiers and G.GAME.modifiers.celesta_abyssal

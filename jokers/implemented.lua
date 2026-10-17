@@ -183,7 +183,7 @@ SMODS.Joker {
         -- `not context.blueprint` so a Blueprint copy cannot eat a second
         -- consumable or double the growth - it still copies the X Mult below.
         if context.ending_shop and not context.blueprint then
-            -- The Purgatory Deck's boon: it grows without eating anything.
+            -- The Purgatory Deck's pro: it grows without eating anything.
             local free = (CelestasMod.purg and CelestasMod.purg("crelly"))
             if free or #G.consumeables.cards > 0 then
                 local target = (not free) and pseudorandom_element(G.consumeables.cards,
@@ -1491,7 +1491,7 @@ SMODS.Joker {
 
     calculate = function(self, card, context)
         if context.selling_self and not context.blueprint then
-            -- The Purgatory Deck's boon: both, rather than one of the two.
+            -- The Purgatory Deck's pro: both, rather than one of the two.
             local tag_keys = { (pseudorandom_element({ "tag_uncommon", "tag_rare" },
                 pseudoseed("celesta_chacha"))) }
             if (CelestasMod.purg and CelestasMod.purg("chacha")) then tag_keys = { "tag_uncommon", "tag_rare" } end
@@ -3396,7 +3396,7 @@ end
 --- doubled Tarots into the next one.
 local function haruka_apply(count, paired)
     haruka_capture()
-    -- The Purgatory Deck's boon is one more factor in the same product: it is read off the run,
+    -- The Purgatory Deck's pro is one more factor in the same product: it is read off the run,
     -- so a run that is not on that deck, and the next run, both start at 1.
     local scale = CelestasMod.HARUKA_SCALE ^ count
         * CelestasMod.ONIGIRI_HARUKA_SCALE ^ (paired or 0)
@@ -3536,7 +3536,7 @@ SMODS.Joker {
     -- packs, and fills the new slots immediately if the shop is already open.
     -- Pairing it with remove_from_deck means selling the joker, or having it
     -- debuffed, gives the slots back.
-    -- What was handed out is written down on the card, so the Purgatory Deck's boon - two more -
+    -- What was handed out is written down on the card, so the Purgatory Deck's pro - two more -
     -- can be paid to a card already in the row and taken back in full when it leaves.
     add_to_deck = function(self, card, from_debuff)
         local slots = card.ability.extra.slots + ((CelestasMod.purg and CelestasMod.purg("heavenlyfather")) and 2 or 0)
@@ -7098,9 +7098,9 @@ local function isaa_returns_this_hand()
     return isaa_in_play()
 end
 
---- The Purgatory Deck's boon on Isaa: the hand only comes back if it scored at least a quarter of
+--- The Purgatory Deck's pro on Isaa: the hand only comes back if it scored at least a quarter of
 --- the Blind. Asked after the hand has scored, so the round's total is the hand's own on the first
---- hand. True whenever the boon has not been taken.
+--- hand. True whenever the pro has not been taken.
 function CelestasMod.isaa_scored_enough()
     if not (CelestasMod.purg and CelestasMod.purg("isaa")) then return true end
     local blind = G.GAME and G.GAME.blind
@@ -7860,7 +7860,7 @@ CelestasMod.bump_limit = bump_limit
 local function seraph_slots(card)
     local extra = card.ability.extra
     local jokers, consumables = extra.joker_slots, extra.consumable_slots
-    -- The Purgatory Deck's boon: two more Joker slots and one more consumable slot.
+    -- The Purgatory Deck's pro: two more Joker slots and one more consumable slot.
     if (CelestasMod.purg and CelestasMod.purg("seraph")) then jokers, consumables = jokers + 2, consumables + 1 end
     return math.floor(jokers + 0.5), math.floor(consumables + 0.5)
 end
@@ -10142,7 +10142,7 @@ SMODS.Joker {
         if context.individual and context.cardarea == G.play
             and not context.blueprint then
             local hand = context.full_hand or (G.play and G.play.cards) or {}
-            -- The Purgatory Deck's boon: how many cards were played no longer matters.
+            -- The Purgatory Deck's pro: how many cards were played no longer matters.
             if #hand ~= card.ability.extra.size and not (CelestasMod.purg and CelestasMod.purg("astrum")) then return end
 
             SMODS.scale_card(card, {
@@ -10316,7 +10316,7 @@ SMODS.Joker {
     calculate = function(self, card, context)
         if not (context.selling_self and not context.blueprint) then return end
 
-        -- The Purgatory Deck's boon: two Negative Tags on top of the Joker.
+        -- The Purgatory Deck's pro: two Negative Tags on top of the Joker.
         if (CelestasMod.purg and CelestasMod.purg("grimmi")) then
             G.E_MANAGER:add_event(Event {
                 func = function()
@@ -10909,7 +10909,7 @@ SMODS.Joker {
 local LUCYPYRE_KEY = "j_celesta_lucypyre"
 
 --- What every Blind's quota is multiplied by while LucyPyre is held.
---- What one LucyPyre takes off, in percent: its own, or 25 under the Purgatory Deck's boon.
+--- What one LucyPyre takes off, in percent: its own, or 25 under the Purgatory Deck's pro.
 function CelestasMod.lucypyre_percent(ability)
     local percent = ((ability or {}).extra or {}).percent or 0
     if (CelestasMod.purg and CelestasMod.purg("lucypyre")) and percent < 25 then percent = 25 end
@@ -11963,7 +11963,7 @@ SMODS.Joker {
         if not CelestasMod.more_than(stored, 0) then return end
         if CelestasMod.more_than(stored, card.ability.extra.cap)
             and not (CelestasMod.favored and CelestasMod.favored(card))
-            -- ...and so does the Purgatory Deck's boon, for every Dokibird.
+            -- ...and so does the Purgatory Deck's pro, for every Dokibird.
             and not (CelestasMod.purg and CelestasMod.purg("dokibird")) then
             return
         end
@@ -11999,7 +11999,7 @@ SMODS.Joker {
 --- How many extra picks this card should be handing out right now.
 local function snuffy_want()
     local round = G.GAME and G.GAME.current_round
-    -- The Purgatory Deck's boon: every Hand of the round, not only the ones still to play.
+    -- The Purgatory Deck's pro: every Hand of the round, not only the ones still to play.
     if (CelestasMod.purg and CelestasMod.purg("snuffy")) then
         return math.max(0, ((round and round.hands_left) or 0) + ((round and round.hands_played) or 0))
     end
@@ -12598,7 +12598,7 @@ CelestasMod.CALAMITAS_CAP = 4
 --- shop and of the one in the Collection, and neither has a side.
 function CelestasMod.calamitas_cap(extra)
     local cap = (extra and extra.max) or CelestasMod.CALAMITAS_CAP
-    -- The Purgatory Deck's boon: six, not four.
+    -- The Purgatory Deck's pro: six, not four.
     if (CelestasMod.purg and CelestasMod.purg("calamitas")) and cap < 6 then cap = 6 end
     return cap
 end

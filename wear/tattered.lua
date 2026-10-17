@@ -118,7 +118,7 @@ function Tattered.wear_delay()
     for _ in ipairs(CelestasMod.find_joker("j_celesta_sansin")) do
         factor = factor * Tattered.DELAY_MULTIPLIER
     end
-    -- The Purgatory Deck's curse: cards wear out twice as fast.
+    -- The Purgatory Deck's con: cards wear out twice as fast.
     if Tattered.purgatory("fast_tatter") then factor = factor / 2 end
     return factor
 end
@@ -164,7 +164,7 @@ end
 
 --- Takes the wear off a card WITHOUT protecting it, which is what repair() also does. For a rule
 --- that stops cards wearing from now on and has no business making any of them immune: the Purgatory
---- Deck's boon, which mends what is already worn the moment it is taken. Returns true only when
+--- Deck's pro, which mends what is already worn the moment it is taken. Returns true only when
 --- there was wear to take off.
 function Tattered.mend(card)
     if not (is_playing_card(card) and card.ability.celesta_tattered) then return false end
@@ -210,7 +210,7 @@ function Tattered.record_score(card)
     if not is_playing_card(card) or Tattered.is_tattered(card) then return false end
     if Tattered.is_immune(card) then return false end
     if Tattered.milk_shielded(card) then return false end
-    -- The Purgatory Deck's boon: no card wears out any more.
+    -- The Purgatory Deck's pro: no card wears out any more.
     if Tattered.purgatory("no_tatter") then return false end
     local count = (card.ability.celesta_scored or 0) + 1
     card.ability.celesta_scored = count

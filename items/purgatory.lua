@@ -1,7 +1,7 @@
 --- THE PURGATORY DECK
 ---
 --- A roguelike deck: after every Boss Blind, before the cash-out, the run stops and offers three
---- modifiers. Each is a boon that comes with a curse, like a Stamp, and the player must take one of
+--- modifiers. Each is a pro that comes with a con, like a Stamp, and the player must take one of
 --- the three to go on. The offer can be rerolled twice. The run ends at Ante 12, where the
 --- showdown Blind used to be at Ante 8.
 ---
@@ -64,7 +64,7 @@ P.BLIND_UP = 1.5
 local SEED = "celesta_purgatory"
 
 --- What a Boss Blind's key of this mod starts with. Resolved here: SMODS.current_mod is only set while
---- the mod is loading, and the Summon boon asks for a key long after.
+--- the mod is loading, and the Summon pro asks for a key long after.
 local BOSS_PREFIX = "bl_" .. SMODS.current_mod.prefix .. "_"
 
 --- What the warning over a forbidden hand reads (set into SMODS.debuff_text while one is selected).
@@ -99,14 +99,14 @@ local function live()
     return P.state()
 end
 
---- True when a Stake has made this a rule of the run (items/stakes.lua sets one flag a Stake). The curse
+--- True when a Stake has made this a rule of the run (items/stakes.lua sets one flag a Stake). The con
 --- of the same name is then not offered: it would be asking for what is already so.
 local function stake_rule(flag)
     return G.GAME and G.GAME.modifiers and G.GAME.modifiers[flag] and true or false
 end
 
 --- The state the standing rules are read from. On this deck, its own; on any deck, the one a Stake
---- made when it set one of them (items/stakes.lua: four of the Stakes are four of the curses below,
+--- made when it set one of them (items/stakes.lua: four of the Stakes are four of the cons below,
 --- as a rule of the run from the start). The hooks that carry those rules ask this, and the rest of
 --- the deck keeps asking `live`.
 local function rules()
@@ -271,7 +271,7 @@ end
 -- effect would be a cost that costs nothing.
 --
 -- Hieroglyph and Petroglyph are left out on purpose. They lowered the Ante, and giving it back
--- would be a curse that moves the whole run forward a step rather than taking something away.
+-- would be a con that moves the whole run forward a step rather than taking something away.
 --
 -- The rates are worked out afresh from the vouchers still owned rather than taken back by
 -- amount, because a Tycoon replaced its Merchant's number rather than adding to it.
@@ -377,7 +377,7 @@ local function booster_slots()
     return (shop.booster_max or 2) + ((G.GAME.modifiers or {}).extra_boosters or 0)
 end
 
--- ---------------------------------------------------------------- boons
+-- ---------------------------------------------------------------- pros
 
 add { kind = "good", key = "rerolls",
       apply = function(st) st.reroll_bonus = (st.reroll_bonus or 0) + 2 end }
@@ -602,9 +602,9 @@ add { kind = "good", key = "lost_slots",
           if CelestasMod.Lost then CelestasMod.Lost.sync_slots() end
       end }
 
--- The Jokers a boon changes, one boon each. Each is only offered while the Joker is owned. What it
+-- The Jokers a pro changes, one pro each. Each is only offered while the Joker is owned. What it
 -- changes is in the Joker's own code, which reads the flag by this name (CelestasMod.purg).
-local JOKER_BOONS = {
+local JOKER_PROS = {
     { key = "grimmi", joker = "j_celesta_grimmi" },
     { key = "chacha", joker = "j_celesta_chacha" },
     { key = "crelly", joker = "j_celesta_crelly" },
@@ -618,17 +618,17 @@ local JOKER_BOONS = {
     { key = "seraph", joker = "j_celesta_smittenseraph" },
     { key = "isaa", joker = "j_celesta_isaa" },
 }
-P.JOKER_BOONS = JOKER_BOONS
+P.JOKER_PROS = JOKER_PROS
 
-for _, boon in ipairs(JOKER_BOONS) do
-    add { kind = "good", key = boon.key,
-          available = function() return owns(boon.joker) end,
+for _, pro in ipairs(JOKER_PROS) do
+    add { kind = "good", key = pro.key,
+          available = function() return owns(pro.joker) end,
           apply = function(st)
-              st[boon.key] = true
-              if boon.key == "heavenlyfather" then
+              st[pro.key] = true
+              if pro.key == "heavenlyfather" then
                   -- Already in the row, it has handed out its two; the two more are paid now and
                   -- written on the card, which is what it gives back when it leaves.
-                  for _, found in ipairs(CelestasMod.find_joker(boon.joker, true)) do
+                  for _, found in ipairs(CelestasMod.find_joker(pro.joker, true)) do
                       local held = found.ability.celesta_hf_granted
                       if held then
                           SMODS.change_booster_limit(2)
@@ -663,7 +663,7 @@ add { kind = "good", key = "stamp_packs",
       apply = function(st) st.stamp_packs = true end }
 
 add { kind = "good", key = "summon", repeatable = true,
-      -- Only while there is a Mythic Joker to summon and somewhere to put the card. Its curse is
+      -- Only while there is a Mythic Joker to summon and somewhere to put the card. Its con is
       -- doubled, if it can be: see P.double.
       available = function()
           return #CelestasMod.summonable() > 0 and limit(G.consumeables) > #(G.consumeables.cards or {})
@@ -702,7 +702,7 @@ add { kind = "good", key = "ante_down", repeatable = true,
 add { kind = "good", key = "coupon_tag", repeatable = true,
       apply = function() gain_tag("tag_coupon") end }
 
---- How many modifiers must be in effect, boons and curses together, before the Purge is offered.
+--- How many modifiers must be in effect, pros and cons together, before the Purge is offered.
 P.PURGE_AT = 16
 
 add { kind = "good", key = "purge", repeatable = true,
@@ -711,7 +711,7 @@ add { kind = "good", key = "purge", repeatable = true,
       end,
       apply = function(st) P.purge(st) end }
 
--- ---------------------------------------------------------------- curses
+-- ---------------------------------------------------------------- cons
 
 add { kind = "bad", key = "rerolls",
       apply = function(st) st.reroll_bonus = (st.reroll_bonus or 0) - 1 end }
@@ -931,7 +931,7 @@ add { kind = "bad", key = "lose_editions",
 
 add { kind = "bad", key = "least_hand",
       -- Only while there is a least-played hand to name: with every hand played the same number
-      -- of times there is none, and the curse would forbid nothing.
+      -- of times there is none, and the con would forbid nothing.
       available = function() return next(P.banned_hands(true)) ~= nil end,
       apply = function(st) st.no_least_hand = true end }
 
@@ -951,9 +951,9 @@ add { kind = "bad", key = "destroy_held",
 
 -- ---------------------------------------------------------------- the Boss Blinds
 --
--- Nine of the curses make one Boss Blind of this mod worse for the rest of the run. Each is a flag
+-- Nine of the cons make one Boss Blind of this mod worse for the rest of the run. Each is a flag
 -- in `buffs`, and the Blind itself asks for it (blinds/blinds.lua, CelestasMod.boss_buffed). A
--- boon takes a random one off again, and only offers to when there is one to take.
+-- pro takes a random one off again, and only offers to when there is one to take.
 
 local BUFFS = { "clover", "flower", "wyrm", "robot", "brick", "goat", "frog", "horn", "gem" }
 P.BUFFS = BUFFS
@@ -982,7 +982,7 @@ function Card:can_sell_card(context)
     return celesta_purg_can_sell_ref(self, context)
 end
 
---- The Ante a curse jumps the run to.
+--- The Ante a con jumps the run to.
 P.JUMP_ANTE = 12
 --- The Ante the other one moves the end of the run to.
 P.LONG_ANTE = 16
@@ -1113,12 +1113,12 @@ local UNDO = {
     ["bad:ante_end"] = function() G.GAME.win_ante = P.WIN_ANTE end,
 }
 
-for _, boon in ipairs(JOKER_BOONS) do
-    UNDO["good:" .. boon.key] = function(st)
-        st[boon.key] = nil
-        if boon.key == "heavenlyfather" then
+for _, pro in ipairs(JOKER_PROS) do
+    UNDO["good:" .. pro.key] = function(st)
+        st[pro.key] = nil
+        if pro.key == "heavenlyfather" then
             -- ...and the two boosters it was handed on top, which are written on the card.
-            for _, found in ipairs(CelestasMod.find_joker(boon.joker, true)) do
+            for _, found in ipairs(CelestasMod.find_joker(pro.joker, true)) do
                 local held = found.ability.celesta_hf_granted
                 if held and held >= 2 then
                     SMODS.change_booster_limit(-2)
@@ -1133,7 +1133,7 @@ for _, name in ipairs(BUFFS) do
     UNDO["bad:buff_" .. name] = function(st) st.buffs[name] = nil end
 end
 
---- Whether a Boss Blind upgrade is still on: one a boon has dropped is no longer in effect.
+--- Whether a Boss Blind upgrade is still on: one a pro has dropped is no longer in effect.
 local STANDING = {}
 for _, name in ipairs(BUFFS) do
     STANDING["bad:buff_" .. name] = function(st) return st.buffs[name] and true or false end
@@ -1163,7 +1163,7 @@ end
 function P.take_back(st, item)
     local record, entry = item.record, item.entry
     record[item.kind .. "_removed"] = true
-    -- A curse a Summon doubled was applied twice.
+    -- A con a Summon doubled was applied twice.
     local times = (item.kind == "bad" and record.twice) and 2 or 1
     for _ = 1, times do
         local ok, err = pcall(entry.undo, st, record[item.kind .. "_arg"])
@@ -1175,17 +1175,17 @@ function P.take_back(st, item)
     st.taken[entry.id] = math.max(0, (st.taken[entry.id] or 0) - 1)
 end
 
---- The Purge: half of the boons in effect (rounded as a cull is, at random) and every curse.
+--- The Purge: half of the pros in effect (rounded as a cull is, at random) and every con.
 function P.purge(st)
-    local boons = P.in_effect(st, "good", choosing)
-    local curses = P.in_effect(st, "bad", choosing)
-    for _ = 1, math.floor(#boons / 2 + 0.5) do
-        local item, index = pick(boons, "_purge")
+    local pros = P.in_effect(st, "good", choosing)
+    local cons = P.in_effect(st, "bad", choosing)
+    for _ = 1, math.floor(#pros / 2 + 0.5) do
+        local item, index = pick(pros, "_purge")
         if not item then break end
-        table.remove(boons, index)
+        table.remove(pros, index)
         P.take_back(st, item)
     end
-    for _, item in ipairs(curses) do P.take_back(st, item) end
+    for _, item in ipairs(cons) do P.take_back(st, item) end
 end
 
 
@@ -1214,7 +1214,7 @@ function P.hidden_roll(seed)
     return SMODS.pseudorandom_probability({}, SEED .. seed, 1, P.HIDDEN_ODDS) and true or nil
 end
 
---- Three offers, each a boon and a curse, no boon and no curse twice. Fewer when the pools run
+--- Three offers, each a pro and a con, no pro and no con twice. Fewer when the pools run
 --- short, and none when either is empty - in which case there is nothing to choose between.
 function P.roll_offers(st)
     local goods, bads = offerable_of("good", st), offerable_of("bad", st)
@@ -1232,7 +1232,7 @@ function P.roll_offers(st)
             -- offer does: a reroll is a new offer, and a reload is not.
             good_hidden = hides and P.hidden_roll("_hide_good") or nil,
             bad_hidden = hides and P.hidden_roll("_hide_bad") or nil,
-            -- What each one rolled with the offer (the quad merge a boon unlocks, the suit a curse
+            -- What each one rolled with the offer (the quad merge a pro unlocks, the suit a con
             -- removes), kept so the text names it and the choice applies that very thing.
             good_arg = good.roll and good.roll(st) or nil,
             bad_arg = bad.roll and bad.roll(st) or nil,
@@ -1252,7 +1252,7 @@ function P.rerolls_left(st)
     return math.max(0, P.max_rerolls(st) - (st.rerolls_used or 0))
 end
 
---- The curses a second helping would not change: a standing rule is either on or off, and what is
+--- The cons a second helping would not change: a standing rule is either on or off, and what is
 --- idempotent is already as bad as it gets.
 P.NOT_DOUBLED = {
     no_pay = true, boss_big = true, boss_repeat = true, tatter_fast = true, super_boss = true,
@@ -1261,9 +1261,9 @@ P.NOT_DOUBLED = {
     lose_editions = true, lose_consumables = true,
 }
 
---- The Summon boon's price: the curse that came with it, twice - when twice means anything, and
---- while there is anything left for the second to take (every curse that has a limit asks again
---- whether it still may, as if it were being offered). A curse that upgrades a Boss Blind cannot be
+--- The Summon pro's price: the con that came with it, twice - when twice means anything, and
+--- while there is anything left for the second to take (every con that has a limit asks again
+--- whether it still may, as if it were being offered). A con that upgrades a Boss Blind cannot be
 --- doubled and is made certain instead: that Blind is the next Boss Blind there is.
 function P.double(st, bad, arg)
     local name = bad.key:match("^buff_(.+)$")
@@ -1304,18 +1304,18 @@ function P.choose(index)
     end
     st.taken[good.id] = (st.taken[good.id] or 0) + 1
     st.taken[bad.id] = (st.taken[bad.id] or 0) + 1
-    -- ...and the pair itself, in order, with what each half was rolled with and whether the curse was
+    -- ...and the pair itself, in order, with what each half was rolled with and whether the con was
     -- doubled: `taken` counts, and a list of what is in effect has to say which suit and which quad.
     st.history = st.history or {}
     local record = {
         good = good.key, bad = bad.key, good_arg = offer.good_arg, bad_arg = offer.bad_arg,
-        doubled = P.doubles_its_curse(offer) or nil,
+        doubled = P.doubles_its_con(offer) or nil,
     }
     st.history[#st.history + 1] = record
     choosing = record
     if G.OVERLAY_MENU then G.FUNCS.exit_overlay_menu() end
 
-    -- The Summon boon after its curse rather than before: a curse that empties the consumable row
+    -- The Summon pro after its con rather than before: a con that empties the consumable row
     -- must not take the card it came with.
     local summoning = good.key == "summon"
     for _, entry in ipairs(summoning and { bad, good } or { good, bad }) do
@@ -1355,12 +1355,12 @@ end
 -- The prompt
 --------------------------------------------------------------------------------
 
---- Whether this offer's curse comes doubled: the Summon boon is paid for with it twice (P.double).
-function P.doubles_its_curse(offer)
+--- Whether this offer's con comes doubled: the Summon pro is paid for with it twice (P.double).
+function P.doubles_its_con(offer)
     return offer ~= nil and offer.good == "summon"
 end
 
---- The localization key a modifier's text is under. A curse that is being doubled has a second
+--- The localization key a modifier's text is under. A con that is being doubled has a second
 --- entry, `_double`, that says what twice is - "-2 Hands", not "-1 Hand" with a note. One that
 --- cannot be doubled has none and reads as it always does, which is what happens to it.
 local function text_key(kind, key, doubled)
@@ -1449,7 +1449,7 @@ P.CATEGORIES = {
       good = { "joker_slot", "rare_joker", "negative_joker", "unsticker", "lost_slots" },
       bad = { "joker_slot", "destroy_joker", "lose_negative", "sticker", "eternal_perishable", "lose_editions" } },
     { title = "Specific Jokers", icon = "abyssal",
-      -- the twelve that change one Joker each (JOKER_BOONS)
+      -- the twelve that change one Joker each (JOKER_PROS)
       good = { "grimmi", "chacha", "crelly", "calamitas", "snuffy", "dokibird", "lucypyre", "aethal",
                "heavenlyfather", "astrum", "seraph", "isaa" },
       bad = { "obelisk" } },
@@ -1519,7 +1519,7 @@ local function flanked(kind, key, heading, box)
     } }
 end
 
---- One of the three: the boon over the curse, all of it one button.
+--- One of the three: the pro over the con, all of it one button.
 local function offer_panel(index, offer)
     return { n = G.UIT.C,
              config = { align = "cm", padding = 0.1, r = 0.12, hover = true, shadow = true,
@@ -1531,7 +1531,7 @@ local function offer_panel(index, offer)
                          offer.good_hidden and hidden_box() or text_box("good", offer.good, offer.good_arg)),
                  flanked("bad", offer.bad, label(localize("celesta_purg_bad"), G.C.RED),
                          offer.bad_hidden and hidden_box()
-                             or text_box("bad", offer.bad, offer.bad_arg, P.doubles_its_curse(offer))),
+                             or text_box("bad", offer.bad, offer.bad_arg, P.doubles_its_con(offer))),
              } }
 end
 
@@ -1644,8 +1644,8 @@ end
 -- What has been taken
 --------------------------------------------------------------------------------
 --
--- A button in the run's pause menu opens a list of every modifier taken so far, the boons on the
--- left and the curses on the right, as many to a page as fit. Every one that was taken is listed,
+-- A button in the run's pause menu opens a list of every modifier taken so far, the pros on the
+-- left and the cons on the right, as many to a page as fit. Every one that was taken is listed,
 -- the ones that happened once as well as the ones that stay: a list that left out "$15" would also
 -- leave out a choice, and which is which is not a line the deck draws anywhere else.
 
@@ -1878,7 +1878,7 @@ end
 -- A Boss Blind in a Big Blind's place, and the Blind that decides which
 --------------------------------------------------------------------------------
 
---- True once the Boss Blind curse has been taken, in a run on this deck.
+--- True once the Boss Blind con has been taken, in a run on this deck.
 local function big_may_be_boss()
     local st = rules()
     return st and st.boss_for_big
@@ -1933,7 +1933,7 @@ function get_new_boss(...)
     local st = rules()
     if not st then return celesta_purg_boss_ref(...) end
 
-    -- A Boss Blind that was made certain (the Summon boon with a Boss Blind curse): this one, once.
+    -- A Boss Blind that was made certain (the Summon pro with a Boss Blind con): this one, once.
     if st.next_boss and G.P_BLINDS and G.P_BLINDS[st.next_boss] then
         local key = st.next_boss
         st.next_boss = nil
@@ -1949,7 +1949,7 @@ function get_new_boss(...)
 
     -- A showdown Blind in a plain Boss's place. get_new_boss asks whether the Ante is the winning
     -- one by `ante % win_ante`, so for the length of the call it is.
-    -- ...whether by the curse, or by the Celestial Stake on a deck that is not this one.
+    -- ...whether by the con, or by the Celestial Stake on a deck that is not this one.
     local super = st.super_boss or (stake_rule("celesta_celestial") and not P.active())
     if super and not is_showdown_ante() and G.GAME.round_resets.ante >= 2
         and SMODS.pseudorandom_probability({}, SEED .. "_super", 1, P.BOSS_ODDS) then
@@ -2013,7 +2013,7 @@ end
 -- moved for the length of that one call and put back after, rather than set once and overwritten.
 -- Spectral cards are as common as the Ghost Deck makes them (2, against 4 for a Tarot).
 
---- The Spectral rate the boon gives the shop: the Ghost Deck's.
+--- The Spectral rate the pro gives the shop: the Ghost Deck's.
 P.SPECTRAL_SHOP_RATE = 2
 
 local celesta_purg_shop_ref = create_card_for_shop
@@ -2094,7 +2094,7 @@ end
 --
 -- "Earn no money from this Blind" is the whole cash-out and not only the Blind's reward: the
 -- money for Hands left over, interest, and what Jokers and Tags pay are all money earned at
--- the end of this round, and a curse that took only the first left the rest coming in.
+-- the end of this round, and a con that took only the first left the rest coming in.
 --
 -- Every row is added through add_round_eval_row, so each is made to say 0, and the last one - the
 -- total the cash-out button pays - is the one the money really comes from. The button is wrapped

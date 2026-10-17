@@ -383,7 +383,7 @@ function Stamps.of(card)
         or nil
 end
 
---- The second field a stamp can sit in, once the Purgatory Deck's boon has been taken: a Joker may
+--- The second field a stamp can sit in, once the Purgatory Deck's pro has been taken: a Joker may
 --- then wear two. Drawn to the left of the first.
 local SECOND = "celesta_stamp2"
 
@@ -401,7 +401,7 @@ function Stamps.all(card)
     return stamps_in(type(card) == "table" and card.ability or nil)
 end
 
---- How many stamps a Joker may wear: one, or two with the Purgatory Deck's boon.
+--- How many stamps a Joker may wear: one, or two with the Purgatory Deck's pro.
 function Stamps.slots()
     return (G.GAME and G.GAME.celesta_stamp_slots) or 1
 end
@@ -495,7 +495,7 @@ SMODS.ConsumableType {
     -- Answered here rather than from merge/bind.lua because this file owns the
     -- type, and it is loaded after that one; the pair is looked up by name.
     select_card = function(self, card, pack)
-        -- A Stamp that turned up in a Joker Pack (a Purgatory Deck boon) has no Joker to be put on
+        -- A Stamp that turned up in a Joker Pack (a Purgatory Deck pro) has no Joker to be put on
         -- while the pack is open, so it is taken into the tray and used from there.
         if pack and pack.kind == "Buffoon" then return "consumeables" end
 

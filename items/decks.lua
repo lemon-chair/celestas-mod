@@ -857,8 +857,8 @@ SMODS.Back {
 -- Purgatory Deck - a modifier after every Boss
 --------------------------------------------------------------------------------
 --
--- After each Boss Blind, and before the cash-out, the run offers three modifiers - each a boon
--- that comes with a curse - and will not go on until one is taken. The offer can be rerolled
+-- After each Boss Blind, and before the cash-out, the run offers three modifiers - each a pro
+-- that comes with a con - and will not go on until one is taken. The offer can be rerolled
 -- twice, and the run ends at Ante 12 rather than 8.
 --
 -- Everything it does is items/purgatory.lua: the list of modifiers, the box that offers them and

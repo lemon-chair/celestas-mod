@@ -1,7 +1,7 @@
 --- THE STAMP TAG
 ---
 --- A Tag that opens a free Stamp Pack, the way the Buffoon Tag opens a free Mega Buffoon Pack. It
---- is given by the Purgatory Deck's "Gain a Stamp tag" boon and by nothing else: it is not in the
+--- is given by the Purgatory Deck's "Gain a Stamp tag" pro and by nothing else: it is not in the
 --- pool the skip Tags are drawn from.
 ---
 -- A tag sprite is 34x34, which is the cell the base game's own Tags are drawn at.

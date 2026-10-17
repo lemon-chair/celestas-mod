@@ -102,7 +102,7 @@ function CelestasMod.unjudged(card, fn)
     if not ok then error(err, 0) end
 end
 
---- Whether the Purgatory Deck's boon of this name has been taken: items/purgatory.lua keeps each as a
+--- Whether the Purgatory Deck's pro of this name has been taken: items/purgatory.lua keeps each as a
 --- flag on the run, and the Jokers it changes read their own. False outside a Purgatory run.
 function CelestasMod.purg(flag)
     local state = G.GAME and G.GAME.celesta_purgatory

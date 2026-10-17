@@ -6537,7 +6537,7 @@ return {
                     "{C:attention}Stamp:{} retrigger {C:attention}#1#{} #2#",
                 },
             },
-            -- The Purgatory Deck's modifiers: one entry per boon and per curse,
+            -- The Purgatory Deck's modifiers: one entry per pro and per con,
             -- celesta_purg_<kind>_<key>, read by items/purgatory.lua.
             celesta_purg_good_rerolls = {
                 text = {
@@ -7299,8 +7299,8 @@ return {
             },
             celesta_purg_good_purge = {
                 text = {
-                    "Remove {C:attention}half{} of your active boons",
-                    "and {C:attention}all{} of your active curses",
+                    "Remove {C:attention}half{} of your active pros",
+                    "and {C:attention}all{} of your active cons",
                 },
             },
             celesta_purg_bad_lost_soul = {
