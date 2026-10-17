@@ -42,6 +42,10 @@ BLINDS = {
     "horn": "the_horn2x.png",
     "gem": "the_gem2x.png",
     "flower": "the_flower2x.png",
+    "spore": "the_spore2x.png",
+    "cross": "the_cross2x.png",
+    "shield": "the_shield2x.png",
+    "rose": "the_rose2x.png",
 }
 
 

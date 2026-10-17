@@ -1029,6 +1029,306 @@ SMODS.Blind {
 }
 
 --------------------------------------------------------------------------------
+-- The Spore - the lowest rank in the deck is destroyed
+--------------------------------------------------------------------------------
+--
+-- When a hand is played, every card of the lowest rank in the full deck goes: the ones in the draw
+-- pile, the hand and the discards at once, and the ones in the hand being played once it has
+-- scored (they are marked, and the destroy pass that follows the hand takes them - the way
+-- The Goat's buff spends a card). Stone Cards have no rank and are never the lowest.
+--
+-- "Lowest" is the rank's own number (an Ace is high). Purgatory's buff makes the rank one of those
+-- in the deck at random instead.
+
+local SPORE_SEED = "celesta_spore"
+
+--- The rank (its number) to destroy, or nil when the deck has no ranked card.
+local function spore_rank()
+    local ranks, seen, lowest = {}, {}, nil
+    for _, card in ipairs(G.playing_cards or {}) do
+        local id = card.base and card.base.id
+        if id and not SMODS.has_no_rank(card) then
+            if not seen[id] then
+                seen[id] = true
+                ranks[#ranks + 1] = id
+            end
+            if not lowest or id < lowest then lowest = id end
+        end
+    end
+    if #ranks == 0 then return nil end
+    if CelestasMod.boss_buffed("spore") then
+        table.sort(ranks)
+        return (pseudorandom_element(ranks, pseudoseed(SPORE_SEED)))
+    end
+    return lowest
+end
+
+SMODS.Blind {
+    key = "spore",
+    atlas = "blind_spore",
+    pos = { x = 0, y = 0 },
+
+    dollars = 5,
+    mult = 2,
+    -- From Ante 2 on: after Ante 1.
+    boss = { min = 2, max = 10 },
+    boss_colour = HEX("B3CC2A"),
+    discovered = true,
+
+    loc_vars = function(self) return { vars = {} } end,
+    collection_loc_vars = function(self) return { vars = {} } end,
+
+    press_play = function(self)
+        local rank = spore_rank()
+        if not rank then
+            note_trigger(false)
+            return
+        end
+        local playing = {}
+        for _, card in ipairs(played_cards()) do playing[card] = true end
+
+        local gone, marked = {}, false
+        for _, card in ipairs(G.playing_cards or {}) do
+            if card.base and card.base.id == rank and not SMODS.has_no_rank(card) then
+                if playing[card] then
+                    -- Still to score: destroyed with the hand, not out from under it.
+                    card.celesta_doomed = true
+                    marked = true
+                else
+                    gone[#gone + 1] = card
+                end
+            end
+        end
+        note_trigger(#gone > 0 or marked)
+        if #gone > 0 then SMODS.destroy_cards(gone) end
+    end,
+
+    modify_hand = says_triggered(pending_trigger),
+
+    calculate = function(self, blind, context)
+        return celesta_doomed_card(context)
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- The Cross - a hand played discards as many cards from the hand held
+--------------------------------------------------------------------------------
+--
+-- The Hook's shape (blind.lua): queued from press_play, so the cards played have left the hand by
+-- the time it runs, and the discard is not one the player chose (the hook flag), so it costs no
+-- discard. As many random held cards as cards were played, or every card held if there are fewer.
+-- Purgatory's buff destroys them instead of discarding them.
+
+local CROSS_SEED = "celesta_cross"
+
+SMODS.Blind {
+    key = "cross",
+    atlas = "blind_cross",
+    pos = { x = 0, y = 0 },
+
+    dollars = 5,
+    mult = 2,
+    boss = { min = 3, max = 10 },
+    boss_colour = HEX("978B6F"),
+    discovered = true,
+
+    loc_vars = function(self) return { vars = {} } end,
+    collection_loc_vars = function(self) return { vars = {} } end,
+
+    press_play = function(self)
+        local played = #played_cards()
+        -- Still in the hand while this runs: the cards held are what is left.
+        local held = #((G.hand and G.hand.cards) or {}) - played
+        note_trigger(played > 0 and held > 0)
+        if played <= 0 then return end
+
+        G.E_MANAGER:add_event(Event {
+            func = function()
+                local pool = {}
+                for _, card in ipairs((G.hand and G.hand.cards) or {}) do pool[#pool + 1] = card end
+                local chosen = {}
+                for _ = 1, math.min(played, #pool) do
+                    local card, index = pseudorandom_element(pool, pseudoseed(CROSS_SEED))
+                    table.remove(pool, index)
+                    chosen[#chosen + 1] = card
+                end
+                if #chosen == 0 then return true end
+
+                if CelestasMod.boss_buffed("cross") then
+                    SMODS.destroy_cards(chosen)
+                else
+                    for _, card in ipairs(chosen) do G.hand:add_to_highlighted(card, true) end
+                    play_sound("card1", 1)
+                    G.FUNCS.discard_cards_from_highlighted(nil, true)
+                end
+                return true
+            end,
+        })
+        delay(0.7)
+    end,
+
+    modify_hand = says_triggered(pending_trigger),
+}
+
+--------------------------------------------------------------------------------
+-- The Shield - the Jokers got this Ante are debuffed
+--------------------------------------------------------------------------------
+--
+-- Which Ante a Joker came in is written on it: when it is made (so a Joker made during the Blind
+-- is judged the moment it is) and again when it first joins the row (a copy brings its original's
+-- Ante along, and is not a Joker the run already had). A Joker with none - one from before this
+-- Blind existed - is not touched.
+--
+-- Only the Shield re-judges a Joker as it arrives: vanilla does not, for a Joker that has just
+-- been made, and re-judging for every Blind would change what the others do.
+--
+-- Purgatory's buff destroys what it debuffed when the round is won.
+
+local SHIELD_KEY = "bl_" .. SMODS.current_mod.prefix .. "_shield"
+
+local function shield_active()
+    local blind = G.GAME and G.GAME.blind
+    if not (blind and blind.config and blind.config.blind) then return false end
+    if blind.disabled then return false end
+    return blind.config.blind.key == SHIELD_KEY
+end
+
+--- Writes this Ante on a Joker. Over what is there when `force`.
+local function shield_stamp(card, force)
+    local ability = card.ability
+    if not (ability and ability.set == "Joker" and G.GAME and G.GAME.round_resets) then return end
+    if force or ability.celesta_gained_ante == nil then
+        ability.celesta_gained_ante = G.GAME.round_resets.ante
+    end
+end
+
+--- True when the Shield debuffs this card: a Joker that came in this Ante.
+local function shield_hits(card)
+    local ability = card and card.ability
+    return ability ~= nil and ability.set == "Joker" and ability.celesta_gained_ante ~= nil
+        and G.GAME and G.GAME.round_resets
+        and ability.celesta_gained_ante == G.GAME.round_resets.ante or false
+end
+
+local celesta_shield_set_ability_ref = Card.set_ability
+function Card:set_ability(...)
+    local ret = celesta_shield_set_ability_ref(self, ...)
+    shield_stamp(self, false)
+    return ret
+end
+
+local celesta_shield_add_ref = Card.add_to_deck
+function Card:add_to_deck(from_debuff, ...)
+    local joining = not from_debuff and not self.added_to_deck
+    local ret = celesta_shield_add_ref(self, from_debuff, ...)
+    if joining then
+        shield_stamp(self, true)
+        if shield_active() then G.GAME.blind:debuff_card(self) end
+    end
+    return ret
+end
+
+SMODS.Blind {
+    key = "shield",
+    atlas = "blind_shield",
+    pos = { x = 0, y = 0 },
+
+    dollars = 5,
+    mult = 2,
+    boss = { min = 4, max = 10 },
+    boss_colour = HEX("006B64"),
+    discovered = true,
+
+    loc_vars = function(self) return { vars = {} } end,
+    collection_loc_vars = function(self) return { vars = {} } end,
+
+    recalc_debuff = function(self, card, from_blind)
+        return shield_hits(card)
+    end,
+
+    -- Purgatory's buff: a Joker the Shield debuffed is destroyed when the round is won.
+    calculate = function(self, blind, context)
+        if not (CelestasMod.boss_buffed("shield") and beaten(context, blind)) then return end
+        local doomed = {}
+        for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
+            if shield_hits(held) then doomed[#doomed + 1] = held end
+        end
+        if #doomed > 0 then SMODS.destroy_cards(doomed) end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- The Rose - hands and discards are one number
+--------------------------------------------------------------------------------
+--
+-- Both start at the greater of the two. A hand played takes a discard with it, and a discard takes a
+-- hand: the discard that is used (pre_discard, which the Hook's forced one is not) puts the hands
+-- down by one, and the hand played (press_play) puts the discards down.
+--
+-- A discard can use the last hand, and a round with no hands left is over, which vanilla only
+-- finds out when a hand is played. So the round is ended from here when the last hand is gone.
+-- Nothing the Rose does is undone when it goes: what it moved is only counters.
+
+--- Ends the round if the hands are gone and the Blind is not beaten, once the hand has been dealt.
+local function rose_check_over()
+    G.E_MANAGER:add_event(Event {
+        blocking = false,
+        func = function()
+            local blind = G.GAME and G.GAME.blind
+            local round = G.GAME and G.GAME.current_round
+            if not (blind and round and blind.in_blind) then return true end
+            if G.STATE ~= G.STATES.SELECTING_HAND then return false end
+            if round.hands_left < 1 and CelestasMod.more_than(blind.chips, G.GAME.chips) then
+                G.STATE = G.STATES.NEW_ROUND
+                G.STATE_COMPLETE = false
+            end
+            return true
+        end,
+    })
+end
+
+SMODS.Blind {
+    key = "rose",
+    atlas = "blind_rose",
+    pos = { x = 0, y = 0 },
+
+    dollars = 5,
+    mult = 2,
+    boss = { min = 3, max = 10 },
+    boss_colour = HEX("FA6E86"),
+    discovered = true,
+
+    loc_vars = function(self) return { vars = {} } end,
+    collection_loc_vars = function(self) return { vars = {} } end,
+
+    set_blind = function(self)
+        local round = G.GAME.current_round
+        local hands, discards = round.hands_left, round.discards_left
+        if hands < discards then
+            ease_hands_played(discards - hands)
+        elseif discards < hands then
+            ease_discard(hands - discards)
+        end
+    end,
+
+    -- A hand played is a discard spent.
+    press_play = function(self)
+        ease_discard(-1)
+    end,
+
+    -- A discard used is a hand spent. `hook` is The Hook making the player discard.
+    calculate = function(self, blind, context)
+        if context.pre_discard and not context.hook and not blind.disabled then
+            ease_hands_played(-1)
+            rose_check_over()
+        end
+    end,
+
+    -- Every hand costs a discard.
+    modify_hand = says_triggered(true),
+}
+
+--------------------------------------------------------------------------------
 -- Boss Blinds added to a run already in progress
 --------------------------------------------------------------------------------
 --

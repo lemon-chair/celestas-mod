@@ -84,6 +84,14 @@ SMODS.Atlas { key = 'blind_gem', path = 'blind_gem.png', px = 34, py = 34,
               frames = 21, atlas_table = 'ANIMATION_ATLAS' }
 SMODS.Atlas { key = 'blind_flower', path = 'blind_flower.png', px = 34, py = 34,
               frames = 21, atlas_table = 'ANIMATION_ATLAS' }
+SMODS.Atlas { key = 'blind_spore', path = 'blind_spore.png', px = 34, py = 34,
+              frames = 21, atlas_table = 'ANIMATION_ATLAS' }
+SMODS.Atlas { key = 'blind_cross', path = 'blind_cross.png', px = 34, py = 34,
+              frames = 21, atlas_table = 'ANIMATION_ATLAS' }
+SMODS.Atlas { key = 'blind_shield', path = 'blind_shield.png', px = 34, py = 34,
+              frames = 21, atlas_table = 'ANIMATION_ATLAS' }
+SMODS.Atlas { key = 'blind_rose', path = 'blind_rose.png', px = 34, py = 34,
+              frames = 21, atlas_table = 'ANIMATION_ATLAS' }
 
 -- Arena effect sprite sheets (generated from GIFs by tools/gen_fx.py).
 SMODS.Atlas { key = 'fx_downpour', path = 'fx_downpour.png',  px = 256, py = 256 }

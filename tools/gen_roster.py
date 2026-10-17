@@ -786,6 +786,36 @@ LOC_TAIL = '''        },
                     "an {C:dark_edition}edition{} are debuffed",
                 },
             },
+            bl_celesta_spore = {
+                name = "The Spore",
+                text = {
+                    "When a hand is played, destroy",
+                    "every card of the {C:attention}lowest rank{}",
+                    "in your full deck",
+                },
+            },
+            bl_celesta_cross = {
+                name = "The Cross",
+                text = {
+                    "Playing a hand discards as many",
+                    "{C:attention}held cards{} as cards played",
+                },
+            },
+            bl_celesta_shield = {
+                name = "The Shield",
+                text = {
+                    "{C:attention}Jokers{} obtained during",
+                    "this Ante are debuffed",
+                },
+            },
+            bl_celesta_rose = {
+                name = "The Rose",
+                text = {
+                    "{C:blue}Hands{} and {C:red}discards{} are equal",
+                    "and linked: using one",
+                    "uses the other",
+                },
+            },
             bl_celesta_flower = {
                 name = "The Flower",
                 text = {
@@ -5630,6 +5660,48 @@ LOC_TAIL = '''        },
                 text = {
                     "{C:attention}The Gem{} also destroys",
                     "Jokers with an edition",
+                },
+            },
+            celesta_purg_bad_buff_spore_double = {
+                text = {
+                    "{C:attention}The Spore{}: the rank destroyed",
+                    "is now random",
+                    "It is the next {C:attention}Boss Blind{}",
+                },
+            },
+            celesta_purg_bad_buff_spore = {
+                name = "The Spore",
+                text = {
+                    "{C:attention}The Spore{}: the rank destroyed",
+                    "is now random",
+                },
+            },
+            celesta_purg_bad_buff_cross_double = {
+                text = {
+                    "{C:attention}The Cross{} destroys the cards",
+                    "instead of discarding them",
+                    "It is the next {C:attention}Boss Blind{}",
+                },
+            },
+            celesta_purg_bad_buff_cross = {
+                name = "The Cross",
+                text = {
+                    "{C:attention}The Cross{} destroys the cards",
+                    "instead of discarding them",
+                },
+            },
+            celesta_purg_bad_buff_shield_double = {
+                text = {
+                    "{C:attention}The Shield{} also destroys",
+                    "the Jokers it debuffs",
+                    "It is the next {C:attention}Boss Blind{}",
+                },
+            },
+            celesta_purg_bad_buff_shield = {
+                name = "The Shield",
+                text = {
+                    "{C:attention}The Shield{} also destroys",
+                    "the Jokers it debuffs",
                 },
             },
             celesta_purg_good_spectral_shop = {

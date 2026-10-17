@@ -972,7 +972,7 @@ add { kind = "bad", key = "destroy_held",
 -- in `buffs`, and the Blind itself asks for it (blinds/blinds.lua, CelestasMod.boss_buffed). A
 -- pro takes a random one off again, and only offers to when there is one to take.
 
-local BUFFS = { "clover", "flower", "wyrm", "robot", "brick", "goat", "frog", "horn", "gem" }
+local BUFFS = { "clover", "flower", "wyrm", "robot", "brick", "goat", "frog", "horn", "gem", "spore", "cross", "shield" }
 P.BUFFS = BUFFS
 
 for _, name in ipairs(BUFFS) do
@@ -1499,7 +1499,7 @@ P.CATEGORIES = {
     { title = "Specific Boss Blinds", icon = "terra",
       good = { "drop_buff" },
       bad = { "buff_clover", "buff_flower", "buff_wyrm", "buff_robot", "buff_brick", "buff_goat", "buff_frog",
-              "buff_horn", "buff_gem" } },
+              "buff_horn", "buff_gem", "buff_spore", "buff_cross", "buff_shield" } },
     { title = "Odds", icon = "lucky", good = { "odds_double" }, bad = { "odds_half" } },
     { title = "Modifier rerolls", icon = "eryl", good = { "rerolls" }, bad = { "rerolls" } },
     { title = "Antes", icon = "azure", good = { "ante_down" }, bad = { "ante_jump", "ante_end" } },
