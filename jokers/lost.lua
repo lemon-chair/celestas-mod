@@ -86,6 +86,8 @@ Lost.CONVERSIONS = {
     ["j_todo_list"] = joker("to_dont_list"),
     ["j_flash"] = joker("identity"),
     ["j_obelisk"] = joker("monolith"),
+    ["j_odd_todd"] = joker("even_todd"),
+    ["j_even_steven"] = joker("odd_steven"),
 }
 
 --- Further forms a Joker's Lost Soul may make instead of the one above: Kumi becomes Doodle Kumi
@@ -1759,6 +1761,103 @@ SMODS.Joker {
         if not context.joker_main then return end
         local x_mult = 1 + card.ability.extra.x_mult_gain * enhanced_in_deck()
         if x_mult > 1 then return { x_mult = x_mult } end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Even Todd and Odd Steven
+--------------------------------------------------------------------------------
+--
+-- Odd Todd and Even Steven, turned the other way and turned up: each pays every scoring card, whatever its
+-- rank - Even Todd +31 Chips, Odd Steven +4 Mult - and fills the shop with itself.
+--
+-- Paid per scoring card, the way Odd Todd's own +31 is (context.individual in the played area), so a card
+-- that scores twice pays twice and a copier pays the same again.
+SMODS.Joker {
+    key = "even_todd",
+    atlas = "even_todd",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    -- Hidden in the collection until one has been made, and locked rather
+    -- than merely undiscovered: a locked centre is the one the game will
+    -- print a per-card reason for (card.lua:720 beats 723), which is where
+    -- "use a Lost Soul on <Joker>" goes.
+    unlocked = false,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+    -- Itself, the way Face does: a shop of Even Todds.
+    celesta_lost_shop = "j_" .. PREFIX .. "_even_todd",
+
+    config = { extra = { chips = 31, joker_slots = Lost.SLOT_COST } },
+
+    loc_vars = function(self, info_queue, card)
+        local extra = card.ability.extra
+        return { vars = { extra.chips, extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        Lost.sync_slots(nil, card)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        Lost.sync_slots(card)
+    end,
+
+    calculate = function(self, card, context)
+        if context.individual and context.cardarea == G.play and context.other_card then
+            return { chips = card.ability.extra.chips, card = context.other_card }
+        end
+    end,
+}
+
+SMODS.Joker {
+    key = "odd_steven",
+    atlas = "odd_steven",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    unlocked = false,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+    -- Itself: a shop of Odd Stevens.
+    celesta_lost_shop = "j_" .. PREFIX .. "_odd_steven",
+
+    config = { extra = { mult = 4, joker_slots = Lost.SLOT_COST } },
+
+    loc_vars = function(self, info_queue, card)
+        local extra = card.ability.extra
+        return { vars = { extra.mult, extra.joker_slots } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        Lost.sync_slots(nil, card)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        Lost.sync_slots(card)
+    end,
+
+    calculate = function(self, card, context)
+        if context.individual and context.cardarea == G.play and context.other_card then
+            return { mult = card.ability.extra.mult, card = context.other_card }
+        end
     end,
 }
 

@@ -1593,6 +1593,32 @@ return {
                     "{C:attention}Arar{}",
                 },
             },
+            j_celesta_even_todd = {
+                name = "Even Todd",
+                text = {
+                    "Scoring cards give",
+                    "{C:chips}+#1#{} Chips when scored",
+                    "{C:red}-#2#{} Joker slots, cannot be sold",
+                    "All {C:attention}shop{} items become this {C:attention}Joker{}",
+                },
+                unlock = {
+                    "Use a {C:spectral}Lost Soul{} on",
+                    "{C:attention}Odd Todd{}",
+                },
+            },
+            j_celesta_odd_steven = {
+                name = "Odd Steven",
+                text = {
+                    "Scoring cards give",
+                    "{C:mult}+#1#{} Mult when scored",
+                    "{C:red}-#2#{} Joker slots, cannot be sold",
+                    "All {C:attention}shop{} items become this {C:attention}Joker{}",
+                },
+                unlock = {
+                    "Use a {C:spectral}Lost Soul{} on",
+                    "{C:attention}Even Steven{}",
+                },
+            },
             j_celesta_radicalmari = {
                 name = "Radical Mari",
                 text = {

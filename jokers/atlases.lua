@@ -51,6 +51,20 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "even_todd",
+    path = "even_todd.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "odd_steven",
+    path = "odd_steven.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "arar_after_eating_3_clowns",
     path = "arar_after_eating_3_clowns.png",
     px = 71,
