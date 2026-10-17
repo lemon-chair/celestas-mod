@@ -18588,6 +18588,28 @@ special("j_sixth_sense", "j_celesta_kson", {
     end,
 })
 
+-- Abstract Joker + Ruben Sargasm: X0.5 Mult for each Joker owned.
+--
+-- Counted from X1, the way every "for each" is: with only this card it is X1.5, and it grows with the
+-- row. Read off the row each hand rather than kept, so a copy pays the same and nothing can drift.
+-- Abstract Joker counts itself, and so does this: a merged card is one Joker in the row.
+special("j_abstract", "j_celesta_rubensargasm", {
+    key = "abstract_ruben",
+    config = { x_mult_gain = 0.5 },
+
+    loc_vars = function(def, card, state)
+        local owned = #((G.jokers and G.jokers.cards) or {})
+        return { vars = { state.x_mult_gain, math.floor((1 + state.x_mult_gain * owned) * 1000 + 0.5) / 1000 } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local owned = #((G.jokers and G.jokers.cards) or {})
+        local x_mult = math.floor((1 + state.x_mult_gain * owned) * 1000 + 0.5) / 1000
+        return { x_mult = x_mult }
+    end,
+})
+
 --------------------------------------------------------------------------------
 -- Art: the two faces split corner to corner
 --------------------------------------------------------------------------------

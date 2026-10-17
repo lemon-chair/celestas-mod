@@ -3081,6 +3081,13 @@ LOC_TAIL = '''        },
                     "{C:inactive}(Must have room)",
                 },
             },
+            celesta_bind_abstract_ruben = {
+                name = "Abstract Joker + Ruben Sargasm",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult for each",
+                    "owned {C:attention}Joker{} {C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
             celesta_bind_ironmouse_saiiren = {
                 name = "Ironmouse + Saiiren",
                 text = {
