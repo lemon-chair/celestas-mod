@@ -4816,266 +4816,313 @@ LOC_TAIL = '''        },
             -- The Purgatory Deck's modifiers: one entry per pro and per con,
             -- celesta_purg_<kind>_<key>, read by items/purgatory.lua.
             celesta_purg_good_rerolls = {
+                name = "Extra Rolls",
                 text = {
                     "{C:attention}+2{} modifier rerolls",
                 },
             },
             celesta_purg_good_debt = {
+                name = "Debt",
                 text = {
                     "Go up to {C:red}-$10{}",
                     "in debt",
                 },
             },
             celesta_purg_good_income = {
+                name = "Income Tax",
                 text = {
                     "Earn {C:money}$5{} extra at",
                     "the end of each round",
                 },
             },
             celesta_purg_good_hand = {
+                name = "Helping Hand",
                 text = {
                     "{C:blue}+1{} Hand each round",
                 },
             },
             celesta_purg_good_discard = {
+                name = "Throwout",
                 text = {
                     "{C:red}+1{} Discard each round",
                 },
             },
             celesta_purg_good_joker_slot = {
+                name = "Antimatter",
                 text = {
                     "{C:dark_edition}+1{} Joker slot",
                 },
             },
             celesta_purg_good_consumable_slot = {
+                name = "Consumer",
                 text = {
                     "{C:attention}+1{} consumable slot",
                 },
             },
             celesta_purg_good_bind_swap = {
+                name = "Fusion Craft",
                 text = {
                     "Gain a {C:dark_edition}Negative{}",
                     "{C:spectral}Bind{} or {C:spectral}Swap{}",
                 },
             },
             celesta_purg_good_unsticker = {
+                name = "Peel",
                 text = {
                     "Remove a random {C:attention}sticker{}",
                     "from an owned Joker",
                 },
             },
             celesta_purg_good_hand_size = {
+                name = "Big Hands",
                 text = {
                     "{C:attention}+2{} hand size",
                 },
             },
             celesta_purg_good_rare_joker = {
+                name = "Wraith",
                 text = {
                     "Gain a random",
                     "{C:dark_edition}Negative{} {C:red}Rare{} Joker",
                 },
             },
             celesta_purg_good_soul = {
+                name = "Soul",
                 text = {
                     "Gain {C:spectral}The Soul{}",
                 },
             },
             celesta_purg_good_level_all = {
+                name = "Black Hole",
                 text = {
                     "Level up every",
                     "poker hand by {C:attention}1{}",
                 },
             },
             celesta_purg_good_skip_boss = {
+                name = "Disable",
                 text = {
                     "The next {C:attention}Boss Blind{}",
                     "is disabled",
                 },
             },
             celesta_purg_good_legendary_shop = {
+                name = "Special Appearance",
                 text = {
                     "{C:legendary}Legendary{} Jokers can",
                     "appear in the shop",
                 },
             },
             celesta_purg_good_money_15 = {
+                name = "Payout 1",
                 text = {
                     "Gain {C:money}$15{}",
                 },
             },
             celesta_purg_good_money_30 = {
+                name = "Payout 2",
                 text = {
                     "Gain {C:money}$30{}",
                 },
             },
             celesta_purg_good_level_top = {
+                name = "White Hole",
                 text = {
                     "Level up your most",
                     "played hand by {C:attention}3{}",
                 },
             },
             celesta_purg_good_odds_double = {
+                name = "Let It Ride",
                 text = {
                     "All {C:green}odds{} are doubled",
                 },
             },
             celesta_purg_good_prices_half = {
+                name = "Sale",
                 text = {
                     "Shop prices are halved",
                 },
             },
             celesta_purg_good_no_tatter = {
+                name = "Duct Tape",
                 text = {
                     "Cards can no longer",
                     "become {C:attention}tattered{}",
                 },
             },
             celesta_purg_good_shop_slot = {
+                name = "Shelving",
                 text = {
                     "{C:attention}+1{} shop slot",
                 },
             },
             celesta_purg_good_booster_slot = {
+                name = "Package",
                 text = {
                     "{C:attention}+1{} booster pack slot",
                 },
             },
             celesta_purg_good_voucher_slot = {
+                name = "Redeem",
                 text = {
                     "{C:attention}+1{} voucher slot",
                 },
             },
             celesta_purg_good_tarot_double = {
+                name = "Haruka",
                 text = {
                     "{C:tarot}Tarot{} card values",
                     "are doubled",
                 },
             },
             celesta_purg_good_negative_joker = {
+                name = "Ectoplasm",
                 text = {
                     "Add {C:dark_edition}Negative{} to a",
                     "random owned Joker",
                 },
             },
             celesta_purg_good_drop_buff = {
+                name = "Removal",
                 text = {
                     "Remove a random",
                     "{C:attention}Boss Blind{} buff",
                 },
             },
             celesta_purg_good_unlock_quad = {
+                name = "Intersection",
                 text = {
                     "Unlock the quad merge",
                     "{C:attention}#1#{}",
                 },
             },
             celesta_purg_good_d6_tag = {
+                name = "Dice",
                 text = {
                     "Gain a {C:attention}D6 Tag{}",
                 },
             },
             celesta_purg_good_stamp_tag = {
+                name = "Stamp",
                 text = {
                     "Gain a {C:attention}Stamp Tag{}",
                 },
             },
             celesta_purg_good_stamp_slots = {
+                name = "Double-Up",
                 text = {
                     "Jokers can hold up to",
                     "{C:attention}2{} stamps",
                 },
             },
             celesta_purg_good_egg = {
+                name = "Rebirth",
                 text = {
                     "Gain a",
                     "{C:attention}Blessed Phoenix Egg{}",
                 },
             },
             celesta_purg_good_reroll_vouchers = {
+                name = "Reroll",
                 text = {
                     "Gain {C:attention}Reroll Surplus{}",
                     "and {C:attention}Reroll Glut{}",
                 },
             },
             celesta_purg_good_lost_slots = {
+                name = "Amend",
                 text = {
                     "Lost Jokers no longer",
                     "take Joker slots",
                 },
             },
             celesta_purg_good_lost_shop = {
+                name = "Purify",
                 text = {
                     "Lost Jokers no longer",
                     "affect the shop",
                 },
             },
             celesta_purg_good_grimmi = {
+                name = "Grimmi",
                 text = {
                     "Grimmi also gives {C:attention}2{}",
                     "{C:dark_edition}Negative{} Tags when sold",
                 },
             },
             celesta_purg_good_chacha = {
+                name = "Chacha",
                 text = {
                     "Chacha gives an Uncommon",
                     "and a Rare Joker Tag when sold",
                 },
             },
             celesta_purg_good_crelly = {
+                name = "Crelly",
                 text = {
                     "Crelly no longer needs to",
                     "consume consumables to grow",
                 },
             },
             celesta_purg_good_calamitas = {
+                name = "Calamitas",
                 text = {
                     "Calamitas retriggers",
                     "{C:attention}6{} times, not 4",
                 },
             },
             celesta_purg_good_snuffy = {
+                name = "Snuffy",
                 text = {
                     "Snuffy counts every Hand",
                     "of the round, not just the left",
                 },
             },
             celesta_purg_good_dokibird = {
+                name = "Dokibird",
                 text = {
                     "Dokibird has no",
                     "{C:chips}100{} Chip cap",
                 },
             },
             celesta_purg_good_lucypyre = {
+                name = "LucyPyre",
                 text = {
                     "LucyPyre takes {C:attention}25%{} off",
                     "Blinds, not 10%",
                 },
             },
             celesta_purg_good_aethal = {
+                name = "Aethal",
                 text = {
                     "Aethal gives {C:attention}+6{} shop slots,",
                     "not +4",
                 },
             },
             celesta_purg_good_heavenlyfather = {
+                name = "HeavenlyFather",
                 text = {
                     "HeavenlyFather gives {C:attention}+4{}",
                     "booster pack slots, not +2",
                 },
             },
             celesta_purg_good_astrum = {
+                name = "Astrum Aureus",
                 text = {
                     "Astrum Aureus ignores how",
                     "many cards were played",
                 },
             },
             celesta_purg_good_seraph = {
+                name = "Smitten Seraph",
                 text = {
                     "Smitten Seraph gives {C:attention}+5{}",
                     "Joker and {C:attention}+2{} consumable slots",
                 },
             },
             celesta_purg_good_isaa = {
+                name = "Isaa",
                 text = {
                     "Isaa only returns the first",
                     "hand if it scores {C:attention}25%{}",
@@ -5083,32 +5130,38 @@ LOC_TAIL = '''        },
                 },
             },
             celesta_purg_good_summon = {
+                name = "Summoning",
                 text = {
                     "Receive a {C:spectral}Summon{}",
                 },
             },
             celesta_purg_good_true_stars = {
+                name = "True Stars",
                 text = {
                     "Add {C:attention}3{} True Star cards",
                     "of a random rank to your deck",
                 },
             },
             celesta_purg_bad_rerolls = {
+                name = "Overconfident",
                 text = {
                     "{C:red}-1{} modifier reroll",
                 },
             },
             celesta_purg_bad_lose_20 = {
+                name = "Tax Deduction",
                 text = {
                     "Lose {C:money}$20{}",
                 },
             },
             celesta_purg_bad_broke = {
+                name = "Bankrupt",
                 text = {
                     "Set money to {C:money}$0{}",
                 },
             },
             celesta_purg_bad_destroy_joker = {
+                name = "Banishment",
                 text = {
                     "Destroy a random Joker,",
                     "it can never return",
@@ -5116,158 +5169,186 @@ LOC_TAIL = '''        },
                 },
             },
             celesta_purg_bad_hand = {
+                name = "Betrayal",
                 text = {
                     "{C:red}-1{} Hand each round",
                 },
             },
             celesta_purg_bad_discard = {
+                name = "Limitations",
                 text = {
                     "{C:red}-1{} Discard each round",
                 },
             },
             celesta_purg_bad_joker_slot = {
+                name = "Crowded House",
                 text = {
                     "{C:red}-1{} Joker slot",
                 },
             },
             celesta_purg_bad_hand_size = {
+                name = "Small Hands",
                 text = {
                     "{C:red}-1{} hand size",
                 },
             },
             celesta_purg_bad_consumable_slot = {
+                name = "Limitations",
                 text = {
                     "{C:red}-1{} consumable slot",
                 },
             },
             celesta_purg_bad_lose_negative = {
+                name = "Desanitize",
                 text = {
                     "Remove {C:dark_edition}Negative{} from",
                     "a random owned Joker",
                 },
             },
             celesta_purg_bad_cull_quarter = {
+                name = "Riddance",
                 text = {
                     "Destroy {C:attention}25%{} of the",
                     "cards in your full deck",
                 },
             },
             celesta_purg_bad_boss_big = {
+                name = "Promotion",
                 text = {
                     "{C:attention}Boss Blinds{} can replace",
                     "{C:attention}Big Blinds{}",
                 },
             },
             celesta_purg_good_blind_size = {
+                name = "Shrink",
                 text = {
                     "Blinds are {C:attention}25%{} smaller",
                 },
             },
             celesta_purg_bad_blind_size = {
+                name = "Chrome Dome",
                 text = {
                     "Blinds are {C:attention}50%{} larger",
                 },
             },
             celesta_purg_bad_boss_repeat = {
+                name = "Deja Vu",
                 text = {
                     "{C:attention}Boss Blinds{} can",
                     "appear more than once",
                 },
             },
             celesta_purg_bad_sticker = {
+                name = "Stick-On",
                 text = {
                     "Add a random {C:attention}sticker{}",
                     "to a random owned Joker",
                 },
             },
             celesta_purg_bad_lose_consumables = {
+                name = "Gluttony",
                 text = {
                     "Destroy all held",
                     "consumables",
                 },
             },
             celesta_purg_bad_no_pay = {
+                name = "Scam",
                 text = {
                     "Earn no money from",
                     "this Blind",
                 },
             },
             celesta_purg_bad_prices_up = {
+                name = "Inflation",
                 text = {
                     "Shop prices are",
                     "{C:attention}50%{} higher",
                 },
             },
             celesta_purg_bad_shop_slot = {
+                name = "Out-of-Stock",
                 text = {
                     "{C:red}-1{} shop slot",
                 },
             },
             celesta_purg_bad_booster_slot = {
+                name = "Scalper",
                 text = {
                     "{C:red}-1{} booster pack slot",
                 },
             },
             celesta_purg_bad_odds_half = {
+                name = "Loss",
                 text = {
                     "All {C:green}odds{} are halved",
                 },
             },
             celesta_purg_bad_level_all = {
+                name = "Revert",
                 text = {
                     "Every poker hand",
                     "loses {C:attention}1{} level",
                 },
             },
             celesta_purg_bad_level_top = {
+                name = "Downgrade",
                 text = {
                     "Your most played hand",
                     "loses {C:attention}3{} levels",
                 },
             },
             celesta_purg_bad_tatter_fast = {
+                name = "Flimsy Cards",
                 text = {
                     "Cards become {C:attention}tattered{}",
                     "twice as fast",
                 },
             },
             celesta_purg_bad_lose_voucher = {
+                name = "Thievery",
                 text = {
                     "Lose a random",
                     "redeemed {C:attention}Voucher{}",
                 },
             },
             celesta_purg_bad_super_boss = {
+                name = "Big Brothers",
                 text = {
                     "Showdown Blinds can",
                     "replace {C:attention}Boss Blinds{}",
                 },
             },
             celesta_purg_bad_cull_faces = {
+                name = "Elimination",
                 text = {
                     "Destroy {C:attention}75%{} of the",
                     "face cards in your deck",
                 },
             },
             celesta_purg_bad_cull_suit = {
+                name = "Targetted",
                 text = {
                     "Destroy {C:attention}50%{} of the",
                     "{C:attention}#1#{} in your deck",
                 },
             },
             celesta_purg_bad_obelisk = {
+                name = "Sob",
                 text = {
                     "Gain an {C:attention}Eternal{}",
                     "{C:attention}Obelisk{}",
                 },
             },
             celesta_purg_bad_eternal_perishable = {
+                name = "Terrible Outcome",
                 text = {
                     "A random Joker becomes",
                     "{C:attention}Eternal{} and {C:attention}Perishable{}",
                 },
             },
             celesta_purg_bad_lose_editions = {
+                name = "Wash-Off",
                 text = {
                     "Remove every edition from",
                     "owned Jokers",
@@ -5275,42 +5356,49 @@ LOC_TAIL = '''        },
                 },
             },
             celesta_purg_bad_buff_clover = {
+                name = "The Clover",
                 text = {
                     "{C:attention}The Clover{}: its odds",
                     "are now {C:green}1 in 4{}",
                 },
             },
             celesta_purg_bad_buff_flower = {
+                name = "The Flower",
                 text = {
                     "{C:attention}The Flower{} also destroys",
                     "debuffed Jokers",
                 },
             },
             celesta_purg_bad_buff_wyrm = {
+                name = "The Wyrm",
                 text = {
                     "{C:attention}The Wyrm{} also destroys",
                     "held consumables",
                 },
             },
             celesta_purg_bad_buff_robot = {
+                name = "The Robot",
                 text = {
                     "{C:attention}The Robot{} also destroys",
                     "sealed cards held in hand",
                 },
             },
             celesta_purg_bad_buff_brick = {
+                name = "The Brick",
                 text = {
                     "{C:attention}The Brick{} also takes",
                     "hand size on each discard",
                 },
             },
             celesta_purg_bad_buff_goat = {
+                name = "The Goat",
                 text = {
                     "{C:attention}The Goat{} also destroys",
                     "unenhanced played cards",
                 },
             },
             celesta_purg_bad_buff_frog = {
+                name = "The Frog",
                 text = {
                     "{C:attention}The Frog{} also destroys",
                     "cards it strips",
@@ -5318,18 +5406,21 @@ LOC_TAIL = '''        },
                 },
             },
             celesta_purg_bad_buff_horn = {
+                name = "The Horn",
                 text = {
                     "{C:attention}The Horn{} also locks",
                     "the cards in your hand",
                 },
             },
             celesta_purg_bad_least_hand = {
+                name = "Disowned",
                 text = {
                     "You can no longer play",
                     "your least-played hand(s)",
                 },
             },
             celesta_purg_bad_reroll_two = {
+                name = "Sharp Scaling",
                 text = {
                     "Rerolls cost {C:money}$2{} more each",
                     "time, not {C:money}$1{}",
@@ -5528,69 +5619,81 @@ LOC_TAIL = '''        },
                 },
             },
             celesta_purg_bad_buff_gem = {
+                name = "The Gem",
                 text = {
                     "{C:attention}The Gem{} also destroys",
                     "Jokers with an edition",
                 },
             },
             celesta_purg_good_spectral_shop = {
+                name = "Ghost",
                 text = {
                     "{C:spectral}Spectral{} cards can",
                     "appear in the shop",
                 },
             },
             celesta_purg_good_stamp_packs = {
+                name = "Imposters",
                 text = {
                     "{C:attention}Stamps{} can appear in",
                     "{C:attention}Joker Packs{}",
                 },
             },
             celesta_purg_bad_no_planets = {
+                name = "Conspiracy",
                 text = {
                     "{C:planet}Planet{} cards can no longer",
                     "appear in the shop",
                 },
             },
             celesta_purg_bad_no_tarots = {
+                name = "Non-Believer",
                 text = {
                     "{C:tarot}Tarot{} cards can no longer",
                     "appear in the shop",
                 },
             },
             celesta_purg_bad_destroy_held = {
+                name = "Neuro",
                 text = {
                     "Cards held in hand at the end",
                     "of the round are {C:attention}destroyed{}",
                 },
             },
             celesta_purg_good_select_limit = {
+                name = "Extra Selection",
                 text = {
                     "{C:attention}+1{} card selection limit",
                 },
             },
             celesta_purg_good_negative_planets = {
+                name = "Planetarium",
                 text = {
                     "Gain {C:attention}3{} {C:dark_edition}Negative{} {C:planet}Planet{} cards",
                     "of your most played poker hand",
                 },
             },
             celesta_purg_good_ante_down = {
+                name = "Rewind",
                 text = {
                     "{C:attention}-1{} Ante",
                 },
             },
             celesta_purg_good_coupon_tag = {
+                name = "Free Day",
                 text = {
                     "Gain a {C:attention}Coupon Tag{}",
                 },
             },
             celesta_purg_good_purge = {
+                name = "Cleanse",
                 text = {
                     "Remove {C:attention}half{} of your active pros",
                     "and {C:attention}all{} of your active cons",
                 },
             },
             celesta_purg_bad_lost_soul = {
+                name = "Forgotten",
                 text = {
                     "Gain an {C:attention}Eternal{} {C:spectral}Lost Soul{}",
                     "(can't be sold)",
@@ -5603,11 +5706,13 @@ LOC_TAIL = '''        },
                 },
             },
             celesta_purg_bad_ante_jump = {
+                name = "Speedrun",
                 text = {
                     "Jump straight to {C:attention}Ante 12{}",
                 },
             },
             celesta_purg_bad_ante_end = {
+                name = "Extension",
                 text = {
                     "The run ends at {C:attention}Ante 16{}",
                 },

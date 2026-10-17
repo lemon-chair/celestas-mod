@@ -1543,6 +1543,37 @@ local function flanked(kind, key, heading, box)
     } }
 end
 
+--- The modifiers that are rare, as `kind:key`. Only recorded so far: nothing asks it yet.
+P.RARE = {
+    ["good:egg"] = true,
+    ["good:soul"] = true,
+    ["good:summon"] = true,
+    ["good:negative_planets"] = true,
+    ["good:legendary_shop"] = true,
+    ["good:stamp_slots"] = true,
+    ["bad:least_hand"] = true,
+    ["bad:destroy_joker"] = true,
+    ["bad:eternal_perishable"] = true,
+    ["bad:lost_soul"] = true,
+    ["bad:destroy_held"] = true,
+    ["bad:boss_big"] = true,
+    ["bad:ante_end"] = true,
+}
+
+--- Whether a modifier is a rare one.
+function P.is_rare(kind, key)
+    return P.RARE[kind .. ":" .. tostring(key)] and true or false
+end
+
+--- The name a modifier is shown under in an offer, in place of the plain "Pro" or "Con" - or `fallback`
+--- where it has none, and where it is hidden: a name would say what the `???` is hiding.
+function P.name_of(kind, key, fallback, hidden)
+    if hidden then return fallback end
+    local name = localize { type = "name_text", set = "Other", key = "celesta_purg_" .. kind .. "_" .. tostring(key) }
+    if type(name) ~= "string" or name == "ERROR" then return fallback end
+    return name
+end
+
 --- One of the three: the pro over the con, all of it one button.
 local function offer_panel(index, offer)
     return { n = G.UIT.C,
@@ -1551,9 +1582,11 @@ local function offer_panel(index, offer)
                         button = "celesta_purg_pick", ref_table = { index = index },
                         focus_args = { nav = "wide" } },
              nodes = {
-                 flanked("good", offer.good, label(localize("celesta_purg_good"), G.C.GREEN),
+                 flanked("good", offer.good,
+                         label(P.name_of("good", offer.good, localize("celesta_purg_good"), offer.good_hidden), G.C.GREEN),
                          offer.good_hidden and hidden_box() or text_box("good", offer.good, offer.good_arg)),
-                 flanked("bad", offer.bad, label(localize("celesta_purg_bad"), G.C.RED),
+                 flanked("bad", offer.bad,
+                         label(P.name_of("bad", offer.bad, localize("celesta_purg_bad"), offer.bad_hidden), G.C.RED),
                          offer.bad_hidden and hidden_box()
                              or text_box("bad", offer.bad, offer.bad_arg, P.doubles_its_con(offer))),
              } }
