@@ -5003,6 +5003,12 @@ LOC_TAIL = '''        },
                     "take Joker slots",
                 },
             },
+            celesta_purg_good_lost_shop = {
+                text = {
+                    "Lost Jokers no longer",
+                    "affect the shop",
+                },
+            },
             celesta_purg_good_grimmi = {
                 text = {
                     "Grimmi also gives {C:attention}2{}",

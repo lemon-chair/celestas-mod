@@ -374,6 +374,8 @@ end
 --- row settles every other disagreement.
 local function shop_filler()
     if not (G.jokers and G.jokers.cards) then return nil end
+    -- The Purgatory Deck's pro: Lost Jokers no longer affect the shop.
+    if CelestasMod.purg and CelestasMod.purg("lost_shop") then return nil end
     for _, held in ipairs(G.jokers.cards) do
         if Lost.is_lost(held) then
             local center = held.config.center
