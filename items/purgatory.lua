@@ -613,6 +613,15 @@ add { kind = "good", key = "lost_shop",
       end,
       apply = function(st) st.lost_shop = true end }
 
+add { kind = "good", key = "lost_sell",
+      -- Only while there is a Lost Joker that cannot be sold: the wrap on Card:can_sell_card
+      -- (jokers/lost.lua) lets them go for the flag.
+      available = function()
+          local Lost = CelestasMod.Lost
+          return (Lost and Lost.any_held()) and true or false
+      end,
+      apply = function(st) st.lost_sell = true end }
+
 -- The Jokers a pro changes, one pro each. Each is only offered while the Joker is owned. What it
 -- changes is in the Joker's own code, which reads the flag by this name (CelestasMod.purg).
 local JOKER_PROS = {
@@ -1088,6 +1097,7 @@ local UNDO = {
     ["good:stamp_packs"] = function(st) st.stamp_packs = nil end,
     ["good:spectral_shop"] = function(st) st.spectral_shop = nil end,
     ["good:lost_shop"] = function(st) st.lost_shop = nil end,
+    ["good:lost_sell"] = function(st) st.lost_sell = nil end,
     ["good:lost_slots"] = function(st)
         st.lost_slots = nil
         if CelestasMod.Lost then CelestasMod.Lost.sync_slots() end
@@ -1470,7 +1480,7 @@ P.CATEGORIES = {
     { title = "Poker hand levels", icon = "lavish",
       good = { "level_all", "level_top" }, bad = { "level_all", "level_top" } },
     { title = "Jokers", icon = "lead",
-      good = { "joker_slot", "rare_joker", "negative_joker", "unsticker", "lost_slots", "lost_shop" },
+      good = { "joker_slot", "rare_joker", "negative_joker", "unsticker", "lost_slots", "lost_shop", "lost_sell" },
       bad = { "joker_slot", "destroy_joker", "lose_negative", "sticker", "eternal_perishable", "lose_editions" } },
     { title = "Specific Jokers", icon = "abyssal",
       -- the twelve that change one Joker each (JOKER_PROS)

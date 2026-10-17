@@ -1391,7 +1391,8 @@ SMODS.Joker {
 
 local celesta_lost_can_sell_ref = Card.can_sell_card
 function Card:can_sell_card(context)
-    if Lost.is_lost(self) then return false end
+    -- The Purgatory Deck's pro: Lost Jokers can be sold.
+    if Lost.is_lost(self) and not (CelestasMod.purg and CelestasMod.purg("lost_sell")) then return false end
     return celesta_lost_can_sell_ref(self, context)
 end
 

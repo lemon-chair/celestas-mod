@@ -5081,6 +5081,11 @@ LOC_TAIL = '''        },
                     "affect the shop",
                 },
             },
+            celesta_purg_good_lost_sell = {
+                text = {
+                    "Lost Jokers can be sold",
+                },
+            },
             celesta_purg_good_grimmi = {
                 name = "Grimmi",
                 text = {
