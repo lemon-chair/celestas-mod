@@ -3120,6 +3120,27 @@ LOC_TAIL = '''        },
                     "owned {C:attention}Joker{} {C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
                 },
             },
+            celesta_bind_kourra_arar = {
+                name = "Kourra + Arar",
+                text = {
+                    "This Joker gives {C:mult}+#1#{} Mult every time",
+                    "an {C:attention}enhanced{} card scores",
+                },
+            },
+            celesta_bind_kourra_kumi = {
+                name = "Kourra + Kumi",
+                text = {
+                    "This Joker gives {C:mult}+#1#{} Mult every time",
+                    "a {C:attention}Stone{} variant card triggers",
+                },
+            },
+            celesta_bind_jax_cottontail = {
+                name = "Jax + CottontailVA",
+                text = {
+                    "Retrigger {C:attention}Star Seal{} cards",
+                    "{C:attention}#1#{} extra time",
+                },
+            },
             celesta_bind_ironmouse_saiiren = {
                 name = "Ironmouse + Saiiren",
                 text = {

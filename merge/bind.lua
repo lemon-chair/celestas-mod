@@ -18610,6 +18610,84 @@ special("j_abstract", "j_celesta_rubensargasm", {
     end,
 })
 
+-- Kourra + Arar, Kourra + Kumi, Jax + CottontailVA: three pairs that pay for what a card is made of.
+do
+
+--- True for a card carrying any enhancement at all: against c_base, the unenhanced playing-card centre.
+local function enhanced(card)
+    local center = card and card.config and card.config.center
+    return center ~= nil and G.P_CENTERS ~= nil and center ~= G.P_CENTERS.c_base
+end
+
+--- A Stone Card or any of this mod's variants of one: Limestone, Sandstone, Scoria. Asked through
+--- has_enhancement, which an enhancement a card is standing in for also answers; the mod's three are read off
+--- ENHANCEMENT_KEYS at call time, since enhancements/ is loaded after this file.
+local function stone_variant(card)
+    if SMODS.has_enhancement(card, "m_stone") then return true end
+    local keys = CelestasMod.ENHANCEMENT_KEYS or {}
+    for _, name in ipairs({ "Limestone", "Sandstone", "Scoria" }) do
+        local key = keys[name]
+        if key and SMODS.has_enhancement(card, key) then return true end
+    end
+    return false
+end
+
+-- Kourra + Arar: +2 Mult for every enhanced card that scores. Paid per card as it scores (a card that scores
+-- twice pays twice, and a copier pays the same again).
+special("j_celesta_kourra", "j_celesta_arar", {
+    key = "kourra_arar",
+    config = { mult = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play and context.other_card) then return end
+        if not enhanced(context.other_card) then return end
+        return { mult = state.mult, card = context.other_card }
+    end,
+})
+
+-- Kourra + Kumi: +2 Mult every time a Stone variant card triggers: a Stone, Limestone, Sandstone or Scoria card
+-- scoring, and again for each retrigger.
+special("j_celesta_kourra", "j_celesta_kumi", {
+    key = "kourra_kumi",
+    config = { mult = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play and context.other_card) then return end
+        if not stone_variant(context.other_card) then return end
+        return { mult = state.mult, card = context.other_card }
+    end,
+})
+
+-- Jax + CottontailVA: Star Seal cards are retriggered, once.
+special("j_celesta_jaxvtuber", "j_celesta_cottontail", {
+    key = "jax_cottontail",
+    config = { repetitions = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.repetitions } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.repetition and context.cardarea == G.play and context.other_card) then return end
+        if context.other_card.seal ~= (CelestasMod.SEAL_KEYS or {}).Star then return end
+        return {
+            message = localize("k_again_ex"),
+            repetitions = state.repetitions,
+            card = card,
+        }
+    end,
+})
+
+end
+
 --------------------------------------------------------------------------------
 -- Art: the two faces split corner to corner
 --------------------------------------------------------------------------------
