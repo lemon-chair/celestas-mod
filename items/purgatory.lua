@@ -2124,14 +2124,25 @@ end
 --------------------------------------------------------------------------------
 
 -- A reroll that costs $2 more each time rather than $1: vanilla adds one, and this adds one
--- more before it does. calculate_reroll_cost(true) is the call that does not increase it.
+-- more. It is added AFTER everything that has a say in the price has had it (Nico Viras, Mogu,
+-- the Shoomimi + MinikoMew pair), and only when the price did go up: a Mogu that stops the
+-- increase stops all of it, and a free reroll, which vanilla returns from before touching the
+-- increase, leaves nothing for this to add to. calculate_reroll_cost(true) is the call that
+-- rebuilds the price without increasing it.
 local celesta_purg_reroll_ref = calculate_reroll_cost
 function calculate_reroll_cost(skip_increment, ...)
     local st = live()
-    if st and st.reroll_two and not skip_increment and G.GAME.current_round then
-        G.GAME.current_round.reroll_cost_increase = (G.GAME.current_round.reroll_cost_increase or 0) + 1
+    local round = G.GAME and G.GAME.current_round
+    if not (st and st.reroll_two and not skip_increment and round) then
+        return celesta_purg_reroll_ref(skip_increment, ...)
     end
-    return celesta_purg_reroll_ref(skip_increment, ...)
+    local before = round.reroll_cost_increase or 0
+    local ret = celesta_purg_reroll_ref(skip_increment, ...)
+    if (round.reroll_cost_increase or 0) > before then
+        round.reroll_cost_increase = round.reroll_cost_increase + 1
+        celesta_purg_reroll_ref(true, ...)
+    end
+    return ret
 end
 
 --------------------------------------------------------------------------------
