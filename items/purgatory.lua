@@ -381,7 +381,7 @@ end
 
 -- ---------------------------------------------------------------- pros
 
-add { kind = "good", key = "rerolls",
+add { kind = "good", key = "rerolls", repeatable = true,
       apply = function(st) st.reroll_bonus = (st.reroll_bonus or 0) + 2 end }
 
 add { kind = "good", key = "debt",
@@ -447,7 +447,7 @@ add { kind = "good", key = "money_30", repeatable = true,
 add { kind = "good", key = "level_top", repeatable = true,
       apply = function() level_up_hand(nil, most_played(), true, 3) end }
 
-add { kind = "good", key = "odds_double",
+add { kind = "good", key = "odds_double", repeatable = true,
       apply = function()
           G.GAME.probabilities.normal = (G.GAME.probabilities.normal or 1) * 2
       end }
@@ -739,7 +739,7 @@ add { kind = "good", key = "blind_size",
 
 -- ---------------------------------------------------------------- cons
 
-add { kind = "bad", key = "rerolls",
+add { kind = "bad", key = "rerolls", repeatable = true,
       apply = function(st) st.reroll_bonus = (st.reroll_bonus or 0) - 1 end }
 
 add { kind = "bad", key = "lose_20", repeatable = true,
@@ -850,7 +850,7 @@ add { kind = "bad", key = "booster_slot",
       available = function() return booster_slots() > 1 end,
       apply = function() SMODS.change_booster_limit(-1) end }
 
-add { kind = "bad", key = "odds_half",
+add { kind = "bad", key = "odds_half", repeatable = true,
       apply = function()
           G.GAME.probabilities.normal = (G.GAME.probabilities.normal or 1) * 0.5
       end }
@@ -1381,7 +1381,75 @@ function P.reroll()
     local st = P.state()
     if not (st and st.owed and P.rerolls_left(st) > 0) then return false end
     st.rerolls_used = (st.rerolls_used or 0) + 1
-    st.offers = P.roll_offers(st)
+    st.offers = st.shop and P.roll_shop(st) or P.roll_offers(st)
+    return true
+end
+
+--- Modifiers on the table in the Ichor Stake's shop.
+P.SHOP_SIZE = 6
+
+--- The pros the shop puts out: six that could be offered now, no two the same, and no con with any of them.
+function P.roll_shop(st)
+    local pool = offerable_of("good", st)
+    local hides = stake_rule("celesta_celestial")
+    local offers = {}
+    while #offers < P.SHOP_SIZE and #pool > 0 do
+        local entry, index = pick(pool, "_shop")
+        table.remove(pool, index)
+        offers[#offers + 1] = {
+            good = entry.key,
+            good_arg = entry.roll and entry.roll(st) or nil,
+            price = P.price_of("good", entry.key),
+            -- Hidden the way an offer's are on the Celestial Stake: the price is shown, the pro is not.
+            good_hidden = hides and P.hidden_roll("_hide_shop") or nil,
+        }
+    end
+    return offers
+end
+
+--- Whether the run can pay `price`, as the shop asks it: what is left may not go below the debt limit.
+local function can_pay(price)
+    return dollars() - price >= number(G.GAME.bankrupt_at)
+end
+
+--- Whether the pro at `index` in the shop can be bought now.
+function P.can_buy(index)
+    local st = P.state()
+    local offer = st and st.shop and st.offers and st.offers[index]
+    return offer ~= nil and not offer.sold and can_pay(offer.price)
+end
+
+--- Buys the pro at `index`: it is paid for and takes effect with no con, and the place is sold out.
+function P.buy(index)
+    if not P.can_buy(index) then return false end
+    local st = P.state()
+    local offer = st.offers[index]
+    local pro = P.find("good", offer.good)
+    if not pro then return false end
+
+    offer.sold = true
+    ease_dollars(-offer.price)
+    st.taken[pro.id] = (st.taken[pro.id] or 0) + 1
+    -- On the list like any other, and with no con beside it.
+    st.history = st.history or {}
+    local record = { good = pro.key, good_arg = offer.good_arg, bought = offer.price }
+    st.history[#st.history + 1] = record
+    choosing = record
+    local ok, err = pcall(pro.apply, st, offer.good_arg)
+    choosing = nil
+    if not ok then
+        CelestasMod.warn_once("purgatory_" .. pro.id,
+            ("Purgatory could not apply %s: %s"):format(pro.id, tostring(err)))
+    end
+    return true
+end
+
+--- Leaves the shop, which is the way out of it: nothing has to be bought.
+function P.leave_shop()
+    local st = P.state()
+    if not (st and st.shop) then return false end
+    st.offers, st.owed, st.shop, st.rerolls_used = nil, false, nil, 0
+    if G.OVERLAY_MENU then G.FUNCS.exit_overlay_menu() end
     return true
 end
 
@@ -1553,7 +1621,7 @@ local function flanked(kind, key, heading, box)
     } }
 end
 
---- The modifiers that are rare, as `kind:key`. Only recorded so far: nothing asks it yet.
+--- The modifiers that are rare, as `kind:key`.
 P.RARE = {
     ["good:egg"] = true,
     ["good:soul"] = true,
@@ -1569,6 +1637,51 @@ P.RARE = {
     ["bad:boss_big"] = true,
     ["bad:ante_end"] = true,
 }
+
+--- The modifiers that are uncommon, as `kind:key`. Every one in neither this nor P.RARE is common.
+P.UNCOMMON = {
+    ["good:income"] = true,
+    ["good:prices_half"] = true,
+    ["good:level_all"] = true,
+    ["good:level_top"] = true,
+    ["good:rare_joker"] = true,
+    ["good:negative_joker"] = true,
+    ["good:lost_slots"] = true,
+    ["good:lost_shop"] = true,
+    ["good:tarot_double"] = true,
+    ["good:reroll_vouchers"] = true,
+    ["good:stamp_packs"] = true,
+    ["good:no_tatter"] = true,
+    ["good:odds_double"] = true,
+    ["good:purge"] = true,
+    ["bad:prices_up"] = true,
+    ["bad:reroll_two"] = true,
+    ["bad:level_top"] = true,
+    ["bad:lose_editions"] = true,
+    ["bad:no_tarots"] = true,
+    ["bad:no_planets"] = true,
+    ["bad:tatter_fast"] = true,
+    ["bad:cull_suit"] = true,
+    ["bad:boss_repeat"] = true,
+    ["bad:super_boss"] = true,
+    ["bad:ante_jump"] = true,
+}
+
+--- What a pro costs in the Ichor Stake's shop, by how common it is.
+P.PRICES = { common = 10, uncommon = 25, rare = 50 }
+
+--- How common a modifier is: "common", "uncommon" or "rare".
+function P.rarity(kind, key)
+    local id = kind .. ":" .. tostring(key)
+    if P.RARE[id] then return "rare" end
+    if P.UNCOMMON[id] then return "uncommon" end
+    return "common"
+end
+
+--- What a modifier costs in the shop.
+function P.price_of(kind, key)
+    return P.PRICES[P.rarity(kind, key)]
+end
 
 --- Whether a modifier is a rare one.
 function P.is_rare(kind, key)
@@ -1602,6 +1715,68 @@ local function offer_panel(index, offer)
              } }
 end
 
+--- One of the six in the shop: the pro and its price, all of it one button.
+local function shop_panel(index, offer)
+    local sold = offer.sold
+    local price = { n = G.UIT.R, config = { align = "cm", padding = 0.04 }, nodes = {
+        { n = G.UIT.T, config = { text = sold and localize("celesta_purg_sold") or ("$" .. tostring(offer.price)),
+                                  scale = 0.42, colour = sold and G.C.UI.TEXT_INACTIVE or G.C.MONEY, shadow = true } } } }
+    return { n = G.UIT.C,
+             config = { align = "cm", padding = 0.08, r = 0.12, hover = true, shadow = true,
+                        colour = G.C.GREY, emboss = 0.05, minw = 3.5,
+                        button = (not sold) and "celesta_purg_buy" or nil, func = "celesta_purg_can_buy",
+                        ref_table = { index = index }, focus_args = { nav = "wide" } },
+             nodes = {
+                 flanked("good", offer.good,
+                         label(P.name_of("good", offer.good, localize("celesta_purg_good"), offer.good_hidden), G.C.GREEN),
+                         offer.good_hidden and hidden_box() or text_box("good", offer.good, offer.good_arg)),
+                 price,
+             } }
+end
+
+--- The Ichor Stake's shop: the six, three to a row, and the way to reroll them and to leave.
+function P.shop_definition(st)
+    local rows = {}
+    for first = 1, #(st.offers or {}), 3 do
+        local last = math.min(first + 2, #st.offers)
+        local row = {}
+        for i = first, last do
+            row[#row + 1] = shop_panel(i, st.offers[i])
+            if i < last then row[#row + 1] = { n = G.UIT.C, config = { minw = 0.15 } } end
+        end
+        rows[#rows + 1] = { n = G.UIT.R, config = { align = "cm", padding = 0.08 }, nodes = row }
+    end
+
+    local left = P.rerolls_left(st)
+    local contents = {
+        { n = G.UIT.R, config = { align = "cm", padding = 0.05 }, nodes = {
+            { n = G.UIT.T, config = { text = localize("celesta_purg_title"), scale = 0.7,
+                                      colour = G.C.ORANGE, shadow = true } } } },
+        { n = G.UIT.R, config = { align = "cm", padding = 0.05 }, nodes = {
+            { n = G.UIT.T, config = { text = localize("celesta_purg_buy_prompt"), scale = 0.4,
+                                      colour = G.C.UI.TEXT_LIGHT } } } },
+    }
+    for _, row in ipairs(rows) do contents[#contents + 1] = row end
+    contents[#contents + 1] = { n = G.UIT.R, config = { align = "cm", padding = 0.05 }, nodes = {
+        { n = G.UIT.C, config = { align = "cm", padding = 0.05 }, nodes = {
+            UIBox_button {
+                label = { localize("celesta_purg_reroll") .. " (" .. left .. ")" },
+                button = "celesta_purg_reroll",
+                func = "celesta_purg_can_reroll",
+                colour = left > 0 and G.C.GREEN or G.C.UI.BACKGROUND_INACTIVE,
+                minw = 3.6, minh = 0.7, scale = 0.45,
+            } } },
+        { n = G.UIT.C, config = { align = "cm", padding = 0.05 }, nodes = {
+            UIBox_button {
+                label = { localize("celesta_purg_done") },
+                button = "celesta_purg_done",
+                colour = G.C.ORANGE,
+                minw = 3.6, minh = 0.7, scale = 0.45,
+            } } },
+    } }
+    return create_UIBox_generic_options { no_back = true, no_esc = true, minw = 12, contents = contents }
+end
+
 --- What the box asks: to choose a modifier, and which of two it is when two are owed.
 local function prompt_text(st)
     local text = localize("celesta_purg_prompt")
@@ -1615,6 +1790,7 @@ end
 --- The whole screen. Built from the state, so a reroll is a fresh call and a reload is too.
 function P.definition()
     local st = P.state()
+    if st.shop then return P.shop_definition(st) end
     local panels = {}
     for i, offer in ipairs(st.offers or {}) do
         panels[#panels + 1] = offer_panel(i, offer)
@@ -1657,6 +1833,30 @@ G.FUNCS.celesta_purg_pick = function(e)
     if ref and ref.index then P.choose(ref.index) end
 end
 
+G.FUNCS.celesta_purg_buy = function(e)
+    local ref = e and e.config and e.config.ref_table
+    if ref and ref.index and P.buy(ref.index) then
+        -- Flat, for the reason a reroll is: the same screen with one place sold.
+        local jiggle = G.ROOM and G.ROOM.jiggle
+        show(true)
+        if G.ROOM and jiggle then G.ROOM.jiggle = jiggle end
+    end
+end
+
+--- A place that cannot be bought (sold out, or more than the run has) is greyed and does nothing.
+G.FUNCS.celesta_purg_can_buy = function(e)
+    local ref = e and e.config and e.config.ref_table
+    if ref and ref.index and P.can_buy(ref.index) then
+        e.config.colour = G.C.GREY
+        e.config.button = "celesta_purg_buy"
+    else
+        e.config.colour = G.C.UI.BACKGROUND_INACTIVE
+        e.config.button = nil
+    end
+end
+
+G.FUNCS.celesta_purg_done = function() P.leave_shop() end
+
 G.FUNCS.celesta_purg_can_reroll = function(e)
     if P.rerolls_left() > 0 then
         e.config.colour = G.C.GREEN
@@ -1684,10 +1884,10 @@ function P.gate()
 
     if not st.offers then
         st.rerolls_used = 0
-        st.offers = P.roll_offers(st)
+        st.offers = st.shop and P.roll_shop(st) or P.roll_offers(st)
         -- Nothing to choose between: the run goes on rather than waiting on an empty box.
         if #st.offers == 0 then
-            st.offers, st.owed = nil, false
+            st.offers, st.owed, st.shop = nil, false, nil
             return false
         end
     end
@@ -1730,7 +1930,7 @@ function P.taken_rows(kind, st)
             -- One the Purge took back is no longer in effect, and no longer on the list.
             if kind == "good" then
                 if not entry.good_removed then picks[#picks + 1] = { key = entry.good, arg = entry.good_arg } end
-            elseif not entry.bad_removed then
+            elseif entry.bad and not entry.bad_removed then
                 picks[#picks + 1] = { key = entry.bad, arg = entry.bad_arg, doubled = entry.doubled }
             end
         end
@@ -1932,9 +2132,13 @@ function P.calculate(context, from_stake)
     if context.individual or context.repetition then return end
 
     local owed = P.owed_count(context)
+    -- The Ichor Stake: after a Boss Blind on an even Ante the choice is a shop of pros to buy instead.
+    local shop = owed > 0 and context.beat_boss and (G.GAME.modifiers or {}).celesta_ichor
+        and number(G.GAME.round_resets.ante) % 2 == 0
     st.owed = owed > 0
+    st.shop = shop and true or nil
     -- How many this Blind is owed, and how many of them are still to be chosen.
-    st.pick_total = owed > 0 and owed or nil
+    st.pick_total = (owed > 0 and not shop) and owed or nil
     st.pick_left = st.pick_total
     if (st.income or 0) > 0 and not context.game_over then
         return { dollars = st.income }

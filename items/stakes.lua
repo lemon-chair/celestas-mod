@@ -39,6 +39,10 @@
 ---
 --- Glimmer takes a hand, and the Hell Deck has one: there it takes a discard.
 ---
+--- Ichor, on the Purgatory Deck, turns what a Boss Blind on an even Ante owes into a shop: six pros to buy, at
+--- what each costs, with the same rerolls (items/purgatory.lua, `P.roll_shop`). On any other deck it is only the
+--- faster scaling.
+---
 --- How the stickers stack is Cryptid's Brown Stake: Eternal and Perishable stop excluding each
 --- other, and each is rolled of its own rather than from one shared roll. Done here without Cryptid.
 
@@ -198,9 +202,9 @@ function CelestasMod.stake_chip_pos(key)
 end
 
 --- The stakes whose text is different on the Purgatory Deck: the first two that pay it a cost of their
---- own, and the four whose con is no longer offered there.
+--- own, Ichor that makes it a shop, and the ones whose con is no longer offered there.
 local PURGATORY_TEXT = {
-    iron = true, rose = true, abyssal = true, titanium = true, terra = true, celestial = true,
+    iron = true, rose = true, ichor = true, abyssal = true, titanium = true, terra = true, celestial = true,
 }
 
 -- One chain: each applies the one below it, and the first applies Gold.

@@ -5369,7 +5369,7 @@ LOC_TAIL = '''        },
                 },
             },
             celesta_purg_bad_cull_suit = {
-                name = "Targetted",
+                name = "Targeted",
                 text = {
                     "Destroy {C:attention}50%{} of the",
                     "{C:attention}#1#{} in your deck",
@@ -6200,6 +6200,16 @@ LOC_TAIL = '''        },
                     "faster for each Ante",
                 },
             },
+            stake_celesta_ichor_purgatory = {
+                name = "Ichor Stake",
+                text = {
+                    "Required score scales",
+                    "faster for each Ante",
+                    "After Boss Blinds on even Antes,",
+                    "buy {C:attention}positive modifiers{} instead",
+                    "of choosing {C:attention}2{}",
+                },
+            },
             stake_celesta_herbium = {
                 name = "Herbium Stake",
                 text = {
@@ -6872,6 +6882,9 @@ LOC_TAIL = '''        },
             celesta_purg_reroll = "Reroll",
             celesta_purg_modifiers = "Modifiers",
             celesta_purg_none = "None yet",
+            celesta_purg_buy_prompt = "Buy a modifier",
+            celesta_purg_done = "Done",
+            celesta_purg_sold = "Sold",
             celesta_purg_banned_hand = "You cannot play your least-played hand",
         },
         -- Substituted messages. localize hands back the literal 'ERROR' for a
