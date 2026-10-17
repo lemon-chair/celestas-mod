@@ -711,7 +711,7 @@ add { kind = "good", key = "ante_down", repeatable = true,
 add { kind = "good", key = "coupon_tag", repeatable = true,
       apply = function() gain_tag("tag_coupon") end }
 
---- How many modifiers must be in effect, pros and cons together, before the Purge is offered.
+--- How many modifiers must be on the list, pros and cons together, before the Purge is offered.
 P.PURGE_AT = 16
 
 add { kind = "good", key = "purge", repeatable = true,
@@ -1019,10 +1019,11 @@ end
 -- Taking one back
 --------------------------------------------------------------------------------
 --
--- The Purge removes modifiers that are still doing something. Which are those is this table: a modifier
--- has an `undo` when what it did stays (a slot, a rule, a rate) and none when it was done once and is
--- over (money, a card, a level, a tag). Each undo puts back what the modifier's own `apply` changed, by
--- the same amount.
+-- The Purge removes the modifiers on the Modifiers list: every one taken and not yet removed (and, for a
+-- Boss Blind upgrade, not dropped). Taking one back puts back what its own `apply` changed, by the same
+-- amount, and that is this table: a modifier has an `undo` when what it did stays (a slot, a rule, a rate).
+-- One with none was done once and is over (money, a card, a level, a tag): it leaves the list, and what it
+-- did is not undone.
 
 --- The pair being chosen right now, which the Purge must leave alone: it is on the record before either
 --- half has happened.
@@ -1154,13 +1155,13 @@ for _, entry in ipairs(P.MODIFIERS) do
     entry.standing = STANDING[entry.id]
 end
 
---- The modifiers of `kind` taken and still in effect, as { record, kind, entry }, in the order taken.
---- `except` is a record to leave out.
+--- The modifiers of `kind` taken and not yet removed - the ones the Modifiers list shows - as
+--- { record, kind, entry }, in the order taken. `except` is a record to leave out.
 function P.in_effect(st, kind, except)
     local out = {}
     for _, record in ipairs(st.history or {}) do
         local entry = record[kind] and P.find(kind, record[kind])
-        if entry and entry.undo and record ~= except and not record[kind .. "_removed"]
+        if entry and record ~= except and not record[kind .. "_removed"]
             and (not entry.standing or entry.standing(st)) then
             out[#out + 1] = { record = record, kind = kind, entry = entry }
         end
@@ -1168,13 +1169,14 @@ function P.in_effect(st, kind, except)
     return out
 end
 
---- Takes one modifier back: what it changed is put back, it leaves the list, and one that could only be
---- chosen once may be offered again.
+--- Takes one modifier back: it leaves the list and, if it has an undo, what it changed is put back. One
+--- that could only be chosen once may be offered again.
 function P.take_back(st, item)
     local record, entry = item.record, item.entry
     record[item.kind .. "_removed"] = true
     -- A con a Summon doubled was applied twice.
     local times = (item.kind == "bad" and record.twice) and 2 or 1
+    if not entry.undo then times = 0 end
     for _ = 1, times do
         local ok, err = pcall(entry.undo, st, record[item.kind .. "_arg"])
         if not ok then
@@ -1185,7 +1187,7 @@ function P.take_back(st, item)
     st.taken[entry.id] = math.max(0, (st.taken[entry.id] or 0) - 1)
 end
 
---- The Purge: half of the pros in effect (rounded as a cull is, at random) and every con.
+--- The Purge: half of the pros on the list (rounded as a cull is, at random) and every con.
 function P.purge(st)
     local pros = P.in_effect(st, "good", choosing)
     local cons = P.in_effect(st, "bad", choosing)
