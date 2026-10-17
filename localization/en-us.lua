@@ -6875,8 +6875,8 @@ return {
             celesta_purg_good_snuffy = {
                 name = "Snuffy",
                 text = {
-                    "Snuffy counts every Hand",
-                    "of the round, not just the left",
+                    "Snuffy counts every Hand of",
+                    "the round: used and remaining",
                 },
             },
             celesta_purg_good_dokibird = {
