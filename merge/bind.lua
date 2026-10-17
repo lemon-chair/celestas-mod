@@ -18555,6 +18555,39 @@ end
 
 end
 
+-- Sixth Sense + Kson: a Spectral card for every hand with a 6 in it.
+--
+-- "A hand containing a 6" is the hand played - every card played, scored or not, which is what Sixth
+-- Sense reads its card off (full_hand) - and a debuffed 6 is still a 6. One card a hand, however many
+-- sixes. The card is Kson's own deal (jokers/kson_girldm.lua, reached through CelestasMod because this
+-- file is loaded first), so room is asked once per card and a copy takes a card of its own.
+special("j_sixth_sense", "j_celesta_kson", {
+    key = "sixth_kson",
+    config = {},
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.before then return end
+        local six = false
+        for _, played in ipairs(context.full_hand or {}) do
+            if not SMODS.has_no_rank(played) and played:get_id() == 6 then
+                six = true
+                break
+            end
+        end
+        if not six then return end
+        if not (CelestasMod.kson_deal and CelestasMod.kson_deal(1, "celesta_bind_sixth_kson") > 0) then return end
+        return {
+            message = localize("k_plus_spectral"),
+            colour = G.C.SECONDARY_SET.Spectral,
+            card = context.blueprint_card or card,
+        }
+    end,
+})
+
 --------------------------------------------------------------------------------
 -- Art: the two faces split corner to corner
 --------------------------------------------------------------------------------

@@ -4805,6 +4805,14 @@ return {
                     "hand is played {C:inactive}(Must have room)",
                 },
             },
+            celesta_bind_sixth_kson = {
+                name = "Sixth Sense + Kson",
+                text = {
+                    "Create a random {C:spectral}Spectral{} card when a",
+                    "hand containing a {C:attention}6{} is played",
+                    "{C:inactive}(Must have room)",
+                },
+            },
             celesta_bind_ironmouse_saiiren = {
                 name = "Ironmouse + Saiiren",
                 text = {
