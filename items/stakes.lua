@@ -22,7 +22,7 @@
 ---   Burning    -1 hand; Blinds scale faster after each Ante
 ---   Terra      Tarot cards no longer appear in the shop
 ---   Celestial  Showdown Boss Blinds can replace regular Boss Blinds (on the Purgatory Deck:
----              the modifiers in an offer each have a 1 in 6 chance to be hidden)
+---              the modifiers in an offer each have a 1 in 4 chance to be hidden)
 ---
 --- Each applies the one below it, and the first applies Gold. Which is also what unlocks it: Steamodded
 --- offers a stake once everything it applies has been won, so winning Gold is what opens this, and it

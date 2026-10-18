@@ -55,7 +55,7 @@ P.LEGENDARY_SHOP_RATE = 0.02
 --- "A chance" in the Boss modifiers, as 1 in this.
 P.BOSS_ODDS = 3
 --- The chance, on the Celestial Stake, that a modifier in an offer is hidden: 1 in this.
-P.HIDDEN_ODDS = 6
+P.HIDDEN_ODDS = 4
 --- What the two price modifiers scale the shop by.
 P.PRICE_DOWN, P.PRICE_UP = 0.5, 1.5
 --- What the blind size modifier scales every Blind by.
@@ -1243,9 +1243,11 @@ local function offerable_of(kind, st)
     return out
 end
 
---- Whether one modifier of an offer is hidden: a listed chance, 1 in P.HIDDEN_ODDS.
+--- Whether one modifier of an offer is hidden: 1 in P.HIDDEN_ODDS, and that exactly. Nothing that changes the
+--- odds of a listed chance (the Hedron Stake's halving, Oops! All 6s, a Joker that doubles a numerator)
+--- is asked, the way the Soul Stake's own roll is not: the Celestial Stake's chance is its own.
 function P.hidden_roll(seed)
-    return SMODS.pseudorandom_probability({}, SEED .. seed, 1, P.HIDDEN_ODDS) and true or nil
+    return SMODS.pseudorandom_probability({}, SEED .. seed, 1, P.HIDDEN_ODDS, "celesta_hidden", true) and true or nil
 end
 
 --- Three offers, each a pro and a con, no pro and no con twice. Fewer when the pools run

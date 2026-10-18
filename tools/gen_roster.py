@@ -6343,7 +6343,7 @@ LOC_TAIL = '''        },
                 name = "Celestial Stake",
                 text = {
                     "{C:green}Positive{} and {C:red}negative{} modifiers",
-                    "have a {C:green}1 in 6{} chance to be",
+                    "have a {C:green}1 in 4{} chance to be",
                     "{C:attention}hidden{} when selecting",
                 },
             },
