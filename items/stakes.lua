@@ -69,6 +69,23 @@ end
 
 local function on_purgatory() return on_deck("purgatory") end
 
+--- The stake panel in the new run menu is built again only when the stake being looked at changes
+--- (RUN_SETUP_check_stake2), so a stake whose text depends on the deck or the sleeve kept the text of the
+--- one looked at before: the Purgatory Deck's Iron Stake stayed on the Fusion Deck. Which of those two the
+--- text is for is part of what the panel was built for, and a change in it builds the panel again - by
+--- forgetting which stake it was built for, which is how the base game's own check decides.
+local celesta_stake_panel_ref = G.FUNCS.RUN_SETUP_check_stake2
+if celesta_stake_panel_ref then
+    G.FUNCS.RUN_SETUP_check_stake2 = function(e)
+        local text_for = (on_purgatory() and "purgatory" or "") .. "/" .. (on_deck("hell") and "hell" or "")
+        if e.config.celesta_text_for ~= text_for then
+            e.config.celesta_text_for = text_for
+            e.config.id = nil
+        end
+        return celesta_stake_panel_ref(e)
+    end
+end
+
 --- Blinds are bigger from the second Ante on: the base game's own `scaling`, one step up. Vanilla
 --- has three of them and Steamodded reads any (utils.lua, SMODS.get_blind_amount), so a stake that
 --- adds one on top of Gold's is just a higher number.
