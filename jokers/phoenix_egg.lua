@@ -310,22 +310,26 @@ end
 
 -- ...and is usable with the Joker row full. Vanilla only lets a Soul be used with a free Joker slot (or from
 -- inside the row), because it makes a Legendary - which this one does not: it turns the egg into Yharon, in the
--- slot the egg is in, and needs none of its own. So while an egg is ready the one slot it asks for is lent for the
--- length of the question, and given back. Everything else vanilla asks of a Soul (not in the middle of a hand, not
--- while something is being played) is still asked.
+-- slot the egg is in, and needs none of its own. So while an egg is ready and the row is full the Soul is asked
+-- as a card that needs no slot, for the length of the question, and its name is put back: everything else vanilla
+-- asks of it (not in the middle of a hand, not while something is being played) is still asked.
+--
+-- Not by lending a slot: under Steamodded the limit is derived, and recomputed once a frame, so a slot lent and
+-- read back in the same breath is not there.
 local celesta_egg_can_use_ref = Card.can_use_consumeable
 function Card:can_use_consumeable(...)
     local center = self.config and self.config.center
-    if not (center and center.key == SOUL_KEY and G.jokers and G.jokers.config and ready_egg()) then
+    if not (center and center.key == SOUL_KEY and G.jokers and G.jokers.config and self.ability
+            and ready_egg()) then
         return celesta_egg_can_use_ref(self, ...)
     end
-    local full = #G.jokers.cards >= G.jokers.config.card_limit
-    local bump = CelestasMod.bump_limit
-    if not (full and bump) then return celesta_egg_can_use_ref(self, ...) end
+    -- Only a row that is exactly full is helped: one with room needs no help, and one over its limit is refused as ever.
+    if #G.jokers.cards ~= G.jokers.config.card_limit then return celesta_egg_can_use_ref(self, ...) end
 
-    bump(G.jokers, 1)
+    local saved = self.ability.name
+    self.ability.name = "Black Hole"
     local ok, answer = pcall(celesta_egg_can_use_ref, self, ...)
-    bump(G.jokers, -1)
+    self.ability.name = saved
     if not ok then error(answer, 0) end
     return answer
 end
