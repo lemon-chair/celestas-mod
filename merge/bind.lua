@@ -18689,7 +18689,7 @@ special("j_celesta_jaxvtuber", "j_celesta_cottontail", {
 end
 
 -- Monster Girls: CottontailVA, Kumi, Jax and Zentreya - the four that care about what a card has been made
--- into. Any card carrying an enhancement or a seal is retriggered, and pays X2 Mult and a 1 in 4 chance of $20 each
+-- into. Any card carrying an enhancement or a seal is retriggered, and pays X1.75 Mult and a 1 in 4 chance of $20 each
 -- time it triggers: scored, or held in hand.
 do
 
@@ -18705,7 +18705,7 @@ quad({
     key = "quad_monster_girls",
     members = { "j_celesta_cottontail", "j_celesta_kumi",
                 "j_celesta_jaxvtuber", "j_celesta_zentreya" },
-    config = { repetitions = 1, x_mult = 2, odds = 4, dollars = 20 },
+    config = { repetitions = 1, x_mult = 1.75, odds = 4, dollars = 20 },
 
     loc_vars = function(def, card, state)
         local n, d = SMODS.get_probability_vars(
