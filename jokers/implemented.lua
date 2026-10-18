@@ -7918,6 +7918,31 @@ SMODS.Joker {
     end,
 }
 
+-- Smitten Seraph can be bought into a full row, but never into one that is over its limit.
+--
+-- Vanilla (as Steamodded has it) asks for a free slot BEFORE the card arrives, and the slots this card grants
+-- only come when it does - so a full row refused the very Joker that would have made room. Here the row may be
+-- full (5 of 5) but not over (6 of 5), and the row it makes must fit with the slots this card brings. Anything
+-- else is refused as before. Wrapped in a block, because this file has no locals to spare.
+do
+    local SERAPH_KEY = "j_celesta_smittenseraph"
+    local celesta_seraph_space_ref = G and G.FUNCS and G.FUNCS.check_for_buy_space
+    if celesta_seraph_space_ref then
+        G.FUNCS.check_for_buy_space = function(card)
+            local center = card and card.config and card.config.center
+            if center and center.key == SERAPH_KEY and card.ability and card.ability.set == "Joker"
+                and G.jokers and G.jokers.cards and G.jokers.config then
+                local used = 1 + (card.ability.extra_slots_used or 0)
+                local limit = G.jokers.config.card_limit + (card.ability.card_limit or 0)
+                local held = #G.jokers.cards
+                -- Not over before, and not over after, with what this card gives.
+                if held + used - 1 <= limit and held + used <= limit + seraph_slots(card) then return true end
+            end
+            return celesta_seraph_space_ref(card)
+        end
+    end
+end
+
 --------------------------------------------------------------------------------
 -- Shiabun [Uncommon] - one more card in hand can be picked.
 --------------------------------------------------------------------------------
