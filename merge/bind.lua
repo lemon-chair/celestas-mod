@@ -18688,6 +18688,59 @@ special("j_celesta_jaxvtuber", "j_celesta_cottontail", {
 
 end
 
+-- Monster Girls: CottontailVA, Kumi, Jax and Zentreya - the four that care about what a card has been made
+-- into. Any card carrying an enhancement or a seal is retriggered, and pays X2 Mult and a 1 in 4 chance of $20 each
+-- time it triggers: scored, or held in hand.
+do
+
+--- True for a card carrying an enhancement or a seal: against c_base, the unenhanced playing-card centre.
+local function made_into_something(card)
+    if not card then return false end
+    if card.seal then return true end
+    local center = card.config and card.config.center
+    return center ~= nil and G.P_CENTERS ~= nil and center ~= G.P_CENTERS.c_base
+end
+
+quad({
+    key = "quad_monster_girls",
+    members = { "j_celesta_cottontail", "j_celesta_kumi",
+                "j_celesta_jaxvtuber", "j_celesta_zentreya" },
+    config = { repetitions = 1, x_mult = 2, odds = 4, dollars = 20 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_quad_monster_girls")
+        return { vars = { state.x_mult, n, d, state.dollars } }
+    end,
+
+    calculate = function(def, card, context, state)
+        local other = context.other_card
+        if not (other and (context.cardarea == G.play or context.cardarea == G.hand)
+            and made_into_something(other)) then
+            return
+        end
+
+        if context.repetition then
+            return {
+                message = localize("k_again_ex"),
+                repetitions = state.repetitions,
+                card = card,
+            }
+        end
+
+        if context.individual then
+            local ret = { x_mult = state.x_mult, card = card }
+            if SMODS.pseudorandom_probability(card, "celesta_bind_quad_monster_girls",
+                                              1, state.odds) then
+                ret.dollars = state.dollars
+            end
+            return ret
+        end
+    end,
+})
+
+end
+
 --------------------------------------------------------------------------------
 -- Art: the two faces split corner to corner
 --------------------------------------------------------------------------------

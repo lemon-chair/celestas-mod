@@ -1302,6 +1302,14 @@ LOC_TAIL = '''        },
                     "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
                 },
             },
+            celesta_bind_quad_monster_girls = {
+                name = "Monster Girls",
+                text = {
+                    "{C:attention}Enhanced{} and {C:attention}sealed{} cards are retriggered,",
+                    "and give {X:mult,C:white}X#1#{} Mult, with a {C:green}#2# in #3#{} chance",
+                    "of {C:money}$#4#{}, when scored or held in hand",
+                },
+            },
             celesta_bind_amalee_ironmouse = {
                 name = "AmaLee + Ironmouse",
                 text = {
