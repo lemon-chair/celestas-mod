@@ -28,6 +28,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Sheets whose cell size is deliberately not the card size, with the reason.
 NON_CARD = {
     "modicon": "32x32 mod badge",
+    "auric": "72x96 overlay pattern drawn over a card (editions/auric.lua)",
     # Card Sleeves' own frame size (CardSleeves.lua registers its sheet at
     # 73x95), which is what a sleeve is drawn at.
     "sleeves": "73x95 Card Sleeves sleeve",

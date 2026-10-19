@@ -23,6 +23,8 @@ import round_corners  # noqa: E402  (needs the path set above)
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHARED = {"jokers", "consumables", "decks", "sleeves", "icon", "seals", "driftwood_fronts",
           "frozen", "frozen_round",
+          # Auric's overlay: a pattern a cell bigger than a card, not a face
+          "auric",
           # wear overlays, drawn on top of a playing card
           "tatter", "lucky_card_tatter", "limestone_tatter",
           "bind", "swap", "milk_bottle", "burgundy_brew",
@@ -137,6 +139,9 @@ DISPLAY_NAMES = {
     "sox": "Sox",
     "treemore": "Treemore",
     "dougdoug": "DougDoug",
+    "aga": "Aga",
+    "magnetar": "Magnetar",
+    "seabill": "Seabill",
     "rox": "ROX",
     "broo": "Broo",
     "cillia": "Cillia",
@@ -890,6 +895,17 @@ LOC_TAIL = '''        },
             },
         },
 
+        Edition = {
+            e_celesta_auric = {
+                name = "Auric",
+                text = {
+                    "Retrigger this card",
+                    "{C:attention}#1#{} times when scored",
+                    "{C:attention}Lucky{} card rolls always succeed",
+                    "Cards that can {C:attention}break{} never do",
+                },
+            },
+        },
         Enhanced = {
             m_celesta_exo = {
                 name = "Exo Card",
@@ -6772,6 +6788,7 @@ LOC_TAIL = '''        },
             m_celesta_scoria = "Scoria Card",
             m_celesta_foliage = "Foliage Card",
             m_celesta_obsidian = "Obsidian Card",
+            celesta_auric = "Auric",
             celesta_tattered = "Tattered",
             celesta_cracked = "Cracked",
             celesta_chipped = "Chipped",
@@ -6823,6 +6840,7 @@ LOC_TAIL = '''        },
             celesta_credit_astrum = "Astrum Aureus art - Total Calamity Wiki",
             celesta_credit_urschleim = "Urschleim - Core Keeper wiki",
             celesta_credit_monster_kumi = "Monster Kumi art - @Medu_Yusa on x.com",
+            celesta_credit_magnetar = "Magnetar art - PVZ Fusion",
             celesta_credit_rest_1 = "Other art credits can (probably) be found",
             celesta_credit_rest_2 = "through each person's Twitter/BlueSky pages.",
             -- Floating message text. Vanilla has no generic "+card" key
@@ -6837,6 +6855,7 @@ LOC_TAIL = '''        },
             celesta_tattered = "Tattered!",
             celesta_repaired = "Repaired!",
             celesta_gilded = "Gold!",
+            celesta_auric = "Auric!",
             celesta_blank_nothing = "nothing yet",
             celesta_taken = "Taken!",
             celesta_returned = "Returned!",
@@ -6929,6 +6948,7 @@ LOC_TAIL = '''        },
         -- without Cryptid installed.
         v_dictionary = {
             celesta_powmult = "^#1# Mult",
+            celesta_seabill_loss = "-$#1#",
             celesta_plus_tags = "+#1# Tags",
             -- Deme + LucyPyre's running total, floated as it climbs.
             celesta_blind_percent = "-#1#% Blind",

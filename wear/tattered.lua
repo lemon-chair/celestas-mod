@@ -204,8 +204,28 @@ local function gild(card)
     })
 end
 
+--- True while a Magnetar is in the Joker row (either half of a merge), which turns wear into Auric.
+function Tattered.auric_instead()
+    return CelestasMod.joker_in_play(CelestasMod.MAGNETAR_KEY or "j_celesta_magnetar")
+end
+
+--- Makes a card Auric in place of wearing it out, whatever edition it had. Deferred, like gild(): the
+--- edition changes under a pass that is still reading the card. Not made immune: the count starts
+--- again, so a Magnetar sold later leaves the card to wear as it always would.
+local function make_auric(card)
+    card.ability.celesta_scored = 0
+    G.E_MANAGER:add_event(Event {
+        func = function()
+            card:set_edition({ [CelestasMod.AURIC_KEY:sub(3)] = true }, true)
+            card:juice_up(0.3, 0.5)
+            return true
+        end
+    })
+end
+
 --- Counts one scoring and reports whether the card just wore out, and how:
---- "tatter" for the usual way, "gild" when a merge turned it Gold instead.
+--- "tatter" for the usual way, "gild" when a merge turned it Gold instead, "auric" when a
+--- Magnetar made it Auric.
 function Tattered.record_score(card)
     if not is_playing_card(card) or Tattered.is_tattered(card) then return false end
     if Tattered.is_immune(card) then return false end
@@ -219,6 +239,16 @@ function Tattered.record_score(card)
     if Tattered.gilds() then
         gild(card)
         return true, "gild"
+    end
+
+    if Tattered.auric_instead() then
+        -- One that is Auric already has nothing more to gain, and says nothing.
+        if card.edition and card.edition.key == CelestasMod.AURIC_KEY then
+            card.ability.celesta_scored = 0
+            return false
+        end
+        make_auric(card)
+        return true, "auric"
     end
 
     card.ability.celesta_tattered = true
@@ -309,12 +339,14 @@ function eval_card(card, context)
         and not context.extra_enhancement then
         local wore, how = Tattered.record_score(card)
         if wore then
-            -- A gilded card is not tattered, so Tattered.word would name the
+            -- A gilded or Auric card is not tattered, so Tattered.word would name the
             -- wear it did not get.
             card_eval_status_text(card, "extra", nil, nil, nil, {
                 message = localize(how == "gild" and "celesta_gilded"
+                    or how == "auric" and "celesta_auric"
                     or ("celesta_" .. Tattered.word(card))),
-                colour = how == "gild" and G.C.MONEY or G.C.FILTER,
+                colour = how == "gild" and G.C.MONEY
+                    or how == "auric" and G.C.GOLD or G.C.FILTER,
             })
         end
     end

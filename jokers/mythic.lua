@@ -602,6 +602,239 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
+-- Aga - every Booster Pack is a Mega one, costs $1, and is opened wide.
+--------------------------------------------------------------------------------
+--
+-- Nothing here is a trigger: Aga is owned, and the packs answer. Asked through
+-- CelestasMod.joker_in_play, which sees the half of a merge and leaves out a Joker that is
+-- debuffed.
+--
+-- THE PACK ITSELF. Every Booster Pack passes through Card:set_ability on its way to being a card - bought
+-- from the shop, handed over by a Tag, made by anything else - so that is where it becomes the Mega
+-- one of its own kind: p_arcana_normal_2 is p_arcana_mega_2, and a kind with no Mega is left alone. A
+-- pack already on the shelf when Aga arrives is put through the same door.
+--
+-- WHAT OPENING IT DOES. Twelve cards on the table and eight to take, and the shop's own price of $1.
+-- The count is a rule in CelestasMod.PACK_OPTION_RULES (jokers/implemented.lua, Geega's list), asked as
+-- the pack is opened: it brings the pack UP to twelve and never down, so Geega's one more is still one
+-- more. The number to take is the pack's own `choose`, which is what Card:open reads for it.
+
+CelestasMod.AGA_COST = 1
+CelestasMod.AGA_OPTIONS = 12
+CelestasMod.AGA_PICKS = 8
+
+local AGA_KEY = "j_celesta_aga"
+
+function CelestasMod.aga_active()
+    return CelestasMod.joker_in_play(AGA_KEY)
+end
+
+--- The Mega pack of the same kind a pack comes in, or nil: it is one already, it is not a pack that has
+--- sizes, or its kind has no Mega. The same number if there is one (the Mega packs are numbered by
+--- their art), and the first where there is not.
+function CelestasMod.mega_pack(center)
+    local key = type(center) == "table" and center.key
+    if type(key) ~= "string" then return nil end
+    local prefix, size, index = key:match("^(p_.-)_(%a+)_(%d+)$")
+    if not (prefix and size ~= "mega") then return nil end
+    local centers = G.P_CENTERS
+    return centers[prefix .. "_mega_" .. index] or centers[prefix .. "_mega_1"]
+end
+
+local celesta_aga_set_ability_ref = Card.set_ability
+function Card:set_ability(center, ...)
+    if type(center) == "table" and center.set == "Booster" and CelestasMod.aga_active() then
+        center = CelestasMod.mega_pack(center) or center
+    end
+    return celesta_aga_set_ability_ref(self, center, ...)
+end
+
+local celesta_aga_set_cost_ref = Card.set_cost
+function Card:set_cost(...)
+    local ret = celesta_aga_set_cost_ref(self, ...)
+    -- Down to the price and no further up: a pack a Coupon Tag made free stays free.
+    if self.ability and self.ability.set == "Booster" and (self.cost or 0) > CelestasMod.AGA_COST
+        and CelestasMod.aga_active() then
+        self.cost = CelestasMod.AGA_COST
+    end
+    return ret
+end
+
+local celesta_aga_open_ref = Card.open
+function Card:open(...)
+    local ability = self.ability
+    if ability and ability.set == "Booster" and CelestasMod.aga_active() then
+        local center = self.config and self.config.center
+        local own = ability.choose or (center and center.config and center.config.choose) or 1
+        ability.choose = math.max(own, CelestasMod.AGA_PICKS)
+    end
+    return celesta_aga_open_ref(self, ...)
+end
+
+CelestasMod.PACK_OPTION_RULES = CelestasMod.PACK_OPTION_RULES or {}
+CelestasMod.PACK_OPTION_RULES[#CelestasMod.PACK_OPTION_RULES + 1] = function(pack)
+    local extra = pack and pack.ability and pack.ability.extra
+    if type(extra) ~= "number" or not CelestasMod.aga_active() then return 0 end
+    return math.max(0, CelestasMod.AGA_OPTIONS - extra)
+end
+
+--- The packs on the shelf, made Mega and re-priced to what is so now. Queued, because a Joker is
+--- asked to leave or arrive before the row says so; and a second time a moment later for one that is
+--- leaving, whose card is still in the row for the length of its dissolve.
+function CelestasMod.aga_refresh_shop()
+    local function refresh()
+        local shelf = G.shop_booster and G.shop_booster.cards
+        for _, pack in ipairs(shelf or {}) do
+            if pack.ability and pack.ability.set == "Booster" then
+                local center = pack.config and pack.config.center
+                local mega = CelestasMod.aga_active() and CelestasMod.mega_pack(center)
+                if mega then pack:set_ability(mega) end
+                pack:set_cost()
+            end
+        end
+        return true
+    end
+    G.E_MANAGER:add_event(Event { func = refresh })
+    G.E_MANAGER:add_event(Event { trigger = "after", delay = 1, blockable = false, func = refresh })
+end
+
+SMODS.Joker {
+    key = "aga",
+    atlas = "aga",
+    pos = { x = 0, y = 0 },
+    rarity = MYTHIC, cost = 20,
+    unlocked = true, discovered = false,
+    -- The packs are changed by Aga being owned; there is no trigger to copy.
+    blueprint_compat = false, eternal_compat = true,
+    in_pool = function() return false end,
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { CelestasMod.AGA_COST, CelestasMod.AGA_OPTIONS, CelestasMod.AGA_PICKS } }
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        CelestasMod.aga_refresh_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        CelestasMod.aga_refresh_shop()
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Magnetar - the cards that have been played most are dealt first, and nothing wears out:
+-- it turns Auric instead.
+--------------------------------------------------------------------------------
+--
+-- Both halves are somewhere else. The deal is jokers/implemented.lua's one sort of the deck, which asks
+-- for Magnetar there (`deal_reorder`); the wear is wear/tattered.lua's, which asks here. The Auric
+-- edition is editions/auric.lua's. Like Aga, Magnetar is owned and the rest of the game answers it.
+--
+-- Credit for the art: PVZ Fusion (the Credits tab).
+
+CelestasMod.MAGNETAR_KEY = "j_celesta_magnetar"
+
+SMODS.Joker {
+    key = "magnetar",
+    atlas = "magnetar",
+    pos = { x = 0, y = 0 },
+    rarity = MYTHIC, cost = 20,
+    unlocked = true, discovered = false,
+    blueprint_compat = false, eternal_compat = true,
+    in_pool = function() return false end,
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.AURIC_KEY]
+        return { vars = {} }
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Seabill - $50 at the end of the round, and a dollar less each time.
+--------------------------------------------------------------------------------
+--
+-- Paid through calc_dollar_bonus, so the money has its own line on the cash-out the way Projekt
+-- Melody's and Rocket's do. What it is worth is taken off AFTER the cash-out, not before: the end of the
+-- round only marks the payout as owed (`owed`), and the shop that follows the cash-out takes the dollar
+-- off, which is the first moment that is unambiguously after the payout has been collected. Skipping the
+-- Blind's shop never happens - a cash-out always leads to one - and a Seabill bought in the shop was
+-- not in the row for the round, so it is owed nothing and loses nothing until it has been paid.
+--
+-- At $0 it goes the way Gros Michel does, beat for beat, which is also the route merge/bind.lua
+-- watches: a merged Seabill unmerges and leaves its partner behind.
+
+CelestasMod.SEABILL_DOLLARS = 50
+CelestasMod.SEABILL_LOSS = 1
+
+SMODS.Joker {
+    key = "seabill",
+    atlas = "seabill",
+    pos = { x = 0, y = 0 },
+    rarity = MYTHIC, cost = 20,
+    unlocked = true, discovered = false,
+    -- Copying it would pay twice for one round and drain it twice for one shop.
+    blueprint_compat = false, eternal_compat = false,
+    in_pool = function() return false end,
+
+    config = { extra = { dollars = CelestasMod.SEABILL_DOLLARS, loss = CelestasMod.SEABILL_LOSS } },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.dollars, card.ability.extra.loss } }
+    end,
+
+    calc_dollar_bonus = function(self, card)
+        local dollars = card.ability.extra.dollars
+        if not CelestasMod.more_than(dollars, 0) then return end
+        return dollars
+    end,
+
+    calculate = function(self, card, context)
+        if context.blueprint then return end
+        local extra = card.ability.extra
+
+        -- The once-a-round Joker pass. Without main_eval this is also heard for every card held in hand.
+        if context.end_of_round and context.main_eval and not context.game_over then
+            extra.owed = true
+            return
+        end
+
+        if context.starting_shop and extra.owed then
+            extra.owed = nil
+            extra.dollars = extra.dollars - extra.loss
+
+            if extra.dollars <= 0 then
+                -- Gros Michel's exit, beat for beat.
+                G.E_MANAGER:add_event(Event {
+                    func = function()
+                        play_sound("tarot1")
+                        card.T.r = -0.2
+                        card:juice_up(0.3, 0.4)
+                        card.states.drag.is = true
+                        card.children.center.pinch.x = true
+                        G.E_MANAGER:add_event(Event {
+                            trigger = "after", delay = 0.3, blockable = false,
+                            func = function()
+                                G.jokers:remove_card(card)
+                                card:remove()
+                                return true
+                            end
+                        })
+                        return true
+                    end
+                })
+                return
+            end
+
+            return {
+                message = localize { type = "variable", key = "celesta_seabill_loss", vars = { extra.loss } },
+                colour = G.C.MONEY,
+                card = card,
+            }
+        end
+    end,
+}
+
+--------------------------------------------------------------------------------
 -- Both hooks go on when a run starts, for the reason LucyPyre's does: every other mod has loaded by
 -- then, so these sit outside whatever they left behind rather than under it.
 --------------------------------------------------------------------------------

@@ -26,6 +26,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # larger than a card so it reads as overhanging the edges - masking either to
 # 71x95 corners would quietly destroy them.
 SHARED = {"jokers", "consumables", "decks", "sleeves", "icon", "seals", "driftwood_fronts", "frozen",
+          # Auric's overlay is a pattern over a card, 72x96, with a border of its own
+          "auric",
           "enh_exo_frame", "fx_downpour", "fx_snowstorm",
           # A suit sheet is thirteen card-sized cells in a row, not one card,
           # and its UI pip is neither - masking either to a 71x95 silhouette

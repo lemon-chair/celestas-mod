@@ -110,6 +110,8 @@ SMODS.Atlas { key = 'limestone_tatter',  path = 'limestone_tatter.png',  px = 71
 -- Frozen is an overlay drawn on top of a card, not an edition (see
 -- editions/frozen.lua for why it cannot be one).
 SMODS.Atlas { key = 'frozen', path = 'frozen.png', px = 71, py = 95 }
+-- The Auric edition's overlay (editions/auric.lua): 72x96, a cell bigger than a card all round.
+SMODS.Atlas { key = 'auric', path = 'auric.png', px = 72, py = 96 }
 -- The same pane cut to a circle, for the Jokers whose art is one. See
 -- CelestasMod.ROUND_JOKERS in globals.lua.
 SMODS.Atlas { key = 'frozen_round', path = 'frozen_round.png', px = 71, py = 95 }
@@ -162,6 +164,8 @@ assert(SMODS.load_file('enhancements/obsidian.lua'))()
 assert(SMODS.load_file('blinds/blinds.lua'))()
 assert(SMODS.load_file('blinds/pillar.lua'))()
 assert(SMODS.load_file('editions/frozen.lua'))()
+-- Before the Jokers, wear/tattered.lua and the Mythics: all three name its key.
+assert(SMODS.load_file('editions/auric.lua'))()
 -- After enhancements: it classifies their keys into cracked/chipped.
 assert(SMODS.load_file('wear/tattered.lua'))()
 -- The Favor Stamp's wrap of Card:calculate_joker, for the base game's Jokers. BEFORE bind.lua:
@@ -350,6 +354,7 @@ local CREDIT_LINES = {
     "celesta_credit_astrum",
     "celesta_credit_urschleim",
     "celesta_credit_monster_kumi",
+    "celesta_credit_magnetar",
 }
 
 --- A line of credits text.

@@ -554,6 +554,32 @@ return {
                     "{C:attention}Kumi{}",
                 },
             },
+            j_celesta_aga = {
+                name = "Aga",
+                text = {
+                    "All {C:attention}Booster Packs{} are {C:attention}Mega{}",
+                    "and cost {C:money}$#1#{}",
+                    "{C:attention}#2#{} options to choose from,",
+                    "choose up to {C:attention}#3#{}",
+                },
+            },
+            j_celesta_magnetar = {
+                name = "Magnetar",
+                text = {
+                    "{C:attention}Most-played{} cards are",
+                    "{C:attention}prioritized{} when drawing a hand",
+                    "Cards gain the {C:attention}Auric{} edition",
+                    "instead of becoming {C:attention}tattered{}",
+                },
+            },
+            j_celesta_seabill = {
+                name = "Seabill",
+                text = {
+                    "Earn {C:money}$#1#{} at end of round",
+                    "Loses {C:money}$#2#{} after cashing out",
+                    "{C:inactive}(Self-destructs at {C:money}$0{C:inactive})",
+                },
+            },
             j_celesta_dougdoug = {
                 name = "DougDoug",
                 text = {
@@ -2646,6 +2672,17 @@ return {
             },
         },
 
+        Edition = {
+            e_celesta_auric = {
+                name = "Auric",
+                text = {
+                    "Retrigger this card",
+                    "{C:attention}#1#{} times when scored",
+                    "{C:attention}Lucky{} card rolls always succeed",
+                    "Cards that can {C:attention}break{} never do",
+                },
+            },
+        },
         Enhanced = {
             m_celesta_exo = {
                 name = "Exo Card",
@@ -8528,6 +8565,7 @@ return {
             m_celesta_scoria = "Scoria Card",
             m_celesta_foliage = "Foliage Card",
             m_celesta_obsidian = "Obsidian Card",
+            celesta_auric = "Auric",
             celesta_tattered = "Tattered",
             celesta_cracked = "Cracked",
             celesta_chipped = "Chipped",
@@ -8579,6 +8617,7 @@ return {
             celesta_credit_astrum = "Astrum Aureus art - Total Calamity Wiki",
             celesta_credit_urschleim = "Urschleim - Core Keeper wiki",
             celesta_credit_monster_kumi = "Monster Kumi art - @Medu_Yusa on x.com",
+            celesta_credit_magnetar = "Magnetar art - PVZ Fusion",
             celesta_credit_rest_1 = "Other art credits can (probably) be found",
             celesta_credit_rest_2 = "through each person's Twitter/BlueSky pages.",
             -- Floating message text. Vanilla has no generic "+card" key
@@ -8593,6 +8632,7 @@ return {
             celesta_tattered = "Tattered!",
             celesta_repaired = "Repaired!",
             celesta_gilded = "Gold!",
+            celesta_auric = "Auric!",
             celesta_blank_nothing = "nothing yet",
             celesta_taken = "Taken!",
             celesta_returned = "Returned!",
@@ -8685,6 +8725,7 @@ return {
         -- without Cryptid installed.
         v_dictionary = {
             celesta_powmult = "^#1# Mult",
+            celesta_seabill_loss = "-$#1#",
             celesta_plus_tags = "+#1# Tags",
             -- Deme + LucyPyre's running total, floated as it climbs.
             celesta_blind_percent = "-#1#% Blind",

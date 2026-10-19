@@ -9931,6 +9931,13 @@ local function deal_reorder()
 
     local glasses = glasses_active()
     local rules, weights = glasses_pair_rules()
+    -- Magnetar: the cards played most are dealt first. vanilla counts it on the card itself
+    -- (`base.times_played`, bumped as the hand is played), so there is nothing to start counting.
+    if CelestasMod.joker_in_play(CelestasMod.MAGNETAR_KEY or "j_celesta_magnetar") then
+        weights[#weights + 1] = function(card)
+            return (card.base and card.base.times_played) or 0
+        end
+    end
     -- One bucket per rank, filled in deck order, so the sort is stable within
     -- a rank without needing a comparator that can tie.
     local buckets = { [0] = {}, {}, {}, {}, {} }

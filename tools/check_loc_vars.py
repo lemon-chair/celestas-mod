@@ -29,6 +29,7 @@ sounds = {}
 -- misc.challenge_names - so they are recorded to keep main.lua loadable and
 -- checked by test_challenges.py instead.
 challenges = {}
+editions = {}
 tags = {}
 -- A Stake carries its description in descriptions.Stake and nothing a loc_vars check could read
 -- here, so it is only recorded to keep main.lua loadable.
@@ -44,6 +45,7 @@ SMODS = {
   Joker = function(t) jokers[t.key] = t end,
   Seal  = function(t) seals[t.key] = t end,
   Enhancement = function(t) enhancements[t.key] = t end,
+  Edition = function(t) editions[t.key] = t end,
   Blind = function(t) blinds[t.key] = t end,
   -- Suits carry their own loc_txt rather than a descriptions entry, so
   -- they are only recorded here to keep main.lua loadable.
@@ -316,6 +318,9 @@ def main():
     for key, obj in dict(g.enhancements).items():
         targets.append(("Enhancement", key, "m_celesta_" + key, obj,
                         loc.descriptions.Enhanced))
+    for key, obj in dict(g.editions).items():
+        targets.append(("Edition", key, "e_celesta_" + key, obj,
+                        loc.descriptions.Edition))
     for key, obj in dict(g.blinds).items():
         targets.append(("Blind", key, "bl_celesta_" + key, obj,
                         loc.descriptions.Blind))
