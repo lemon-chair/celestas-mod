@@ -59,8 +59,14 @@ SMODS.Consumable {
     end,
 
     use = function(self, card, area, copier)
-        local target = G.hand and G.hand.highlighted and G.hand.highlighted[1]
-        if not target then return end
+        -- Every selected card, up to what the card allows: that number is one, and Haruka and the other
+        -- Jokers that scale a Tarot's selection make it more. Taken now, before the selection is let go.
+        local targets = {}
+        for i, picked in ipairs((G.hand and G.hand.highlighted) or {}) do
+            if i > (self.config.max_highlighted or SELECTED) then break end
+            targets[#targets + 1] = picked
+        end
+        if #targets == 0 then return end
         local seal = CelestasMod.SEAL_KEYS and CelestasMod.SEAL_KEYS.Gene
         if not seal then return end
 
@@ -79,7 +85,7 @@ SMODS.Consumable {
                 -- The third argument is vanilla's `immediate`: the seal is
                 -- already being announced by the Tarot, and without it the
                 -- card plays the seal's own arrival on top of that.
-                target:set_seal(seal, nil, true)
+                for _, target in ipairs(targets) do target:set_seal(seal, nil, true) end
                 return true
             end,
         })
