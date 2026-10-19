@@ -79,8 +79,12 @@ local function is_playing_card(card)
     return set ~= "Joker" and card.config and card.config.center
 end
 
+--- Whether a card is worn out. Not while a Magnetar is in the row: no card is tattered then, one that wore
+--- out before it came included - it pays in full and is drawn whole, and the wear it had is kept on the
+--- card, so a Magnetar that is sold gives it back. (Auric, below, is what the cards turn instead.)
 function Tattered.is_tattered(card)
-    return card and card.ability and card.ability.celesta_tattered == true
+    if not (card and card.ability and card.ability.celesta_tattered == true) then return false end
+    return not Tattered.auric_counting()
 end
 
 --- Rolls this card's wear-out point the first time it scores.
@@ -213,8 +217,8 @@ end
 -- of its own, kept apart from the wear's on purpose: the same sort of threshold, rolled for each card
 -- between the same two numbers and reached by the same scorings, and nothing that touches wear touches it.
 -- Sansin does not slow it, Dejavudea does not insure against it or reset it, Milk Bottle's Chips do not
--- shield a card from it, and the Purgatory Deck's modifiers about wear leave it alone. A card already worn
--- out goes on counting towards it.
+-- shield a card from it, and the Purgatory Deck's modifiers about wear leave it alone. A card that wore out
+-- before the Magnetar came goes on counting towards it, and is not tattered for as long as it stays.
 --
 -- A card that is Auric already has nothing to gain and is not counted.
 
@@ -222,7 +226,9 @@ local AURIC_SEED = "celesta_auric_at"
 
 --- True while a Magnetar is in the Joker row, which is what makes cards count towards Auric.
 function Tattered.auric_counting()
-    return CelestasMod.joker_in_play(CelestasMod.MAGNETAR_KEY or "j_celesta_magnetar")
+    -- Asked from the description and the draw as well, which run before every lookup exists.
+    local in_play = CelestasMod.joker_in_play
+    return in_play ~= nil and in_play(CelestasMod.MAGNETAR_KEY or "j_celesta_magnetar")
 end
 
 --- Rolls the scoring this card turns Auric at, the first time it is counted: the same window the wear is
