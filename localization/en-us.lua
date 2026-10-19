@@ -568,8 +568,8 @@ return {
                 text = {
                     "{C:attention}Most-played{} cards are",
                     "{C:attention}prioritized{} when drawing a hand",
-                    "Cards gain the {C:attention}Auric{} edition",
-                    "instead of becoming {C:attention}tattered{}",
+                    "Scored cards gain {C:attention}Auric{} after",
+                    "{C:attention}#1#-#2#{} triggers, apart from {C:attention}tattering{}",
                 },
             },
             j_celesta_seabill = {

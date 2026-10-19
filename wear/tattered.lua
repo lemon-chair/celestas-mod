@@ -204,16 +204,47 @@ local function gild(card)
     })
 end
 
---- True while a Magnetar is in the Joker row (either half of a merge), which turns wear into Auric.
-function Tattered.auric_instead()
+--------------------------------------------------------------------------------
+-- Auric: Magnetar's own count
+--------------------------------------------------------------------------------
+--
+-- Kept apart from the wear above on purpose. It is the same sort of count - a threshold rolled for each
+-- card between the same two numbers, reached by the same scorings - but nothing that touches wear
+-- touches it: Sansin does not slow it, Dejavudea does not insure against it or reset it, Milk Bottle's
+-- Chips do not shield a card from it, and the Purgatory Deck's modifiers about wear leave it alone. A card
+-- already worn out goes on counting towards it, and wearing out is not stopped by it either.
+--
+-- Counted only while a Magnetar is in the Joker row (either half of a merge). A card that is Auric
+-- already has nothing to gain and is not counted.
+
+local AURIC_SEED = "celesta_auric_at"
+
+--- True while a Magnetar is in the Joker row, which is what makes cards count towards Auric.
+function Tattered.auric_counting()
     return CelestasMod.joker_in_play(CelestasMod.MAGNETAR_KEY or "j_celesta_magnetar")
 end
 
---- Makes a card Auric in place of wearing it out, whatever edition it had. Deferred, like gild(): the
---- edition changes under a pass that is still reading the card. Not made immune: the count starts
---- again, so a Magnetar sold later leaves the card to wear as it always would.
+--- Rolls the scoring this card turns Auric at, the first time it is counted: the same window the wear is
+--- rolled from, and stored on the card so it survives a save.
+local function auric_threshold(card)
+    local existing = card.ability.celesta_auric_at
+    if type(existing) == "number" then return existing end
+    local span = Tattered.MAX_SCORES - Tattered.MIN_SCORES + 1
+    local ok, roll = pcall(pseudorandom, pseudoseed(AURIC_SEED))
+    local at = Tattered.MIN_SCORES
+    if ok and type(roll) == "number" then
+        at = Tattered.MIN_SCORES + math.floor(roll * span)
+        if at > Tattered.MAX_SCORES then at = Tattered.MAX_SCORES end
+    end
+    card.ability.celesta_auric_at = at
+    return at
+end
+
+--- Makes a card Auric, whatever edition it had, and starts its count again. Deferred, like gild(): the
+--- edition changes under a pass that is still reading the card.
 local function make_auric(card)
-    card.ability.celesta_scored = 0
+    card.ability.celesta_auric_scored = 0
+    card.ability.celesta_auric_at = nil
     G.E_MANAGER:add_event(Event {
         func = function()
             card:set_edition({ [CelestasMod.AURIC_KEY:sub(3)] = true }, true)
@@ -223,9 +254,20 @@ local function make_auric(card)
     })
 end
 
+--- Counts one scoring towards Auric and reports whether the card just turned Auric.
+function Tattered.record_auric(card)
+    if not is_playing_card(card) then return false end
+    if card.edition and card.edition.key == CelestasMod.AURIC_KEY then return false end
+    if not Tattered.auric_counting() then return false end
+    local count = (card.ability.celesta_auric_scored or 0) + 1
+    card.ability.celesta_auric_scored = count
+    if count < auric_threshold(card) then return false end
+    make_auric(card)
+    return true
+end
+
 --- Counts one scoring and reports whether the card just wore out, and how:
---- "tatter" for the usual way, "gild" when a merge turned it Gold instead, "auric" when a
---- Magnetar made it Auric.
+--- "tatter" for the usual way, "gild" when a merge turned it Gold instead.
 function Tattered.record_score(card)
     if not is_playing_card(card) or Tattered.is_tattered(card) then return false end
     if Tattered.is_immune(card) then return false end
@@ -239,16 +281,6 @@ function Tattered.record_score(card)
     if Tattered.gilds() then
         gild(card)
         return true, "gild"
-    end
-
-    if Tattered.auric_instead() then
-        -- One that is Auric already has nothing more to gain, and says nothing.
-        if card.edition and card.edition.key == CelestasMod.AURIC_KEY then
-            card.ability.celesta_scored = 0
-            return false
-        end
-        make_auric(card)
-        return true, "auric"
     end
 
     card.ability.celesta_tattered = true
@@ -339,14 +371,20 @@ function eval_card(card, context)
         and not context.extra_enhancement then
         local wore, how = Tattered.record_score(card)
         if wore then
-            -- A gilded or Auric card is not tattered, so Tattered.word would name the
+            -- A gilded card is not tattered, so Tattered.word would name the
             -- wear it did not get.
             card_eval_status_text(card, "extra", nil, nil, nil, {
                 message = localize(how == "gild" and "celesta_gilded"
-                    or how == "auric" and "celesta_auric"
                     or ("celesta_" .. Tattered.word(card))),
-                colour = how == "gild" and G.C.MONEY
-                    or how == "auric" and G.C.GOLD or G.C.FILTER,
+                colour = how == "gild" and G.C.MONEY or G.C.FILTER,
+            })
+        end
+
+        -- Magnetar's count is its own, and is made on the same scoring.
+        if Tattered.record_auric(card) then
+            card_eval_status_text(card, "extra", nil, nil, nil, {
+                message = localize("celesta_auric"),
+                colour = G.C.GOLD,
             })
         end
     end

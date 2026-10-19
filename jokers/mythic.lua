@@ -722,12 +722,12 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Magnetar - the cards that have been played most are dealt first, and nothing wears out:
--- it turns Auric instead.
+-- Magnetar - the cards that have been played most are dealt first, and scored cards turn Auric.
 --------------------------------------------------------------------------------
 --
 -- Both halves are somewhere else. The deal is jokers/implemented.lua's one sort of the deck, which asks
--- for Magnetar there (`deal_reorder`); the wear is wear/tattered.lua's, which asks here. The Auric
+-- for Magnetar there (`deal_reorder`); the count towards Auric is wear/tattered.lua's, which asks here -
+-- a count of its own that wearing out, and everything that changes wearing out, leaves alone. The Auric
 -- edition is editions/auric.lua's. Like Aga, Magnetar is owned and the rest of the game answers it.
 --
 -- Credit for the art: PVZ Fusion (the Credits tab).
@@ -745,7 +745,8 @@ SMODS.Joker {
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS[CelestasMod.AURIC_KEY]
-        return { vars = {} }
+        local wear = CelestasMod.Tattered or {}
+        return { vars = { wear.MIN_SCORES or 20, wear.MAX_SCORES or 30 } }
     end,
 }
 
