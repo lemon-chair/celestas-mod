@@ -208,14 +208,15 @@ end
 -- Auric: Magnetar's own count
 --------------------------------------------------------------------------------
 --
--- Kept apart from the wear above on purpose. It is the same sort of count - a threshold rolled for each
--- card between the same two numbers, reached by the same scorings - but nothing that touches wear
--- touches it: Sansin does not slow it, Dejavudea does not insure against it or reset it, Milk Bottle's
--- Chips do not shield a card from it, and the Purgatory Deck's modifiers about wear leave it alone. A card
--- already worn out goes on counting towards it, and wearing out is not stopped by it either.
+-- It takes the place of wearing out: while a Magnetar is in the Joker row (either half of a merge) no
+-- card wears out (record_score below), and the cards that would have turn Auric instead. But it is a count
+-- of its own, kept apart from the wear's on purpose: the same sort of threshold, rolled for each card
+-- between the same two numbers and reached by the same scorings, and nothing that touches wear touches it.
+-- Sansin does not slow it, Dejavudea does not insure against it or reset it, Milk Bottle's Chips do not
+-- shield a card from it, and the Purgatory Deck's modifiers about wear leave it alone. A card already worn
+-- out goes on counting towards it.
 --
--- Counted only while a Magnetar is in the Joker row (either half of a merge). A card that is Auric
--- already has nothing to gain and is not counted.
+-- A card that is Auric already has nothing to gain and is not counted.
 
 local AURIC_SEED = "celesta_auric_at"
 
@@ -270,6 +271,10 @@ end
 --- "tatter" for the usual way, "gild" when a merge turned it Gold instead.
 function Tattered.record_score(card)
     if not is_playing_card(card) or Tattered.is_tattered(card) then return false end
+    -- Magnetar: nothing wears out, it turns Auric (record_auric) instead - Gold from Kumi + Dejavudea
+    -- included, which is a way of wearing out. Not counted either, so a Magnetar sold later leaves every
+    -- card as young as it was.
+    if Tattered.auric_counting() then return false end
     if Tattered.is_immune(card) then return false end
     if Tattered.milk_shielded(card) then return false end
     -- The Purgatory Deck's pro: no card wears out any more.

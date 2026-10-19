@@ -722,12 +722,14 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Magnetar - the cards that have been played most are dealt first, and scored cards turn Auric.
+-- Magnetar - the cards that have been played most are dealt first, and scored cards turn Auric
+-- in place of wearing out.
 --------------------------------------------------------------------------------
 --
 -- Both halves are somewhere else. The deal is jokers/implemented.lua's one sort of the deck, which asks
--- for Magnetar there (`deal_reorder`); the count towards Auric is wear/tattered.lua's, which asks here -
--- a count of its own that wearing out, and everything that changes wearing out, leaves alone. The Auric
+-- for Magnetar there (`deal_reorder`); the wear it stops and the count towards Auric that replaces it are
+-- wear/tattered.lua's, which asks here - the count is its own, and everything that changes wearing out
+-- leaves it alone. The Auric
 -- edition is editions/auric.lua's. Like Aga, Magnetar is owned and the rest of the game answers it.
 --
 -- Credit for the art: PVZ Fusion (the Credits tab).
