@@ -143,6 +143,13 @@ function Tattered.milk_shielded(card)
     return CelestasMod.more_than(card.ability.perma_bonus or 0, 0)
 end
 
+--- True for a Limestone card a Laimu + Nimi keeps from wearing. Asked through merge/bind.lua's own answer,
+--- which is also the one the debuff is refused by, so the two cannot disagree about which card is covered.
+function Tattered.limestone_shielded(card)
+    local protected = CelestasMod.limestone_protected
+    return protected ~= nil and protected(card)
+end
+
 --- True for a card Dejavudea has protected. Stored on the card, so the
 --- protection lasts the rest of the run and survives a save.
 function Tattered.is_immune(card)
@@ -283,6 +290,7 @@ function Tattered.record_score(card)
     if Tattered.auric_counting() then return false end
     if Tattered.is_immune(card) then return false end
     if Tattered.milk_shielded(card) then return false end
+    if Tattered.limestone_shielded(card) then return false end
     -- The Purgatory Deck's pro: no card wears out any more.
     if Tattered.purgatory("no_tatter") then return false end
     local count = (card.ability.celesta_scored or 0) + 1

@@ -4942,6 +4942,62 @@ return {
                     "{C:attention}#1#{} extra time",
                 },
             },
+            celesta_bind_laimu_nimi = {
+                name = "Laimu + Nimi",
+                text = {
+                    "{C:attention}Limestone{} cards can no longer be",
+                    "{C:attention}debuffed{} or become {C:attention}tattered{}",
+                },
+            },
+            celesta_bind_laimu_matarakan = {
+                name = "Laimu + Matara Kan",
+                text = {
+                    "This Joker gains {C:money}$#1#{} every time a",
+                    "{C:attention}Limestone{} Card triggers, and gives",
+                    "the stored money at the end of the {C:attention}Ante{}",
+                    "{C:inactive}(Currently {C:money}$#2#{C:inactive})",
+                },
+            },
+            celesta_bind_kumi_matarakan = {
+                name = "Kumi + Matara Kan",
+                text = {
+                    "This Joker gains {C:money}$#1#{} every time a",
+                    "{C:attention}Gold{} Card triggers, and gives",
+                    "the stored money at the end of the {C:attention}Ante{}",
+                    "{C:inactive}(Currently {C:money}$#2#{C:inactive})",
+                },
+            },
+            celesta_bind_arielle_juniper = {
+                name = "Arielle + Juniper Actias",
+                text = {
+                    "This Joker gains {X:chips,C:white}X#1#{} Chips",
+                    "for each card added to your deck",
+                    "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_aquwa_juniper = {
+                name = "Aquwa + Juniper Actias",
+                text = {
+                    "This Joker gains {X:chips,C:white}X#1#{} Chips for each",
+                    "{V:1}#3#{} card added to your full deck",
+                    "during a {C:blue}Downpour{}",
+                    "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
+                },
+            },
+            celesta_bind_arielle_overezeggs = {
+                name = "Arielle + OverEzEggs",
+                text = {
+                    "All cards are considered {C:hearts}Hearts{}",
+                },
+            },
+            celesta_bind_overezeggs_juniper = {
+                name = "OverEzEggs + Juniper Actias",
+                text = {
+                    "This Joker gains {X:chips,C:white}X#1#{} Chips",
+                    "for each {C:hearts}Heart{} card added to your deck",
+                    "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
+                },
+            },
             celesta_bind_ironmouse_saiiren = {
                 name = "Ironmouse + Saiiren",
                 text = {

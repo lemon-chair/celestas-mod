@@ -18741,6 +18741,198 @@ quad({
 
 end
 
+-- Seven pairs between Laimu, Matara Kan, Kumi, Juniper Actias, Arielle, Aquwa and OverEzEggs.
+do
+
+local HEARTS = "Hearts"
+
+--- True for a card carrying the Limestone enhancement: its own centre, which is a plain read and is also
+--- what can be asked in the middle of a card being debuffed.
+local function has_limestone(card)
+    local key = (CelestasMod.ENHANCEMENT_KEYS or {}).Limestone
+    local center = card and card.config and card.config.center
+    return key ~= nil and center ~= nil and center.key == key
+end
+
+-- Laimu + Nimi: Limestone cards cannot be debuffed and do not wear out.
+--
+-- No calculate: both halves are an answer to a question asked of the CARD. The debuff is refused through
+-- Steamodded's own door for it - a mod's `set_debuff` answering 'prevent_debuff' (Card:set_debuff) - which
+-- is asked whatever is doing the debuffing (a Boss Blind, a Joker, a Stake) and lifts one already on.
+-- The wear is asked in wear/tattered.lua, which names the pair like Dejavudea + Moo Merrily's.
+special("j_celesta_limealicious", "j_celesta_nimi", {
+    key = "laimu_nimi",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+--- True for a Limestone card while a Laimu + Nimi is in the row and working.
+function CelestasMod.limestone_protected(card)
+    if not has_limestone(card) then return false end
+    local holder = Bind.find_special("laimu_nimi")
+    return (holder and not holder.debuff) and true or false
+end
+
+-- Only while the mod is loading: SMODS.current_mod is nothing afterwards, and a harness that slices this file
+-- open has no mod to hang it on.
+local celesta_limestone_mod = SMODS.current_mod
+if celesta_limestone_mod then
+    local celesta_limestone_set_debuff_ref = celesta_limestone_mod.set_debuff
+    celesta_limestone_mod.set_debuff = function(card)
+        if CelestasMod.limestone_protected(card) then return "prevent_debuff" end
+        if celesta_limestone_set_debuff_ref then return celesta_limestone_set_debuff_ref(card) end
+    end
+end
+
+-- Laimu + Matara Kan, Kumi + Matara Kan: money stored for every trigger of a kind of card, and paid out at
+-- the end of the Ante.
+--
+-- Not Matara Kan's own sale-storing: the pair says what it stores. And it does not end itself the way Matara
+-- Kan does, which the text does not say either - the money is paid and the count starts again.
+--
+-- PAID through calc_dollar_bonus, at the cash-out, and the Boss Blind only MARKS the payout as owed. The held
+-- Gold Cards of the round pay (and so trigger) after the Jokers' own end-of-round pass, so a payout made in
+-- that pass would leave the Ante's last round for the next Ante. The cash-out reads the money after
+-- all of it, and the shop that follows is the first moment after it has been collected.
+local function bank_pair(a, b, key, dollars, triggered)
+    special(a, b, {
+        key = key,
+        config = { dollars = dollars, stored = 0 },
+
+        loc_vars = function(def, card, state)
+            return { vars = { state.dollars, state.stored } }
+        end,
+
+        calc_dollar_bonus = function(def, card, state)
+            if not state.paying then return end
+            if not CelestasMod.more_than(state.stored, 0) then return end
+            return state.stored
+        end,
+
+        calculate = function(def, card, context, state)
+            if context.blueprint then return end
+
+            if triggered(context) then
+                Bind.grow(card, state, "stored", state.dollars)
+                return { message = localize("celesta_stored"), colour = G.C.MONEY, card = card }
+            end
+
+            -- The Ante ends with a Boss Blind beaten.
+            if context.end_of_round and context.main_eval and context.beat_boss
+                and not context.game_over then
+                state.paying = true
+                return
+            end
+
+            if context.starting_shop and state.paying then
+                state.paying = nil
+                state.stored = 0
+            end
+        end,
+    })
+end
+
+-- A Limestone card scoring, and again for each retrigger of it.
+bank_pair("j_celesta_limealicious", "j_celesta_matarakan", "laimu_matarakan", 2, function(context)
+    local other = context.other_card
+    return context.individual and context.cardarea == G.play and other and not other.debuff
+        and has_limestone(other)
+end)
+
+-- A Gold Card held in hand paying out at the end of the round - which is all a Gold Card does - and again
+-- for each time a held card is retriggered.
+bank_pair("j_celesta_kumi", "j_celesta_matarakan", "kumi_matarakan", 8, function(context)
+    local other = context.other_card
+    return context.individual and context.cardarea == G.hand and context.end_of_round
+        and other and not other.debuff and SMODS.has_enhancement(other, "m_gold")
+end)
+
+-- Juniper Actias's growth, on other things arriving in the deck: Arielle + Juniper Actias (every card),
+-- Aquwa + Juniper Actias (a Star, during a Downpour), OverEzEggs + Juniper Actias (a Heart).
+--
+-- Counted by base.suit, for the reason Juniper Actias gives: is_suit would let anything that widens a suit
+-- make every card one.
+local function juniper_pair(a, b, key, gain, count, vars)
+    special(a, b, {
+        key = key,
+        config = { x_chips = 1, x_chip_gain = gain },
+
+        loc_vars = function(def, card, state)
+            return vars(state)
+        end,
+
+        calculate = function(def, card, context, state)
+            if context.playing_card_added and not context.blueprint and not card.getting_sliced then
+                local added = count(context.cards or {})
+                if added <= 0 then return end
+                Bind.grow(card, state, "x_chips", state.x_chip_gain * added)
+                return {
+                    message = localize { type = "variable", key = "a_xchips", vars = { state.x_chips } },
+                    colour = G.C.CHIPS, card = card,
+                }
+            end
+
+            if context.joker_main and state.x_chips > 1 then
+                return { x_chips = state.x_chips }
+            end
+        end,
+    })
+end
+
+local function plain_vars(state)
+    return { vars = { state.x_chip_gain, state.x_chips } }
+end
+
+juniper_pair("j_celesta_arielle", "j_celesta_juniperactias", "arielle_juniper", 0.1,
+    function(cards) return #cards end, plain_vars)
+
+juniper_pair("j_celesta_aquwa", "j_celesta_juniperactias", "aquwa_juniper", 0.5,
+    function(cards)
+        if not raining() then return 0 end
+        local n = 0
+        for _, new_card in ipairs(cards) do
+            if new_card.base and new_card.base.suit == CelestasMod.STARS_SUIT then n = n + 1 end
+        end
+        return n
+    end,
+    function(state)
+        local name, colour = star_vars()
+        return { vars = { state.x_chip_gain, state.x_chips, name, colours = { colour } } }
+    end)
+
+juniper_pair("j_celesta_overezeggs", "j_celesta_juniperactias", "overezeggs_juniper", 0.1,
+    function(cards)
+        local n = 0
+        for _, new_card in ipairs(cards) do
+            if new_card.base and new_card.base.suit == HEARTS then n = n + 1 end
+        end
+        return n
+    end, plain_vars)
+
+-- Arielle + OverEzEggs: every card IS a Heart. The rule Vexoria + Vexoria is for Spades (globals.lua's
+-- CARD_SUIT_RULES): the card then is that suit and is not its own.
+special("j_celesta_arielle", "j_celesta_overezeggs", {
+    key = "arielle_overezeggs",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+CelestasMod.CARD_SUIT_RULES = CelestasMod.CARD_SUIT_RULES or {}
+CelestasMod.CARD_SUIT_RULES[#CelestasMod.CARD_SUIT_RULES + 1] = function()
+    if specials_held("arielle_overezeggs")[1] == nil then return nil end
+    return HEARTS
+end
+
+end
+
 --------------------------------------------------------------------------------
 -- Art: the two faces split corner to corner
 --------------------------------------------------------------------------------
