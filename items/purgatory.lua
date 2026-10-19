@@ -1736,10 +1736,14 @@ local function shop_panel(index, offer)
              } }
 end
 
---- The run's money as the box prints it, with the sign.
-function P.money_text()
-    local dollars = G.GAME and G.GAME.dollars or 0
-    return "$" .. (number_format and number_format(dollars) or tostring(number(dollars)))
+--- The run's money as the box prints it: bound to the run's own dollars, the way the HUD's is, and not
+--- written down when the screen was built. A pro is paid for with an event that finishes after the screen
+--- has been built again, so a number written down showed the money from before the purchase.
+function P.money_node()
+    return { n = G.UIT.O, config = { object = DynaText {
+        string = { { ref_table = G.GAME, ref_value = "dollars", prefix = localize("$") } },
+        colours = { G.C.MONEY }, shadow = true, bump = true, scale = 0.5,
+    } } }
 end
 
 --- The Ichor Stake's shop: the six, three to a row, the run's money, and the way to reroll them and to leave.
@@ -1769,7 +1773,7 @@ function P.shop_definition(st)
     -- empty column of the same width on the right keeps the two buttons in the middle.
     local money = { n = G.UIT.C, config = { align = "bl", minw = 3.0 }, nodes = {
         { n = G.UIT.R, config = { align = "cm", padding = 0.08, r = 0.1, colour = G.C.BLACK, emboss = 0.05 }, nodes = {
-            { n = G.UIT.T, config = { text = P.money_text(), scale = 0.5, colour = G.C.MONEY, shadow = true } } } } } }
+            P.money_node() } } } }
     contents[#contents + 1] = { n = G.UIT.R, config = { align = "cm", padding = 0.05 }, nodes = {
         money,
         { n = G.UIT.C, config = { align = "cm", padding = 0.05 }, nodes = {
