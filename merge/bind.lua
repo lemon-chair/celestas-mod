@@ -6648,6 +6648,114 @@ local function with_partner(card, hook, fn)
     return ret
 end
 
+
+--- Runs `fn` with the absorbed half lent to the card, for a half that is a VANILLA Joker.
+---
+--- with_partner needs the centre to carry the hook, and a base-game Joker carries none: what it does at
+--- the cash-out and every frame is a branch on its NAME inside vanilla's own Card methods. Those branches
+--- read self.ability, so lending the half's ability (and its centre, which some ask) is all they need.
+--- Returns nothing for a half that has the hook itself (with_partner is for that one), for a pair that
+--- speaks for both halves, for one that has been silenced, and for a card that is not merged.
+function Bind.lend_vanilla_partner(card, hook, fn)
+    if not Bind.is_merged(card) or Bind.replacing_special(card) then return nil end
+    local center = Bind.partner_center(card)
+    if not center or type(center[hook]) == "function" then return nil end
+    if Bind.half_is_muted(card, center) then return nil end
+
+    local saved_center, saved_ability = card.config.center, card.ability
+    local saved_special = partner_special[card]
+    local saved_lent = Bind.lent[card]
+    partner_special[card] = Bind.special_of(card)
+    Bind.lent[card] = { center = saved_center, ability = saved_ability }
+    card.config.center = center
+    card.ability = card.ability.celesta_bind.ability
+    local ok, ret = pcall(fn, center, card)
+    card.config.center, card.ability = saved_center, saved_ability
+    partner_special[card] = saved_special
+    Bind.lent[card] = saved_lent
+
+    if not ok then
+        CelestasMod.warn_once("bind_vanilla_" .. hook .. "_" .. tostring(center.key),
+            ("Bind could not run %s on %s: %s"):format(hook, tostring(center.key), tostring(ret)))
+        return nil
+    end
+    return ret
+end
+
+--- The numbers vanilla keeps up to date every frame for the Jokers that count something, which it does
+--- from a branch on the card's own name in Card:update (card.lua:4478-4540) - so an absorbed Cloud 9 sat at
+--- "Currently $0" however many Nines the deck held. Each is `fn(ability, card)`.
+---
+--- Reimplemented rather than calling vanilla's update on the lent half: that would run its animation
+--- and its timers twice a frame. The list is the branches that are about a Joker and write a number;
+--- the copiers' compatibility lamp is not here, since a Blueprint reads the card it copies, not itself.
+Bind.PARTNER_TALLY_LIST = {
+    { "Cloud 9", function(ability)
+        ability.nine_tally = 0
+        for _, v in pairs(G.playing_cards or {}) do
+            if v:get_id() == 9 then ability.nine_tally = ability.nine_tally + 1 end
+        end
+    end },
+    { "Steel Joker", function(ability)
+        ability.steel_tally = 0
+        for _, v in pairs(G.playing_cards or {}) do
+            if SMODS.has_enhancement(v, "m_steel") then ability.steel_tally = ability.steel_tally + 1 end
+        end
+    end },
+    { "Stone Joker", function(ability)
+        ability.stone_tally = 0
+        for _, v in pairs(G.playing_cards or {}) do
+            if SMODS.has_enhancement(v, "m_stone") then ability.stone_tally = ability.stone_tally + 1 end
+        end
+    end },
+    { "Driver's License", function(ability)
+        ability.driver_tally = 0
+        for _, v in pairs(G.playing_cards or {}) do
+            if next(SMODS.get_enhancements(v)) then ability.driver_tally = ability.driver_tally + 1 end
+        end
+    end },
+    { "Throwback", function(ability)
+        ability.x_mult = 1 + ((G.GAME and G.GAME.skips) or 0) * ability.extra
+    end },
+    { "Joker Stencil", function(ability, card)
+        ability.x_mult = G.jokers.config.card_limit - #G.jokers.cards
+        for _, held in ipairs(G.jokers.cards) do
+            if held.ability.name == "Joker Stencil" then ability.x_mult = ability.x_mult + 1 end
+            local bound = held.ability.celesta_bind
+            -- a merged card is the Joker its host is, and the one it holds: both count
+            if bound and bound.ability and bound.ability.name == "Joker Stencil" then
+                ability.x_mult = ability.x_mult + 1
+            end
+        end
+    end },
+    { "Swashbuckler", function(ability, card)
+        local total = 0
+        for _, held in ipairs(G.jokers.cards) do
+            if held ~= card and held.area and held.area == G.jokers then total = total + held.sell_cost end
+        end
+        ability.mult = total
+    end },
+}
+Bind.PARTNER_TALLIES = {}
+for _, entry in ipairs(Bind.PARTNER_TALLY_LIST) do Bind.PARTNER_TALLIES[entry[1]] = entry[2] end
+
+--- Keeps the absorbed half's counting numbers up to date. Only for a vanilla half in an additive merge.
+function Bind.partner_tallies(card)
+    if not (G.STAGES and G.STAGE == G.STAGES.RUN and G.jokers) then return end
+    local bound = card.ability and card.ability.celesta_bind
+    local ability = bound and bound.ability
+    local tally = ability and Bind.PARTNER_TALLIES[ability.name]
+    if not tally then return end
+    local center = Bind.partner_center(card)
+    if not center or type(center.update) == "function" then return end
+    if Bind.replacing_special(card) then return end
+    local ok, err = pcall(tally, ability, card)
+    if not ok then
+        CelestasMod.warn_once("bind_tally_" .. tostring(ability.name),
+            ("Bind could not count for %s: %s"):format(tostring(ability.name), tostring(err)))
+    end
+end
+
 -- End-of-round money. Vanilla dispatches this to self.config.center alone, and
 -- it is where a whole family of Jokers both pays AND scales - Cryptid's
 -- Compound Interest raises its own rate here and never touches `calculate`.
@@ -6700,6 +6808,13 @@ function Card:calculate_dollar_bonus()
     local theirs = with_partner(self, "calc_dollar_bonus", function(center, card)
         return center:calc_dollar_bonus(card)
     end)
+    -- A vanilla half has no hook to call: what it pays is a branch on its name in vanilla's own method, which
+    -- is run against the half lent to the card (Golden Joker, Cloud 9, Rocket, Satellite and the rest).
+    if theirs == nil then
+        theirs = Bind.lend_vanilla_partner(self, "calc_dollar_bonus", function()
+            return celesta_bind_dollar_ref(self)
+        end)
+    end
     if type(theirs) ~= "number" then return own end
     return (own or 0) + theirs
 end
@@ -6924,6 +7039,7 @@ function Card:update(dt)
     with_partner(self, "update", function(center, card)
         center:update(card, dt)
     end)
+    if Bind.partner_tallies then Bind.partner_tallies(self) end
 end
 
 local celesta_bind_remove_ref = Card.remove_from_deck
