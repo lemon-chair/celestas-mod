@@ -2408,7 +2408,9 @@ return {
                 text = {
                     "Swap the {C:attention}second{} Joker",
                     "between {C:attention}2{} selected",
-                    "{C:attention}merged{} Jokers",
+                    "{C:attention}merged{} Jokers, or the",
+                    "{C:attention}first{} and {C:attention}second{} Joker",
+                    "of {C:attention}1{} selected merged Joker",
                 },
             },
             c_celesta_milk_bottle = {

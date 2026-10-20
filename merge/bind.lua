@@ -232,8 +232,8 @@ function Bind.selection()
     return nil
 end
 
---- The two highlighted merged Jokers, or nil when the selection is not
---- exactly two of them.
+--- The highlighted merged Jokers a Swap is to act on: two of them, which trade second halves, or one,
+--- whose own two halves change places. Nil for anything else.
 ---
 --- Stricter than Bind.selection on purpose: every card has to be a pair
 --- already, because a swap trades second halves and a card without one has
@@ -245,6 +245,7 @@ function Bind.swap_selection()
         if not (Bind.is_merged(joker) and not Bind.is_quad(joker)) then return nil end
         picked[#picked + 1] = joker
     end
+    if #picked == 1 then return picked end
     if #picked ~= 2 then return nil end
     if not Bind.swap_allowed(picked[1], picked[2]) then return nil end
     return picked
@@ -7043,6 +7044,51 @@ function Bind.swap(a, b)
 
     attach(a, bound_b)
     attach(b, bound_a)
+    return true
+end
+
+--- Makes the second half of one merged card its first, and the first its second.
+---
+--- The same two Jokers on the same card, so no pair is made or ended: the pair's own state stays, no
+--- passive comes off or goes on (each half keeps what it has applied, and each is taken off at the end
+--- exactly as it would have been), and nothing is worth more or less. What changes is which of the two is
+--- the card's centre - the host that runs as itself, whose art is the upper left and whose name leads -
+--- and which is carried. So the two tables simply change places: the centre and ability the card shows
+--- and the ones it holds in celesta_bind.
+---
+--- What belongs to the CARD and not to either half is put on the table that is now the card's: the slots it
+--- holds (SMODS keeps both on every ability and sums them across the row), and the stickers a merge
+--- inherits from both halves.
+function Bind.swap_halves(card)
+    if not (card and Bind.is_merged(card) and not Bind.is_quad(card)) then return false end
+    local bound = card.ability.celesta_bind
+    local partner = Bind.partner_center(card)
+    if not (partner and type(bound.ability) == "table") then return false end
+
+    local old_ability = card.ability
+    local old_center = card.config.center
+    local old_key = card.config.center_key or old_center.key
+    local new_ability = bound.ability
+
+    for _, field in ipairs({ "card_limit", "extra_slots_used", "eternal", "perishable", "rental", "perish_tally" }) do
+        new_ability[field] = old_ability[field]
+    end
+
+    -- The old host is the carried half now, and what it is worth on its own goes with it.
+    old_ability.celesta_bind = nil
+    bound.ability = old_ability
+    bound.key = old_key
+    bound.sell_cost, bound.host_sell_cost = bound.host_sell_cost, bound.sell_cost
+    new_ability.celesta_bind = bound
+
+    card.ability = new_ability
+    card.config.center = partner
+    card.config.center_key = partner.key
+    if card.set_sprites then card:set_sprites(partner) end
+    card.label = new_ability.name or card.label
+
+    Bind.invalidate_art(card)
+    card.ability_UIBox_table = nil
     return true
 end
 
@@ -19463,12 +19509,13 @@ SMODS.Consumable {
     end,
 }
 
--- Swap: the same two-Joker selection, trading halves rather than joining them.
+-- Swap: trading halves rather than joining them.
 --
 -- Its own card rather than a mode of Bind, because what a player has selected
--- says which they want unambiguously: two loose Jokers can only be merged, and
--- two pairs can only be swapped or made into a quad. A single card would have
--- had to guess between the last two.
+-- says which they want unambiguously: two loose Jokers can only be merged, two
+-- pairs can be swapped or made into a quad, and one pair is a card whose own two
+-- halves are changing places - which a Bind has no use for, a pair being no loose
+-- Joker.
 SMODS.Consumable {
     key = "swap",
     set = "Spectral",
@@ -19498,8 +19545,13 @@ SMODS.Consumable {
             func = function()
                 play_sound("gold_seal", 1.2, 0.6)
                 a:juice_up(0.4, 0.5)
-                b:juice_up(0.4, 0.5)
-                Bind.swap(a, b)
+                if b then
+                    b:juice_up(0.4, 0.5)
+                    Bind.swap(a, b)
+                else
+                    -- One card: its own two halves change places.
+                    Bind.swap_halves(a)
+                end
                 return true
             end,
         })
