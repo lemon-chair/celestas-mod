@@ -140,6 +140,7 @@ DISPLAY_NAMES = {
     "treemore": "Treemore",
     "dougdoug": "DougDoug",
     "aga": "Aga",
+    "alpharad": "Alpharad",
     "magnetar": "Magnetar",
     "seabill": "Seabill",
     "rox": "ROX",

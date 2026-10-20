@@ -838,6 +838,59 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
+-- Alpharad - the Joker to its left, again for every Joker to its right.
+--------------------------------------------------------------------------------
+--
+-- Calamitas's shape, asked of one Joker instead of all of them: retrigger_joker_check is raised for every
+-- Joker about every other, so the answer names who it is for - the Joker standing immediately to the left,
+-- and nothing else. Placement is the whole of it: the number is the Jokers on the right, so the further left
+-- it sits the more it gives, and at the right-hand end, or with nothing on its left, it gives nothing.
+--
+-- `not context.retrigger_joker` is Bluto's guard, for Bluto's reason: without it a retrigger would be
+-- retriggered. A merged card is one card in the row however many Jokers it holds, so a merge to the right
+-- counts once, and a merge holding Alpharad is where Alpharad stands.
+
+--- The Joker to the left of `card` in the row, and how many stand to its right.
+function CelestasMod.alpharad_sides(card)
+    local row = G.jokers and G.jokers.cards
+    if not row then return nil, 0 end
+    for i, held in ipairs(row) do
+        if held == card then return row[i - 1], #row - i end
+    end
+    return nil, 0
+end
+
+SMODS.Joker {
+    key = "alpharad",
+    atlas = "alpharad",
+    pos = { x = 0, y = 0 },
+    rarity = MYTHIC, cost = 20,
+    unlocked = true, discovered = false,
+    -- Asked of the card it is on, which is where it stands; a copy retriggers from the original's place.
+    blueprint_compat = true, eternal_compat = true,
+    in_pool = function() return false end,
+
+    loc_vars = function(self, info_queue, card)
+        local left, right = CelestasMod.alpharad_sides(card)
+        return { vars = { left and right or 0 } }
+    end,
+
+    calculate = function(self, card, context)
+        if not (context.retrigger_joker_check and not context.retrigger_joker and context.other_card) then
+            return
+        end
+
+        local left, right = CelestasMod.alpharad_sides(card)
+        if not (left and context.other_card == left) or right <= 0 then return end
+        return {
+            message = localize("k_again_ex"),
+            repetitions = right,
+            card = card,
+        }
+    end,
+}
+
+--------------------------------------------------------------------------------
 -- Both hooks go on when a run starts, for the reason LucyPyre's does: every other mod has loaded by
 -- then, so these sit outside whatever they left behind rather than under it.
 --------------------------------------------------------------------------------

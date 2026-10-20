@@ -54,6 +54,14 @@ return {
                     "gives {X:chips,C:white}X#1#{} Chips when scored",
                 },
             },
+            j_celesta_alpharad = {
+                name = "Alpharad",
+                text = {
+                    "Retrigger the {C:attention}Joker{} to the left of this",
+                    "one once for each {C:attention}Joker{} to the right of it",
+                    "{C:inactive}(Currently {C:attention}#1#{C:inactive} times)",
+                },
+            },
             j_celesta_amalee = {
                 name = "AmaLee",
                 text = {
