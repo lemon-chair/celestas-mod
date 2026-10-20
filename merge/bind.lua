@@ -5635,6 +5635,10 @@ local function cancel_destruction(card)
     card.dissolve_colours = nil
     card.getting_sliced = nil
     card.destroyed = nil
+    -- The two more that Steamodded's destroy puts on (smods src/utils.lua:2575-2587): a card kept after
+    -- being shattered or told to skip its animation would do the same the next time it is destroyed.
+    card.shattered = nil
+    card.skip_destroy_animation = nil
 
     -- The resting rotation of a Joker in the row; the animation tipped it to
     -- -0.2 and nothing else was going to tip it back.
@@ -5647,6 +5651,45 @@ local function cancel_destruction(card)
         -- nothing in either direction is the same invisible card.
         sprite.pinch.x = false
         sprite.pinch.y = false
+    end
+end
+
+--- Looks at a card that has just survived its own destruction, a moment after it has been put back, writes
+--- what it finds to the log, and puts right what can be put right.
+---
+--- A Joker that is in the row and cannot be seen is a state of the card the save does not keep and
+--- nothing else reports: its width eased to nothing, a pinch or a dissolve left on, or a card the game
+--- believes it has already removed. So this says which, every time one is unmerged - it is rare - and
+--- makes the card whole again in the ways that can be made: nothing here touches a card that is fine.
+function Bind.check_survivor(card)
+    local function look()
+        local sprite = card.children and card.children.center
+        local facts = {
+            "in_row=" .. tostring(card.area == G.jokers),
+            "removed=" .. tostring(card.removed),
+            "centre_sprite=" .. tostring(sprite ~= nil),
+            "visible=" .. tostring(card.states and card.states.visible),
+            "pinch=" .. tostring(card.pinch and card.pinch.x) .. "/" .. tostring(sprite and sprite.pinch and sprite.pinch.x),
+            "VT=" .. tostring(card.VT and card.VT.w) .. "x" .. tostring(card.VT and card.VT.h)
+                .. " T=" .. tostring(card.T and card.T.w) .. "x" .. tostring(card.T and card.T.h),
+            "dissolve=" .. tostring(card.dissolve),
+            "drag=" .. tostring(card.states and card.states.drag and card.states.drag.is),
+            "centre=" .. tostring(card.config and card.config.center and card.config.center.key),
+        }
+        pcall(sendInfoMessage, "[unmerge] survivor: " .. table.concat(facts, " "), "CelestasMod")
+
+        if card.removed then return end
+        cancel_destruction(card)
+        if card.states then card.states.visible = true end
+        if card.pinch then card.pinch.x, card.pinch.y = false, false end
+        if card.VT and card.T then
+            if (card.VT.w or 0) <= 0.001 then card.VT.w = card.T.w end
+            if (card.VT.h or 0) <= 0.001 then card.VT.h = card.T.h end
+        end
+    end
+    if G.E_MANAGER then
+        G.E_MANAGER:add_event(Event { trigger = "after", delay = 0.6, blockable = false,
+                                      func = function() pcall(look) return true end })
     end
 end
 
@@ -5666,6 +5709,7 @@ function Card:remove()
             restore_to_row(self)
             card_eval_status_text(self, "extra", nil, nil, nil,
                 { message = localize("celesta_unmerged"), colour = G.C.FILTER })
+            Bind.check_survivor(self)
             return
         end
     end
