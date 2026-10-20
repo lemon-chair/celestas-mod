@@ -5662,9 +5662,26 @@ end
 --- believes it has already removed. So this says which, every time one is unmerged - it is rare - and
 --- makes the card whole again in the ways that can be made: nothing here touches a card that is fine.
 function Bind.check_survivor(card)
-    local function look()
+    card.celesta_unmerged_at = G.TIMERS and G.TIMERS.REAL or 0
+    local looked = 0
+    local function look(when)
         local sprite = card.children and card.children.center
         local facts = {
+            "when=" .. tostring(when),
+            "joker_count=" .. tostring(G.jokers and #G.jokers.cards),
+            "index=" .. (function()
+                for i, held in ipairs((G.jokers and G.jokers.cards) or {}) do if held == card then return i end end
+                return "none"
+            end)(),
+            "same_pinch_table=" .. tostring(sprite ~= nil and sprite.pinch == card.pinch),
+            "T.x=" .. tostring(card.T and card.T.x),
+            "sprite_VT.w=" .. tostring(sprite and sprite.VT and sprite.VT.w),
+            "ability=" .. tostring(card.ability and card.ability.name),
+            "extra_cards_in_row_removed=" .. (function()
+                local n = 0
+                for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do if held.removed then n = n + 1 end end
+                return tostring(n)
+            end)(),
             "in_row=" .. tostring(card.area == G.jokers),
             "removed=" .. tostring(card.removed),
             "centre_sprite=" .. tostring(sprite ~= nil),
@@ -5682,14 +5699,19 @@ function Bind.check_survivor(card)
         cancel_destruction(card)
         if card.states then card.states.visible = true end
         if card.pinch then card.pinch.x, card.pinch.y = false, false end
+        if sprite and sprite.pinch then sprite.pinch.x, sprite.pinch.y = false, false end
         if card.VT and card.T then
             if (card.VT.w or 0) <= 0.001 then card.VT.w = card.T.w end
             if (card.VT.h or 0) <= 0.001 then card.VT.h = card.T.h end
         end
     end
+    -- More than once, a few seconds apart: whatever is left on the card may be put there by something that
+    -- lands after the first look (a second destruction queued for the same card, a late event).
     if G.E_MANAGER then
-        G.E_MANAGER:add_event(Event { trigger = "after", delay = 0.6, blockable = false,
-                                      func = function() pcall(look) return true end })
+        for _, delay in ipairs({ 0.1, 0.6, 1.5, 3, 6 }) do
+            G.E_MANAGER:add_event(Event { trigger = "after", delay = delay, blockable = false,
+                                          func = function() looked = looked + 1; pcall(look, delay) return true end })
+        end
     end
 end
 
@@ -5703,6 +5725,8 @@ function Card:remove()
         and not Bind.replacing_special(self) then
         -- Removed from the row already, by the time anything can object.
         if Bind.unmerge(self, acting_half) then
+            pcall(sendInfoMessage, "[unmerge] " .. tostring(acting_half) .. " half left "
+                .. tostring(self.config and self.config.center and self.config.center.key), "CelestasMod")
             -- Before it goes back, so that it goes back drawable and so that
             -- align_cards is not handed a card that still says it is held.
             cancel_destruction(self)
@@ -5712,6 +5736,13 @@ function Card:remove()
             Bind.check_survivor(self)
             return
         end
+    end
+    -- A card taken out by a second destruction soon after surviving the first is the one that looks like
+    -- a vanished or half-removed Joker; say so.
+    if self.celesta_unmerged_at and G.TIMERS and (G.TIMERS.REAL - self.celesta_unmerged_at) < 10 then
+        pcall(sendInfoMessage, "[unmerge] a survivor is being removed after all, "
+            .. tostring(G.TIMERS.REAL - self.celesta_unmerged_at) .. "s after it was kept: "
+            .. tostring(self.config and self.config.center and self.config.center.key), "CelestasMod")
     end
     return celesta_bind_card_remove_ref(self)
 end
