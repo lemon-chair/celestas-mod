@@ -45,12 +45,14 @@ SMODS.Sound { key = "driftwood_score", path = "driftwood_score.ogg" }
 SMODS.Sound { key = "eutrophic_score", path = "eutrophic_score.mp3" }
 SMODS.Sound { key = "limestone_score", path = "limestone_score.ogg" }
 SMODS.Sound { key = "foliage_score", path = "foliage_score.mp3" }
+SMODS.Sound { key = "copper_score", path = "copper_score.mp3" }
 
 CelestasMod.ENHANCEMENT_SOUNDS = {
     Driftwood = SMODS.current_mod.prefix .. "_driftwood_score",
     Eutrophic = SMODS.current_mod.prefix .. "_eutrophic_score",
     Limestone = SMODS.current_mod.prefix .. "_limestone_score",
     Foliage = SMODS.current_mod.prefix .. "_foliage_score",
+    Copper = SMODS.current_mod.prefix .. "_copper_score",
 }
 
 --- Queues a scoring sound so it lands with this card's animation.
@@ -286,8 +288,10 @@ SMODS.Enhancement {
 --------------------------------------------------------------------------------
 --
 -- Nothing is scored from `calculate`: h_x_chips on the config is what the game reads for a held card
--- (Card:get_chip_h_x_bonus), the way Steel's h_x_mult is. Maya, Corrupt Maya and Maya's merges that are
--- about Steel count it as Steel (CelestasMod.steel_or_copper in globals.lua).
+-- (Card:get_chip_h_x_bonus), the way Steel's h_x_mult is. `calculate` is for the sound: a held card is
+-- evaluated in the main scoring pass with cardarea G.hand, once per trigger, so a retriggered Copper Card
+-- sounds each time. Maya, Corrupt Maya and Maya's merges that are about Steel count it as Steel
+-- (CelestasMod.steel_or_copper in globals.lua).
 
 SMODS.Enhancement {
     key = "copper",
@@ -299,6 +303,12 @@ SMODS.Enhancement {
 
     loc_vars = function(self, info_queue, card)
         return { vars = { self.config.h_x_chips } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.main_scoring and context.cardarea == G.hand then
+            play_scoring_sound(CelestasMod.ENHANCEMENT_SOUNDS.Copper)
+        end
     end,
 }
 
