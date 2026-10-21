@@ -49,6 +49,7 @@ SMODS.Atlas { key = 'enh_exo_frame', path = 'enh_exo_frame.png', px = 71, py = 9
 SMODS.Atlas { key = 'enh_gash', path = 'enh_gash.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'enh_eutrophic', path = 'enh_eutrophic.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'enh_limestone', path = 'enh_limestone.png', px = 71, py = 95 }
+SMODS.Atlas { key = 'enh_copper', path = 'enh_copper.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'enh_driftwood', path = 'enh_driftwood.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'enh_sandstone', path = 'enh_sandstone.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'enh_scoria', path = 'enh_scoria.png', px = 71, py = 95 }

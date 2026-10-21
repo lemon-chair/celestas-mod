@@ -30,6 +30,7 @@ SMODS.Atlas { key = "citrus",         path = "citrus.png",         px = 71, py =
 SMODS.Atlas { key = "miracle_matter", path = "miracle_matter.png", px = 71, py = 95 }
 SMODS.Atlas { key = "knife",          path = "knife.png",          px = 71, py = 95 }
 SMODS.Atlas { key = "polish",         path = "polish.png",         px = 71, py = 95 }
+SMODS.Atlas { key = "oxidize",        path = "oxidize.png",        px = 71, py = 95 }
 
 --- How many cards may be selected. One each, as asked.
 local SELECTED = 1
@@ -92,6 +93,7 @@ local ENHANCERS = {
     { key = "citrus",         atlas = "citrus",         enhancement = "Limestone" },
     { key = "miracle_matter", atlas = "miracle_matter", enhancement = "Exo" },
     { key = "knife",          atlas = "knife",          enhancement = "Gash" },
+    { key = "oxidize",        atlas = "oxidize",        enhancement = "Copper" },
     -- Either stone. Which one it is decides what comes out, which is the one
     -- thing here mod_conv alone cannot express - see the wrapper below.
     -- `enhancement` is the default, and the one a Stone Card gets.

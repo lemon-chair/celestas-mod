@@ -291,6 +291,8 @@ SMODS.Joker {
 
     loc_vars = function(self, info_queue, card)
         info_queue[#info_queue + 1] = G.P_CENTERS.m_steel
+        local copper = G.P_CENTERS[(CelestasMod.ENHANCEMENT_KEYS or {}).Copper or ""]
+        if copper then info_queue[#info_queue + 1] = copper end
         local numerator, denominator = SMODS.get_probability_vars(
             card, 1, card.ability.extra.odds, "celesta_maya")
         return { vars = { numerator, denominator, card.ability.extra.repetitions } }
@@ -302,7 +304,7 @@ SMODS.Joker {
         -- Held-in-hand repetition pass: cardarea is G.hand and other_card is
         -- the card being considered for a retrigger.
         if context.repetition and context.cardarea == G.hand then
-            if SMODS.has_enhancement(context.other_card, "m_steel")
+            if (CelestasMod.steel_or_copper and CelestasMod.steel_or_copper(context.other_card) or SMODS.has_enhancement(context.other_card, "m_steel"))
                 and SMODS.pseudorandom_probability(
                     card, "celesta_maya", 1, card.ability.extra.odds) then
                 return {

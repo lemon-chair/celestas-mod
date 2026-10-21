@@ -450,6 +450,16 @@ function CelestasMod.find_joker(key, count_debuffed)
     return out
 end
 
+--- True for a Steel Card or a Copper Card: what Maya, Corrupt Maya and Maya's merges that are about Steel mean by
+--- Steel. Copper is Steel's twin in Chips, and reads from the enhancement keys at call time since the
+--- enhancements are registered after this file.
+function CelestasMod.steel_or_copper(card)
+    if not card then return false end
+    if SMODS.has_enhancement(card, "m_steel") then return true end
+    local copper = (CelestasMod.ENHANCEMENT_KEYS or {}).Copper
+    return copper ~= nil and SMODS.has_enhancement(card, copper) or false
+end
+
 --- True when at least one is in play and able to act.
 function CelestasMod.joker_in_play(key)
     return next(CelestasMod.find_joker(key)) ~= nil

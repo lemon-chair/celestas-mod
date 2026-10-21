@@ -953,7 +953,7 @@ special("j_celesta_kumi", "j_celesta_maya", {
         if context.destroying_card and context.cardarea == G.play
             and not context.blueprint then
             local target = context.destroying_card
-            if SMODS.has_enhancement(target, "m_steel") then
+            if (CelestasMod.steel_or_copper and CelestasMod.steel_or_copper(target) or SMODS.has_enhancement(target, "m_steel")) then
                 if SMODS.is_eternal and SMODS.is_eternal(target) then return end
                 -- `remove` and `dollars` are both other_calculation_keys, so
                 -- one table can destroy the card and pay out at once.
@@ -1930,7 +1930,7 @@ special("j_celesta_maya", "j_celesta_ben", {
         -- Maya's own pass, with the coin flip taken out.
         if context.repetition and context.cardarea == G.hand
             and context.other_card
-            and SMODS.has_enhancement(context.other_card, "m_steel") then
+            and (CelestasMod.steel_or_copper and CelestasMod.steel_or_copper(context.other_card) or SMODS.has_enhancement(context.other_card, "m_steel")) then
             return {
                 message = localize("k_again_ex"),
                 repetitions = state.repetitions,
@@ -17120,7 +17120,8 @@ special("j_lucky_cat", "j_celesta_maya", {
         -- A Steel card triggers where it is HELD, so that is where it is counted; not at the cash-out.
         if context.individual and context.cardarea == G.hand and not context.end_of_round
             and context.other_card and not context.blueprint
-            and not benched(context.other_card) and SMODS.has_enhancement(context.other_card, "m_steel") then
+            and not benched(context.other_card)
+            and (CelestasMod.steel_or_copper and CelestasMod.steel_or_copper(context.other_card) or SMODS.has_enhancement(context.other_card, "m_steel")) then
             Bind.grow(card, state, "x_mult", state.x_mult_gain)
             return {
                 message = localize { type = "variable", key = "a_xmult", vars = { state.x_mult } },

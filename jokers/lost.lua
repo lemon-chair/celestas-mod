@@ -572,7 +572,7 @@ SMODS.Joker {
         -- here, and the two together are the X3 the description promises.
         if context.individual and context.cardarea == G.hand
             and not context.end_of_round then
-            if SMODS.has_enhancement(context.other_card, "m_steel") then
+            if (CelestasMod.steel_or_copper and CelestasMod.steel_or_copper(context.other_card) or SMODS.has_enhancement(context.other_card, "m_steel")) then
                 local base = steel_value(context.other_card)
                 if base then
                     return { x_mult = card.ability.extra.x_mult / base }
@@ -583,7 +583,7 @@ SMODS.Joker {
         -- Held-in-hand repetition pass. Maya's is a coin flip for two extra
         -- triggers; this one is neither a coin flip nor two.
         if context.repetition and context.cardarea == G.hand then
-            if SMODS.has_enhancement(context.other_card, "m_steel") then
+            if (CelestasMod.steel_or_copper and CelestasMod.steel_or_copper(context.other_card) or SMODS.has_enhancement(context.other_card, "m_steel")) then
                 return {
                     message = localize("k_again_ex"),
                     repetitions = card.ability.extra.repetitions,

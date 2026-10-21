@@ -19,6 +19,7 @@ CelestasMod.ENHANCEMENT_KEYS = {
     Scoria = "m_" .. SMODS.current_mod.prefix .. "_scoria",
     Foliage = "m_" .. SMODS.current_mod.prefix .. "_foliage",
     Obsidian = "m_" .. SMODS.current_mod.prefix .. "_obsidian",
+    Copper = "m_" .. SMODS.current_mod.prefix .. "_copper",
 }
 
 -- Shared so Saruei can target this exact roll through fix_probability, and so
@@ -277,6 +278,27 @@ SMODS.Enhancement {
                 return { remove = true }
             end
         end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Copper: X1.5 Chips while held in hand - a Steel Card, in Chips.
+--------------------------------------------------------------------------------
+--
+-- Nothing is scored from `calculate`: h_x_chips on the config is what the game reads for a held card
+-- (Card:get_chip_h_x_bonus), the way Steel's h_x_mult is. Maya, Corrupt Maya and Maya's merges that are
+-- about Steel count it as Steel (CelestasMod.steel_or_copper in globals.lua).
+
+SMODS.Enhancement {
+    key = "copper",
+    atlas = "enh_copper",
+    pos = { x = 0, y = 0 },
+    discovered = true,
+
+    config = { h_x_chips = 1.5 },
+
+    loc_vars = function(self, info_queue, card)
+        return { vars = { self.config.h_x_chips } }
     end,
 }
 

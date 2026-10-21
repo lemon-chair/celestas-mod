@@ -428,7 +428,7 @@ return {
             j_celesta_corrupt_maya = {
                 name = "Corrupt Maya",
                 text = {
-                    "Each {C:attention}Steel Card{} held in hand",
+                    "Each {C:attention}Steel{} or {C:attention}Copper Card{} held in hand",
                     "gives {X:mult,C:white}X#1#{} Mult and is",
                     "retriggered {C:attention}#2#{} times",
                     "{C:red}-#3#{} Joker slots, cannot be sold",
@@ -1221,8 +1221,8 @@ return {
             j_celesta_maya = {
                 name = "Maya",
                 text = {
-                    "{C:green}#1# in #2#{} chance to retrigger",
-                    "each {C:attention}Steel Card{} held in hand",
+                    "{C:green}#1# in #2#{} chance to retrigger each",
+                    "{C:attention}Steel{} or {C:attention}Copper Card{} held in hand",
                     "{C:attention}#3#{} extra times",
                 },
             },
@@ -2293,6 +2293,14 @@ return {
                     "{C:attention}Exo Card",
                 },
             },
+            c_celesta_oxidize = {
+                name = "Oxidize",
+                text = {
+                    "Converts up to {C:attention}#1#{}",
+                    "selected card into a",
+                    "{C:attention}Copper Card",
+                },
+            },
             c_celesta_knife = {
                 name = "The Knife",
                 text = {
@@ -2759,6 +2767,13 @@ return {
                     "{C:green}#1# in #2#{} chance to break",
                     "if held in hand at",
                     "the end of the round",
+                },
+            },
+            m_celesta_copper = {
+                name = "Copper Card",
+                text = {
+                    "{X:chips,C:white}X#1#{} Chips while this",
+                    "card stays in hand",
                 },
             },
             m_celesta_gash = {
@@ -5766,7 +5781,7 @@ return {
                 name = "Lucky Cat + Maya",
                 text = {
                     "This Joker gains {X:mult,C:white}X#1#{} Mult every time a",
-                    "{C:attention}Steel{} card is triggered",
+                    "{C:attention}Steel{} or {C:attention}Copper{} card is triggered",
                     "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
                 },
             },
@@ -6198,8 +6213,8 @@ return {
             celesta_bind_kumi_maya = {
                 name = "Kumi + Maya",
                 text = {
-                    "Destroys all scoring {C:attention}Steel Cards{}",
-                    "in played hand, with a {C:green}#1# in #2#{} chance",
+                    "Destroys all scoring {C:attention}Steel{} and {C:attention}Copper{}",
+                    "Cards in played hand, with a {C:green}#1# in #2#{} chance",
                     "to earn {C:money}$#3#{} per card destroyed",
                 },
             },
@@ -6214,8 +6229,8 @@ return {
                 name = "Maya + Ben",
                 text = {
                     "{C:attention}+#1#{} hand size",
-                    "Retriggers each {C:attention}Steel Card{}",
-                    "held in hand {C:attention}#2#{} times",
+                    "Retriggers each {C:attention}Steel{} or {C:attention}Copper",
+                    "{C:attention}Card{} held in hand {C:attention}#2#{} times",
                 },
             },
             celesta_bind_nagzz_chibidoki = {
@@ -8628,6 +8643,7 @@ return {
             m_celesta_limestone = "Limestone Card",
             m_celesta_driftwood = "Driftwood Card",
             m_celesta_gash = "Gash Card",
+            m_celesta_copper = "Copper Card",
             m_celesta_scoria = "Scoria Card",
             m_celesta_foliage = "Foliage Card",
             m_celesta_obsidian = "Obsidian Card",

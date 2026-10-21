@@ -40,12 +40,12 @@ made it.
   abilities of both, with **471 unique combinations**
 - **Swap**, a Spectral that trades the **second Joker** of 2 merged ones, or the positions of the two Jokers inside 1
 - **3 new suits**
-- **9 new enhancements**
+- **10 new enhancements**
 - **5 new seals**
 - **11 new decks**
 - **20 new stakes** in one chain above Gold, from Iron to Celestial
 - **16 new Boss Blinds**
-- **18 new consumables**, plus a new type of consumable with 13 cards and its
+- **19 new consumables**, plus a new type of consumable with 13 cards and its
   own booster pack
 - **27 challenges**
 

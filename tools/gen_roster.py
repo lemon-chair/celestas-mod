@@ -37,7 +37,7 @@ SHARED = {"jokers", "consumables", "decks", "sleeves", "icon", "seals", "driftwo
           "star_fury", "tree", "raise", "unholy",
           # the Tarots that hand out this mod's enhancements, Occult, and Gene
           # (which hands out a seal rather than an enhancement)
-          "citrus", "miracle_matter", "knife", "polish", "occult", "gene",
+          "citrus", "miracle_matter", "knife", "polish", "oxidize", "occult", "gene",
           # Summon, which makes a Mythic Joker
           "summon",
           # ...and The Community, which hands out Tags
@@ -509,6 +509,14 @@ LOC_TAIL = '''        },
                     "{C:attention}Exo Card",
                 },
             },
+            c_celesta_oxidize = {
+                name = "Oxidize",
+                text = {
+                    "Converts up to {C:attention}#1#{}",
+                    "selected card into a",
+                    "{C:attention}Copper Card",
+                },
+            },
             c_celesta_knife = {
                 name = "The Knife",
                 text = {
@@ -975,6 +983,13 @@ LOC_TAIL = '''        },
                     "{C:green}#1# in #2#{} chance to break",
                     "if held in hand at",
                     "the end of the round",
+                },
+            },
+            m_celesta_copper = {
+                name = "Copper Card",
+                text = {
+                    "{X:chips,C:white}X#1#{} Chips while this",
+                    "card stays in hand",
                 },
             },
             m_celesta_gash = {
@@ -6844,6 +6859,7 @@ LOC_TAIL = '''        },
             m_celesta_limestone = "Limestone Card",
             m_celesta_driftwood = "Driftwood Card",
             m_celesta_gash = "Gash Card",
+            m_celesta_copper = "Copper Card",
             m_celesta_scoria = "Scoria Card",
             m_celesta_foliage = "Foliage Card",
             m_celesta_obsidian = "Obsidian Card",
