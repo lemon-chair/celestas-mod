@@ -3777,9 +3777,9 @@ return {
                 text = {
                     "At the start of each round, a random",
                     "unenhanced card held in hand becomes a",
-                    "{C:attention}Steel Card{} with a {C:red}Red Seal{}",
-                    "{C:green}#1# in #2#{} chance for a",
-                    "{C:attention}Foppy Seal{} instead",
+                    "{C:attention}Steel Card{} or a {C:attention}Copper Card{} (50/50)",
+                    "with a {C:red}Red Seal{}, {C:green}#1# in #2#{} chance",
+                    "for a {C:attention}Foppy Seal{} instead",
                 },
             },
             celesta_bind_hannah_koko = {

@@ -3685,6 +3685,14 @@ special("j_celesta_arar", "j_celesta_maya", {
 
         local target = pseudorandom_element(candidates,
             pseudoseed("celesta_bind_arar_maya"))
+        -- Steel or Copper, even odds: an ordinary roll, not a listed chance, so nothing that moves odds
+        -- (Oops! All 6s, a Hedron Stake) moves it. A run without Copper in it is all Steel.
+        local copper_key = (CelestasMod.ENHANCEMENT_KEYS or {}).Copper
+        local copper = copper_key and G.P_CENTERS[copper_key]
+        local metal = steel
+        if copper and pseudorandom(pseudoseed("celesta_bind_arar_maya_metal")) < 0.5 then
+            metal = copper
+        end
         local seal = "Red"
         if SMODS.pseudorandom_probability(card, "celesta_bind_arar_maya_foppy",
                 1, state.odds, "celesta_bind_arar_maya_foppy") then
@@ -3694,7 +3702,7 @@ special("j_celesta_arar", "j_celesta_maya", {
         target.celesta_arar_claimed = true
         G.E_MANAGER:add_event(Event {
             func = function()
-                target:set_ability(steel, nil, true)
+                target:set_ability(metal, nil, true)
                 target:set_seal(seal, nil, true)
                 target:juice_up(0.3, 0.5)
                 target.celesta_arar_claimed = nil
