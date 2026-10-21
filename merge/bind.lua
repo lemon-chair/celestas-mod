@@ -2031,6 +2031,10 @@ function CelestasMod.bind_blind_scale()
         if def and def.key == "deme_lucypyre" and not held.debuff then
             local percent = Bind.special_state(held, def).percent or 0
             scale = scale * (1 - percent / 100)
+        elseif def and def.key == "nihmune_lucypyre" and not held.debuff then
+            -- 1% for every Club in the full deck
+            local clubs = CelestasMod.count_suit_in_deck and CelestasMod.count_suit_in_deck("Clubs") or 0
+            scale = scale * (1 - clubs / 100)
         end
     end
     return math.max(0, scale)
@@ -19176,6 +19180,94 @@ CelestasMod.CARD_SUIT_RULES[#CelestasMod.CARD_SUIT_RULES + 1] = function()
     if specials_held("arielle_overezeggs")[1] == nil then return nil end
     return HEARTS
 end
+
+end
+
+-- Nihmune + LucyPyre, Moo Moo Clover + Ray, Nagzz + ShyLily.
+do
+
+-- Nihmune + LucyPyre: a Blind asks for 1% less for every Club in the full deck.
+--
+-- A replacing pair, so its card is not a LucyPyre to the quota lookup; what it takes off arrives through
+-- CelestasMod.bind_blind_scale below, the same seam Deme + LucyPyre's does. Counted when the quota is asked for,
+-- so the number on the Blind select screen follows the deck. Clubs are counted the way Rainhoe + Nihmune counts them.
+special("j_celesta_nihmune", "j_celesta_lucypyre", {
+    key = "nihmune_lucypyre",
+
+    loc_vars = function(def, card, state)
+        return { vars = { CelestasMod.count_suit_in_deck("Clubs") } }
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
+-- Moo Moo Clover + Ray: a Milk Bottle may select up to 4 cards.
+--
+-- The number is on the Milk Bottle's centre (see Moo Moo Clover), and what writes it is the Clover's own
+-- bookkeeping, which asks MILK_SELECTION_RULES. This only says 4 while the pair is in the row and able to act,
+-- and asks for it to be worked out again whenever the pair arrives or goes - one beat later, since the card is
+-- still in the row for the length of the call that removes or debuffs it.
+CelestasMod.MILK_SELECTION_RULES = CelestasMod.MILK_SELECTION_RULES or {}
+CelestasMod.MILK_SELECTION_RULES[#CelestasMod.MILK_SELECTION_RULES + 1] = function()
+    if specials_held("clover_ray")[1] == nil then return nil end
+    return 4
+end
+
+local function milk_selection_refresh()
+    if not (G.E_MANAGER and CelestasMod.clover_refresh) then return end
+    G.E_MANAGER:add_event(Event { func = function() CelestasMod.clover_refresh() return true end })
+end
+
+special("j_celesta_clover", "j_celesta_ray", {
+    key = "clover_ray",
+
+    loc_vars = function(def, card, state)
+        return { vars = {} }
+    end,
+
+    calculate = function(def, card, context, state) end,
+
+    add_to_deck = function(def, card, state, from_debuff) milk_selection_refresh() end,
+    remove_from_deck = function(def, card, state, from_debuff) milk_selection_refresh() end,
+    on_merge = function(def, card, state, fresh) milk_selection_refresh() end,
+    on_unmerge = function(def, card, state) milk_selection_refresh() end,
+})
+
+-- Nagzz + ShyLily: Glass and Gash cards cannot break, and go again twice when scored.
+--
+-- Not breaking is answered at the roll, the way Ellie Minibot + Cerber's is: a numerator of nothing is a roll
+-- that never comes up, for vanilla's Glass (`glass`) and this mod's Gash (GASH_BREAK_ID), so the card is never
+-- picked to break in the first place.
+special("j_celesta_nagzz", "j_celesta_shylily", {
+    key = "nagzz_shylily",
+    config = { repetitions = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.repetitions } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.fix_probability then
+            local id = context.identifier
+            if id == "glass" or id == CelestasMod.GASH_BREAK_ID then
+                return { numerator = 0 }
+            end
+            return
+        end
+
+        if context.repetition and context.cardarea == G.play and context.other_card then
+            local gash = (CelestasMod.ENHANCEMENT_KEYS or {}).Gash
+            local other = context.other_card
+            if SMODS.has_enhancement(other, "m_glass") or (gash and SMODS.has_enhancement(other, gash)) then
+                return {
+                    message = localize("k_again_ex"),
+                    repetitions = state.repetitions,
+                    card = card,
+                }
+            end
+        end
+    end,
+})
 
 end
 

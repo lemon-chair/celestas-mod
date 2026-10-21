@@ -5023,6 +5023,29 @@ return {
                     "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
                 },
             },
+            celesta_bind_nihmune_lucypyre = {
+                name = "Nihmune + LucyPyre",
+                text = {
+                    "Blinds are {C:attention}1%{} smaller for each",
+                    "{C:clubs}Club{} card in your full deck",
+                    "{C:inactive}(Currently {C:attention}#1#%{C:inactive})",
+                },
+            },
+            celesta_bind_clover_ray = {
+                name = "Moo Moo Clover + Ray",
+                text = {
+                    "{C:spectral}Milk Bottles{} can select",
+                    "up to {C:attention}4{} cards",
+                },
+            },
+            celesta_bind_nagzz_shylily = {
+                name = "Nagzz + ShyLily",
+                text = {
+                    "{C:attention}Glass{} and {C:attention}Gash{} Cards can no longer",
+                    "break, and are retriggered",
+                    "{C:attention}#1#{} times when scored",
+                },
+            },
             celesta_bind_ironmouse_saiiren = {
                 name = "Ironmouse + Saiiren",
                 text = {

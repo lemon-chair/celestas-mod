@@ -4377,12 +4377,22 @@ SMODS.Joker {
 --- down, so it cannot drift, and 0 restores the base - G.P_CENTERS outlives a
 --- run, and a run that ended with a Clover must not leak the wider selection
 --- into the next one.
+--- A merge that widens it further than a Clover does, each a function returning how many cards a Milk Bottle may
+--- select or nothing. The widest answer stands, and Clover + Ray is the first: a replacing pair, so its card is
+--- not a Clover to the count below.
+CelestasMod.MILK_SELECTION_RULES = CelestasMod.MILK_SELECTION_RULES or {}
+
 local function clover_apply(count)
     local center = G.P_CENTERS and G.P_CENTERS[CelestasMod.MILK_BOTTLE_KEY]
     if not (center and center.config) then return end
-    center.config.max_highlighted = count > 0
+    local selection = count > 0
         and CelestasMod.MILK_BOTTLE_CLOVER_SELECTION
         or CelestasMod.MILK_BOTTLE_BASE_SELECTION
+    for _, rule in ipairs(CelestasMod.MILK_SELECTION_RULES) do
+        local ok, wanted = pcall(rule)
+        if ok and type(wanted) == "number" and wanted > selection then selection = wanted end
+    end
+    center.config.max_highlighted = selection
 end
 
 --- Counts the Clovers in play, ignoring one card.
