@@ -3306,6 +3306,51 @@ LOC_TAIL = '''        },
                     "{C:green}#1# in #2#{} chance to give {C:money}$#3#{}",
                 },
             },
+            celesta_bind_koko_pipi = {
+                name = "KokoNuts + Pipi",
+                text = {
+                    "If the played hand has exactly",
+                    "{C:attention}#1#{} cards, convert both to",
+                    "{C:attention}Lucky 7 of Spades{}",
+                },
+            },
+            celesta_bind_aquwa_pipi = {
+                name = "Aquwa + Pipi",
+                text = {
+                    "If the played hand has exactly",
+                    "{C:attention}#1#{} cards, start a {C:blue}Downpour{}",
+                    "until the end of the round",
+                },
+            },
+            celesta_bind_froggyloch_froggyhoppins = {
+                name = "FroggyLoch + Froggyhoppins",
+                text = {
+                    "After every {C:attention}#1#{} cards scored,",
+                    "gain {C:attention}+1{} Joker slot",
+                },
+            },
+            celesta_bind_froggyhoppins_koko = {
+                name = "Froggyhoppins + KokoNuts",
+                text = {
+                    "After every {C:attention}#1#{} {C:attention}Lucky 7{} of {V:1}#2#{}",
+                    "scored, gain {C:attention}+1{} Joker slot",
+                },
+            },
+            celesta_bind_matarakan_zentreya = {
+                name = "Matara Kan + Zentreya",
+                text = {
+                    "{C:attention}Gold Cards{} have a {C:green}#1# in #2#{} chance",
+                    "to multiply your money by",
+                    "{X:money,C:white}X#3#{} when triggered",
+                },
+            },
+            celesta_bind_froggyhoppins_pipi = {
+                name = "Froggyhoppins + Pipi",
+                text = {
+                    "After every {C:attention}#1#{} hands played",
+                    "containing {C:attention}#2#{} cards, gain {C:attention}+1{} Joker slot",
+                },
+            },
             celesta_bind_ironmouse_saiiren = {
                 name = "Ironmouse + Saiiren",
                 text = {

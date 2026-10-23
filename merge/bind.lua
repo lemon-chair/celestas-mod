@@ -19367,6 +19367,170 @@ special("j_celesta_raibyte", "j_celesta_kumi", {
     end,
 })
 
+-- KokoNuts + Pipi: a hand of exactly two cards turns both into Lucky 7s of Spades.
+--
+-- Rewritten at `before`, synchronously, for the reason FeFe and Occi are: the hand is named and nothing has scored,
+-- so what each card is worth and every check made while scoring read the new card. Both cards played, scoring or
+-- not - "both" is the hand. Pipi's own count is the played hand's, which is what is asked here.
+special("j_celesta_kokonuts", "j_celesta_pipi", {
+    key = "koko_pipi",
+    config = { cards = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.cards } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.before and not context.blueprint) then return end
+        local hand = context.full_hand
+        if not (hand and #hand == state.cards) then return end
+
+        for _, played in ipairs(hand) do
+            CelestasMod.convert_played_base(played, "Spades", "7")
+            CelestasMod.unjudged(played, function()
+                played:set_ability(G.P_CENTERS.m_lucky, nil, true)
+            end)
+            G.E_MANAGER:add_event(Event {
+                func = function() played:juice_up() return true end
+            })
+        end
+        return { message = localize("celesta_sevens"), colour = G.C.SPADES, card = card }
+    end,
+})
+
+-- Aquwa + Pipi: a hand of exactly two cards brings the rain.
+--
+-- Started as the hand is named, so it is up for the scoring of that hand and for the rest of the round; the
+-- Arena clears itself on the way back to Blind select, which is "until the end of the round". One already falling
+-- is left as it is.
+special("j_celesta_aquwa", "j_celesta_pipi", {
+    key = "aquwa_pipi",
+    config = { cards = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.cards } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.before and not context.blueprint) then return end
+        local hand = context.full_hand
+        if not (hand and #hand == state.cards) then return end
+        local Arena = CelestasMod.Arena
+        if raining() or not (Arena and Arena.start) then return end
+        Arena.start("downpour")
+        return { message = localize("celesta_downpour"), colour = G.C.BLUE, card = card }
+    end,
+})
+
+-- The three Froggyhoppins pairs count something towards a slot and share how: add one, and for every `every`
+-- reached grant a Joker slot and keep the rest. Granted through bump_limit, which writes where Steamodded keeps the
+-- number, and for good - the slot is not handed back if the card goes. A copy counts nothing, so none of these asks.
+local function count_toward_slot(card, state)
+    state.scored = state.scored + 1
+    if state.scored < state.every then return end
+    local slots = math.floor(state.scored / state.every)
+    state.scored = state.scored - slots * state.every
+    CelestasMod.bump_limit(G.jokers, slots)
+    return { message = localize("celesta_plus_joker_slot"), colour = G.C.FILTER, card = card }
+end
+
+-- FroggyLoch + Froggyhoppins: Froggyhoppins's slot, for every fifty cards that score and not only Prisms.
+--
+-- A debuffed card does not score, so it does not count.
+special("j_celesta_froggyloch", "j_celesta_froggyhoppins", {
+    key = "froggyloch_froggyhoppins",
+    config = { every = 50, scored = 0 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.every } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play and context.other_card
+                and not context.blueprint) then return end
+        if context.other_card.debuff then return end
+        return count_toward_slot(card, state)
+    end,
+})
+
+-- Froggyhoppins + KokoNuts: the same, for the seven KokoNuts makes - a Lucky 7 of Prisms - every seventeenth.
+--
+-- The rank is the card's own and the suit is asked through is_suit, as every suit question in this mod is, so a
+-- Wild Card that is a Lucky 7 counts.
+special("j_celesta_froggyhoppins", "j_celesta_kokonuts", {
+    key = "froggyhoppins_koko",
+    config = { every = 17, scored = 0 },
+
+    loc_vars = function(def, card, state)
+        local name, colour = CelestasMod.suit_name_and_colour(
+            CelestasMod.PRISM_SUIT, CelestasMod.PRISM_COLOUR)
+        return { vars = { state.every, name, colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play and context.other_card
+                and not context.blueprint) then return end
+        local other = context.other_card
+        if other.debuff or not SMODS.has_enhancement(other, "m_lucky") then return end
+        if not (other.get_id and other:get_id() == 7) then return end
+        if not (other.is_suit and other:is_suit(CelestasMod.PRISM_SUIT)) then return end
+        return count_toward_slot(card, state)
+    end,
+})
+
+-- Froggyhoppins + Pipi: the same, for every tenth hand played with exactly two cards in it.
+--
+-- Counted as the hand is named, so it is a hand that was played, whatever it then scores.
+special("j_celesta_froggyhoppins", "j_celesta_pipi", {
+    key = "froggyhoppins_pipi",
+    config = { every = 10, scored = 0, cards = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.every, state.cards } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.before and not context.blueprint) then return end
+        local hand = context.full_hand
+        if not (hand and #hand == state.cards) then return end
+        return count_toward_slot(card, state)
+    end,
+})
+
+-- Matara Kan + Zentreya: a Gold Card that pays out at the end of the round is a 1 in 4 to multiply the money.
+--
+-- Rolled for each time a held Gold Card triggers, retriggers included - the same trigger Kumi + Matara Kan banks.
+-- The multiplying is paid as the difference, floored the way Matara Kan's own payout is, so $10 becomes $17. Money
+-- that is nothing or owed has nothing to multiply.
+special("j_celesta_matarakan", "j_celesta_zentreya", {
+    key = "matarakan_zentreya",
+    config = { odds = 4, x_money = 1.75 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_matarakan_zentreya")
+        return { vars = { n, d, state.x_money } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.hand and context.end_of_round
+                and context.other_card) then return end
+        local gold = context.other_card
+        if gold.debuff or not SMODS.has_enhancement(gold, "m_gold") then return end
+        if not SMODS.pseudorandom_probability(card, "celesta_bind_matarakan_zentreya",
+                1, state.odds, "celesta_bind_matarakan_zentreya") then return end
+
+        -- Talisman's money is a table; a number is what can be multiplied here.
+        local held = (G.GAME and G.GAME.dollars) or 0
+        if type(held) == "table" and to_number then held = to_number(held) end
+        if type(held) ~= "number" or held ~= held or held <= 0 then return end
+        local owed = math.floor(held * state.x_money) - held
+        -- Past what a number holds the product is infinity and the difference is not a payout.
+        if owed ~= owed or owed == math.huge or owed <= 0 then return end
+        return { dollars = owed, card = gold }
+    end,
+})
+
 end
 
 --------------------------------------------------------------------------------
