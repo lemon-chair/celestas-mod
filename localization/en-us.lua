@@ -5062,6 +5062,14 @@ return {
                     "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
                 },
             },
+            celesta_bind_kourra_berrycrepe = {
+                name = "Kourra + BerryCrepe",
+                text = {
+                    "This Joker gives {C:chips}+#1#{} Chips for",
+                    "every {C:mult}+#2#{} Mult scored",
+                    "{C:inactive}(base Mult does not count)",
+                },
+            },
             celesta_bind_ironmouse_saiiren = {
                 name = "Ironmouse + Saiiren",
                 text = {

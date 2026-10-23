@@ -19308,6 +19308,38 @@ special("j_celesta_silvervale", "j_celesta_cottontail", {
     end,
 })
 
+-- Kourra + BerryCrepe: Kourra turned round - Chips for the Mult already on the board.
+--
+-- Kourra reads the running total when it scores, so position matters here too: it counts the Mult the played cards and
+-- the Jokers to its left have added, and nothing from its right. The hand's own base Mult is taken off first, and it
+-- is the figure the hand is named with: read once the hand is named and before any card has scored
+-- (initial_scoring_step), which is after a Blind that halves it has done so, and cleared when the hand is done.
+special("j_celesta_kourra", "j_celesta_berrycrepe", {
+    key = "kourra_berrycrepe",
+    config = { chips = 50, per_mult = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.chips, state.per_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.initial_scoring_step and not context.blueprint then
+            state.base_mult = scored_mult()
+            return
+        end
+
+        if context.after and not context.blueprint then
+            state.base_mult = nil
+            return
+        end
+
+        if not context.joker_main or state.base_mult == nil then return end
+        local steps = math.floor((scored_mult() - state.base_mult) / state.per_mult)
+        if steps <= 0 then return end
+        return { chips = math.min(steps * state.chips, 1e300) }
+    end,
+})
+
 end
 
 --------------------------------------------------------------------------------

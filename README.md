@@ -37,7 +37,7 @@ made it.
 - **241 Jokers**: 60 Common, 84 Uncommon, 44 Rare, 12 Legendary, 14 Mythic, and 27 of a
   new rarity
 - **Bind**, a Spectral that merges **2 selected Jokers into one** with the
-  abilities of both, with **476 unique combinations**
+  abilities of both, with **477 unique combinations**
 - **Swap**, a Spectral that trades the **second Joker** of 2 merged ones, or the positions of the two Jokers inside 1
 - **3 new suits**
 - **10 new enhancements**
