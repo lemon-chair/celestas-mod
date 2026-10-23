@@ -791,6 +791,13 @@ return {
                     "#1# time",
                 },
             },
+            j_celesta_froggyhoppins = {
+                name = "Froggyhoppins",
+                text = {
+                    "After every {C:attention}#1#{} {V:1}#2#{} cards",
+                    "scored, gain {C:attention}+1{} Joker slot",
+                },
+            },
             j_celesta_froggyloch = {
                 name = "FroggyLoch",
                 text = {
@@ -1245,8 +1252,8 @@ return {
             j_celesta_mellowmabel = {
                 name = "Mellow Mabel",
                 text = {
-                    "{V:1}#1#{} and {V:2}#2#{} cards are",
-                    "considered the {C:attention}same suit{}",
+                    "{V:1}#1#{}, {V:2}#2#{} and {V:3}#3#{} cards",
+                    "are considered the {C:attention}same suit{}",
                 },
                 unlock = {
                     "Win a run with the",
@@ -1660,6 +1667,13 @@ return {
                     "the leftmost available {C:attention}Joker{}",
                 },
             },
+            j_celesta_raibyte = {
+                name = "Rai Byte",
+                text = {
+                    "Played cards with {V:1}#2#{} suit",
+                    "give {C:mult}+#1#{} Mult when scored",
+                },
+            },
             j_celesta_rainhoe = {
                 name = "Rainhoe",
                 text = {
@@ -2002,12 +2016,30 @@ return {
                     "{C:attention}Wild Cards{} in your full deck",
                 },
             },
+            j_celesta_symbxl = {
+                name = "Symbxl",
+                text = {
+                    "This Joker gains {C:chips}+#1#{} Chips",
+                    "for each {V:1}#3#{} card held in hand",
+                    "when a hand is played",
+                    "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
+                },
+            },
             j_celesta_taehoongie = {
                 name = "Taehoongie",
                 text = {
                     "If the scoring hand contains a card",
                     "of every {C:attention}suit{}, level up",
                     "{C:attention}#2#{} #1# time",
+                },
+            },
+            j_celesta_tenma = {
+                name = "Tenma",
+                text = {
+                    "This Joker gains {X:chips,C:white}X#1#{} Chips for each",
+                    "{V:1}#3#{} card played during the round",
+                    "Resets at end of round",
+                    "{C:inactive}(Currently {X:chips,C:white}X#2#{C:inactive} Chips)",
                 },
             },
             j_celesta_to_dont_list = {
@@ -2263,6 +2295,14 @@ return {
         Tarot = {
             c_celesta_tree = {
                 name = "Tree",
+                text = {
+                    "Converts up to",
+                    "{C:attention}#1#{} selected cards",
+                    "to {V:1}#2#{}",
+                },
+            },
+            c_celesta_magnify = {
+                name = "Magnify",
                 text = {
                     "Converts up to",
                     "{C:attention}#1#{} selected cards",
@@ -5068,6 +5108,13 @@ return {
                     "This Joker gives {C:chips}+#1#{} Chips for",
                     "every {C:mult}+#2#{} Mult scored",
                     "{C:inactive}(base Mult does not count)",
+                },
+            },
+            celesta_bind_raibyte_kumi = {
+                name = "Rai Byte + Kumi",
+                text = {
+                    "Scoring {V:1}#4#{} cards have a",
+                    "{C:green}#1# in #2#{} chance to give {C:money}$#3#{}",
                 },
             },
             celesta_bind_ironmouse_saiiren = {
@@ -8777,6 +8824,7 @@ return {
             celesta_plus_sandstone = "+Sandstone",
             celesta_plus_hand_size = "+1 Hand Size",
             celesta_plus_slot = "+1 Consumable Slot",
+            celesta_plus_joker_slot = "+1 Joker Slot",
             celesta_plus_consumable = "+Consumable",
             celesta_plus_tag = "+1 Tag",
             celesta_unmerged = "Unmerged!",

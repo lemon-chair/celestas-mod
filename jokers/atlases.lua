@@ -555,6 +555,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "froggyhoppins",
+    path = "froggyhoppins.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "froggyloch",
     path = "froggyloch.png",
     px = 71,
@@ -1241,6 +1248,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "raibyte",
+    path = "raibyte.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "rainhoe",
     path = "rainhoe.png",
     px = 71,
@@ -1507,8 +1521,22 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "symbxl",
+    path = "symbxl.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "taehoongie",
     path = "taehoongie.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "tenma",
+    path = "tenma.png",
     px = 71,
     py = 95,
 }

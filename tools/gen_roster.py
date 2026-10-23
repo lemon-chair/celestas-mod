@@ -33,8 +33,9 @@ SHARED = {"jokers", "consumables", "decks", "sleeves", "icon", "seals", "driftwo
           "suit_stars", "suit_stars_ui",
           "suit_true_stars", "suit_true_stars_ui",
           "suit_leaf", "suit_leaf_ui",
+          "suit_prism", "suit_prism_ui",
           # the consumables that make them, and the rest of the standalones
-          "star_fury", "tree", "raise", "unholy",
+          "star_fury", "tree", "magnify", "raise", "unholy",
           # the Tarots that hand out this mod's enhancements, Occult, and Gene
           # (which hands out a seal rather than an enhancement)
           "citrus", "miracle_matter", "knife", "polish", "oxidize", "occult", "gene",
@@ -118,6 +119,10 @@ DISPLAY_NAMES = {
     "projektmelody": "Projekt Melody",
     "pristinezero": "Pwistine",
     "mellowmabel": "Mellow Mabel",
+    "raibyte": "Rai Byte",
+    "symbxl": "Symbxl",
+    "tenma": "Tenma",
+    "froggyhoppins": "Froggyhoppins",
     "minikomew": "Minikomew",
     "rubensargasm": "Ruben Sargasm",
     "vantacrow_bringer": "Vantacrow",
@@ -479,6 +484,14 @@ LOC_TAIL = '''        },
         Tarot = {
             c_celesta_tree = {
                 name = "Tree",
+                text = {
+                    "Converts up to",
+                    "{C:attention}#1#{} selected cards",
+                    "to {V:1}#2#{}",
+                },
+            },
+            c_celesta_magnify = {
+                name = "Magnify",
                 text = {
                     "Converts up to",
                     "{C:attention}#1#{} selected cards",
@@ -3286,6 +3299,13 @@ LOC_TAIL = '''        },
                     "{C:inactive}(base Mult does not count)",
                 },
             },
+            celesta_bind_raibyte_kumi = {
+                name = "Rai Byte + Kumi",
+                text = {
+                    "Scoring {V:1}#4#{} cards have a",
+                    "{C:green}#1# in #2#{} chance to give {C:money}$#3#{}",
+                },
+            },
             celesta_bind_ironmouse_saiiren = {
                 name = "Ironmouse + Saiiren",
                 text = {
@@ -4044,7 +4064,7 @@ LOC_TAIL = '''        },
                 name = "Lucky Cat + Maya",
                 text = {
                     "This Joker gains {X:mult,C:white}X#1#{} Mult every time a",
-                    "{C:attention}Steel{} card is triggered",
+                    "{C:attention}Steel{} or {C:attention}Copper{} card is triggered",
                     "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
                 },
             },
@@ -4476,8 +4496,8 @@ LOC_TAIL = '''        },
             celesta_bind_kumi_maya = {
                 name = "Kumi + Maya",
                 text = {
-                    "Destroys all scoring {C:attention}Steel Cards{}",
-                    "in played hand, with a {C:green}#1# in #2#{} chance",
+                    "Destroys all scoring {C:attention}Steel{} and {C:attention}Copper{}",
+                    "Cards in played hand, with a {C:green}#1# in #2#{} chance",
                     "to earn {C:money}$#3#{} per card destroyed",
                 },
             },
@@ -4492,8 +4512,8 @@ LOC_TAIL = '''        },
                 name = "Maya + Ben",
                 text = {
                     "{C:attention}+#1#{} hand size",
-                    "Retriggers each {C:attention}Steel Card{}",
-                    "held in hand {C:attention}#2#{} times",
+                    "Retriggers each {C:attention}Steel{} or {C:attention}Copper",
+                    "{C:attention}Card{} held in hand {C:attention}#2#{} times",
                 },
             },
             celesta_bind_nagzz_chibidoki = {
@@ -6993,6 +7013,7 @@ LOC_TAIL = '''        },
             celesta_plus_sandstone = "+Sandstone",
             celesta_plus_hand_size = "+1 Hand Size",
             celesta_plus_slot = "+1 Consumable Slot",
+            celesta_plus_joker_slot = "+1 Joker Slot",
             celesta_plus_consumable = "+Consumable",
             celesta_plus_tag = "+1 Tag",
             celesta_unmerged = "Unmerged!",

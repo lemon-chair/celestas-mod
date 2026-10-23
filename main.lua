@@ -143,6 +143,8 @@ assert(SMODS.load_file('suits/stars.lua'))()
 assert(SMODS.load_file('suits/leaf.lua'))()
 -- After stars.lua: the one way into True Stars starts from an Ace of Stars.
 assert(SMODS.load_file('suits/true_stars.lua'))()
+-- Last, so it joins the Yomi rotation behind every suit that was there before it.
+assert(SMODS.load_file('suits/prism.lua'))()
 
 --------------------------------------------------------------------------------
 -- Arena effects: screen-wide, round-scoped weather. Loaded before jokers

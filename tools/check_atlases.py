@@ -57,6 +57,7 @@ NON_CARD = {
     "suit_stars_ui": "13x13 suit pip",
     "suit_true_stars_ui": "13x13 suit pip",
     "suit_leaf_ui": "13x13 suit pip",
+    "suit_prism_ui": "13x13 suit pip",
     # Drawn over a card rather than as one, at the card's own scale: 95 across
     # is 95/71 of a card wide, which is the overhang XM-05 Thanatos is for.
     # Square rather than 95x71 so the vertical mapping needs no correction.

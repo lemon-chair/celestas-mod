@@ -33,6 +33,7 @@ SHARED = {"jokers", "consumables", "decks", "sleeves", "icon", "seals", "driftwo
           # and its UI pip is neither - masking either to a 71x95 silhouette
           # would cut the whole row down to its first cell's corners.
           "suit_stars", "suit_stars_ui", "suit_leaf", "suit_leaf_ui",
+          "suit_prism", "suit_prism_ui",
           "suit_true_stars", "suit_true_stars_ui",
           # Boosfer is a circle, not a card, and frozen_round is the frost pane
           # cut to match it. The card silhouette would shave 1px off the widest

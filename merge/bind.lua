@@ -19340,6 +19340,33 @@ special("j_celesta_kourra", "j_celesta_berrycrepe", {
     end,
 })
 
+-- Rai Byte + Kumi: every Prism card that scores is a 1 in 4 for $15.
+--
+-- Rolled for each scoring Prism card, so a hand of five rolls up to five times and a retrigger rolls again; the
+-- money comes up on the card that earned it. A replacing pair, so the card is not a Rai Byte to the +3 Mult:
+-- the pair speaks for it now.
+special("j_celesta_raibyte", "j_celesta_kumi", {
+    key = "raibyte_kumi",
+    config = { odds = 4, dollars = 15 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(
+            card, 1, state.odds, "celesta_bind_raibyte_kumi")
+        local name, colour = CelestasMod.suit_name_and_colour(
+            CelestasMod.PRISM_SUIT, CelestasMod.PRISM_COLOUR, true)
+        return { vars = { n, d, state.dollars, name, colours = { colour } } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play and context.other_card) then return end
+        local other = context.other_card
+        if not (other.is_suit and other:is_suit(CelestasMod.PRISM_SUIT)) then return end
+        if not SMODS.pseudorandom_probability(card, "celesta_bind_raibyte_kumi",
+                1, state.odds, "celesta_bind_raibyte_kumi") then return end
+        return { dollars = state.dollars, card = other }
+    end,
+})
+
 end
 
 --------------------------------------------------------------------------------

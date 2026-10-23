@@ -10397,21 +10397,23 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Mellow Mabel [Common] - Stars and Leaves are one suit.
+-- Mellow Mabel [Common] - Stars, Leaves and Prisms are one suit.
 --------------------------------------------------------------------------------
 --
 -- Through SMODS.smeared_check, which is the one place the game asks whether
 -- two suits are to count as one: it is how vanilla's Smeared Joker merges
 -- Hearts with Diamonds, and widening it covers flushes, suit-gated Jokers and
 -- suit-gated enhancements together rather than one at a time. Arielle sits on
--- the same hook and answers yes to everything; this answers yes to one pair.
+-- the same hook and answers yes to everything; this answers yes to the
+-- three suits it names, each with either of the others.
 
 local celesta_mabel_smeared_ref = SMODS.smeared_check
 function SMODS.smeared_check(card, suit, ...)
     if CelestasMod.joker_in_play("j_celesta_mellowmabel") then
         local own = card and card.base and card.base.suit
-        local pair = { [CelestasMod.STARS_SUIT] = true, [CelestasMod.LEAF_SUIT] = true }
-        if pair[own] and pair[suit] then return true end
+        local one = { [CelestasMod.STARS_SUIT] = true, [CelestasMod.LEAF_SUIT] = true,
+                      [CelestasMod.PRISM_SUIT] = true }
+        if one[own] and one[suit] then return true end
     end
     return celesta_mabel_smeared_ref(card, suit, ...)
 end
@@ -10431,7 +10433,9 @@ SMODS.Joker {
             CelestasMod.STARS_SUIT, CelestasMod.STARS_COLOUR)
         local leaves, leaf_colour = CelestasMod.suit_name_and_colour(
             CelestasMod.LEAF_SUIT, CelestasMod.LEAF_COLOUR)
-        return { vars = { stars, leaves, colours = { star_colour, leaf_colour } } }
+        local prisms, prism_colour = CelestasMod.suit_name_and_colour(
+            CelestasMod.PRISM_SUIT, CelestasMod.PRISM_COLOUR)
+        return { vars = { stars, leaves, prisms, colours = { star_colour, leaf_colour, prism_colour } } }
     end,
 }
 
