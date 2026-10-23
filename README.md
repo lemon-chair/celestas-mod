@@ -34,7 +34,7 @@ made it.
 
 ## What's in it
 
-- **245 Jokers**: 61 Common, 86 Uncommon, 45 Rare, 12 Legendary, 14 Mythic, and 27 of a
+- **245 Jokers**: 61 Common, 85 Uncommon, 46 Rare, 12 Legendary, 14 Mythic, and 27 of a
   new rarity
 - **Bind**, a Spectral that merges **2 selected Jokers into one** with the
   abilities of both, with **484 unique combinations**

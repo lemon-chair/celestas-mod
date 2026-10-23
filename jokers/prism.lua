@@ -61,13 +61,16 @@ SMODS.Joker {
 }
 
 --------------------------------------------------------------------------------
--- Symbxl [Uncommon] - Chips for the Prisms it is kept waiting with.
+-- Symbxl [Rare] - Chips for the Prisms it is kept waiting with.
 --------------------------------------------------------------------------------
 --
 -- "Held in hand when a hand is played": read at `before`, when the played cards have already left the
 -- hand, so what is in G.hand.cards is exactly what is being held. Gained there so the hand that earns it
 -- is the first to be paid, and never by a copy - the hand was played once. A copy still pays what
 -- Symbxl has stored.
+--
+-- A Wild Card held does not count: it is a Prism only because it is every suit, and it is the printed Prisms
+-- this is waiting with.
 --
 -- A different size every hand, so it says so (celesta_amount): Vedal raises each hand's own gain to its
 -- power, where for a Joker with a rate it would raise the first gain it saw every time.
@@ -76,7 +79,7 @@ SMODS.Joker {
     key = "symbxl",
     atlas = "symbxl",
     pos = { x = 0, y = 0 },
-    rarity = 2, cost = 6,
+    rarity = 3, cost = 8,
     unlocked = true, discovered = false,
     blueprint_compat = true, eternal_compat = true,
 
@@ -93,7 +96,7 @@ SMODS.Joker {
         if context.before and not context.blueprint then
             local held = 0
             for _, in_hand in ipairs((G.hand and G.hand.cards) or {}) do
-                if is_prism(in_hand) then held = held + 1 end
+                if is_prism(in_hand) and not SMODS.has_enhancement(in_hand, "m_wild") then held = held + 1 end
             end
             if held <= 0 then return end
 
