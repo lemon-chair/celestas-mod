@@ -19269,6 +19269,25 @@ special("j_celesta_nagzz", "j_celesta_shylily", {
     end,
 })
 
+-- Megalodon + Vexoria: +5 Mult for every Spade in the full deck.
+--
+-- Read off the deck when it scores, so it follows the deck - a Spade made, destroyed or turned into something else
+-- counts from the next hand - and counted the way Rainhoe + Nihmune counts its Clubs.
+special("j_celesta_megalodon", "j_celesta_vexoria", {
+    key = "megalodon_vexoria",
+    config = { mult = 5 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.mult, state.mult * CelestasMod.count_suit_in_deck("Spades") } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local total = state.mult * CelestasMod.count_suit_in_deck("Spades")
+        if total > 0 then return { mult = total } end
+    end,
+})
+
 end
 
 --------------------------------------------------------------------------------

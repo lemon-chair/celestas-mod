@@ -5046,6 +5046,14 @@ return {
                     "{C:attention}#1#{} times when scored",
                 },
             },
+            celesta_bind_megalodon_vexoria = {
+                name = "Megalodon + Vexoria",
+                text = {
+                    "This Joker gains {C:mult}+#1#{} Mult for each",
+                    "{C:spades}Spade{} card in your full deck",
+                    "{C:inactive}(Currently {C:mult}+#2#{C:inactive} Mult)",
+                },
+            },
             celesta_bind_ironmouse_saiiren = {
                 name = "Ironmouse + Saiiren",
                 text = {
