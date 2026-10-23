@@ -3270,6 +3270,14 @@ LOC_TAIL = '''        },
                     "{C:inactive}(Currently {C:mult}+#2#{C:inactive} Mult)",
                 },
             },
+            celesta_bind_silvervale_cottontail = {
+                name = "Silvervale + CottontailVA",
+                text = {
+                    "This Joker gains {X:mult,C:white}X#1#{} Mult for each",
+                    "{C:attention}Star Seal{} card in your {C:attention}full deck{}",
+                    "{C:inactive}(Currently {X:mult,C:white}X#2#{C:inactive} Mult)",
+                },
+            },
             celesta_bind_ironmouse_saiiren = {
                 name = "Ironmouse + Saiiren",
                 text = {

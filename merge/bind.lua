@@ -19288,6 +19288,26 @@ special("j_celesta_megalodon", "j_celesta_vexoria", {
     end,
 })
 
+-- Silvervale + CottontailVA: X1 Mult for every Star Seal in the full deck.
+--
+-- Counted and scored the way CottontailVA + Crelly does it - live off the deck, on top of a base of X1 - so it
+-- shares that pair's count, and a Star Seal turned into something else costs the Mult back.
+special("j_celesta_silvervale", "j_celesta_cottontail", {
+    key = "silvervale_cottontail",
+    config = { x_mult_gain = 1 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.x_mult_gain, cottontail_crelly_mult(state) } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if context.joker_main then
+            local total = cottontail_crelly_mult(state)
+            if total > 1 then return { x_mult = total } end
+        end
+    end,
+})
+
 end
 
 --------------------------------------------------------------------------------
