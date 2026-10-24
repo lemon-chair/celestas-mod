@@ -6386,14 +6386,8 @@ LOC_TAIL = '''        },
             stake_celesta_rose = {
                 name = "Rose Stake",
                 text = {
-                    "Ante {C:attention}12{} is the final Ante",
-                },
-            },
-            stake_celesta_rose_purgatory = {
-                name = "Rose Stake",
-                text = {
-                    "Choose {C:attention}2{} modifiers after",
-                    "{C:attention}every{} Blind, not just Boss Blinds",
+                    "{C:attention}Vouchers{} restock",
+                    "every other Ante",
                 },
             },
             stake_celesta_lavish = {
@@ -6455,8 +6449,14 @@ LOC_TAIL = '''        },
             stake_celesta_herbium = {
                 name = "Herbium Stake",
                 text = {
-                    "{C:attention}Vouchers{} restock",
-                    "every other Ante",
+                    "Ante {C:attention}12{} is the final Ante",
+                },
+            },
+            stake_celesta_herbium_purgatory = {
+                name = "Herbium Stake",
+                text = {
+                    "Choose {C:attention}2{} modifiers after",
+                    "{C:attention}every{} Blind, not just Boss Blinds",
                 },
             },
             stake_celesta_magical = {

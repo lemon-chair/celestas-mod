@@ -2100,7 +2100,7 @@ end
 --- How many modifiers the Blind that has just ended is owed: none, one, or two.
 ---
 --- A Boss Blind owes one, and two on the Iron Stake (and so every Stake above it); the final Boss
---- owes none, as it ends the run. Any other Blind owes nothing - except on the Rose Stake, where every
+--- owes none, as it ends the run. Any other Blind owes nothing - except on the Herbium Stake, where every
 --- Blind owes two: Small, Big and Boss alike. A Blind that was lost owes nothing.
 function P.owed_count(context)
     local modifiers = G.GAME.modifiers or {}
@@ -2108,7 +2108,7 @@ function P.owed_count(context)
         if ends_the_run() then return 0 end
         return modifiers.celesta_iron and 2 or 1
     end
-    if modifiers.celesta_rose and not context.game_over then return 2 end
+    if modifiers.celesta_herbium and not context.game_over then return 2 end
     return 0
 end
 

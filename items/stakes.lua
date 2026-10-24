@@ -5,14 +5,14 @@
 ---   Iron       Jokers can have Eternal, Perishable and Rental all at once
 ---   Lead       Blinds scale faster after each Ante
 ---   Brass      -1 Joker slot
----   Rose       Ante 12 is the final Ante
+---   Rose       Vouchers restock every other Ante
 ---   Lavish     -1 hand size
 ---   Eryl       Blinds scale faster after each Ante
 ---   Azure      Uncommon and Rare Jokers appear less often
 ---   Crimson    Booster Packs have 1 less option to choose from
 ---   Glimmer    -1 hand
 ---   Ichor      Blinds scale faster after each Ante
----   Herbium    Vouchers restock every other Ante
+---   Herbium    Ante 12 is the final Ante
 ---   Magical    -1 consumable slot
 ---   Abyssal    Boss Blinds can replace Big Blinds
 ---   Heathen    Shop prices are X1.5 higher; Blinds scale faster after each Ante
@@ -30,7 +30,7 @@
 --- either only carries on up its own chain: Lead needs Iron, Cryptid's Brown Stake needs Pink, and
 --- neither needs the other.
 ---
---- On the Purgatory Deck Iron and Rose are different - that deck has its own cost to pay - and the
+--- On the Purgatory Deck Iron and Herbium are different - that deck has its own cost to pay - and the
 --- stake's description says which it is for the deck being looked at. See items/purgatory.lua
 --- (`P.owed_count`) for what they do there. Four of the Stakes are four of that deck's cons made a
 --- rule of the run from the start (Abyssal, Titanium and Terra), and on that deck the con of the same
@@ -134,15 +134,16 @@ local COLOURS = {
 --- Every stake, in the order it is chained, and what it does to the run once. Each also sets a flag of
 --- its own - celesta_<key> - which is what the rest of the mod reads.
 ---
---- Iron and Rose only set theirs: what they do depends on the deck, and the deck is not chosen until
---- after the stake is applied, so it is asked where it is used and not here.
+--- Iron and Herbium do little here: what either does to the Purgatory Deck depends on the deck, and the deck
+--- is not chosen until after the stake is applied, so it is asked where it is used and not here.
 local STAKES = {
     { key = "iron", name = "Iron" },
     { key = "lead", name = "Lead", effect = faster_blinds },
     { key = "brass", name = "Brass", effect = function()
         G.GAME.starting_params.joker_slots = G.GAME.starting_params.joker_slots - 1
     end },
-    { key = "rose", name = "Rose", effect = function() G.GAME.win_ante = 12 end },
+    -- Read by the shop (see below), which is where a voucher is put on the shelf.
+    { key = "rose", name = "Rose" },
     { key = "lavish", name = "Lavish", effect = function()
         G.GAME.starting_params.hand_size = G.GAME.starting_params.hand_size - 1
     end },
@@ -168,8 +169,7 @@ local STAKES = {
         end
     end },
     { key = "ichor", name = "Ichor", effect = faster_blinds },
-    -- Read by the shop (see below), which is where a voucher is put on the shelf.
-    { key = "herbium", name = "Herbium" },
+    { key = "herbium", name = "Herbium", effect = function() G.GAME.win_ante = 12 end },
     { key = "magical", name = "Magical", effect = function()
         G.GAME.starting_params.consumable_slots = G.GAME.starting_params.consumable_slots - 1
     end },
@@ -221,7 +221,7 @@ end
 --- The stakes whose text is different on the Purgatory Deck: the first two that pay it a cost of their
 --- own, Ichor that makes it a shop, and the ones whose con is no longer offered there.
 local PURGATORY_TEXT = {
-    iron = true, rose = true, ichor = true, abyssal = true, titanium = true, terra = true, celestial = true,
+    iron = true, herbium = true, ichor = true, abyssal = true, titanium = true, terra = true, celestial = true,
 }
 
 -- One chain: each applies the one below it, and the first applies Gold.
@@ -373,7 +373,7 @@ local function install()
         create_card = create
     end
 
-    -- Herbium Stake. The shop puts its vouchers on the shelf one by one, by key, from the list the
+    -- Rose Stake. The shop puts its vouchers on the shelf one by one, by key, from the list the
     -- last Boss Blind drew (game.lua, SMODS.add_voucher_to_shop). On the Antes the shelf is to be
     -- empty that is where they are held back, as Cryptid's Blank Deck does for all of them: the
     -- list is left as drawn, so a Voucher Tag, which makes its own, and everything else that
@@ -392,11 +392,11 @@ local function install()
     end
 end
 
---- Whether the shop is not to be stocked with vouchers: the Herbium Stake, on every other
+--- Whether the shop is not to be stocked with vouchers: the Rose Stake, on every other
 --- Ante - the odd ones are stocked, so the first shop is.
 function CelestasMod.vouchers_are_held_back()
     local modifiers = G.GAME and G.GAME.modifiers
-    if not (modifiers and modifiers.celesta_herbium) then return false end
+    if not (modifiers and modifiers.celesta_rose) then return false end
     return G.GAME.round_resets.ante % 2 == 0
 end
 
