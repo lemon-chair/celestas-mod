@@ -3351,6 +3351,15 @@ LOC_TAIL = '''        },
                     "containing {C:attention}#2#{} cards, gain {C:attention}+1{} Joker slot",
                 },
             },
+            celesta_bind_matarakan_dokibird = {
+                name = "Matara Kan + Dokibird",
+                text = {
+                    "If exactly {C:attention}1{} played card scores, the others",
+                    "holding {C:chips}#1#{} or less stored {C:chips}Chips{} are not",
+                    "destroyed, but still give the scoring card",
+                    "{C:attention}#2#X{} their {C:chips}Chips{} permanently",
+                },
+            },
             celesta_bind_ironmouse_saiiren = {
                 name = "Ironmouse + Saiiren",
                 text = {

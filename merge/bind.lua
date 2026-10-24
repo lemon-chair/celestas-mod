@@ -19531,6 +19531,45 @@ special("j_celesta_matarakan", "j_celesta_zentreya", {
     end,
 })
 
+-- Matara Kan + Dokibird: Dokibird as it is, except that nothing is destroyed.
+--
+-- Dokibird's own rule, read the same way: when exactly one played card scores, each unscored one holding the cap
+-- or less stored Chips is worth the rate times those Chips to the card that scored, for good. The cards are left
+-- where they are - so they are there to be harvested again by the next hand, and no `remove` is returned, which
+-- is what keeps them out of the played-card removal and everything that watches it.
+--
+-- The cap and the rate are written out rather than read from CelestasMod.DOKIBIRD_CAP, for the reason Dokibird +
+-- Snuffy gives: this file is loaded before jokers/implemented.lua, so those constants do not exist yet.
+special("j_celesta_matarakan", "j_celesta_dokibird", {
+    key = "matarakan_dokibird",
+    config = { cap = 100, rate = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.cap, state.rate } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.destroy_card and context.cardarea == "unscored"
+                and not context.blueprint and not context.retrigger_joker) then return end
+
+        local scoring = context.scoring_hand
+        local target = scoring and #scoring == 1 and scoring[1]
+        if not target then return end
+
+        local stored = context.destroy_card.get_chip_bonus and context.destroy_card:get_chip_bonus() or 0
+        -- Through more_than, as Dokibird's own is: what this feeds is what makes a card's stored Chips large.
+        if not CelestasMod.more_than(stored, 0) or CelestasMod.more_than(stored, state.cap) then return end
+
+        local gain = stored * state.rate
+        target.ability.perma_bonus = (target.ability.perma_bonus or 0) + gain
+        return {
+            message = localize { type = "variable", key = "a_chips", vars = { gain } },
+            colour = G.C.CHIPS,
+            card = target,
+        }
+    end,
+})
+
 end
 
 --------------------------------------------------------------------------------
