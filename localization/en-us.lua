@@ -2021,8 +2021,7 @@ return {
                 text = {
                     "This Joker gains {C:chips}+#1#{} Chips",
                     "for each {V:1}#3#{} card held in hand",
-                    "when a hand is played,",
-                    "excluding {C:attention}Wild Cards{}",
+                    "when a hand is played",
                     "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips)",
                 },
             },
