@@ -5171,6 +5171,13 @@ return {
                     "{C:attention}#2#X{} their {C:chips}Chips{} permanently",
                 },
             },
+            celesta_bind_girldm_ekkomori = {
+                name = "GirlDM + Ekkomori",
+                text = {
+                    "When a Blind is skipped,",
+                    "gain {C:attention}#1#{} extra {C:attention}Double Tags{}",
+                },
+            },
             celesta_bind_ironmouse_saiiren = {
                 name = "Ironmouse + Saiiren",
                 text = {
@@ -8722,6 +8729,15 @@ return {
             ch_c_celesta_pool_pink = {
                 "Only {C:attention}Pink{} Jokers appear ({C:attention}#1#{})",
             },
+            ch_c_celesta_start_girldm_ekkomori = {
+                "{C:attention}GirlDM{} and {C:attention}Ekkomori{} start {C:attention}merged{}",
+            },
+            ch_c_extra_vouchers = {
+                "{C:attention}#1#{} Voucher slot in the shop",
+            },
+            ch_c_celesta_pack_edition_tags = {
+                "Joker edition {C:attention}Tags{} work on {C:attention}Booster Pack{} Jokers",
+            },
             ch_c_celesta_start_laynalazar_eros = {
                 "{C:attention}LaynaLazar{} and {C:attention}Eros{} start {C:attention}merged{}",
             },
@@ -8784,6 +8800,9 @@ return {
             c_celesta_trigger_happy = "Trigger Happy",
             c_celesta_double_time = "Double-Time",
             c_celesta_planetarium = "Planetarium",
+            c_celesta_tag_along = "Tag-along I",
+            c_celesta_tag_along_ii = "Tag-along II",
+            c_celesta_tag_along_iii = "Tag-along III",
         },
         labels = {
             m_celesta_exo = "Exo Card",

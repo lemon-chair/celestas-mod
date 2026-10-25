@@ -1548,3 +1548,120 @@ SMODS.Challenge {
         modifiers = {},
     },
 }
+
+--------------------------------------------------------------------------------
+-- Tag-along I, II and III - the Tags do the shopping
+--------------------------------------------------------------------------------
+--
+-- GirlDM makes Tags out of skipping a Blind and Ekkomori makes a Double Tag out of beating a Boss
+-- Blind, and the shop is taken away from under them: no Jokers on the shelf, and no Voucher either.
+-- What is left to spend Tags on is the Booster Packs, which is why the Joker edition Tags - Foil,
+-- Holographic, Polychrome and Negative, that only ever reached the shop - reach the Jokers in a pack
+-- as well.
+--
+--   I    an eternal GirlDM + Ekkomori, already merged
+--   II   ...the two kept apart, Ekkomori Negative as well as eternal
+--   III  an eternal GirlDM alone
+--
+-- All three ban the Jokers that take an Eternal off, for the reason Bird Feeder does, and are a chain
+-- the way Bird Feeder is: II waits for I, III for II.
+--
+-- "No Jokers in the shop" is vanilla's own custom rule (no_shop_jokers, which Bram Poker uses), and
+-- "-1 Voucher slot" is Steamodded's: the shop stocks starting_params.vouchers_in_shop (one) plus
+-- modifiers.extra_vouchers, and a challenge's custom rule with a value is written straight into
+-- modifiers (game.lua:2169). So a value of -1 is a shelf of none.
+
+local TAG_ALONG_I = "c_" .. SMODS.current_mod.prefix .. "_tag_along"
+local TAG_ALONG_II = "c_" .. SMODS.current_mod.prefix .. "_tag_along_ii"
+local TAG_ALONG_III = "c_" .. SMODS.current_mod.prefix .. "_tag_along_iii"
+tier_group({ TAG_ALONG_I, TAG_ALONG_II, TAG_ALONG_III })
+
+-- Merged by start_run's queued event, GirlDM the host.
+START_MERGES[TAG_ALONG_I] = { pair = { "j_celesta_girldm", "j_celesta_ekkomori" } }
+
+--- A Joker edition Tag is applied to a card as the shop makes it, by asking every Tag the run holds
+--- whether it modifies a shop Joker (UI_definitions.lua:773, :809); the first that does is spent. A
+--- Booster Pack's Jokers are made somewhere else and nobody asks. Here somebody does, in the same
+--- way and for the same reason - in an event, once the card exists - for the Jokers a pack makes.
+---
+--- Through create_card, which is where every card a pack holds is made (Steamodded's own default
+--- for a Buffoon Pack goes through it), and only in a run that asked for it. A Joker that already
+--- has an edition is left alone by the Tags themselves, as it is in the shop.
+local celesta_pack_tags_create_ref = create_card
+if type(celesta_pack_tags_create_ref) == "function" then
+    function create_card(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append, ...)
+        local card = celesta_pack_tags_create_ref(_type, area, legendary, _rarity, skip_materialize,
+            soulable, forced_key, key_append, ...)
+        if card and _type == "Joker" and area ~= nil and area == G.pack_cards
+            and G.GAME and G.GAME.modifiers and G.GAME.modifiers.celesta_pack_edition_tags then
+            G.E_MANAGER:add_event(Event {
+                func = function()
+                    for _, tag in ipairs(G.GAME.tags or {}) do
+                        if tag:apply_to_run({ type = "store_joker_modify", card = card }) then break end
+                    end
+                    return true
+                end
+            })
+        end
+        return card
+    end
+end
+
+--- What the three of them share: the shop, and the Tags. `merged` adds the line saying the two start
+--- merged, which only the first of them does.
+local function tag_along_rules(merged)
+    local custom = {}
+    if merged then custom[#custom + 1] = { id = "celesta_start_girldm_ekkomori" } end
+    custom[#custom + 1] = { id = "no_shop_jokers" }
+    custom[#custom + 1] = { id = "extra_vouchers", value = -1 }
+    custom[#custom + 1] = { id = "celesta_pack_edition_tags" }
+    return { custom = custom, modifiers = {} }
+end
+
+SMODS.Challenge {
+    key = "tag_along",
+
+    jokers = {
+        { id = "j_celesta_girldm", eternal = true },
+        { id = "j_celesta_ekkomori", eternal = true },
+    },
+
+    restrictions = {
+        banned_cards = STICKER_STRIPPERS,
+    },
+
+    rules = tag_along_rules(true),
+}
+
+SMODS.Challenge {
+    key = "tag_along_ii",
+
+    unlocked = function(self) return tier_unlocked(TAG_ALONG_II) end,
+
+    jokers = {
+        { id = "j_celesta_girldm", eternal = true },
+        { id = "j_celesta_ekkomori", eternal = true, edition = "negative" },
+    },
+
+    restrictions = {
+        banned_cards = STICKER_STRIPPERS,
+    },
+
+    rules = tag_along_rules(false),
+}
+
+SMODS.Challenge {
+    key = "tag_along_iii",
+
+    unlocked = function(self) return tier_unlocked(TAG_ALONG_III) end,
+
+    jokers = {
+        { id = "j_celesta_girldm", eternal = true },
+    },
+
+    restrictions = {
+        banned_cards = STICKER_STRIPPERS,
+    },
+
+    rules = tag_along_rules(false),
+}

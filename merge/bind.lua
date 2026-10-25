@@ -19570,6 +19570,37 @@ special("j_celesta_matarakan", "j_celesta_dokibird", {
     end,
 })
 
+-- GirlDM + Ekkomori: skipping a Blind is worth two Double Tags.
+--
+-- GirlDM's trigger and Ekkomori's Tag. Added in events, as GirlDM's are, and a copy adds its own, as
+-- a copy of GirlDM does. A replacing pair, so Ekkomori's Double Tag for a Boss Blind and
+-- GirlDM's random ones are not given as well - the pair speaks for the card now.
+special("j_celesta_girldm", "j_celesta_ekkomori", {
+    key = "girldm_ekkomori",
+    config = { tags = 2 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.tags } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.skip_blind then return end
+        for _ = 1, state.tags do
+            G.E_MANAGER:add_event(Event {
+                func = function()
+                    add_tag(Tag("tag_double"))
+                    play_sound("generic1")
+                    return true
+                end
+            })
+        end
+        return {
+            message = localize { type = "variable", key = "celesta_plus_tags", vars = { state.tags } },
+            colour = G.C.FILTER, card = context.blueprint_card or card,
+        }
+    end,
+})
+
 end
 
 --------------------------------------------------------------------------------
