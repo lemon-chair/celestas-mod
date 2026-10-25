@@ -1151,12 +1151,12 @@ SMODS.Challenge {
 }
 
 --------------------------------------------------------------------------------
--- Men's Shoes, Red, Orange, Yellow, Green, Blue, Purple, Pink - only these Jokers
+-- Men's Shoes - only these Jokers
 --------------------------------------------------------------------------------
 --
--- Eight challenges of one shape: a run with no starting Joker and no other rule,
--- where only a listed set of Jokers can appear - in the shop, in a pack, from a
--- consumable, anywhere the game rolls a Joker from the pool.
+-- A run with no starting Joker and no other rule, where only a listed set of Jokers
+-- can appear - in the shop, in a pack, from a consumable, anywhere the game rolls a
+-- Joker from the pool.
 --
 -- Done the way the Ecstasy Deck restricts its own pool, which is to ban what is
 -- NOT wanted rather than to list what is. banned_cards would put every one of the
@@ -1170,13 +1170,11 @@ SMODS.Challenge {
 -- rather than copied here, so a conversion added later follows the rule without
 -- this file hearing about it.
 --
--- Every pool has Commons, Uncommons and Rares to roll, so the shop never has to
+-- The pool has Commons, Uncommons and Rares to roll, so the shop never has to
 -- fall back on vanilla's answer to an empty pool (a plain Joker, which ignores the
--- ban list). Legendaries are only ever rolled by The Soul, and a pool with none
--- leaves the Soul to give that fallback: Red, Orange, Yellow, Green, Blue and Pink
--- have none of this mod's.
+-- ban list). Legendaries are only ever rolled by The Soul.
 
---- The Jokers each pool allows, as the challenge lists them: this mod's by
+--- The Jokers the pool allows, as the challenge lists them: this mod's by
 --- j_celesta_<key>, vanilla's by their own.
 local POOL_JOKERS = {
     mens_shoes = {
@@ -1188,97 +1186,6 @@ local POOL_JOKERS = {
         "j_celesta_rubensargasm", "j_celesta_unnamed", "j_celesta_occi", "j_celesta_shiabun",
         "j_celesta_shaoanvt", "j_celesta_vantacrow_bringer", "j_celesta_lordaethelstan",
         "j_celesta_kuro", "j_celesta_boosfer", "j_celesta_bubi",
-    },
-    red = {
-        "j_lusty_joker", "j_credit_card", "j_raised_fist", "j_even_steven", "j_scary_face",
-        "j_hack", "j_red_card", "j_superposition", "j_madness", "j_rocket", "j_baron",
-        "j_drunkard", "j_reserved_parking", "j_gift", "j_popcorn", "j_bloodstone", "j_matador",
-        "j_family", "j_tribe", "j_chicot", "j_celesta_xm05_thanatos", "j_celesta_zentreya",
-        "j_celesta_berrycrepe", "j_celesta_laynalazar", "j_celesta_overezeggs",
-        "j_celesta_fefe", "j_celesta_neuro", "j_celesta_jowol", "j_celesta_smugalana",
-        "j_celesta_heavenlyfather", "j_celesta_beribug", "j_celesta_fenari",
-        "j_celesta_slimegod", "j_celesta_pipi", "j_celesta_saiiren", "j_celesta_yoclesh",
-        "j_celesta_fireonirei", "j_celesta_adfree", "j_celesta_nanoless", "j_celesta_kuro",
-        "j_celesta_angelsteps", "j_celesta_lucypyre", "j_celesta_calamitas",
-        "j_celesta_malliesprout",
-    },
-    orange = {
-        "j_greedy_joker", "j_vagabond", "j_juggler", "j_erosion", "j_diet_cola", "j_trousers",
-        "j_campfire", "j_flower_pot", "j_yorick", "j_burnt", "j_bootstraps",
-        "j_shoot_the_moon", "j_celesta_blessed_phoenix_egg", "j_celesta_yharon",
-        "j_celesta_demenishki", "j_celesta_smugalana", "j_celesta_axialmatt",
-        "j_celesta_birdyovo", "j_celesta_clover", "j_celesta_ebiko", "j_celesta_sinder",
-        "j_celesta_taehoongie", "j_celesta_glowypumpkin", "j_celesta_sonneflower",
-        "j_celesta_smittenseraph", "j_celesta_maplechicken", "j_celesta_buffpup",
-        "j_celesta_auteru", "j_celesta_obkatiekat", "j_celesta_squchan",
-        "j_celesta_mellowmabel", "j_celesta_glassesjournal", "j_celesta_lordaethelstan",
-        "j_celesta_calamitas",
-    },
-    yellow = {
-        "j_gros_michel", "j_cavendish", "j_ride_the_bus", "j_todo_list", "j_shortcut",
-        "j_midas_mask", "j_golden", "j_smiley", "j_ticket", "j_rough_gem", "j_certificate",
-        "j_brainstorm", "j_hit_the_road", "j_cartomancer", "j_celesta_kokonuts",
-        "j_celesta_arielle", "j_celesta_yuzu", "j_celesta_baddaboom", "j_celesta_jaws",
-        "j_celesta_sunnysplosion", "j_celesta_kirana", "j_celesta_sigrid_bird",
-        "j_celesta_sansin", "j_celesta_henya", "j_celesta_nana_ruru", "j_celesta_shenpai",
-        "j_celesta_cerbervt", "j_celesta_rubensargasm", "j_celesta_minikomew",
-        "j_celesta_grimmi", "j_celesta_suko", "j_celesta_jummy", "j_celesta_chrchie",
-        "j_celesta_dooby", "j_celesta_nimi", "j_celesta_dokibird",
-    },
-    green = {
-        "j_ceremonial", "j_chaos", "j_pareidolia", "j_green_joker", "j_blackboard",
-        "j_turtle_bean", "j_to_the_moon", "j_baseball", "j_flash", "j_troubadour", "j_oops",
-        "j_trio", "j_perkeo", "j_celesta_green_card", "j_celesta_boosfer", "j_celesta_ben",
-        "j_celesta_kumi", "j_celesta_maya", "j_celesta_crelly", "j_celesta_rosedoodle",
-        "j_celesta_limealicious", "j_celesta_pandabearlily", "j_celesta_x3dustco",
-        "j_celesta_liffeh", "j_celesta_kloekroc", "j_celesta_harukakaribu",
-        "j_celesta_heavenlyfather", "j_celesta_vedal", "j_celesta_ray", "j_celesta_suto",
-        "j_celesta_kael", "j_celesta_kairyucrocodile", "j_celesta_piapiufo",
-        "j_celesta_augustanomoly", "j_celesta_radiaactive", "j_celesta_rynxryn",
-        "j_celesta_juniperactias", "j_celesta_alluux", "j_celesta_cupidyle", "j_celesta_momo",
-        "j_celesta_girldm",
-    },
-    blue = {
-        "j_gluttenous_joker", "j_mystic_summit", "j_fibonacci", "j_supernova", "j_odd_todd",
-        "j_splash", "j_blue_joker", "j_superposition", "j_ice_cream", "j_seance", "j_cloud_9",
-        "j_luchador", "j_baseball", "j_selzer", "j_trousers", "j_castle", "j_walkie_talkie",
-        "j_onyx_agate", "j_flower_pot", "j_blueprint", "j_seeing_double", "j_order", "j_duo",
-        "j_triboulet", "j_satellite", "j_celesta_blue_card", "j_celesta_eidolonwyrm",
-        "j_celesta_cryogen", "j_celesta_shylily", "j_celesta_spite", "j_celesta_beepers",
-        "j_celesta_aquwa", "j_celesta_yuy_ix", "j_celesta_shoomimi", "j_celesta_bao",
-        "j_celesta_yomiquinnely", "j_celesta_saruei", "j_celesta_bearthewitch",
-        "j_celesta_moomerrily", "j_celesta_bluto", "j_celesta_amalee", "j_celesta_vulpixie",
-        "j_celesta_mintfantome", "j_celesta_bricky", "j_celesta_cyyuvtuber",
-        "j_celesta_radicalmari", "j_celesta_monikacinnyroll", "j_celesta_milky",
-        "j_celesta_rinpenrose", "j_celesta_fream", "j_celesta_eros", "j_celesta_nihmune",
-        "j_celesta_nana_ruru", "j_celesta_vienna", "j_celesta_cosmic", "j_celesta_ariesakana",
-        "j_celesta_yokasiri", "j_celesta_geega", "j_celesta_fufu", "j_celesta_isaa",
-        "j_celesta_kourra", "j_celesta_occi", "j_celesta_silvervale", "j_celesta_froot",
-        "j_celesta_mogu", "j_celesta_ekkomori", "j_celesta_hime",
-    },
-    purple = {
-        "j_wrathful_joker", "j_8_ball", "j_sixth_sense", "j_fortune_teller", "j_arrowhead",
-        "j_celesta_uzuri", "j_celesta_megalodon", "j_celesta_chacha", "j_celesta_onigiri",
-        "j_celesta_michi", "j_celesta_shoto", "j_celesta_aicandii", "j_celesta_jaxvtuber",
-        "j_celesta_hannahhyrule", "j_celesta_kyaree", "j_celesta_rtgame", "j_celesta_nostro",
-        "j_celesta_vexoria", "j_celesta_nihmune", "j_celesta_cerbervt",
-        "j_celesta_projektmelody", "j_celesta_pristinezero", "j_celesta_rainhoe",
-        "j_celesta_shaoanvt", "j_celesta_shiabun", "j_celesta_nyanners",
-        "j_celesta_itsdeadlyboop", "j_celesta_nekrolina", "j_celesta_moopybuns",
-        "j_celesta_squchan", "j_celesta_astrum_aureus", "j_celesta_froot", "j_celesta_kiri",
-        "j_celesta_elara", "j_celesta_fleshy", "j_celesta_nicoviras", "j_celesta_snuffy",
-        "j_celesta_kson", "j_celesta_bubi",
-    },
-    pink = {
-        "j_four_fingers", "j_ramen", "j_trading", "j_celesta_froggyloch",
-        "j_celesta_fuchsia_card", "j_celesta_kokonuts", "j_celesta_cottontail",
-        "j_celesta_motherv3", "j_celesta_ironmouse", "j_celesta_meicha",
-        "j_celesta_pomatomaster", "j_celesta_dejavudea", "j_celesta_camila",
-        "j_celesta_spongeybuns", "j_celesta_chibidoki", "j_celesta_mariyume",
-        "j_celesta_el_xox", "j_celesta_fream", "j_celesta_mooni", "j_celesta_matarakan",
-        "j_celesta_trickywi", "j_celesta_rainyrentyn", "j_celesta_snapscube", "j_celesta_giwi",
-        "j_celesta_suko", "j_celesta_toma", "j_celesta_pheromoan", "j_celesta_torioriane",
-        "j_celesta_lucia", "j_celesta_urschleim", "j_celesta_tobs", "j_celesta_hestia",
     },
 }
 
@@ -1312,16 +1219,7 @@ function CelestasMod.ban_jokers_outside(listed)
     end
 end
 
---- The rule line each pool shows. A colour names itself - "Only Red Jokers appear
---- (44)" - which takes a line of its own per colour, as a rule is rendered from one
---- loc key and has room for one number. Men's Shoes is not a colour and keeps the
---- plain line.
-local function pool_rule_id(key)
-    if key == "mens_shoes" then return "celesta_pool_only" end
-    return "celesta_pool_" .. key
-end
-
---- Registers one pool challenge. Eight challenges, one shape, one place to change it.
+--- Registers one pool challenge.
 local function pool_challenge(key)
     local listed = POOL_JOKERS[key]
     SMODS.Challenge {
@@ -1333,18 +1231,16 @@ local function pool_challenge(key)
 
         rules = {
             custom = {
-                -- The count rather than the names: eight lists of up to sixty-five
+                -- The count rather than the names: a list of up to sixty-five
                 -- would not fit the Rules tab.
-                { id = pool_rule_id(key), value = #listed },
+                { id = "celesta_pool_only", value = #listed },
             },
             modifiers = {},
         },
     }
 end
 
-for _, key in ipairs({ "mens_shoes", "red", "orange", "yellow", "green", "blue", "purple", "pink" }) do
-    pool_challenge(key)
-end
+pool_challenge("mens_shoes")
 
 --- Read by the tests, which ask what a pool allows rather than restating it.
 CelestasMod.CHALLENGE_POOLS = POOL_JOKERS
@@ -1554,10 +1450,19 @@ SMODS.Challenge {
 --------------------------------------------------------------------------------
 --
 -- GirlDM makes Tags out of skipping a Blind and Ekkomori makes a Double Tag out of beating a Boss
--- Blind, and the shop is taken away from under them: no Jokers on the shelf, and no Voucher either.
--- What is left to spend Tags on is the Booster Packs, which is why the Joker edition Tags - Foil,
--- Holographic, Polychrome and Negative, that only ever reached the shop - reach the Jokers in a pack
--- as well.
+-- Blind, and there is no shop to spend anything in: the round goes from the cash-out straight to the
+-- Blind select screen. So the Tags that only ever meant something in a shop are given somewhere else
+-- to go, and the ones that meant nothing without one are gone:
+--
+--   Voucher Tag                  a random Voucher, redeemed as the Tag is obtained
+--   Foil, Holographic,           reach the Jokers of a Booster Pack, which is the one place left
+--   Polychrome and Negative      that makes a Joker the run did not choose
+--   Uncommon and Rare Tags       one Joker of that rarity in the next Booster Pack that holds Jokers
+--   D6 and Coupon Tags           banned: a free reroll and a free shelf, and there is neither
+--   Stamp Tag                    may be offered for skipping a Blind, which it never is otherwise
+--
+-- Each is a custom rule that sets a flag on the run (game.lua:2169), so each is a line on the Rules
+-- tab and nothing leaks into a run that did not ask.
 --
 --   I    an eternal GirlDM + Ekkomori, already merged
 --   II   ...the two kept apart, Ekkomori Negative as well as eternal
@@ -1565,11 +1470,6 @@ SMODS.Challenge {
 --
 -- All three ban the Jokers that take an Eternal off, for the reason Bird Feeder does, and are a chain
 -- the way Bird Feeder is: II waits for I, III for II.
---
--- "No Jokers in the shop" is vanilla's own custom rule (no_shop_jokers, which Bram Poker uses), and
--- "-1 Voucher slot" is Steamodded's: the shop stocks starting_params.vouchers_in_shop (one) plus
--- modifiers.extra_vouchers, and a challenge's custom rule with a value is written straight into
--- modifiers (game.lua:2169). So a value of -1 is a shelf of none.
 
 local TAG_ALONG_I = "c_" .. SMODS.current_mod.prefix .. "_tag_along"
 local TAG_ALONG_II = "c_" .. SMODS.current_mod.prefix .. "_tag_along_ii"
@@ -1579,10 +1479,115 @@ tier_group({ TAG_ALONG_I, TAG_ALONG_II, TAG_ALONG_III })
 -- Merged by start_run's queued event, GirlDM the host.
 START_MERGES[TAG_ALONG_I] = { pair = { "j_celesta_girldm", "j_celesta_ekkomori" } }
 
+--- The Tags nothing is left for: the D6 Tag makes the next shop's rerolls free and the Coupon Tag makes
+--- its first Jokers and packs free.
+local TAG_ALONG_BANNED_TAGS = {
+    { id = "tag_d_six" },
+    { id = "tag_coupon" },
+}
+
+--- Whether the run being played asked for the flag `name`.
+local function run_wants(name)
+    return G.GAME and G.GAME.modifiers and G.GAME.modifiers[name] and true or false
+end
+
+--------------------------------------------------------------------------------
+-- No shop
+--------------------------------------------------------------------------------
+--
+-- The cash-out sets the state to the shop and the shop is built from the next frame's update, so
+-- this is where it is not: the state is turned round to Blind select before anything is drawn, and
+-- told it has not been set up, which is what makes Blind select build its screen. Nothing of the
+-- shop is made, so there is nothing to take down - and no `ending_shop` to raise either, for a shop
+-- that never was.
+local celesta_skip_shop_update_ref = Game.update_shop
+if type(celesta_skip_shop_update_ref) == "function" then
+    function Game:update_shop(dt)
+        if run_wants("celesta_skip_shop") then
+            G.STATE = G.STATES.BLIND_SELECT
+            G.STATE_COMPLETE = false
+            return
+        end
+        return celesta_skip_shop_update_ref(self, dt)
+    end
+end
+
+--------------------------------------------------------------------------------
+-- Voucher Tags
+--------------------------------------------------------------------------------
+
+--- Puts a Voucher on the run without a shop to buy it in: marked used, made once to be applied, and
+--- the copy Card:apply_to_run keeps in the Vouchers tab is the only one left.
+---
+--- Not Card:redeem, which takes the game into the state a redeeming Voucher has and expects to hand
+--- it back to a shop. The effect is apply_to_run's, which is where redeem ends up, so a Voucher with
+--- a `redeem` of its own is still answered by it.
+function CelestasMod.grant_voucher(key)
+    local center = key and G.P_CENTERS[key]
+    if not (center and center.set == "Voucher") then return nil end
+
+    discover_card(center)
+    G.GAME.used_vouchers[key] = true
+    local card = Card(G.play.T.x + G.play.T.w / 2 - G.CARD_W / 2,
+                      G.play.T.y + G.play.T.h / 2 - G.CARD_H / 2,
+                      G.CARD_W, G.CARD_H, G.P_CARDS.empty, center,
+                      { bypass_discovery_center = true, bypass_discovery_ui = true })
+    card.cost = 0
+    card:start_materialize()
+    card:apply_to_run()
+    set_voucher_usage(card)
+    check_for_unlock({ type = "run_redeem" })
+    G.E_MANAGER:add_event(Event {
+        trigger = "after", delay = 0.8,
+        func = function()
+            card:start_dissolve()
+            return true
+        end
+    })
+    return card
+end
+
+-- A Voucher Tag, as it is obtained - from a skipped Blind, from GirlDM, from anything that calls
+-- add_tag - is spent on the spot: one Voucher drawn the way the Tag draws it for a shop, and the Tag
+-- used up. Not for a Tag being put back by a loaded save, which has been through this already.
+local celesta_voucher_tags_add_ref = add_tag
+if type(celesta_voucher_tags_add_ref) == "function" then
+    function add_tag(_tag, ...)
+        local loaded = _tag and _tag.from_load
+        celesta_voucher_tags_add_ref(_tag, ...)
+        if _tag and _tag.key == "tag_voucher" and not loaded and run_wants("celesta_voucher_tags") then
+            _tag.triggered = true
+            _tag:yep("+", G.C.SECONDARY_SET.Voucher, function()
+                CelestasMod.grant_voucher(get_next_voucher_key(true))
+                return true
+            end)
+        end
+    end
+end
+
+--------------------------------------------------------------------------------
+-- The Jokers a Booster Pack makes
+--------------------------------------------------------------------------------
+
+--- The rarity each Joker-making Tag stands for.
+local RARITY_TAGS = { tag_uncommon = "Uncommon", tag_rare = "Rare" }
+local RARITY_COLOURS = { tag_uncommon = "GREEN", tag_rare = "RED" }
+
+--- The first Uncommon or Rare Tag the run holds that has not been spent, or nil.
+local function pending_rarity_tag()
+    for _, tag in ipairs(G.GAME.tags or {}) do
+        if RARITY_TAGS[tag.key] and not tag.triggered then return tag end
+    end
+end
+
 --- A Joker edition Tag is applied to a card as the shop makes it, by asking every Tag the run holds
 --- whether it modifies a shop Joker (UI_definitions.lua:773, :809); the first that does is spent. A
 --- Booster Pack's Jokers are made somewhere else and nobody asks. Here somebody does, in the same
 --- way and for the same reason - in an event, once the card exists - for the Jokers a pack makes.
+---
+--- And the Uncommon and Rare Tags, which make a Joker for the shop's shelf, make one for the pack
+--- instead: the first Joker the pack makes is rolled at that rarity and the Tag is used up, and a
+--- second Tag is the second Joker's. A Tag the pack had no Joker left for waits for the next one.
 ---
 --- Through create_card, which is where every card a pack holds is made (Steamodded's own default
 --- for a Buffoon Pack goes through it), and only in a run that asked for it. A Joker that already
@@ -1590,10 +1595,25 @@ START_MERGES[TAG_ALONG_I] = { pair = { "j_celesta_girldm", "j_celesta_ekkomori" 
 local celesta_pack_tags_create_ref = create_card
 if type(celesta_pack_tags_create_ref) == "function" then
     function create_card(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append, ...)
+        local in_pack = _type == "Joker" and area ~= nil and area == G.pack_cards
+
+        local guarantee = nil
+        if in_pack and not legendary and _rarity == nil and forced_key == nil
+            and run_wants("celesta_pack_rarity_tags") then
+            guarantee = pending_rarity_tag()
+            if guarantee then
+                _rarity = RARITY_TAGS[guarantee.key]
+                guarantee.triggered = true
+            end
+        end
+
         local card = celesta_pack_tags_create_ref(_type, area, legendary, _rarity, skip_materialize,
             soulable, forced_key, key_append, ...)
-        if card and _type == "Joker" and area ~= nil and area == G.pack_cards
-            and G.GAME and G.GAME.modifiers and G.GAME.modifiers.celesta_pack_edition_tags then
+
+        if guarantee then
+            guarantee:yep("+", G.C[RARITY_COLOURS[guarantee.key]], function() return true end)
+        end
+        if card and in_pack and run_wants("celesta_pack_edition_tags") then
             G.E_MANAGER:add_event(Event {
                 func = function()
                     for _, tag in ipairs(G.GAME.tags or {}) do
@@ -1607,14 +1627,16 @@ if type(celesta_pack_tags_create_ref) == "function" then
     end
 end
 
---- What the three of them share: the shop, and the Tags. `merged` adds the line saying the two start
---- merged, which only the first of them does.
+--- What the three of them share. `merged` adds the line saying the two start merged, which only the
+--- first of them does.
 local function tag_along_rules(merged)
     local custom = {}
     if merged then custom[#custom + 1] = { id = "celesta_start_girldm_ekkomori" } end
-    custom[#custom + 1] = { id = "no_shop_jokers" }
-    custom[#custom + 1] = { id = "extra_vouchers", value = -1 }
+    custom[#custom + 1] = { id = "celesta_skip_shop" }
+    custom[#custom + 1] = { id = "celesta_voucher_tags" }
     custom[#custom + 1] = { id = "celesta_pack_edition_tags" }
+    custom[#custom + 1] = { id = "celesta_pack_rarity_tags" }
+    custom[#custom + 1] = { id = "celesta_stamp_skip_tags" }
     return { custom = custom, modifiers = {} }
 end
 
@@ -1628,6 +1650,7 @@ SMODS.Challenge {
 
     restrictions = {
         banned_cards = STICKER_STRIPPERS,
+        banned_tags = TAG_ALONG_BANNED_TAGS,
     },
 
     rules = tag_along_rules(true),
@@ -1645,6 +1668,7 @@ SMODS.Challenge {
 
     restrictions = {
         banned_cards = STICKER_STRIPPERS,
+        banned_tags = TAG_ALONG_BANNED_TAGS,
     },
 
     rules = tag_along_rules(false),
@@ -1661,6 +1685,7 @@ SMODS.Challenge {
 
     restrictions = {
         banned_cards = STICKER_STRIPPERS,
+        banned_tags = TAG_ALONG_BANNED_TAGS,
     },
 
     rules = tag_along_rules(false),

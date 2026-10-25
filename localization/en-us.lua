@@ -8708,35 +8708,23 @@ return {
             ch_c_celesta_pool_only = {
                 "Only {C:attention}#1#{} Jokers (and their Lost forms) appear",
             },
-            ch_c_celesta_pool_red = {
-                "Only {C:attention}Red{} Jokers appear ({C:attention}#1#{})",
-            },
-            ch_c_celesta_pool_orange = {
-                "Only {C:attention}Orange{} Jokers appear ({C:attention}#1#{})",
-            },
-            ch_c_celesta_pool_yellow = {
-                "Only {C:attention}Yellow{} Jokers appear ({C:attention}#1#{})",
-            },
-            ch_c_celesta_pool_green = {
-                "Only {C:attention}Green{} Jokers appear ({C:attention}#1#{})",
-            },
-            ch_c_celesta_pool_blue = {
-                "Only {C:attention}Blue{} Jokers appear ({C:attention}#1#{})",
-            },
-            ch_c_celesta_pool_purple = {
-                "Only {C:attention}Purple{} Jokers appear ({C:attention}#1#{})",
-            },
-            ch_c_celesta_pool_pink = {
-                "Only {C:attention}Pink{} Jokers appear ({C:attention}#1#{})",
-            },
             ch_c_celesta_start_girldm_ekkomori = {
                 "{C:attention}GirlDM{} and {C:attention}Ekkomori{} start {C:attention}merged{}",
             },
-            ch_c_extra_vouchers = {
-                "{C:attention}#1#{} Voucher slot in the shop",
+            ch_c_celesta_skip_shop = {
+                "The {C:attention}shop{} is skipped",
+            },
+            ch_c_celesta_voucher_tags = {
+                "{C:attention}Voucher Tags{} give a random {C:attention}Voucher{} when obtained",
             },
             ch_c_celesta_pack_edition_tags = {
                 "Joker edition {C:attention}Tags{} work on {C:attention}Booster Pack{} Jokers",
+            },
+            ch_c_celesta_pack_rarity_tags = {
+                "{C:green}Uncommon{} and {C:red}Rare{} Tags guarantee one in the next Joker {C:attention}Pack{}",
+            },
+            ch_c_celesta_stamp_skip_tags = {
+                "{C:attention}Stamp Tags{} can appear as skip Tags",
             },
             ch_c_celesta_start_laynalazar_eros = {
                 "{C:attention}LaynaLazar{} and {C:attention}Eros{} start {C:attention}merged{}",
@@ -8788,13 +8776,6 @@ return {
             c_celesta_infinity_draw = "Infinity Draw",
             c_celesta_wild_card_wednesday = "Wild Card Wednesday",
             c_celesta_mens_shoes = "Men's Shoes",
-            c_celesta_red = "Red",
-            c_celesta_orange = "Orange",
-            c_celesta_yellow = "Yellow",
-            c_celesta_green = "Green",
-            c_celesta_blue = "Blue",
-            c_celesta_purple = "Purple",
-            c_celesta_pink = "Pink",
             c_celesta_starboard = "Starboard",
             c_celesta_leaf_litter = "Leaf Litter",
             c_celesta_trigger_happy = "Trigger Happy",

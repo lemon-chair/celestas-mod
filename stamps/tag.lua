@@ -2,7 +2,7 @@
 ---
 --- A Tag that opens a free Stamp Pack, the way the Buffoon Tag opens a free Mega Buffoon Pack. It
 --- is given by the Purgatory Deck's "Gain a Stamp tag" pro and by nothing else: it is not in the
---- pool the skip Tags are drawn from.
+--- pool the skip Tags are drawn from - except in a run that asks for it, as Tag-along does.
 ---
 -- A tag sprite is 34x34, which is the cell the base game's own Tags are drawn at.
 SMODS.Atlas { key = "tag_stamp", path = "tag_stamp.png", px = 34, py = 34 }
@@ -17,8 +17,11 @@ SMODS.Tag {
     config = { type = "new_blind_choice" },
     discovered = true,
 
-    -- Never offered for skipping a Blind: only handed out.
-    in_pool = function(self, args) return false end,
+    -- Never offered for skipping a Blind, or by GirlDM: only handed out. Unless the run asked for
+    -- it (a challenge's custom rule, which sets this flag), when it is as likely as any Tag.
+    in_pool = function(self, args)
+        return (G.GAME and G.GAME.modifiers and G.GAME.modifiers.celesta_stamp_skip_tags) and true or false
+    end,
 
     loc_vars = function(self, info_queue, tag)
         return { vars = {} }
