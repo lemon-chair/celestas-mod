@@ -18725,6 +18725,50 @@ special("j_credit_card", "j_celesta_minikomew", {
     end,
 })
 
+-- KokoNuts + Minikomew: the debt a run may go into is $2 for every Lucky 7 of Spades in the full deck.
+--
+-- Credit Card + Minikomew's shape: the deck is counted every frame the pair is in the row and able to act, and
+-- what it has handed out is written on the pair's own state, so it is given back whole. A card is a Lucky 7 of
+-- Spades by what is printed on it - its rank and its suit - and by its enhancement, so a Wild 7 or a Lucky 7 of
+-- Hearts is not one.
+function P.sevens_debt(state)
+    local count = 0
+    for _, held in ipairs((G and G.playing_cards) or {}) do
+        local base = held.base
+        if base and base.suit == "Spades" and base.value == "7" and SMODS.has_enhancement(held, "m_lucky") then
+            count = count + 1
+        end
+    end
+    return state.per * count
+end
+
+special("j_celesta_kokonuts", "j_celesta_minikomew", {
+    key = "koko_minikomew",
+    config = { per = 2, granted = 0 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.per, P.sevens_debt(state) } }
+    end,
+
+    calculate = function(def, card, context, state) end,
+
+    add_to_deck = function(def, card, state, from_debuff)
+        state.granted = 0
+        P.follow(state, "granted", P.sevens_debt(state), P.debt_apply)
+    end,
+    remove_from_deck = function(def, card, state, from_debuff)
+        P.give_back(state, "granted", P.debt_apply)
+    end,
+    on_merge = function(def, card, state, fresh)
+        state.granted = 0
+        if fresh then return end
+        P.follow(state, "granted", P.sevens_debt(state), P.debt_apply)
+    end,
+    on_unmerge = function(def, card, state)
+        P.give_back(state, "granted", P.debt_apply)
+    end,
+})
+
 -- Four Fingers + Aethal: Aethal's shop slots, as many as a hand may select. Four Fingers' own is not part of it.
 --
 -- Followed from update, for Aethal's reason: change_shop_size does nothing when there is no shop yet, so a
@@ -18798,6 +18842,9 @@ function Card:update(dt)
     if not def then return end
     if def.key == "creditcard_minikomew" then
         P.follow(Bind.special_state(self, def), "granted", P.debt(), P.debt_apply)
+    elseif def.key == "koko_minikomew" then
+        local state = Bind.special_state(self, def)
+        P.follow(state, "granted", P.sevens_debt(state), P.debt_apply)
     elseif def.key == "fourfingers_aethal" then
         P.shop_sync(Bind.special_state(self, def))
     end

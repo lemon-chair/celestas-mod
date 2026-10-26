@@ -5178,6 +5178,14 @@ return {
                     "gain {C:attention}#1#{} extra {C:attention}Double Tags{}",
                 },
             },
+            celesta_bind_koko_minikomew = {
+                name = "KokoNuts + Minikomew",
+                text = {
+                    "Go {C:red}-$#1#{} into {C:red}debt{} for each",
+                    "{C:attention}Lucky 7 of Spades{} in your {C:attention}full deck{}",
+                    "{C:inactive}(Currently {C:red}-$#2#{C:inactive})",
+                },
+            },
             celesta_bind_ironmouse_saiiren = {
                 name = "Ironmouse + Saiiren",
                 text = {
