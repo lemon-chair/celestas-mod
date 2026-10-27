@@ -8426,6 +8426,13 @@ SMODS.Joker {
         if context.setting_blind then
             ben_hold(card, ben_boss_blind())
             if card.ability.extra.applied then
+                -- A copier is handed this same call, and what it is handed is
+                -- Ben's own flag, so the size is taken for the copier here:
+                -- it owns its share, the way Ben owns his.
+                local copier = context.blueprint and context.blueprint_card
+                if context.blueprint and not (copier and CelestasMod.ben_copy_hold(copier, card.ability.extra.h_size)) then
+                    return
+                end
                 -- a_handsize is vanilla's own "+N Hand Size", so the number
                 -- shown is the one actually applied rather than a fixed
                 -- string that would lie if h_size ever changed.
@@ -8443,6 +8450,68 @@ SMODS.Joker {
         end
     end,
 }
+
+-- A copier of Ben holds its own share of the hand size. Blueprint, Brainstorm
+-- and Mari Yume only ever repeat what Ben RETURNS, and Ben returns a message -
+-- the size itself is a side effect on G.hand - so a copier showed "+4 Hand
+-- Size" and gave nothing. The share is kept on the copier's ability, which is
+-- saved with the run, and every way it can end is covered here:
+--
+--   the Boss ends, or Ben stops holding   caught the frame after, in update
+--   the copier is sold or debuffed        remove_from_deck
+--   a copy of a copier                    add_to_deck starts it from nothing,
+--                                         or the copy would give back a size
+--                                         it never took
+--
+-- Like ben_hold it only ever moves by the difference, so no route can take
+-- the size twice or give it back twice.
+do
+    --- True while a Ben somewhere in the row is holding its own bonus.
+    local function ben_holding()
+        for _, joker in ipairs((G.jokers and G.jokers.cards) or {}) do
+            local extra = joker.ability and joker.ability.extra
+            if joker.config and joker.config.center and joker.config.center.key == "j_celesta_ben"
+                and type(extra) == "table" and extra.applied then
+                return true
+            end
+        end
+        return false
+    end
+
+    function CelestasMod.ben_copy_hold(copier, size)
+        local ability = copier and copier.ability
+        if not ability then return false end
+        local had = ability.celesta_ben_copy or 0
+        if had == size then return false end
+        ability.celesta_ben_copy = size ~= 0 and size or nil
+        if G.hand and G.hand.change_size then G.hand:change_size(size - had) end
+        return true
+    end
+
+    local celesta_ben_copy_add_ref = Card.add_to_deck
+    function Card:add_to_deck(from_debuff, ...)
+        if not from_debuff and not self.added_to_deck and self.ability then
+            self.ability.celesta_ben_copy = nil
+        end
+        return celesta_ben_copy_add_ref(self, from_debuff, ...)
+    end
+
+    local celesta_ben_copy_remove_ref = Card.remove_from_deck
+    function Card:remove_from_deck(from_debuff, ...)
+        local ret = celesta_ben_copy_remove_ref(self, from_debuff, ...)
+        if self.ability and self.ability.celesta_ben_copy then CelestasMod.ben_copy_hold(self, 0) end
+        return ret
+    end
+
+    local celesta_ben_copy_update_ref = Card.update
+    function Card:update(dt, ...)
+        celesta_ben_copy_update_ref(self, dt, ...)
+        if self.ability and self.ability.celesta_ben_copy
+            and not (self.added_to_deck and ben_holding()) then
+            CelestasMod.ben_copy_hold(self, 0)
+        end
+    end
+end
 
 --------------------------------------------------------------------------------
 -- Boosfer [Legendary] - retriggers Stars, and feeds on every retrigger.
