@@ -133,6 +133,8 @@ G = {
   -- Real in the game; a mod adding a Collection tab defines entries in
   -- it at load, which is not a runtime use of anything.
   FUNCS = {},
+  -- Real in the game; a mod replacing a screen's builder defines it at load.
+  UIDEF = {},
   P_CARDS = setmetatable({}, { __index = function() return {} end }),
   P_CENTERS = setmetatable({}, { __index = function() return {} end }),
   P_SEALS = setmetatable({}, { __index = function() return {} end }),

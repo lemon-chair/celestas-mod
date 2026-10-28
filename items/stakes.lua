@@ -465,3 +465,50 @@ function SMODS.applied_stakes_UI(i, stake_desc_rows, num_added)
     end
     return num_added.val
 end
+
+--------------------------------------------------------------------------------
+-- The stake a new run starts on
+--------------------------------------------------------------------------------
+--
+-- Steamodded keeps the stake you were on only if the deck has WON on it; any other is replaced by the
+-- one above the highest the deck has won. That is the vanilla rule for one line of stakes, where
+-- "unlocked" and "won, or the next one" are the same thing. With another mod's stakes beside this
+-- one's they are not: a stake of this mod's that you are playing on and have not yet won is offered,
+-- but a deck that has won higher on Cryptid's line was sent past it to Cryptid's highest, every time
+-- a new run was started.
+--
+-- Rewritten, with the one change: a stake that is among the ones offered is kept, won or not. When it
+-- is not offered, the rule is Steamodded's own.
+
+function G.UIDEF.stake_option(_type)
+    local middle = { n = G.UIT.R, config = { align = "cm", minh = 1.7, minw = 7.3 }, nodes = {
+        { n = G.UIT.O, config = { id = nil, func = "RUN_SETUP_check_stake2", object = Moveable() } },
+    } }
+
+    local stake_options = {}
+    local curr_options = {}
+    local profile = G.PROFILES[G.SETTINGS.profile]
+    local deck_key = G.GAME.viewed_back.effect.center.key
+    local deck_usage = profile.deck_usage[deck_key]
+    for i = 1, #G.P_CENTER_POOLS.Stake do
+        if profile.all_unlocked
+            or SMODS.check_applied_stakes(G.P_CENTER_POOLS.Stake[i], deck_usage or { wins_by_key = {} }) then
+            stake_options[#stake_options + 1] = i
+            curr_options[i] = #stake_options
+        end
+    end
+
+    if not curr_options[G.viewed_stake] then
+        G.viewed_stake = deck_usage
+            and ((deck_usage.wins_by_key[SMODS.stake_from_index(G.viewed_stake)] or profile.all_unlocked)
+                and G.viewed_stake or (get_deck_win_stake(deck_key) + 1))
+            or 1
+    end
+
+    return { n = G.UIT.ROOT, config = { align = "tm", colour = G.C.CLEAR, minh = 2.03, minw = 8.3 }, nodes = {
+        _type == "Continue" and middle
+        or create_option_cycle({ options = stake_options, opt_callback = "change_stake",
+                                 current_option = curr_options[G.viewed_stake] or 1,
+                                 colour = G.C.RED, w = 6, mid = middle })
+    } }
+end
