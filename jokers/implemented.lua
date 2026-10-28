@@ -1553,6 +1553,24 @@ SMODS.Joker {
             return
         end
 
+        -- The pick made after the last hand, or when this card arrived, is
+        -- about a row that has since been shopped in: an index into it can
+        -- name nothing, or the wrong Joker, and a Joker that acts as the
+        -- blind is set - Moo Merrily - would be missed outright. So the
+        -- first call of each blind picks again, once per card however many
+        -- copiers reach it (they all share this context table).
+        if context.setting_blind then
+            local seen = context.celesta_onigiri_seen
+            if not seen then
+                seen = {}
+                context.celesta_onigiri_seen = seen
+            end
+            if not seen[card] then
+                seen[card] = true
+                onigiri_repick(card)
+            end
+        end
+
         -- An index rather than a stored card: jokers get sold, moved and
         -- destroyed between hands, and the index is refreshed every hand
         -- anyway. Guarded so a stale index cannot copy itself or nothing.
