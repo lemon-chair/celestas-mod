@@ -20,8 +20,9 @@
 ---
 --- Every other Joker keeps the order it had, immediately behind these.
 ---
---- The Mythic Jokers are the exception: they are always the last of this mod's, whatever file adds a
---- Joker after them. One of them named in the list above is on that page by name.
+--- The Lost Soul Jokers and then the Mythic ones are the exception: they are always the last of this
+--- mod's, in that order, whatever file adds a Joker after them. One named in the list above is on
+--- that page by name.
 
 --- One page of the Joker collection, in reading order: five to a row.
 CelestasMod.COLLECTION_FIRST = {
@@ -78,20 +79,24 @@ if type(SMODS.collection_pool) == "function" then
             if first[i] then out[#out + 1] = first[i] end
         end
 
-        -- The Mythic Jokers go last in this mod's stretch, however late the file that adds a Joker
-        -- loads: they come in order, right behind the final Joker of the mod that is not one. Any of
-        -- them named in the list above is on that page by name and stays there.
-        local plain, mythic, last = {}, {}, 0
+        -- The end of this mod's stretch, however late the file that adds a Joker loads: every other
+        -- Joker, then the Lost Soul Jokers, then the Mythic ones - each in the order it loaded, right
+        -- behind the final Joker of the mod that is none of those. Any of them named in the list above
+        -- is on that page by name and stays there.
+        local plain, lost, mythic, last = {}, {}, {}, 0
         for i = ours, #rest do
             local center = rest[i]
             if CelestasMod.is_ours(center) and CelestasMod.is_mythic_center(center) then
                 mythic[#mythic + 1] = center
+            elseif CelestasMod.is_ours(center) and center.celesta_lost == true then
+                lost[#lost + 1] = center
             else
                 plain[#plain + 1] = center
                 if CelestasMod.is_ours(center) then last = #plain end
             end
         end
         for i = 1, last do out[#out + 1] = plain[i] end
+        for _, center in ipairs(lost) do out[#out + 1] = center end
         for _, center in ipairs(mythic) do out[#out + 1] = center end
         for i = last + 1, #plain do out[#out + 1] = plain[i] end
 
