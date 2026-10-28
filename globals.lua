@@ -396,6 +396,24 @@ function CelestasMod.card_abilities(card, key, count_debuffed)
     return out
 end
 
+--- How many cards a Tarot may be used on, as THIS card says.
+---
+--- A card is dealt the centre's own config table as its ability.consumeable, so for a card nothing has
+--- touched the two are one table and reading either gives the same number - which is why reading the
+--- centre's worked. Cryptid's Misprint Deck gives the card a copy of its ability and rewrites the
+--- numbers in it, and from then on the centre's still says what it printed: the card advertised one
+--- number, vanilla's selection cap used another, and the Tarot did whatever the old one said.
+---
+--- `centre` is the object a loc_vars/can_use/use is called on, `fallback` the number to use when
+--- neither has one, and `card` may be nil: the Collection asks for a description without one.
+function CelestasMod.selection_limit(card, centre, fallback)
+    local own = card and card.ability and card.ability.consumeable
+    local limit = type(own) == "table" and own.max_highlighted or nil
+    if limit == nil then limit = centre and centre.config and centre.config.max_highlighted end
+    if limit == nil then limit = fallback end
+    return limit
+end
+
 function CelestasMod.find_joker(key, count_debuffed)
     local out = {}
     local Bind = CelestasMod.Bind

@@ -80,14 +80,14 @@ SMODS.Consumable {
         -- args.vars.colours[tonumber(part.control.V)], and Steamodded's
         -- generate_ui does not forward a colours table returned beside vars.
         return {
-            vars = { self.config.max_highlighted, name, colours = { colour } },
+            vars = { CelestasMod.selection_limit(card, self, 3), name, colours = { colour } },
         }
     end,
 
     can_use = function(self, card)
         local picked = G.hand and G.hand.highlighted
         return picked and #picked > 0
-            and #picked <= (self.config.max_highlighted or 3)
+            and #picked <= CelestasMod.selection_limit(card, self, 3)
     end,
 
     use = function(self, card, area, copier)

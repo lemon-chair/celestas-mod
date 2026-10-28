@@ -75,7 +75,7 @@ local function can_use_with(requires)
     return function(self, card)
         local picked = G.hand and G.hand.highlighted
         if not (picked and #picked > 0
-                and #picked <= (self.config.max_highlighted or SELECTED)) then
+                and #picked <= CelestasMod.selection_limit(card, self, SELECTED)) then
             return false
         end
         if not requires then return true end
@@ -131,7 +131,7 @@ for _, entry in ipairs(ENHANCERS) do
             else
                 info_queue[#info_queue + 1] = G.P_CENTERS[center_key]
             end
-            return { vars = { self.config.max_highlighted } }
+            return { vars = { CelestasMod.selection_limit(card, self, SELECTED) } }
         end,
 
         can_use = can_use_with(entry.requires),

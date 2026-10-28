@@ -45,7 +45,7 @@ SMODS.Consumable {
         local center = seal and G.P_SEALS and G.P_SEALS[seal]
         if center then info_queue[#info_queue + 1] = center end
 
-        return { vars = { self.config.max_highlighted } }
+        return { vars = { CelestasMod.selection_limit(card, self, SELECTED) } }
     end,
 
     -- Ours because it has to be: the same patch routes can_use_consumeable
@@ -55,7 +55,7 @@ SMODS.Consumable {
     can_use = function(self, card)
         local picked = G.hand and G.hand.highlighted
         return picked and #picked > 0
-            and #picked <= (self.config.max_highlighted or SELECTED)
+            and #picked <= CelestasMod.selection_limit(card, self, SELECTED)
     end,
 
     use = function(self, card, area, copier)
@@ -63,7 +63,7 @@ SMODS.Consumable {
         -- Jokers that scale a Tarot's selection make it more. Taken now, before the selection is let go.
         local targets = {}
         for i, picked in ipairs((G.hand and G.hand.highlighted) or {}) do
-            if i > (self.config.max_highlighted or SELECTED) then break end
+            if i > CelestasMod.selection_limit(card, self, SELECTED) then break end
             targets[#targets + 1] = picked
         end
         if #targets == 0 then return end
