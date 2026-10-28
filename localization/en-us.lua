@@ -1660,6 +1660,20 @@ return {
                     "{C:attention}Even Steven{}",
                 },
             },
+            j_celesta_matarakan_roach = {
+                name = "Matara Kan",
+                text = {
+                    "At end of round, gain {C:attention}#1#X{} the",
+                    "{C:attention}sell value{} of all owned Jokers",
+                    "{C:inactive}(Currently {C:money}$#2#{C:inactive})",
+                    "{C:red}-#3#{} Joker slots, cannot be sold",
+                    "All {C:attention}shop{} items become {C:attention}Matara Kan{}",
+                },
+                unlock = {
+                    "Use a {C:spectral}Lost Soul{} on",
+                    "{C:attention}Matara Kan{}",
+                },
+            },
             j_celesta_radicalmari = {
                 name = "Radical Mari",
                 text = {
@@ -5184,6 +5198,28 @@ return {
                     "Go {C:red}-$#1#{} into {C:red}debt{} for each",
                     "{C:attention}Lucky 7 of Spades{} in your {C:attention}full deck{}",
                     "{C:inactive}(Currently {C:red}-$#2#{C:inactive})",
+                },
+            },
+            celesta_bind_vienna_sinder = {
+                name = "Vienna + Sinder",
+                text = {
+                    "Played {C:attention}Driftwood{} cards have a {C:green}#1# in #2#{} chance",
+                    "to give {X:mult,C:white}^#3#{} Mult when scored",
+                },
+            },
+            celesta_bind_vienna_lucia = {
+                name = "Vienna + Lucia",
+                text = {
+                    "{X:mult,C:white}^#1#{} Mult if played hand contains {C:attention}1{} card,",
+                    "{X:mult,C:white}^#2#{} less for each extra card in played hand",
+                },
+            },
+            celesta_bind_matarakan_motherv3 = {
+                name = "Matara Kan + MOTHERv3",
+                text = {
+                    "Earn {C:money}$#1#{} at end of round for each",
+                    "{C:attention}Exo{} card in your {C:attention}full deck{}",
+                    "{C:inactive}(Currently {C:money}$#2#{C:inactive})",
                 },
             },
             celesta_bind_ironmouse_saiiren = {

@@ -926,6 +926,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "matarakan_roach",
+    path = "matarakan_roach.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "maya",
     path = "maya.png",
     px = 71,

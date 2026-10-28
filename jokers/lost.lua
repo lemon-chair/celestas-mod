@@ -86,6 +86,7 @@ Lost.CONVERSIONS = {
     ["j_todo_list"] = joker("to_dont_list"),
     ["j_flash"] = joker("identity"),
     ["j_obelisk"] = joker("monolith"),
+    [joker("matarakan")] = joker("matarakan_roach"),
     ["j_odd_todd"] = joker("even_todd"),
     ["j_even_steven"] = joker("odd_steven"),
 }
@@ -2714,6 +2715,69 @@ SMODS.Joker {
         if context.joker_main and card.ability.extra.x_mult > 1 then
             return { x_mult = card.ability.extra.x_mult }
         end
+    end,
+}
+
+--------------------------------------------------------------------------------
+-- Matara Kan's Lost form
+--------------------------------------------------------------------------------
+--
+-- Matara Kan saves what its sales are worth and pays it back; this one pays out what every Joker owned is
+-- worth to sell, doubled, once a round - the Lost one included, which is a Joker owned like the rest.
+--
+-- Through calc_dollar_bonus, the hook every end-of-round payout in the game comes through, so it has its
+-- own line on the cash-out screen. Read when the cash-out is added up, off each card's own sell value, so
+-- what a Gift Card or an Egg has just done to the price is what is paid.
+
+--- What the Jokers in the row would sell for, together.
+local function roach_sell_total()
+    local total = 0
+    for _, held in ipairs((G.jokers and G.jokers.cards) or {}) do
+        local value = held.sell_cost
+        if type(value) == "number" and value == value then total = total + value end
+    end
+    return total
+end
+
+SMODS.Joker {
+    key = "matarakan_roach",
+    atlas = "matarakan_roach",
+    pos = { x = 0, y = 0 },
+
+    rarity = LOST_RARITY,
+    cost = 20,
+    unlocked = false,
+    discovered = false,
+    -- A payout at the cash-out: there is no trigger for a copy to repeat.
+    blueprint_compat = false,
+    eternal_compat = true,
+
+    in_pool = function() return false end,
+
+    celesta_no_bind = true,
+    celesta_lost = true,
+    -- Whatever it used to be: a shop of Matara Kans.
+    celesta_lost_shop = true,
+
+    config = { extra = { mult = 2, joker_slots = Lost.SLOT_COST } },
+
+    loc_vars = function(self, info_queue, card)
+        local extra = card.ability.extra
+        return { vars = { extra.mult, math.floor(roach_sell_total() * extra.mult), extra.joker_slots } }
+    end,
+
+    calc_dollar_bonus = function(self, card)
+        local owed = math.floor(roach_sell_total() * card.ability.extra.mult)
+        if owed > 0 then return owed end
+    end,
+
+    add_to_deck = function(self, card, from_debuff)
+        Lost.sync_slots(nil, card)
+        retake_shop()
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+        Lost.sync_slots(card)
     end,
 }
 

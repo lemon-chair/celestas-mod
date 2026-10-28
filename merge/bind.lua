@@ -19648,6 +19648,78 @@ special("j_celesta_girldm", "j_celesta_ekkomori", {
     end,
 })
 
+-- Vienna + Sinder: Vienna's ^Mult, paid by Sinder's Driftwood a card at a time, on a chance.
+--
+-- Rolled once for each Driftwood card that scores, so three of them are three chances. The ^Mult needs
+-- Talisman, which is checked first: a roll that could not be paid is a roll not worth making.
+special("j_celesta_vienna", "j_celesta_sinder", {
+    key = "vienna_sinder",
+    config = { odds = 3, e_mult = 1.15 },
+
+    loc_vars = function(def, card, state)
+        local n, d = SMODS.get_probability_vars(card, 1, state.odds, "celesta_bind_vienna_sinder")
+        return { vars = { n, d, state.e_mult } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not (context.individual and context.cardarea == G.play and context.other_card) then return end
+        local keys = CelestasMod.ENHANCEMENT_KEYS
+        if not (keys and keys.Driftwood and SMODS.has_enhancement(context.other_card, keys.Driftwood)) then return end
+        if not power_supported("vienna_sinder_no_talisman", "Vienna + Sinder", "Mult") then return end
+        if not SMODS.pseudorandom_probability(card, "celesta_bind_vienna_sinder",
+                1, state.odds, "celesta_bind_vienna_sinder") then return end
+        return { e_mult = state.e_mult, card = context.other_card }
+    end,
+})
+
+-- Vienna + Lucia: Lucia's taper, spent on ^Mult - the full figure for a hand of one card, and the step
+-- less for each card after that, until there is nothing left of it.
+--
+-- To three places, so a figure that is not a binary fraction - a misprinted one - does not pay 1.2999999999999998
+-- where it says 1.3. A hand that takes it to ^1 or under is a hand it does nothing for.
+special("j_celesta_vienna", "j_celesta_lucia", {
+    key = "vienna_lucia",
+    config = { e_mult = 1.25, step = 0.05 },
+
+    loc_vars = function(def, card, state)
+        return { vars = { state.e_mult, state.step } }
+    end,
+
+    calculate = function(def, card, context, state)
+        if not context.joker_main then return end
+        local played = played_count(context)
+        if played <= 0 then return end
+        local e_mult = math.floor((state.e_mult - state.step * (played - 1)) * 1000 + 0.5) / 1000
+        if e_mult <= 1 then return end
+        if not power_supported("vienna_lucia_no_talisman", "Vienna + Lucia", "Mult") then return end
+        return { e_mult = e_mult }
+    end,
+})
+
+-- Matara Kan + MOTHERv3: MOTHERv3 makes Exo cards and Matara Kan is the one that banks money, so the
+-- Exo cards in the deck are what is paid out at the end of each round.
+--
+-- Through calc_dollar_bonus, like Froot + Projekt Melody, so it has its own line on the cash-out screen;
+-- counted live off the whole deck, so a card that stops being Exo takes its share with it.
+special("j_celesta_matarakan", "j_celesta_motherv3", {
+    key = "matarakan_motherv3",
+    config = { dollars = 2 },
+
+    loc_vars = function(def, card, state)
+        local keys = CelestasMod.ENHANCEMENT_KEYS
+        return { vars = { state.dollars, state.dollars * enhanced_in_deck(keys and keys.Exo) } }
+    end,
+
+    calc_dollar_bonus = function(def, card, state)
+        local keys = CelestasMod.ENHANCEMENT_KEYS
+        local owed = state.dollars * enhanced_in_deck(keys and keys.Exo)
+        if owed <= 0 then return end
+        return owed
+    end,
+
+    calculate = function(def, card, context, state) end,
+})
+
 end
 
 --------------------------------------------------------------------------------
