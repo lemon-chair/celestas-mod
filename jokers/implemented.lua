@@ -3409,16 +3409,18 @@ local function haruka_capture()
     end
 end
 
---- Rescales every Tarot centre for `count` copies of Haruka in play, and `paired`
---- OniGiri + Haruka Karibu merges, each of which is worth X3 where a Haruka is X2.
---- Both 0 restores the originals, which is what makes this safe: G.P_CENTERS
+--- Rescales every Tarot centre by `factor` - the product of what the Harukas in play say they
+--- are worth - and by `paired` OniGiri + Haruka Karibu merges, each of which is worth X3.
+--- A factor of 1 and no pairs restores the originals, which is what makes this safe: G.P_CENTERS
 --- outlives a run, so a run that ended with Haruka in play must not leak
 --- doubled Tarots into the next one.
-local function haruka_apply(count, paired)
+local function haruka_apply(factor, paired)
     haruka_capture()
+    -- What the row said when this was last worked out, for the check in the Joker's update.
+    CelestasMod.haruka_applied_factor = factor
     -- The Purgatory Deck's pro is one more factor in the same product: it is read off the run,
     -- so a run that is not on that deck, and the next run, both start at 1.
-    local scale = CelestasMod.HARUKA_SCALE ^ count
+    local scale = factor
         * CelestasMod.ONIGIRI_HARUKA_SCALE ^ (paired or 0)
         * ((G.GAME and G.GAME.celesta_tarot_scale) or 1)
     for key, saved in pairs(haruka_base) do
@@ -3437,7 +3439,11 @@ local function haruka_apply(count, paired)
     end
 end
 
---- Counts the Harukas in play, ignoring one card.
+--- What the Harukas in play are worth together, ignoring one card and counting another that is
+--- arriving: each one's own number multiplied in.
+---
+--- Each card's OWN number, off its ability - the one its description prints. It was a constant,
+--- so Cryptid's Misprint Deck rewrote the figure on the card and the Tarots went on doubling.
 ---
 --- Through CelestasMod.find_joker, never a walk of G.jokers.cards asking each
 --- card its centre key. An ABSORBED half has no centre key of its own - the
@@ -3461,12 +3467,21 @@ end
 --- remove_from_deck runs last, and the answer settles. That is safe only
 --- because haruka_apply recomputes from the captured originals every time
 --- rather than multiplying what is already there.
-local function haruka_count(excluding)
-    local n = 0
-    for _, held in ipairs(CelestasMod.find_joker(HARUKA_KEY)) do
-        if held.card ~= excluding then n = n + 1 end
+local function haruka_factor(excluding, arriving)
+    local function scale_of(ability)
+        local scale = ability and ability.extra and ability.extra.scale
+        -- A misprinted number can be a big one, and the Tarots are scaled in plain numbers.
+        if type(scale) == "table" and to_number then scale = to_number(scale) end
+        if type(scale) ~= "number" then scale = CelestasMod.HARUKA_SCALE end
+        return scale
     end
-    return n
+
+    local product = 1
+    for _, held in ipairs(CelestasMod.find_joker(HARUKA_KEY)) do
+        if held.card ~= excluding then product = product * scale_of(held.ability) end
+    end
+    if arriving then product = product * scale_of(arriving.ability) end
+    return product
 end
 
 --- Counts the OniGiri + Haruka Karibu merges in play, ignoring one card. A field
@@ -3476,7 +3491,7 @@ end
 --- Not through find_joker: a replacing pair speaks for both its halves, so neither
 --- is in play as a Haruka and find_joker rightly does not report one. The pair is
 --- asked for by name instead, and a debuffed one does nothing - as a Haruka's does
---- not either. The exclusion is haruka_count's, for the reasons given there.
+--- not either. The exclusion is haruka_factor's, for the reasons given there.
 function CelestasMod.haruka_pair_count(excluding)
     local Bind = CelestasMod.Bind
     if not (Bind and Bind.special_of) then return 0 end
@@ -3495,7 +3510,7 @@ end
 --- is changing excluded and `arriving` true if it is the pair that is coming in.
 --- It recomputes from the captured originals, so calling it twice is harmless.
 function CelestasMod.haruka_refresh(excluding, arriving)
-    haruka_apply(haruka_count(excluding), CelestasMod.haruka_pair_count(excluding) + (arriving and 1 or 0))
+    haruka_apply(haruka_factor(excluding), CelestasMod.haruka_pair_count(excluding) + (arriving and 1 or 0))
 end
 
 -- Loading a save never runs add_to_deck (CardArea:load appends cards
@@ -3505,7 +3520,7 @@ end
 local celesta_haruka_start_run_ref = Game.start_run
 function Game:start_run(args)
     local ret = celesta_haruka_start_run_ref(self, args)
-    haruka_apply(haruka_count(nil), CelestasMod.haruka_pair_count(nil))
+    haruka_apply(haruka_factor(nil), CelestasMod.haruka_pair_count(nil))
     return ret
 end
 
@@ -3524,11 +3539,20 @@ SMODS.Joker {
     end,
 
     add_to_deck = function(self, card, from_debuff)
-        haruka_apply(haruka_count(card) + 1, CelestasMod.haruka_pair_count(card))
+        haruka_apply(haruka_factor(card, card), CelestasMod.haruka_pair_count(card))
     end,
 
     remove_from_deck = function(self, card, from_debuff)
-        haruka_apply(haruka_count(card), CelestasMod.haruka_pair_count(card))
+        haruka_apply(haruka_factor(card), CelestasMod.haruka_pair_count(card))
+    end,
+
+    -- The number on the card can change while it sits in the row: the Misprint Deck rewrites it
+    -- when the Joker is made, and Cryptid can rewrite it again later. The Tarots follow it.
+    update = function(self, card, dt)
+        if card.added_to_deck
+            and haruka_factor(nil) ~= CelestasMod.haruka_applied_factor then
+            CelestasMod.haruka_refresh(nil, false)
+        end
     end,
 }
 
