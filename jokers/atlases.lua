@@ -884,6 +884,13 @@ SMODS.Atlas {
 }
 
 SMODS.Atlas {
+    key = "lucksshi",
+    path = "lucksshi.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
     key = "lucypyre",
     path = "lucypyre.png",
     px = 71,
@@ -893,6 +900,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "magnetar",
     path = "magnetar.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "malfina",
+    path = "malfina.png",
     px = 71,
     py = 95,
 }
@@ -1502,6 +1516,13 @@ SMODS.Atlas {
 SMODS.Atlas {
     key = "squchan",
     path = "squchan.png",
+    px = 71,
+    py = 95,
+}
+
+SMODS.Atlas {
+    key = "strippin",
+    path = "strippin.png",
     px = 71,
     py = 95,
 }

@@ -110,8 +110,13 @@ end
 
 local celesta_obsidian_mod_calculate = SMODS.current_mod.calculate
 
+--- Malfina in play, and able to act: Obsidian cards keep the rank they have.
+local function malfina_out()
+    return next(CelestasMod.find_joker("j_" .. SMODS.current_mod.prefix .. "_malfina")) ~= nil
+end
+
 SMODS.current_mod.calculate = function(self, context)
-    if context.end_of_round and context.main_eval and not context.game_over then
+    if context.end_of_round and context.main_eval and not context.game_over and not malfina_out() then
         for _, card in ipairs(G.playing_cards or {}) do
             if SMODS.has_enhancement(card, OBSIDIAN_KEY) then rerank(card) end
         end

@@ -1187,11 +1187,25 @@ return {
                     "each extra card in played hand",
                 },
             },
+            j_celesta_lucksshi = {
+                name = "Lucks Shi",
+                text = {
+                    "{C:attention}Lucky{} cards cannot be",
+                    "{C:attention}debuffed{}",
+                },
+            },
             j_celesta_lucypyre = {
                 name = "LucyPyre",
                 text = {
                     "Reduces {C:attention}Blind{} size",
                     "by {C:attention}#1#%{}",
+                },
+            },
+            j_celesta_malfina = {
+                name = "Malfina",
+                text = {
+                    "{C:attention}Obsidian{} cards no longer",
+                    "randomize their {C:attention}rank{}",
                 },
             },
             j_celesta_malliesprout = {
@@ -2002,6 +2016,13 @@ return {
                     "fills every empty Joker slot with a",
                     "random {C:dark_edition}Holographic{} Joker",
                     "{C:inactive}(Rounds held: #2#)",
+                },
+            },
+            j_celesta_strippin = {
+                name = "Strippin",
+                text = {
+                    "{C:attention}Jokers{} can also be held in",
+                    "the {C:attention}Consumables{} tray",
                 },
             },
             j_celesta_suko = {

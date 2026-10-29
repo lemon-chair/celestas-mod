@@ -181,3 +181,26 @@ SMODS.Joker {
         })
     end,
 }
+
+--------------------------------------------------------------------------------
+-- Malfina [Common] - Obsidian cards no longer randomize their rank.
+--------------------------------------------------------------------------------
+--
+-- Nothing here: the end-of-round pass that changes each Obsidian card's rank (enhancements/obsidian.lua) asks
+-- whether a Malfina is out before it begins, so the whole pass is skipped and every Obsidian card keeps the rank
+-- it has. The pass answers through find_joker, so an absorbed half is heard, and a debuffed Malfina is not.
+
+SMODS.Joker {
+    key = "malfina",
+    atlas = "malfina",
+    pos = { x = 0, y = 0 },
+    rarity = 1, cost = 5,
+    unlocked = true, discovered = false,
+    -- A rule the end-of-round pass reads rather than a trigger: nothing for a copy to add.
+    blueprint_compat = false, eternal_compat = true,
+
+    loc_vars = function(self, info_queue, card)
+        info_queue[#info_queue + 1] = G.P_CENTERS[OBSIDIAN_KEY]
+        return { vars = {} }
+    end,
+}
