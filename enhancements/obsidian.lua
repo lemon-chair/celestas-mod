@@ -110,9 +110,12 @@ end
 
 local celesta_obsidian_mod_calculate = SMODS.current_mod.calculate
 
+-- Worked out now: SMODS.current_mod only exists while the mod is loading, and calculate runs long after.
+local MALFINA_KEY = "j_" .. SMODS.current_mod.prefix .. "_malfina"
+
 --- Malfina in play, and able to act: Obsidian cards keep the rank they have.
 local function malfina_out()
-    return next(CelestasMod.find_joker("j_" .. SMODS.current_mod.prefix .. "_malfina")) ~= nil
+    return next(CelestasMod.find_joker(MALFINA_KEY)) ~= nil
 end
 
 SMODS.current_mod.calculate = function(self, context)
